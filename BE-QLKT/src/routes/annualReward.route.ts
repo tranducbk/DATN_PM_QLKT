@@ -2,11 +2,7 @@ import { Router, Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import annualRewardController from '../controllers/annualReward.controller';
-import {
-  verifyToken,
-  requireManager,
-  requireAdminOnly,
-} from '../middlewares/auth';
+import { verifyToken, requireManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import {
@@ -175,7 +171,7 @@ router.post(
  * @desc    Download Excel template for annual reward import
  * @access  Private - ADMIN, MANAGER
  */
-router.get('/template', verifyToken, requireManager, annualRewardController.getTemplate);
+router.get('/template', verifyToken, requireAdminOnly, annualRewardController.getTemplate);
 
 /**
  * @route   GET /api/annual-rewards/export
@@ -185,7 +181,7 @@ router.get('/template', verifyToken, requireManager, annualRewardController.getT
 router.get(
   '/export',
   verifyToken,
-  requireManager,
+  requireAdminOnly,
   validate(annualRewardValidation.exportAnnualRewardsQuery, 'query'),
   annualRewardController.exportToExcel
 );

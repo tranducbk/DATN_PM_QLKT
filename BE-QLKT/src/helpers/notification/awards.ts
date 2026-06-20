@@ -5,15 +5,17 @@ import {
   emitNotificationToUser,
   DANH_HIEU_MAP,
   LOAI_DE_XUAT_MAP,
-  getDanhHieuName,
   getDisplayName,
 } from './helpers';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
-import { AWARD_SLUGS } from '../../constants/awardSlugs.constants';
-import { AWARD_RESOURCE, getAwardLabelByProposalType } from '../../constants/awardResource.constants';
+import {
+  AWARD_RESOURCE,
+  getAwardLabelByProposalType,
+} from '../../constants/awardResource.constants';
 import { isFeatureEnabled } from '../settingsHelper';
 import { accountRepository } from '../../repositories/account.repository';
 import { notificationRepository } from '../../repositories/notification.repository';
+import { NOTIFICATION_TITLES } from '../../constants/notificationMessages.constants';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 
 interface AchievementInfo {
@@ -57,96 +59,6 @@ interface NotificationInput {
   [key: string]: unknown;
 }
 
-interface TitleDataItem {
-  personnel_id?: string;
-  don_vi_id?: string;
-  danh_hieu?: string;
-  loai?: string;
-  nam?: number | string;
-}
-
-async function notifyManagersOnAwardAdded(
-  donViId: string,
-  donViName: string,
-  year: number | string,
-  awardType: string,
-  adminUsername: string
-): Promise<number> {
-  const managers = await accountRepository.findManyRaw({
-    where: {
-      role: ROLES.MANAGER,
-      QuanNhan: {
-        co_quan_don_vi_id: donViId,
-      },
-    },
-    select: {
-      id: true,
-      role: true,
-    },
-  });
-
-  if (managers.length === 0) {
-    return 0;
-  }
-
-  const adminDisplayName = await getDisplayName(adminUsername);
-
-  const notifications = managers.map(manager => ({
-    nguoi_nhan_id: manager.id,
-    recipient_role: manager.role,
-    type: NOTIFICATION_TYPES.AWARD_ADDED,
-    title: 'Khen thưởng mới đã được thêm',
-    message: `${adminDisplayName} đã thêm danh sách khen thưởng ${awardType} năm ${year} cho đơn vị ${donViName}`,
-    resource: RESOURCE_TYPES.AWARDS,
-    tai_nguyen_id: donViId,
-    link: `/manager/awards?don_vi_id=${donViId}&nam=${year}`,
-  }));
-
-  await notificationRepository.createMany(notifications);
-  notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
-
-  return notifications.length;
-}
-
-async function notifyUserOnAchievementApproved(
-  achievement: AchievementInfo,
-  approverUsername: string
-): Promise<{ nguoi_nhan_id: string | null } | null> {
-  const account = await accountRepository.findFirstRaw({
-    where: {
-      quan_nhan_id: achievement.quan_nhan_id,
-    },
-    select: {
-      id: true,
-      role: true,
-    },
-  });
-
-  if (!account) {
-    return null;
-  }
-
-  const approverDisplayName = await getDisplayName(approverUsername);
-
-  const loaiName = getDanhHieuName(achievement.loai);
-
-  const notification = await notificationRepository.create({
-    nguoi_nhan_id: account.id,
-    recipient_role: account.role,
-    type: NOTIFICATION_TYPES.ACHIEVEMENT_APPROVED,
-    title: 'Thành tích khoa học đã được phê duyệt',
-    message: `${loaiName} năm ${achievement.nam || 'không xác định'} của bạn đã được ${approverDisplayName} phê duyệt`,
-    resource: RESOURCE_TYPES.ACHIEVEMENTS,
-    tai_nguyen_id: achievement.id,
-    link: `/user/profile`,
-  });
-
-  if (notification.nguoi_nhan_id) {
-    emitNotificationToUser(notification.nguoi_nhan_id, notification);
-  }
-  return notification;
-}
-
 async function notifyOnAwardDeleted(
   award: AwardInfo,
   personnel: PersonnelInfo,
@@ -181,7 +93,7 @@ async function notifyOnAwardDeleted(
           nguoi_nhan_id: manager.id,
           recipient_role: manager.role,
           type: NOTIFICATION_TYPES.AWARD_DELETED,
-          title: 'Khen thưởng đã bị xóa',
+          title: NOTIFICATION_TITLES.AWARD_DELETED,
           message: `${adminDisplayName} đã xóa ${awardTypeName}${
             nam ? ` năm ${nam}` : ''
           } của quân nhân ${personnel.ho_ten || 'Chưa xác định'}`,
@@ -207,7 +119,7 @@ async function notifyOnAwardDeleted(
         nguoi_nhan_id: personnelAccount.id,
         recipient_role: personnelAccount.role,
         type: NOTIFICATION_TYPES.AWARD_DELETED,
-        title: 'Khen thưởng của bạn đã bị xóa',
+        title: NOTIFICATION_TITLES.AWARD_DELETED_RECIPIENT,
         message: `${awardTypeName}${
           nam ? ` năm ${nam}` : ''
         } của bạn đã bị ${adminDisplayName} xóa khỏi hệ thống`,
@@ -317,7 +229,7 @@ async function notifyUsersOnAwardApproved(
         nguoi_nhan_id: account.id,
         recipient_role: account.role,
         type: NOTIFICATION_TYPES.AWARD_ADDED,
-        title: 'Bạn đã nhận khen thưởng',
+        title: NOTIFICATION_TITLES.AWARD_RECEIVED,
         message: message,
         resource: RESOURCE_TYPES.PROPOSALS,
         tai_nguyen_id: proposal.id,
@@ -339,7 +251,6 @@ async function notifyUsersOnAwardApproved(
     return 0;
   }
 }
-
 
 /**
  * Notifies ALL admins about a SUPER_ADMIN bypass action (data correction).
@@ -384,7 +295,7 @@ async function notifyAdminsOnBulkBypass(
       nguoi_nhan_id: admin.id,
       recipient_role: admin.role,
       type: NOTIFICATION_TYPES.AWARD_ADDED,
-      title: 'Quản trị viên đã sửa dữ liệu khen thưởng',
+      title: NOTIFICATION_TITLES.AWARD_DATA_CORRECTED,
       message,
       resource: RESOURCE_TYPES.AWARDS,
       tai_nguyen_id: null,
@@ -483,7 +394,7 @@ async function notifyOnImport(
           nguoi_nhan_id: manager.id,
           recipient_role: manager.role,
           type: NOTIFICATION_TYPES.AWARD_ADDED,
-          title: 'Khen thưởng mới được nhập dữ liệu',
+          title: NOTIFICATION_TITLES.AWARD_ADDED,
           message: `${adminDisplayName} đã thêm ${importedCount} danh hiệu ${awardLabel} cho đơn vị của bạn`,
           resource: RESOURCE_TYPES.AWARDS,
           tai_nguyen_id: null,
@@ -504,7 +415,7 @@ async function notifyOnImport(
           nguoi_nhan_id: account.id,
           recipient_role: account.role,
           type: NOTIFICATION_TYPES.AWARD_ADDED,
-          title: 'Bạn đã nhận khen thưởng',
+          title: NOTIFICATION_TITLES.AWARD_RECEIVED,
           message: `${adminDisplayName} đã thêm ${awardLabel} cho bạn qua nhập dữ liệu`,
           resource: RESOURCE_TYPES.AWARDS,
           tai_nguyen_id: null,
@@ -526,12 +437,10 @@ async function notifyOnImport(
 }
 
 export {
-  notifyManagersOnAwardAdded,
-  notifyUserOnAchievementApproved,
   notifyOnAwardDeleted,
   notifyUsersOnAwardApproved,
   notifyAdminsOnBulkBypass,
   notifyOnImport,
 };
 
-export { notifyOnBulkAwardAdded } from './awardsBulkAdded';
+export { notifyOnBulkAwardAdded, notifyOnUnitAwardDeleted } from './awardsBulkAdded';

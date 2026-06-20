@@ -7,7 +7,6 @@ import {
   Tag,
   Space,
   Typography,
-  Breadcrumb,
   message,
   Modal,
   Select,
@@ -19,8 +18,8 @@ import {
   Button,
 } from 'antd';
 import { formatDate, formatDateTime } from '@/lib/utils';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import {
-  HomeOutlined,
   UserOutlined,
   TeamOutlined,
   EyeOutlined,
@@ -345,13 +344,7 @@ export default function ManagerAdhocAwardsPage() {
   // RENDER
   return (
     <div style={{ padding: 24 }}>
-      <Breadcrumb
-        style={{ marginBottom: 16 }}
-        items={[
-          { href: '/manager/dashboard', title: <HomeOutlined /> },
-          { title: 'Khen thưởng đột xuất' },
-        ]}
-      />
+      <PageBreadcrumb items={[{ title: 'Khen thưởng đột xuất' }]} />
 
       <Card>
         <div style={{ marginBottom: 16 }}>

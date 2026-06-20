@@ -78,8 +78,11 @@ Table QuanNhan {
 Table LichSuChucVu {
   id varchar(30) [pk]
   quan_nhan_id varchar(30) [not null]
-  chuc_vu_id varchar(30) [not null]
+  chuc_vu_id varchar(30) [note: 'nullable — SetNull khi xóa chức vụ']
   he_so_chuc_vu float [not null, default: 0]
+  ten_chuc_vu varchar(255) [note: 'snapshot tên chức vụ']
+  ten_co_quan_don_vi varchar(255) [note: 'snapshot tên cơ quan đơn vị']
+  ten_don_vi_truc_thuoc varchar(255) [note: 'snapshot tên đơn vị trực thuộc']
   ngay_bat_dau date [not null]
   ngay_ket_thuc date
   so_thang int
@@ -105,7 +108,7 @@ Table BangDeXuat {
   id varchar(30) [pk]
   co_quan_don_vi_id varchar(30)
   don_vi_truc_thuoc_id varchar(30)
-  nguoi_de_xuat_id varchar(30) [not null]
+  nguoi_de_xuat_id varchar(30) [note: 'nullable — SetNull khi xóa tài khoản']
   loai_de_xuat varchar(20) [not null]
   nam int [not null]
   thang int

@@ -1,9 +1,6 @@
-import { prisma } from '../models';
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { scientificAchievementRepository } from '../repositories/scientificAchievement.repository';
-import { decisionFileRepository } from '../repositories/decisionFile.repository';
 import ExcelJS from 'exceljs';
-import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excel/excelImportHelper';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { DANH_HIEU_NCKH, resolveNckhCode } from '../constants/danhHieu.constants';
@@ -11,13 +8,15 @@ import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { logMessages } from '../constants/logMessages.constants';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS];
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
 import { fetchTemplateData } from './excel/templateData.service';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excel/excelHelper';
-import { IMPORT_TRANSACTION_TIMEOUT, EXPORT_FETCH_LIMIT } from '../constants/excel.constants';
+import { sanitizeRowData } from '../helpers/excel/excelHelper';
+import { EXPORT_FETCH_LIMIT } from '../constants/excel.constants';
 import {
   AWARD_EXCEL_SHEETS,
   NCKH_EXPORT_COLUMNS,
@@ -50,43 +49,12 @@ interface ExportFilters {
   don_vi_id?: string;
 }
 
-interface PreviewError {
-  row: number;
-  ho_ten: string;
-  nam: number | unknown;
-  loai?: string;
-  message: string;
-}
-
-interface PreviewValidItem {
-  row: number;
-  personnel_id: string;
-  ho_ten: string;
-  cap_bac: string | null;
-  chuc_vu: string | null;
-  nam: number;
-  loai: string;
-  mo_ta: string;
-  so_quyet_dinh: string | null;
-  ghi_chu: string | null;
-  history: {
-    nam: number;
-    loai: string;
-    mo_ta: string;
-    so_quyet_dinh: string | null;
-  }[];
-}
-
-export interface ConfirmImportItem {
-  personnel_id: string;
-  nam: number;
-  loai: string;
-  mo_ta: string;
-  cap_bac?: string | null;
-  chuc_vu?: string | null;
-  so_quyet_dinh?: string | null;
-  ghi_chu?: string | null;
-}
+import type { ConfirmImportItem } from './scientificAchievement/types';
+import {
+  previewImport as runPreviewImport,
+  confirmImport as runConfirmImport,
+} from './scientificAchievement/import';
+export type { ConfirmImportItem };
 
 class ScientificAchievementService {
   async getAchievements(personnelId: string) {
@@ -119,7 +87,9 @@ class ScientificAchievementService {
 
     const loaiCode = resolveNckhCode(loai);
     if (!loaiCode) {
-      throw new ValidationError('Loại thành tích không hợp lệ. Chỉ chấp nhận: ' + Object.values(DANH_HIEU_NCKH).join(', '));
+      throw new ValidationError(
+        'Loại thành tích không hợp lệ. Chỉ chấp nhận: ' + Object.values(DANH_HIEU_NCKH).join(', ')
+      );
     }
 
     const newAchievement = await scientificAchievementRepository.create({
@@ -136,7 +106,11 @@ class ScientificAchievementService {
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
     } catch (e) {
-      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi tính lại hồ sơ hằng năm sau khi cập nhật ${AWARD_LABEL}: ${e}` });
+      void writeSystemLog({
+        action: AUDIT_ACTIONS.ERROR,
+        resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
+        description: logMessages.recalcError('cập nhật', AWARD_LABEL, e),
+      });
     }
 
     return newAchievement;
@@ -174,7 +148,11 @@ class ScientificAchievementService {
     try {
       await profileService.recalculateAnnualProfile(achievement.quan_nhan_id);
     } catch (e) {
-      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi tính lại hồ sơ hằng năm sau khi cập nhật ${AWARD_LABEL}: ${e}` });
+      void writeSystemLog({
+        action: AUDIT_ACTIONS.ERROR,
+        resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
+        description: logMessages.recalcError('cập nhật', AWARD_LABEL, e),
+      });
     }
 
     return updatedAchievement;
@@ -207,7 +185,11 @@ class ScientificAchievementService {
     try {
       await profileService.recalculateAnnualProfile(personnelId);
     } catch (error) {
-      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi tính lại hồ sơ hằng năm sau khi xóa ${AWARD_LABEL}: ${error}` });
+      void writeSystemLog({
+        action: AUDIT_ACTIONS.ERROR,
+        resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
+        description: logMessages.recalcError('xóa', AWARD_LABEL, error),
+      });
     }
 
     try {
@@ -218,7 +200,11 @@ class ScientificAchievementService {
         adminUsername
       );
     } catch (error) {
-      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi gửi thông báo xóa ${AWARD_LABEL}: ${error}` });
+      void writeSystemLog({
+        action: AUDIT_ACTIONS.ERROR,
+        resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
+        description: logMessages.notifyError('xóa', AWARD_LABEL, error),
+      });
     }
 
     return {
@@ -266,19 +252,21 @@ class ScientificAchievementService {
       const quanNhan = achievement.QuanNhan;
       const donVi = quanNhan?.DonViTrucThuoc?.ten_don_vi ?? quanNhan?.CoQuanDonVi?.ten_don_vi ?? '';
 
-      worksheet.addRow(sanitizeRowData({
-        stt: index + 1,
-        id: quanNhan?.id ?? '',
-        ho_ten: quanNhan?.ho_ten ?? '',
-        cap_bac: achievement.cap_bac ?? quanNhan?.cap_bac ?? '',
-        chuc_vu: achievement.chuc_vu ?? quanNhan?.ChucVu?.ten_chuc_vu ?? '',
-        don_vi: donVi,
-        nam: achievement.nam,
-        loai: achievement.loai ?? '',
-        mo_ta: achievement.mo_ta ?? '',
-        so_quyet_dinh: achievement.so_quyet_dinh ?? '',
-        ghi_chu: achievement.ghi_chu ?? '',
-      }));
+      worksheet.addRow(
+        sanitizeRowData({
+          stt: index + 1,
+          id: quanNhan?.id ?? '',
+          ho_ten: quanNhan?.ho_ten ?? '',
+          cap_bac: achievement.cap_bac ?? quanNhan?.cap_bac ?? '',
+          chuc_vu: achievement.chuc_vu ?? quanNhan?.ChucVu?.ten_chuc_vu ?? '',
+          don_vi: donVi,
+          nam: achievement.nam,
+          loai: achievement.loai ?? '',
+          mo_ta: achievement.mo_ta ?? '',
+          so_quyet_dinh: achievement.so_quyet_dinh ?? '',
+          ghi_chu: achievement.ghi_chu ?? '',
+        })
+      );
     });
 
     return workbook;
@@ -299,290 +287,11 @@ class ScientificAchievementService {
   }
 
   async previewImport(buffer: Buffer) {
-    const workbook = await loadWorkbook(buffer);
-    const worksheet = getAndValidateWorksheet(workbook, { sheetName: AWARD_EXCEL_SHEETS.NCKH });
-
-    const headerMap = parseHeaderMap(worksheet);
-
-    const idCol = getHeaderCol(headerMap, ['id', 'ma_quan_nhan', 'personnel_id']);
-    const hoTenCol = getHeaderCol(headerMap, ['ho_va_ten', 'ho_ten', 'hoten', 'hovaten', 'ten']);
-    const capBacCol = getHeaderCol(headerMap, ['cap_bac', 'capbac', 'cap_bc']);
-    const chucVuCol = getHeaderCol(headerMap, ['chuc_vu', 'chucvu', 'chc_vu']);
-    const namCol = getHeaderCol(headerMap, ['nam', 'year']);
-    const loaiCol = getHeaderCol(headerMap, ['loai', 'loại']);
-    const moTaCol = getHeaderCol(headerMap, ['mo_ta', 'mota', 'mo_t']);
-    const soQuyetDinhCol = getHeaderCol(headerMap, ['so_quyet_dinh', 'soquyetdinh', 'so_qd']);
-    const ghiChuCol = getHeaderCol(headerMap, ['ghi_chu', 'ghichu', 'ghi_ch']);
-
-    if (!idCol || !namCol || !loaiCol || !moTaCol) {
-      throw new ValidationError(
-        `Thiếu cột bắt buộc: ID, Năm, Loại, Mô tả. Tìm thấy headers: ${Object.keys(headerMap).join(
-          ', '
-        )}`
-      );
-    }
-
-    const errors: PreviewError[] = [];
-    const valid: PreviewValidItem[] = [];
-    let total = 0;
-    const seenInFile = new Set<string>();
-    const currentYear = new Date().getFullYear();
-
-    const allPersonnelIds = new Set<string>();
-    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
-      const row = worksheet.getRow(rowNumber);
-      const idValue = idCol ? row.getCell(idCol).value : null;
-      if (idValue) {
-        const pid = String(idValue).trim();
-        if (pid) allPersonnelIds.add(pid);
-      }
-    }
-
-    const [personnelList, existingAchievementsList, existingDecisions] = await Promise.all([
-      allPersonnelIds.size > 0
-        ? quanNhanRepository.findManyRaw({
-            where: { id: { in: [...allPersonnelIds] } },
-            select: { id: true, ho_ten: true, cap_bac: true, ChucVu: { select: { ten_chuc_vu: true } } },
-          })
-        : Promise.resolve([]),
-      allPersonnelIds.size > 0
-        ? scientificAchievementRepository.findManyRaw({
-            where: { quan_nhan_id: { in: [...allPersonnelIds] } },
-            select: { quan_nhan_id: true, nam: true, loai: true, mo_ta: true, so_quyet_dinh: true },
-          })
-        : Promise.resolve([]),
-      decisionFileRepository.findManyRaw({
-        select: { so_quyet_dinh: true },
-      }),
-    ]);
-
-    const personnelMap = new Map(personnelList.map(p => [p.id, p]));
-    // Map<personnelId, records[]> for history
-    const achievementsByPersonnel = new Map<string, typeof existingAchievementsList>();
-    for (const a of existingAchievementsList) {
-      const list = achievementsByPersonnel.get(a.quan_nhan_id) || [];
-      list.push(a);
-      achievementsByPersonnel.set(a.quan_nhan_id, list);
-    }
-    // Set<key> for duplicate-in-DB check
-    const existingAchievementKeys = new Set(
-      existingAchievementsList.map(a => `${a.quan_nhan_id}_${a.nam}_${a.loai}_${a.mo_ta}`)
-    );
-    const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
-    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
-      const row = worksheet.getRow(rowNumber);
-      const idValue = idCol ? row.getCell(idCol).value : null;
-      const ho_ten = hoTenCol ? String(row.getCell(hoTenCol).value ?? '').trim() : '';
-      const namVal = row.getCell(namCol).value;
-      const loai_raw = loaiCol ? String(row.getCell(loaiCol).value ?? '').trim() : '';
-      const mo_ta = moTaCol ? String(row.getCell(moTaCol).value ?? '').trim() : '';
-      const cap_bac = capBacCol ? String(row.getCell(capBacCol).value ?? '').trim() : null;
-      const chuc_vu = chucVuCol ? String(row.getCell(chucVuCol).value ?? '').trim() : null;
-      const so_quyet_dinh = soQuyetDinhCol
-        ? String(row.getCell(soQuyetDinhCol).value ?? '').trim()
-        : null;
-      const ghi_chu = ghiChuCol ? String(row.getCell(ghiChuCol).value ?? '').trim() : null;
-
-      if (!idValue && !namVal && !loai_raw) continue;
-
-      if (idValue && !loai_raw) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam: namVal,
-          loai: '',
-          message: 'Bỏ qua — không có loại thành tích nào được điền',
-        });
-        continue;
-      }
-
-      total++;
-
-      const missingFields: string[] = [];
-      if (!idValue) missingFields.push('ID');
-      if (!namVal) missingFields.push('Năm');
-      if (!loai_raw) missingFields.push('Loại');
-      if (!mo_ta) missingFields.push('Mô tả');
-      if (missingFields.length > 0) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam: namVal,
-          loai: loai_raw,
-          message: `Thiếu ${missingFields.join(', ')}`,
-        });
-        continue;
-      }
-
-      const personnelId = String(idValue).trim();
-      if (!personnelId) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam: namVal,
-          loai: loai_raw,
-          message: `ID không hợp lệ: ${idValue}`,
-        });
-        continue;
-      }
-      const personnel = personnelMap.get(personnelId);
-      if (!personnel) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam: namVal,
-          loai: loai_raw,
-          message: `Không tìm thấy quân nhân tương ứng với mã trong file.`,
-        });
-        continue;
-      }
-
-      const nameMismatch = validatePersonnelNameMatch(ho_ten, personnel.ho_ten);
-      if (nameMismatch) {
-        errors.push({ row: rowNumber, ho_ten, nam: namVal, loai: loai_raw, message: nameMismatch });
-        continue;
-      }
-
-      const nam = parseInt(String(namVal));
-      if (!Number.isInteger(nam)) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam: namVal,
-          loai: loai_raw,
-          message: `Giá trị năm không hợp lệ: ${namVal}`,
-        });
-        continue;
-      }
-      if (nam < 1900 || nam > currentYear) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam,
-          loai: loai_raw,
-          message: `Năm ${nam} không hợp lệ. Chỉ được nhập đến năm hiện tại (${currentYear})`,
-        });
-        continue;
-      }
-
-      const loai = resolveNckhCode(loai_raw);
-      if (!loai) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam,
-          loai: loai_raw,
-          message: `Loại "${loai_raw}" không hợp lệ. Chỉ chấp nhận: ${Object.values(DANH_HIEU_NCKH).join(', ')}`,
-        });
-        continue;
-      }
-
-      if (!so_quyet_dinh) {
-        errors.push({ row: rowNumber, ho_ten, nam, loai, message: 'Thiếu số quyết định' });
-        continue;
-      }
-      if (!validDecisionNumbers.has(so_quyet_dinh)) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam,
-          loai,
-          message: `Số quyết định "${so_quyet_dinh}" không tồn tại trên hệ thống`,
-        });
-        continue;
-      }
-
-      const fileKey = `${personnel.id}_${nam}_${loai}_${mo_ta}`;
-      if (seenInFile.has(fileKey)) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam,
-          loai,
-          message: `Trùng lặp trong file — cùng quân nhân, năm ${nam}, loại ${loai}, mô tả "${mo_ta}"`,
-        });
-        continue;
-      }
-      seenInFile.add(fileKey);
-
-      if (existingAchievementKeys.has(fileKey)) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam,
-          loai,
-          message: 'Thành tích khoa học đã tồn tại',
-        });
-        continue;
-      }
-
-      const allRecords = achievementsByPersonnel.get(personnel.id) || [];
-      const history = [...allRecords]
-        .sort((a, b) => b.nam - a.nam)
-        .slice(0, 5)
-        .map(r => ({
-          nam: r.nam,
-          loai: r.loai,
-          mo_ta: r.mo_ta,
-          so_quyet_dinh: r.so_quyet_dinh,
-        }));
-
-      const { hoTen, capBac, chucVu, missingFields: missingInfoFields } = resolvePersonnelInfo(
-        { ho_ten, cap_bac, chuc_vu },
-        personnel
-      );
-      if (missingInfoFields.length > 0) {
-        errors.push({
-          row: rowNumber,
-          ho_ten: hoTen,
-          nam,
-          message: `Thiếu ${missingInfoFields.join(', ')} (cả trong file và hệ thống)`,
-        });
-        continue;
-      }
-
-      valid.push({
-        row: rowNumber,
-        personnel_id: personnel.id,
-        ho_ten: hoTen,
-        cap_bac: capBac,
-        chuc_vu: chucVu,
-        nam,
-        loai,
-        mo_ta,
-        so_quyet_dinh,
-        ghi_chu,
-        history,
-      });
-    }
-
-    return { total, valid, errors };
+    return runPreviewImport(buffer);
   }
 
   async confirmImport(validItems: ConfirmImportItem[], adminId: string) {
-    return await prisma.$transaction(
-      async prismaTx => {
-        const results = [];
-        for (const item of validItems) {
-          const result = await scientificAchievementRepository.create(
-            {
-              quan_nhan_id: item.personnel_id,
-              nam: item.nam,
-              loai: resolveNckhCode(item.loai) ?? item.loai,
-              mo_ta: item.mo_ta,
-              cap_bac: item.cap_bac ?? null,
-              chuc_vu: item.chuc_vu ?? null,
-              so_quyet_dinh: item.so_quyet_dinh ?? null,
-              ghi_chu: item.ghi_chu ?? null,
-            },
-            prismaTx
-          );
-          results.push(result);
-        }
-        return { imported: results.length, data: results };
-      },
-      { timeout: IMPORT_TRANSACTION_TIMEOUT }
-    );
+    return runConfirmImport(validItems, adminId);
   }
 
   /**
@@ -606,7 +315,9 @@ class ScientificAchievementService {
     const [achievements, total] = await Promise.all([
       scientificAchievementRepository.findManyRaw({
         where,
-        include: { QuanNhan: { include: { CoQuanDonVi: true, DonViTrucThuoc: true, ChucVu: true } } },
+        include: {
+          QuanNhan: { include: { CoQuanDonVi: true, DonViTrucThuoc: true, ChucVu: true } },
+        },
         orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
         skip: (page - 1) * limit,
         take: limit,

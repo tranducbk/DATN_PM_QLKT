@@ -8,9 +8,11 @@ import {
   parsePersonnelIdsFromQuery,
   getManagerUnitFilter,
   getAdminUsername,
+  logImportPreview,
 } from '../helpers/controllerHelper';
 import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { logMessages } from '../constants/logMessages.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { notifyOnImport } from '../helpers/notification';
@@ -57,9 +59,9 @@ class MilitaryFlagController {
         Object.assign(repeatMap, JSON.parse(query.repeat_map));
       } catch (e) {
         void writeSystemLog({
-          action: 'ERROR',
+          action: AUDIT_ACTIONS.ERROR,
           resource: AWARD_SLUGS.MILITARY_FLAG,
-          description: `Dữ liệu repeat_map (${AWARD_LABEL}) không hợp lệ: ${e}`,
+          description: logMessages.invalidRepeatMap(AWARD_LABEL, e),
         });
       }
     }
@@ -76,23 +78,11 @@ class MilitaryFlagController {
   });
 
   previewImport = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
     const file = req.file;
     if (!file) return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
 
     const result = await militaryFlagService.previewImport(file.buffer);
-    await writeSystemLog({
-      userId: user.id,
-      userRole: user.role,
-      action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: AWARD_SLUGS.MILITARY_FLAG,
-      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để xem trước ${AWARD_LABEL}: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
-      payload: {
-        filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
-        total: result.total,
-        errors: result.errors?.length ?? 0,
-      },
-    });
+    await logImportPreview(req, AWARD_SLUGS.MILITARY_FLAG, AWARD_LABEL, file.originalname, result);
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
@@ -106,16 +96,21 @@ class MilitaryFlagController {
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
       resource: AWARD_SLUGS.MILITARY_FLAG,
-      description: `Nhập dữ liệu ${AWARD_LABEL} thành công: ${result.imported ?? items.length} bản ghi`,
+      description: logMessages.importSuccess(AWARD_LABEL, result.imported ?? items.length),
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(user.id, AWARD_SLUGS.MILITARY_FLAG, result.imported ?? items.length, personnelIds).catch(
+    notifyOnImport(
+      user.id,
+      AWARD_SLUGS.MILITARY_FLAG,
+      result.imported ?? items.length,
+      personnelIds
+    ).catch(
       e =>
         void writeSystemLog({
-          action: 'ERROR',
+          action: AUDIT_ACTIONS.ERROR,
           resource: AWARD_SLUGS.MILITARY_FLAG,
-          description: `Lỗi gửi thông báo import ${AWARD_LABEL}: ${e}`,
+          description: logMessages.notifyError('nhập dữ liệu', AWARD_LABEL, e),
         })
     );
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });

@@ -44,6 +44,23 @@ const NIEN_HAN_MEDAL_STRATEGY: Partial<Record<ProposalType, ProposalStrategy>> =
   [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: kncStrategy,
 };
 
+type PrimaryImportEntry = {
+  strategy: ProposalStrategy;
+  field: 'data_danh_hieu' | 'data_cong_hien';
+};
+
+// Primary award import, selected by proposal type. Types not listed fall back to
+// PRIMARY_IMPORT_DEFAULT (personal danh-hieu import shared by annual + tenure-family).
+const PRIMARY_IMPORT: Partial<Record<ProposalType, PrimaryImportEntry>> = {
+  [PROPOSAL_TYPES.DON_VI_HANG_NAM]: { strategy: donViHangNamStrategy, field: 'data_danh_hieu' },
+  [PROPOSAL_TYPES.CONG_HIEN]: { strategy: hcbvtqStrategy, field: 'data_cong_hien' },
+};
+
+const PRIMARY_IMPORT_DEFAULT: PrimaryImportEntry = {
+  strategy: caNhanHangNamStrategy,
+  field: 'data_danh_hieu',
+};
+
 /**
  * Runs all per-type imports inside a single transaction and finalizes proposal status.
  */
@@ -93,25 +110,19 @@ export async function runImportTransaction(
           prismaTx
         );
 
-      // Primary danh-hieu/cong-hien import is selected by proposal type.
-      if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-        await runStrategyImport(donViHangNamStrategy, {
-          data_danh_hieu: danhHieuData,
-        } as EditedProposalData);
-      } else if (proposal.loai_de_xuat === PROPOSAL_TYPES.CONG_HIEN) {
-        await runStrategyImport(hcbvtqStrategy, {
-          data_cong_hien: congHienData,
-        } as EditedProposalData);
-      } else {
-        await runStrategyImport(caNhanHangNamStrategy, {
-          data_danh_hieu: danhHieuData,
-        } as EditedProposalData);
-      }
+      const primary =
+        PRIMARY_IMPORT[proposal.loai_de_xuat as ProposalType] ?? PRIMARY_IMPORT_DEFAULT;
+      const payloadByField = { data_danh_hieu: danhHieuData, data_cong_hien: congHienData };
+      await runStrategyImport(primary.strategy, {
+        [primary.field]: payloadByField[primary.field],
+      } as EditedProposalData);
 
       // Tenure-family proposals additionally import their medal rows from data_nien_han.
       const medalStrategy = NIEN_HAN_MEDAL_STRATEGY[proposal.loai_de_xuat as ProposalType];
       if (medalStrategy && nienHanData && nienHanData.length > 0) {
-        await runStrategyImport(medalStrategy, { data_nien_han: nienHanData } as EditedProposalData);
+        await runStrategyImport(medalStrategy, {
+          data_nien_han: nienHanData,
+        } as EditedProposalData);
       }
 
       // NCKH achievements may accompany any proposal type.

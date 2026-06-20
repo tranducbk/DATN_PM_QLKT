@@ -1,3 +1,5 @@
+import { HCBVTQ_TEMPLATE_COLUMNS } from '../../constants/awardExcel.constants';
+import { resolveTemplateColumns } from '../../helpers/excel/excelHelper';
 import { prisma } from '../../models';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { contributionMedalRepository } from '../../repositories/contributionMedal.repository';
@@ -7,7 +9,6 @@ import { proposalRepository } from '../../repositories/proposal.repository';
 import { loadWorkbook, getAndValidateWorksheet } from '../../helpers/excel/excelImportHelper';
 import {
   parseHeaderMap,
-  getHeaderCol,
   resolvePersonnelInfo,
   buildPendingKeys,
   validatePersonnelNameMatch,
@@ -47,15 +48,16 @@ export async function previewImport(buffer: Buffer) {
 
   const headerMap = parseHeaderMap(worksheet);
 
-  const idCol = getHeaderCol(headerMap, ['id', 'ma_quan_nhan', 'personnel_id']);
-  const hoTenCol = getHeaderCol(headerMap, ['ho_va_ten', 'ho_ten', 'hoten', 'hovaten', 'ten']);
-  const namCol = getHeaderCol(headerMap, ['nam', 'year']);
-  const danhHieuCol = getHeaderCol(headerMap, ['danh_hieu', 'danhhieu', 'danh_hiu']);
-  const capBacCol = getHeaderCol(headerMap, ['cap_bac', 'capbac', 'cap_bc']);
-  const chucVuCol = getHeaderCol(headerMap, ['chuc_vu', 'chucvu', 'chc_vu']);
-  const thangCol = getHeaderCol(headerMap, ['thang', 'thang_nhan', 'month']);
-  const soQuyetDinhCol = getHeaderCol(headerMap, ['so_quyet_dinh', 'soquyetdinh', 'so_qd']);
-  const ghiChuCol = getHeaderCol(headerMap, ['ghi_chu', 'ghichu', 'ghi_ch']);
+  const cols = resolveTemplateColumns(headerMap, HCBVTQ_TEMPLATE_COLUMNS);
+  const idCol = cols.id;
+  const hoTenCol = cols.ho_ten;
+  const namCol = cols.nam;
+  const danhHieuCol = cols.danh_hieu;
+  const capBacCol = cols.cap_bac;
+  const chucVuCol = cols.chuc_vu;
+  const thangCol = cols.thang;
+  const soQuyetDinhCol = cols.so_quyet_dinh;
+  const ghiChuCol = cols.ghi_chu;
 
   if (!idCol || !namCol || !danhHieuCol) {
     throw new ValidationError(
@@ -342,9 +344,7 @@ export async function previewImport(buffer: Buffer) {
     const months0_9_1_0 = getTotalMonths(CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10);
 
     const isFemale = personnel.gioi_tinh === GENDER.FEMALE;
-    const baseMonths = isFemale
-      ? CONG_HIEN_FEMALE_REQUIRED_MONTHS
-      : CONG_HIEN_BASE_REQUIRED_MONTHS;
+    const baseMonths = isFemale ? CONG_HIEN_FEMALE_REQUIRED_MONTHS : CONG_HIEN_BASE_REQUIRED_MONTHS;
 
     let eligible = false;
     if (danh_hieu === DANH_HIEU_HCBVTQ.HANG_NHAT) {
@@ -507,8 +507,14 @@ export async function confirmImport(validItems: ContributionAwardValidItem[]) {
   const downgradeErrors: string[] = [];
   for (const item of validItems) {
     const months: PositionMonthsByGroup = {
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: getMonths(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_07),
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: getMonths(item.personnel_id, CONG_HIEN_HE_SO_GROUPS.LEVEL_08),
+      [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: getMonths(
+        item.personnel_id,
+        CONG_HIEN_HE_SO_GROUPS.LEVEL_07
+      ),
+      [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: getMonths(
+        item.personnel_id,
+        CONG_HIEN_HE_SO_GROUPS.LEVEL_08
+      ),
       [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: getMonths(
         item.personnel_id,
         CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10

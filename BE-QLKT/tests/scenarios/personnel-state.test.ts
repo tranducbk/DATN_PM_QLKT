@@ -94,7 +94,7 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
     await expectError(
       proposalService.approveProposal(proposal.id, {}, ADMIN_ID, {}, {}, null),
       ValidationError,
-      `${APPROVE_ELIGIBILITY_PREFIX}\n${PERSONNEL_STATE_HCQKQT_NOT_FOUND('qn-ghost')}`
+      `${APPROVE_ELIGIBILITY_PREFIX}\n${PERSONNEL_STATE_HCQKQT_NOT_FOUND}`
     );
   });
 

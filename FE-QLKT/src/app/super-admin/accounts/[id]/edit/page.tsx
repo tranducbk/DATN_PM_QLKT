@@ -12,15 +12,15 @@ import {
   Space,
   ConfigProvider,
   theme as antdTheme,
-  Breadcrumb,
   Spin,
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 
-import { SaveOutlined, ArrowLeftOutlined, HomeOutlined } from '@ant-design/icons';
+import { SaveOutlined, ArrowLeftOutlined } from '@ant-design/icons';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { apiClient } from '@/lib/http/apiClient';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLES, roleSelectOptions } from '@/constants/roles.constants';
@@ -235,11 +235,10 @@ export default function AccountEditPage() {
       }}
     >
       <div className="space-y-4 p-6">
-        <Breadcrumb
+        <PageBreadcrumb
           items={[
-            { title: <Link href="/super-admin/dashboard"><HomeOutlined /></Link> },
-            { title: <Link href="/super-admin/accounts">Tài khoản</Link> },
-            { title: <Link href={`/super-admin/accounts/${accountId}`}>Chi tiết</Link> },
+            { title: 'Tài khoản', href: '/super-admin/accounts' },
+            { title: 'Chi tiết', href: `/super-admin/accounts/${accountId}` },
             { title: 'Chỉnh sửa' },
           ]}
         />

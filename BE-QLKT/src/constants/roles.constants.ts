@@ -10,12 +10,15 @@ export const ROLES = {
 
 export type Role = (typeof ROLES)[keyof typeof ROLES];
 
+/** Pseudo actor role for system-generated logs (no real account behind them). */
+export const SYSTEM_ACTOR = 'SYSTEM';
+
 export const ROLE_LABELS: Record<string, string> = {
   [ROLES.SUPER_ADMIN]: 'Quản trị viên',
   [ROLES.ADMIN]: 'Phòng Chính trị',
   [ROLES.MANAGER]: 'Chỉ huy đơn vị',
   [ROLES.USER]: 'Người dùng',
-  SYSTEM: 'Hệ thống',
+  [SYSTEM_ACTOR]: 'Hệ thống',
 };
 
 /** Privilege ranking — higher number outranks lower. */

@@ -1,11 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 import { systemLogRepository } from '../repositories/systemLog.repository';
+import { MAX_LOG_DESCRIPTION_LENGTH } from '../helpers/systemLogHelper';
 
 import type { AuditLogOptions } from '../types/api';
 
-const SENSITIVE_FIELDS = ['password', 'password_hash', 'refreshToken', 'cccd', 'oldPassword', 'newPassword', 'confirmPassword'];
-
-const DISPLAY_NAME_FIELDS = ['username', 'ho_ten', 'ten_don_vi', 'ten_chuc_vu'];
+const SENSITIVE_FIELDS = [
+  'password',
+  'password_hash',
+  'refreshToken',
+  'cccd',
+  'oldPassword',
+  'newPassword',
+  'confirmPassword',
+];
 
 const redactSensitiveFields = (obj: unknown): unknown => {
   if (!obj || typeof obj !== 'object') return obj;
@@ -26,9 +33,11 @@ const redactSensitiveFields = (obj: unknown): unknown => {
 
 const parseResponse = (responseData: unknown): Record<string, unknown> | null => {
   try {
-    return typeof responseData === 'string' ? JSON.parse(responseData) as Record<string, unknown> : responseData as Record<string, unknown>;
+    return typeof responseData === 'string'
+      ? (JSON.parse(responseData) as Record<string, unknown>)
+      : (responseData as Record<string, unknown>);
   } catch (error) {
-   console.error('Failed to parse audit response payload:', error);
+    console.error('[auditLog] parse response failed:', error);
     return null;
   }
 };
@@ -57,9 +66,6 @@ const isSuccessResponse = (responseData: unknown): boolean => {
   const parsed = parseResponse(responseData);
   return parsed?.success === true;
 };
-
-const getDisplayName = (data: Record<string, string | undefined>): string =>
-  DISPLAY_NAME_FIELDS.map(f => data?.[f]).find(Boolean) || 'N/A';
 
 /**
  * Creates middleware to capture audit logs for successful responses.
@@ -97,7 +103,7 @@ const auditLog = (options: AuditLogOptions = { action: '', resource: '' }) => {
                 action,
                 resource,
                 tai_nguyen_id: resourceId ?? undefined,
-                description,
+                description: description.substring(0, MAX_LOG_DESCRIPTION_LENGTH),
                 payload: payload ? JSON.stringify(payload) : undefined,
                 ip_address: req.ip || req.socket.remoteAddress,
                 user_agent: req.get('User-Agent'),
@@ -118,19 +124,6 @@ const auditLog = (options: AuditLogOptions = { action: '', resource: '' }) => {
   };
 };
 
-const createDescription = {
-  create: (resource: string, data: Record<string, string | undefined>) =>
-    `Tạo mới ${resource}: ${getDisplayName(data)}`,
-  update: (resource: string, data: Record<string, string | undefined>) =>
-    `Cập nhật ${resource}: ${getDisplayName(data)}`,
-  delete: (resource: string, data: Record<string, string | undefined>) =>
-    `Xóa ${resource}: ${getDisplayName(data)}`,
-  login: () => 'Đăng nhập hệ thống',
-  logout: () => 'Đăng xuất khỏi hệ thống',
-  resetPassword: (data?: Record<string, string | undefined>) =>
-    `Đặt lại mật khẩu cho tài khoản: ${data?.username || 'N/A'}`,
-};
-
 const getResourceId = {
   fromParams: (paramName: string) => (req: Request) => {
     const value = req.params?.[paramName];
@@ -142,4 +135,4 @@ const getResourceId = {
   },
 };
 
-export { auditLog, createDescription, getResourceId };
+export { auditLog, getResourceId };

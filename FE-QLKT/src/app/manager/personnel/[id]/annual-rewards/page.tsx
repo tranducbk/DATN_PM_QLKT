@@ -9,18 +9,18 @@ import {
   Table,
   Space,
   Typography,
-  Breadcrumb,
   message,
   ConfigProvider,
   theme as antdTheme,
   Empty,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
+import { LeftOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/http/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
 import { renderAnnualAwards } from '@/lib/award/awardsHelper';
 
@@ -134,21 +134,13 @@ export default function ManagerAnnualRewardsPage() {
       }}
     >
       <div style={{ padding: '24px' }}>
-        {/* Breadcrumb */}
-        <Breadcrumb style={{ marginBottom: 24 }}>
-          <Breadcrumb.Item>
-            <Link href="/manager/dashboard">
-              <HomeOutlined />
-            </Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <Link href="/manager/personnel">Quân nhân</Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <Link href={`/manager/personnel/${personnelId}`}>{personnel?.ho_ten}</Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>Khen thưởng hằng năm</Breadcrumb.Item>
-        </Breadcrumb>
+        <PageBreadcrumb
+          items={[
+            { title: 'Quân nhân', href: '/manager/personnel' },
+            { title: personnel?.ho_ten, href: `/manager/personnel/${personnelId}` },
+            { title: 'Khen thưởng hằng năm' },
+          ]}
+        />
 
         {/* Header */}
         <div

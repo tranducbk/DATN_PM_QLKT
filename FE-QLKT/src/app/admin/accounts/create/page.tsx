@@ -3,15 +3,15 @@
 import {
   Card,
   Typography,
-  Breadcrumb,
   ConfigProvider,
   theme as antdTheme,
   Button,
-  Alert,
 } from 'antd';
 import { AccountCreateForm } from '@/components/accounts/AccountCreateForm';
+import { InfoNote } from '@/components/shared/InfoNote';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import Link from 'next/link';
-import { ArrowLeftOutlined, HomeOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useTheme } from '@/components/ThemeProvider';
 
 const { Title } = Typography;
@@ -26,16 +26,9 @@ export default function AdminCreateAccountPage() {
       }}
     >
       <div className="space-y-4 p-6">
-        <Breadcrumb
+        <PageBreadcrumb
           items={[
-            {
-              title: (
-                <Link href="/admin/dashboard">
-                  <HomeOutlined />
-                </Link>
-              ),
-            },
-            { title: <Link href="/admin/accounts">Tài khoản</Link> },
+            { title: 'Tài khoản', href: '/admin/accounts' },
             { title: 'Tạo mới' },
           ]}
         />
@@ -48,10 +41,8 @@ export default function AdminCreateAccountPage() {
           </Title>
         </div>
 
-        <Alert
-          type="info"
-          showIcon
-          message="Hướng dẫn tạo tài khoản"
+        <InfoNote
+          title="Hướng dẫn tạo tài khoản"
           description="Thiết lập tài khoản đăng nhập cho quân nhân. Hệ thống sẽ tự động tạo hồ sơ quân nhân mới và liên kết với đơn vị, chức vụ được chọn. Khuyến nghị sử dụng số CCCD làm tên đăng nhập."
         />
 

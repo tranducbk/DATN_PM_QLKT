@@ -50,36 +50,21 @@ router.post(
  * @desc    List Military Victory Flags (HC QKQT) (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
-router.get(
-  '/',
-  verifyToken,
-  requireManager,
-  militaryFlagController.getAll
-);
+router.get('/', verifyToken, requireManager, militaryFlagController.getAll);
 
 /**
  * @route   GET /api/military-flags/export
  * @desc    Export Military Victory Flags (HC QKQT) to Excel (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
-router.get(
-  '/export',
-  verifyToken,
-  requireManager,
-  militaryFlagController.exportToExcel
-);
+router.get('/export', verifyToken, requireAdminOnly, militaryFlagController.exportToExcel);
 
 /**
  * @route   GET /api/military-flags/statistics
  * @desc    Get Military Victory Flag (HC QKQT) statistics
  * @access  ADMIN, MANAGER
  */
-router.get(
-  '/statistics',
-  verifyToken,
-  requireManager,
-  militaryFlagController.getStatistics
-);
+router.get('/statistics', verifyToken, requireManager, militaryFlagController.getStatistics);
 
 /**
  * @route   GET /api/military-flags/personnel/:personnel_id

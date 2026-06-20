@@ -4,11 +4,9 @@ import { useState, useEffect, type ReactNode } from 'react';
 import {
   Card,
   Typography,
-  Button,
   Space,
   Tag,
   Timeline,
-  Breadcrumb,
   ConfigProvider,
   theme as antdTheme,
   Row,
@@ -21,7 +19,6 @@ import {
   TrophyOutlined,
   PlusOutlined,
   CheckCircleOutlined,
-  HomeOutlined,
   UserOutlined,
   SafetyOutlined,
   SafetyCertificateOutlined,
@@ -29,15 +26,13 @@ import {
   ClockCircleOutlined,
   LockOutlined,
 } from '@ant-design/icons';
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
-import {
-  StatCard,
-  getStatCardPalette,
-  type StatCardColor,
-} from '@/components/dashboard/StatCard';
+import { StatCard, getStatCardPalette, type StatCardColor } from '@/components/dashboard/StatCard';
+import { QuickActions } from '@/components/dashboard/QuickActions';
+import { getHorizontalBarHeight } from '@/components/charts/barChartHeight';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/http/apiClient';
 import { formatDateTime } from '@/lib/utils';
@@ -51,7 +46,7 @@ import { ROLE_LABELS, ROLE_COLORS } from '@/constants/roles.constants';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
   DANH_HIEU_MAP,
-  THANH_TICH_KHOA_HOC_SHORT_LABELS,
+  THANH_TICH_KHOA_HOC_FULL_LABELS,
 } from '@/constants/danhHieu.constants';
 
 const { Title, Text } = Typography;
@@ -59,14 +54,30 @@ const { Title, Text } = Typography;
 interface CountByKey {
   count: number;
 }
-interface AwardByType extends CountByKey { type: string; }
-interface ProposalByStatus extends CountByKey { status: string; }
-interface ProposalByType extends CountByKey { type: string; }
-interface AchievementByType extends CountByKey { type: string; }
-interface AwardByMonth extends CountByKey { month: string; }
-interface AchievementByMonth extends CountByKey { month: string; }
-interface PersonnelByRank extends CountByKey { rank: string; }
-interface PersonnelByPosition extends CountByKey { positionName: string; }
+interface AwardByType extends CountByKey {
+  type: string;
+}
+interface ProposalByStatus extends CountByKey {
+  status: string;
+}
+interface ProposalByType extends CountByKey {
+  type: string;
+}
+interface AchievementByType extends CountByKey {
+  type: string;
+}
+interface AwardByMonth extends CountByKey {
+  month: string;
+}
+interface AchievementByMonth extends CountByKey {
+  month: string;
+}
+interface PersonnelByRank extends CountByKey {
+  rank: string;
+}
+interface PersonnelByPosition extends CountByKey {
+  positionName: string;
+}
 
 const chartLoading = () => (
   <LoadingState size="md" className="min-h-[220px]" text="Đang tải biểu đồ..." />
@@ -130,8 +141,7 @@ export default function ManagerDashboard() {
 
           const totalCSTDCS =
             statisticsRes.data.awardsByType.find(
-              (a: { type: string; count: number }) =>
-                a.type === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS
+              (a: { type: string; count: number }) => a.type === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS
             )?.count || 0;
           const totalNCKH =
             statisticsRes.data.scientificAchievementsByType.reduce(
@@ -227,6 +237,12 @@ export default function ManagerDashboard() {
     },
   ];
 
+  // Hai biểu đồ quân số đặt cạnh nhau dùng chung chiều cao để không bị lệch.
+  const positionRowCount = chartData.personnelByPosition.filter(
+    (p: PersonnelByPosition) => p.positionName && p.positionName !== 'Chưa xác định'
+  ).length;
+  const personnelChartHeight = getHorizontalBarHeight(positionRowCount);
+
   return (
     <ConfigProvider
       theme={{
@@ -234,19 +250,7 @@ export default function ManagerDashboard() {
       }}
     >
       <div className="space-y-8 p-6 animate-in fade-in duration-500">
-        {/* Breadcrumb */}
-        <Breadcrumb
-          items={[
-            {
-              title: (
-                <Link href="/manager/dashboard">
-                  <HomeOutlined />
-                </Link>
-              ),
-            },
-            { title: 'Tổng quan' },
-          ]}
-        />
+        <PageBreadcrumb items={[{ title: 'Tổng quan' }]} />
 
         {/* Header */}
         <div className="mb-2">
@@ -306,7 +310,7 @@ export default function ManagerDashboard() {
         {!loading && (
           <>
             {/* Charts Section */}
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+            <Row align="stretch" gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               <Col xs={24} lg={8}>
                 <PieChart
                   data={chartData.awardsByType.map((item: AwardByType) => ({
@@ -337,7 +341,7 @@ export default function ManagerDashboard() {
                     count: item.count,
                   }))}
                   title="Đề xuất theo loại"
-                  maxLabelLength={15}
+                  horizontal
                   labelMapper={(label: string) =>
                     isProposalType(label) ? PROPOSAL_TYPE_LABELS[label] : label
                   }
@@ -346,11 +350,11 @@ export default function ManagerDashboard() {
               </Col>
             </Row>
 
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+            <Row align="stretch" gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               <Col xs={24} lg={8}>
                 <PieChart
                   data={chartData.scientificAchievementsByType.map((item: AchievementByType) => ({
-                    label: THANH_TICH_KHOA_HOC_SHORT_LABELS[item.type] || item.type,
+                    label: THANH_TICH_KHOA_HOC_FULL_LABELS[item.type] || item.type,
                     value: item.count,
                   }))}
                   title="Thành tích Nghiên cứu khoa học theo loại"
@@ -381,7 +385,7 @@ export default function ManagerDashboard() {
               </Col>
             </Row>
 
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+            <Row align="stretch" gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               <Col xs={24} lg={12}>
                 <ActionBarChart
                   data={chartData.personnelByRank.map((item: PersonnelByRank) => ({
@@ -391,6 +395,7 @@ export default function ManagerDashboard() {
                   title="Quân nhân theo cấp bậc"
                   maxLabelLength={15}
                   color="rgba(234, 179, 8, 1)"
+                  height={personnelChartHeight}
                 />
               </Col>
               <Col xs={24} lg={12}>
@@ -400,54 +405,30 @@ export default function ManagerDashboard() {
                     count: item.count,
                   }))}
                   title="Quân nhân theo chức vụ"
-                  maxLabelLength={20}
+                  horizontal
                   color="rgba(239, 68, 68, 1)"
+                  height={personnelChartHeight}
                 />
               </Col>
             </Row>
 
             {/* Quick Actions */}
-            <Card
-              title={<span className="text-lg font-semibold">Thao tác nhanh</span>}
-              className="shadow-lg"
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
-                {[
-                  {
-                    href: '/manager/personnel',
-                    icon: <TeamOutlined />,
-                    label: 'Xem danh sách Quân nhân',
-                    primary: true,
-                  },
-                  {
-                    href: '/manager/proposals/create',
-                    icon: <PlusOutlined />,
-                    label: 'Tạo đề xuất',
-                  },
-                  {
-                    href: '/manager/proposals',
-                    icon: <FileTextOutlined />,
-                    label: 'Quản lý đề xuất',
-                  },
-                  {
-                    href: '/manager/awards',
-                    icon: <TrophyOutlined />,
-                    label: 'Khen thưởng đơn vị',
-                  },
-                ].map(({ href, icon, label, primary }) => (
-                  <Link key={href} href={href} className="block h-full">
-                    <Button
-                      type={primary ? 'primary' : 'default'}
-                      icon={icon}
-                      size="large"
-                      className="w-full h-full min-h-[84px] py-4 text-base font-medium whitespace-normal break-words transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-                    >
-                      {label}
-                    </Button>
-                  </Link>
-                ))}
-              </div>
-            </Card>
+            <QuickActions
+              actions={[
+                {
+                  href: '/manager/personnel',
+                  icon: <TeamOutlined />,
+                  label: 'Xem danh sách Quân nhân',
+                },
+                { href: '/manager/proposals/create', icon: <PlusOutlined />, label: 'Tạo đề xuất' },
+                {
+                  href: '/manager/proposals',
+                  icon: <FileTextOutlined />,
+                  label: 'Quản lý đề xuất',
+                },
+                { href: '/manager/awards', icon: <TrophyOutlined />, label: 'Khen thưởng đơn vị' },
+              ]}
+            />
 
             {/* System Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

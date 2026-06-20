@@ -193,7 +193,7 @@ describe('annualReward.service - createAnnualReward', () => {
         nhan_bkbqp: true,
       }),
       ValidationError,
-      'Năm 2024 đã có Bằng khen Bộ Quốc phòng.'
+      'Năm 2024 đã có Bằng khen của Bộ trưởng Bộ Quốc phòng.'
     );
     expect(prismaMock.danhHieuHangNam.update).not.toHaveBeenCalled();
     expect(prismaMock.danhHieuHangNam.create).not.toHaveBeenCalled();

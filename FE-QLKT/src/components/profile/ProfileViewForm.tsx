@@ -2,13 +2,13 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, message, ConfigProvider, Tag, Breadcrumb } from 'antd';
-import { UserOutlined, HomeOutlined } from '@ant-design/icons';
-import Link from 'next/link';
+import { Card, message, ConfigProvider, Tag } from 'antd';
+import { UserOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/http/apiClient';
 import { formatDate, formatHeSoChucVu } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import { getRoleInfo } from '@/constants/roles.constants';
@@ -90,18 +90,12 @@ export function ProfileViewForm({
   return (
     <ConfigProvider theme={getAntdThemeConfig(isDark)}>
       <div className="p-6 max-w-7xl mx-auto">
-        {/* Breadcrumb */}
-        <Breadcrumb className="mb-6">
-          <Breadcrumb.Item>
-            <Link href="/user/dashboard">
-              <HomeOutlined />
-            </Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <Link href="/user/profile">Lịch sử chi tiết</Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>Thông tin cá nhân</Breadcrumb.Item>
-        </Breadcrumb>
+        <PageBreadcrumb
+          items={[
+            { title: 'Lịch sử chi tiết', href: '/user/profile' },
+            { title: 'Thông tin cá nhân' },
+          ]}
+        />
 
         <Card
           title={

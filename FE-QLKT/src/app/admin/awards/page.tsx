@@ -7,7 +7,6 @@ import {
   Table,
   Space,
   Typography,
-  Breadcrumb,
   message,
   Tabs,
   Popconfirm,
@@ -16,7 +15,8 @@ import {
 import { getApiErrorMessage } from '@/lib/http/apiError';
 
 import type { TableColumnsType } from 'antd';
-import { DownloadOutlined, HomeOutlined, DeleteOutlined } from '@ant-design/icons';
+import { DownloadOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { apiClient } from '@/lib/http/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import {
@@ -193,7 +193,7 @@ export default function AdminAwardsPage() {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleDeleteAward = async (id: string, awardType?: string, awardLabel?: string) => {
+  const handleDeleteAward = useCallback(async (id: string, awardType?: string, awardLabel?: string) => {
     try {
       setDeleting({ id, awardType });
       const config = AWARD_TYPE_CONFIG[activeTab];
@@ -208,13 +208,16 @@ export default function AdminAwardsPage() {
         return;
       }
       message.success(awardLabel ? `Đã xóa ${awardLabel}` : 'Xóa khen thưởng thành công');
-      await fetchAwards();
+      setAwardsByTab(prev => ({
+        ...prev,
+        [activeTab]: (prev[activeTab] ?? []).filter(row => row.id !== id),
+      }));
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi xóa khen thưởng'));
     } finally {
       setDeleting(null);
     }
-  };
+  }, [activeTab]);
 
   const handleDownloadDecision = async (soQuyetDinh: string) => {
     await downloadDecisionFile(soQuyetDinh);
@@ -239,7 +242,7 @@ export default function AdminAwardsPage() {
     [activeTab]
   );
 
-  const resolvePersonnelDisplay = (record: AwardTableRow): PersonnelDisplay => {
+  const resolvePersonnelDisplay = useCallback((record: AwardTableRow): PersonnelDisplay => {
     const isAnnualTab = activeTab === 'CNHN';
     const hasNestedQuanNhan = AWARD_TAB_META[activeTab].hasNestedQuanNhan;
     const hoTen = hasNestedQuanNhan
@@ -285,7 +288,7 @@ export default function AdminAwardsPage() {
           ? record.QuanNhan?.ngay_sinh || record.ngay_sinh
           : record.ngay_sinh,
     };
-  };
+  }, [activeTab]);
 
   const danhHieuOptions = useMemo(() => {
     const options = AWARD_TAB_DANH_HIEU[activeTab] || [];
@@ -556,9 +559,8 @@ export default function AdminAwardsPage() {
           );
         },
       },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     ],
-    [activeTab, deleting]
+    [activeTab, deleting, handleDeleteAward, resolvePersonnelDisplay]
   );
 
   const visibleColumns = useMemo(
@@ -577,12 +579,7 @@ export default function AdminAwardsPage() {
 
   return (
     <div style={{ padding: '24px' }}>
-      <Breadcrumb style={{ marginBottom: '16px' }}>
-        <Breadcrumb.Item href="/">
-          <HomeOutlined />
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>Quản lý khen thưởng</Breadcrumb.Item>
-      </Breadcrumb>
+      <PageBreadcrumb items={[{ title: 'Quản lý khen thưởng' }]} />
 
       <div
         style={{

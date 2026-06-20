@@ -364,11 +364,6 @@ export default function DevZonePage() {
   if (!authenticated) {
     return (
       <div className="dz-page">
-        <div className="dz-bg">
-          <div className="dz-orb dz-orb-1"></div>
-          <div className="dz-orb dz-orb-2"></div>
-        </div>
-
         <div className="dz-auth">
           <div className="dz-auth-card">
             <div className="dz-auth-logo">
@@ -415,18 +410,17 @@ export default function DevZonePage() {
       theme={{
         algorithm: theme.darkAlgorithm,
         token: {
-          colorBgContainer: 'rgba(255,255,255,0.06)',
-          colorBorderSecondary: 'rgba(255,255,255,0.1)',
-          borderRadius: 12,
+          colorPrimary: '#3b82f6',
+          colorBgContainer: '#1a2540',
+          colorBgElevated: '#16213c',
+          colorBorder: '#26334d',
+          colorBorderSecondary: '#26334d',
+          colorText: '#e2e8f0',
+          borderRadius: 10,
         },
       }}
     >
       <div className="dz-page">
-        <div className="dz-bg">
-          <div className="dz-orb dz-orb-1"></div>
-          <div className="dz-orb dz-orb-2"></div>
-        </div>
-
         <div className="dz-dashboard">
           {/* Header */}
           <div className="dz-header">
@@ -629,7 +623,7 @@ export default function DevZonePage() {
               <div className="dz-card-title">
                 <DatabaseOutlined />
                 <span>Sao lưu dữ liệu</span>
-                <div style={{ marginLeft: 'auto', fontSize: 12, opacity: 0.6 }}>
+                <div style={{ marginLeft: 'auto', fontSize: 12, color: '#94a3b8' }}>
                   {backupStatus ? `${backupStatus.totalFiles} file` : ''}
                 </div>
               </div>

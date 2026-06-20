@@ -1,10 +1,14 @@
 import { Request, Response } from 'express';
 import { FALLBACK } from '../constants';
 import { ADHOC_TYPE } from '../../../constants/adhocType.constants';
-import { routeParamId, KhenThuongDotXuatWithAuditRels } from './shared';
+import { UNIT_TYPE } from '../../../constants/unitType.constants';
+import { routeParamId, resolveAwardSubject, KhenThuongDotXuatWithAuditRels } from './shared';
 import { adhocAwardRepository } from '../../../repositories/adhocAward.repository';
 import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
-import { coQuanDonViRepository, donViTrucThuocRepository } from '../../../repositories/unit.repository';
+import {
+  coQuanDonViRepository,
+  donViTrucThuocRepository,
+} from '../../../repositories/unit.repository';
 
 export const adhocAwards: Record<
   string,
@@ -23,15 +27,7 @@ export const adhocAwards: Record<
 
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
-      const award = data?.data || data;
-
-      if (award?.QuanNhan?.ho_ten) {
-        hoTen = award.QuanNhan.ho_ten;
-      } else if (award?.CoQuanDonVi) {
-        tenDonVi = award.CoQuanDonVi.ten_don_vi || award.CoQuanDonVi.ten_co_quan_don_vi || '';
-      } else if (award?.DonViTrucThuoc?.ten_don_vi) {
-        tenDonVi = award.DonViTrucThuoc.ten_don_vi;
-      }
+      ({ hoTen, tenDonVi } = resolveAwardSubject(data?.data || data));
     } catch (error) {
       console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
@@ -46,10 +42,10 @@ export const adhocAwards: Record<
           });
           hoTen = personnel?.ho_ten || '';
         } else if (type === 'tập thể' && unitId && unitType) {
-          if (unitType === 'CO_QUAN_DON_VI') {
+          if (unitType === UNIT_TYPE.CO_QUAN_DON_VI) {
             const unit = await coQuanDonViRepository.findLightById(unitId);
             tenDonVi = unit?.ten_don_vi || '';
-          } else if (unitType === 'DON_VI_TRUC_THUOC') {
+          } else if (unitType === UNIT_TYPE.DON_VI_TRUC_THUOC) {
             const unit = await donViTrucThuocRepository.findNameById(unitId);
             tenDonVi = unit?.ten_don_vi || '';
           }
@@ -86,14 +82,7 @@ export const adhocAwards: Record<
       if (award?.hinh_thuc_khen_thuong) {
         awardForm = award.hinh_thuc_khen_thuong;
       }
-
-      if (award?.QuanNhan?.ho_ten) {
-        hoTen = award.QuanNhan.ho_ten;
-      } else if (award?.CoQuanDonVi) {
-        tenDonVi = award.CoQuanDonVi.ten_don_vi || award.CoQuanDonVi.ten_co_quan_don_vi || '';
-      } else if (award?.DonViTrucThuoc?.ten_don_vi) {
-        tenDonVi = award.DonViTrucThuoc.ten_don_vi;
-      }
+      ({ hoTen, tenDonVi } = resolveAwardSubject(award));
     } catch (error) {
       console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw
@@ -110,15 +99,7 @@ export const adhocAwards: Record<
           },
         })) as KhenThuongDotXuatWithAuditRels | null;
 
-        if (award) {
-          if (award.QuanNhan?.ho_ten) {
-            hoTen = award.QuanNhan.ho_ten;
-          } else if (award.CoQuanDonVi?.ten_don_vi) {
-            tenDonVi = award.CoQuanDonVi.ten_don_vi;
-          } else if (award.DonViTrucThuoc?.ten_don_vi) {
-            tenDonVi = award.DonViTrucThuoc.ten_don_vi;
-          }
-        }
+        ({ hoTen, tenDonVi } = resolveAwardSubject(award));
       } catch (error) {
         console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
         // best-effort — audit description must not throw
@@ -147,14 +128,7 @@ export const adhocAwards: Record<
       if (award?.hinh_thuc_khen_thuong) {
         awardForm = award.hinh_thuc_khen_thuong;
       }
-
-      if (award?.QuanNhan?.ho_ten) {
-        hoTen = award.QuanNhan.ho_ten;
-      } else if (award?.CoQuanDonVi) {
-        tenDonVi = award.CoQuanDonVi.ten_don_vi || award.CoQuanDonVi.ten_co_quan_don_vi || '';
-      } else if (award?.DonViTrucThuoc?.ten_don_vi) {
-        tenDonVi = award.DonViTrucThuoc.ten_don_vi;
-      }
+      ({ hoTen, tenDonVi } = resolveAwardSubject(award));
     } catch (error) {
       console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
       // best-effort — audit description must not throw

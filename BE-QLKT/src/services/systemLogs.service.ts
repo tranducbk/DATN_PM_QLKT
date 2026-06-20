@@ -1,56 +1,8 @@
-import { quanNhanRepository } from '../repositories/quanNhan.repository';
-import { donViTrucThuocRepository } from '../repositories/unit.repository';
-import { accountRepository } from '../repositories/account.repository';
 import { systemLogRepository } from '../repositories/systemLog.repository';
 import { ROLES } from '../constants/roles.constants';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
-import { isFeatureEnabled } from '../helpers/settingsHelper';
-
-/** Roles visible at each level (SYSTEM events visible to ADMIN and above) */
-const VISIBLE_ROLES: Record<string, string[]> = {
-  [ROLES.MANAGER]: [ROLES.USER, ROLES.MANAGER],
-  [ROLES.ADMIN]: [ROLES.USER, ROLES.MANAGER, ROLES.ADMIN, 'SYSTEM'],
-  [ROLES.SUPER_ADMIN]: [ROLES.USER, ROLES.MANAGER, ROLES.ADMIN, ROLES.SUPER_ADMIN, 'SYSTEM'],
-};
-
-async function getManagerAccountIds(quanNhanId: string): Promise<string[]> {
-  const manager = await quanNhanRepository.findUnitScope(quanNhanId);
-  if (!manager) return [];
-
-  const unitFilter = manager.co_quan_don_vi_id
-    ? {
-        OR: [
-          { co_quan_don_vi_id: manager.co_quan_don_vi_id },
-          {
-            don_vi_truc_thuoc_id: {
-              in: (
-                await donViTrucThuocRepository.findIdsByCoQuanDonViId(
-                  manager.co_quan_don_vi_id
-                )
-              ).map(d => d.id),
-            },
-          },
-        ],
-      }
-    : manager.don_vi_truc_thuoc_id
-      ? { don_vi_truc_thuoc_id: manager.don_vi_truc_thuoc_id }
-      : null;
-
-  if (!unitFilter) return [];
-
-  const personnelIds = (
-    await quanNhanRepository.findManyRaw({ where: unitFilter, select: { id: true } })
-  ).map(p => p.id);
-
-  if (personnelIds.length === 0) return [];
-
-  return (
-    await accountRepository.findManyRaw({
-      where: { quan_nhan_id: { in: personnelIds } },
-      select: { id: true },
-    })
-  ).map(a => a.id);
-}
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
+import { buildLogVisibilityScope } from './systemLog/logVisibility';
 
 interface GetLogsParams {
   page: number;
@@ -72,28 +24,30 @@ class SystemLogsService {
    * @returns Logs, total count, and action stats
    */
   async getLogs(params: GetLogsParams) {
-    const { page, limit, search, action, resource, startDate, endDate, actorRole, userRole, quanNhanId } = params;
+    const {
+      page,
+      limit,
+      search,
+      action,
+      resource,
+      startDate,
+      endDate,
+      actorRole,
+      userRole,
+      quanNhanId,
+    } = params;
 
-    const visibleRoles = VISIBLE_ROLES[userRole];
-    if (!visibleRoles) return null;
-
-    const where: Record<string, any> = {};
+    const scope = await buildLogVisibilityScope(userRole, quanNhanId);
+    if (!scope) return null;
+    const { where, visibleRoles, canViewErrors } = scope;
 
     if (actorRole && visibleRoles.includes(actorRole)) {
       where.actor_role = actorRole;
-    } else {
-      where.actor_role = { in: visibleRoles };
     }
 
-    if (userRole === ROLES.MANAGER && quanNhanId) {
-      const accountIds = await getManagerAccountIds(quanNhanId);
-      where.nguoi_thuc_hien_id = { in: accountIds };
-    }
-
-    const roleKey = userRole.toLowerCase();
-    const canViewErrors = await isFeatureEnabled(`allow_view_errors_${roleKey}`);
     if (!canViewErrors) {
-      where.action = action && action !== 'ERROR' ? action : { not: 'ERROR' };
+      where.action =
+        action && action !== AUDIT_ACTIONS.ERROR ? action : { not: AUDIT_ACTIONS.ERROR };
     } else if (action) {
       where.action = action;
     }
@@ -103,10 +57,9 @@ class SystemLogsService {
     // Backup logs are restricted to SUPER_ADMIN only
     if (userRole !== ROLES.SUPER_ADMIN) {
       if (resource) {
-        if (resource === 'backup') return { logs: [], total: 0, stats: { create: 0, delete: 0, update: 0 } };
+        if (resource === RESOURCE_SLUGS.BACKUP)
+          return { logs: [], total: 0, stats: { create: 0, delete: 0, update: 0 } };
         where.resource = resource;
-      } else {
-        where.resource = { not: 'backup' };
       }
     } else if (resource) {
       where.resource = resource;
@@ -144,7 +97,11 @@ class SystemLogsService {
       systemLogRepository.count({ ...where, action: { contains: 'UPDATE' } }),
     ]);
 
-    return { logs, total, stats: { create: createCount, delete: deleteCount, update: updateCount } };
+    return {
+      logs,
+      total,
+      stats: { create: createCount, delete: deleteCount, update: updateCount },
+    };
   }
 
   /**
@@ -166,7 +123,8 @@ class SystemLogsService {
    * @returns List of resource strings visible to that role
    */
   async getResources(userRole: string) {
-    const where = userRole !== ROLES.SUPER_ADMIN ? { resource: { not: 'backup' } } : {};
+    const where =
+      userRole !== ROLES.SUPER_ADMIN ? { resource: { not: RESOURCE_SLUGS.BACKUP } } : {};
     const resources = await systemLogRepository.findManyRaw({
       select: { resource: true },
       distinct: ['resource'],
@@ -199,8 +157,8 @@ class SystemLogsService {
       nguoi_thuc_hien_id: actorId,
       actor_role: actorRole,
       action: AUDIT_ACTIONS.DELETE,
-      resource: 'system-logs',
-      description: `Xoá toàn bộ ${count} nhật ký hệ thống`,
+      resource: RESOURCE_SLUGS.SYSTEM_LOGS,
+      description: `Xóa toàn bộ ${count} nhật ký hệ thống`,
     });
     return count;
   }

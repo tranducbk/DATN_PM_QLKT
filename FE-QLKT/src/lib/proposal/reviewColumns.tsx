@@ -1,6 +1,6 @@
 import { Tag, Typography } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { getDanhHieuName } from '@/constants/danhHieu.constants';
+import { getDanhHieuName, THANH_TICH_KHOA_HOC } from '@/constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import { renderServiceTime, makeContributionColumns } from '@/lib/award/serviceTimeHelpers';
 import type { DateInput } from '@/lib/types/common';
@@ -152,7 +152,7 @@ export function buildReviewColumns<T extends ProposalReviewRow>(
         width: 160,
         align: 'center',
         render: (loai: string) => (
-          <Tag color={loai === 'DTKH' ? 'blue' : 'green'}>
+          <Tag color={loai === THANH_TICH_KHOA_HOC.DTKH ? 'blue' : 'green'}>
             {getDanhHieuName(loai)}
           </Tag>
         ),

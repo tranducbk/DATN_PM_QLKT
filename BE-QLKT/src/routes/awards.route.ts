@@ -1,18 +1,21 @@
 import { Router, Request, Response } from 'express';
 import proposalController from '../controllers/proposal.controller';
 import awardBulkController from '../controllers/awardBulk.controller';
-import { verifyToken, checkRole, requireAdminOnly, requireSuperAdmin } from '../middlewares/auth';
+import {
+  verifyToken,
+  requireAdminOnly,
+  requireSuperAdmin,
+  requireAdminOrManager,
+} from '../middlewares/auth';
 import { validate } from '../middlewares/validate';
 import { auditLog } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
-import { ROLES } from '../constants/roles.constants';
 import { bulkUpload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 import { awardBulkValidation } from '../validations';
 
 const router = Router();
-
 
 /**
  * @route   GET /api/awards
@@ -22,21 +25,16 @@ const router = Router();
 router.get(
   '/',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   proposalController.getAllAwards
 );
 
 /**
  * @route   GET /api/awards/export
- * @desc    Export consolidated awards to Excel (Admin: all units, Manager: own unit)
- * @access  ADMIN, MANAGER
+ * @desc    Export consolidated awards to Excel
+ * @access  ADMIN only
  */
-router.get(
-  '/export',
-  verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
-  proposalController.exportAllAwardsExcel
-);
+router.get('/export', verifyToken, requireAdminOnly, proposalController.exportAllAwardsExcel);
 
 /**
  * @route   GET /api/awards/statistics
@@ -46,7 +44,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   proposalController.getAwardsStatistics
 );
 
@@ -94,7 +92,7 @@ router.post(
           attached_files_count: files?.attached_files?.length || 0,
         };
       } catch (error) {
-   console.error('Failed to build bulk-award audit payload from request:', error);
+        console.error('Failed to build bulk-award audit payload from request:', error);
         return null;
       }
     },

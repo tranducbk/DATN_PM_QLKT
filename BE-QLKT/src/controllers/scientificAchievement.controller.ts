@@ -1,5 +1,7 @@
 import { Request, Response } from 'express';
-import scientificAchievementService, { ConfirmImportItem } from '../services/scientificAchievement.service';
+import scientificAchievementService, {
+  ConfirmImportItem,
+} from '../services/scientificAchievement.service';
 import profileService from '../services/profile.service';
 import { ROLES } from '../constants/roles.constants';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
@@ -7,9 +9,15 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { logMessages } from '../constants/logMessages.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
-import { parsePersonnelIdsFromQuery, buildManagerQuanNhanFilter, getAdminUsername } from '../helpers/controllerHelper';
+import {
+  parsePersonnelIdsFromQuery,
+  buildManagerQuanNhanFilter,
+  getAdminUsername,
+  logImportPreview,
+} from '../helpers/controllerHelper';
 import { notifyOnImport } from '../helpers/notification';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS];
@@ -75,7 +83,8 @@ class ScientificAchievementController {
     const quanNhanFilter: Record<string, unknown> = {};
     if (ho_ten) quanNhanFilter.ho_ten = { contains: ho_ten, mode: 'insensitive' };
     const managerQuanNhanWhere = await buildManagerQuanNhanFilter(req, quanNhanFilter);
-    const quanNhanWhere = managerQuanNhanWhere ?? (Object.keys(quanNhanFilter).length > 0 ? quanNhanFilter : null);
+    const quanNhanWhere =
+      managerQuanNhanWhere ?? (Object.keys(quanNhanFilter).length > 0 ? quanNhanFilter : null);
 
     const { achievements, total } = await scientificAchievementService.getAchievementsList({
       page: pageNum,
@@ -116,9 +125,9 @@ class ScientificAchievementController {
       await writeSystemLog({
         userId: user?.id,
         userRole: user?.role,
-        action: 'ERROR',
+        action: AUDIT_ACTIONS.ERROR,
         resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
-        description: `Lỗi tính lại hồ sơ hằng năm sau khi thêm ${AWARD_LABEL}`,
+        description: logMessages.recalcError('thêm', AWARD_LABEL, recalcError),
         payload: { error: String(recalcError), personnel_id },
       });
     }
@@ -148,9 +157,9 @@ class ScientificAchievementController {
       await writeSystemLog({
         userId: user?.id,
         userRole: user?.role,
-        action: 'ERROR',
+        action: AUDIT_ACTIONS.ERROR,
         resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
-        description: `Lỗi tính lại hồ sơ hằng năm sau khi cập nhật ${AWARD_LABEL}`,
+        description: logMessages.recalcError('cập nhật', AWARD_LABEL, recalcError),
         payload: { error: String(recalcError), personnel_id: result.quan_nhan_id },
       });
     }
@@ -201,9 +210,9 @@ class ScientificAchievementController {
         Object.assign(repeatMap, JSON.parse(query.repeat_map));
       } catch (e) {
         void writeSystemLog({
-          action: 'ERROR',
+          action: AUDIT_ACTIONS.ERROR,
           resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
-          description: `Dữ liệu repeat_map (${AWARD_LABEL}) không hợp lệ: ${e}`,
+          description: logMessages.invalidRepeatMap(AWARD_LABEL, e),
         });
       }
     }
@@ -221,24 +230,18 @@ class ScientificAchievementController {
   });
 
   previewImport = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
     const file = req.file;
     if (!file) {
       return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
     }
     const result = await scientificAchievementService.previewImport(file.buffer);
-    await writeSystemLog({
-      userId: user.id,
-      userRole: user.role,
-      action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
-      description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để xem trước ${AWARD_LABEL}: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
-      payload: {
-        filename: file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : undefined,
-        total: result.total,
-        errors: result.errors?.length || 0,
-      },
-    });
+    await logImportPreview(
+      req,
+      AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
+      AWARD_LABEL,
+      file.originalname,
+      result
+    );
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 
@@ -255,11 +258,18 @@ class ScientificAchievementController {
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
       resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
-      description: `Nhập dữ liệu ${AWARD_LABEL} thành công: ${result.imported || items.length} bản ghi`,
+      description: logMessages.importSuccess(AWARD_LABEL, result.imported || items.length),
       payload: { imported: result.imported || items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(user.id, AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, result.imported || items.length, personnelIds).catch((e) => { console.error('[scientific-achievements] notifyOnImport failed:', e); });
+    notifyOnImport(
+      user.id,
+      AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
+      result.imported || items.length,
+      personnelIds
+    ).catch(e => {
+      console.error('[scientific-achievements] notifyOnImport failed:', e);
+    });
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 }

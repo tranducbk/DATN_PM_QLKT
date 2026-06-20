@@ -3,7 +3,6 @@
 import {
   Card,
   Typography,
-  Breadcrumb,
   ConfigProvider,
   theme as antdTheme,
   Button,
@@ -12,6 +11,7 @@ import { AccountCreateForm } from '@/components/accounts/AccountCreateForm';
 import Link from 'next/link';
 import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useTheme } from '@/components/ThemeProvider';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 
 const { Title } = Typography;
 
@@ -25,9 +25,9 @@ export default function CreateAccountPage() {
       }}
     >
       <div className="space-y-4 p-6">
-        <Breadcrumb
+        <PageBreadcrumb
           items={[
-            { title: <Link href="/super-admin/accounts">Tài khoản</Link> },
+            { title: 'Tài khoản', href: '/super-admin/accounts' },
             { title: 'Tạo mới' },
           ]}
         />

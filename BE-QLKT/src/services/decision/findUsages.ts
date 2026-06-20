@@ -10,6 +10,11 @@ import { militaryFlagRepository } from '../../repositories/militaryFlag.reposito
 import { proposalRepository } from '../../repositories/proposal.repository';
 import { scientificAchievementRepository } from '../../repositories/scientificAchievement.repository';
 import { tenureMedalRepository } from '../../repositories/tenureMedal.repository';
+import { getLoaiDeXuatName } from '../../constants/danhHieu.constants';
+import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
+
+const CONG_HIEN_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
+const NIEN_HAN_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.NIEN_HAN);
 
 export interface DecisionUsageSummary {
   inUse: boolean;
@@ -50,9 +55,7 @@ const SINGLE_KEY = ['so_quyet_dinh'] as const;
  * @param soQuyetDinh - so_quyet_dinh value to look up
  * @returns Per-column counts + list of pending proposal IDs containing the value
  */
-export async function findDecisionUsages(
-  soQuyetDinh: string
-): Promise<DecisionUsageSummary> {
+export async function findDecisionUsages(soQuyetDinh: string): Promise<DecisionUsageSummary> {
   const filter = { so_quyet_dinh: soQuyetDinh };
 
   const [
@@ -151,11 +154,7 @@ async function findProposalsReferencingByStatus(
   return buckets;
 }
 
-function jsonContainsSqd(
-  raw: unknown,
-  keys: readonly string[],
-  soQuyetDinh: string
-): boolean {
+function jsonContainsSqd(raw: unknown, keys: readonly string[], soQuyetDinh: string): boolean {
   if (!Array.isArray(raw)) return false;
   for (const item of raw as Array<Record<string, unknown>>) {
     if (!item || typeof item !== 'object') continue;
@@ -173,23 +172,18 @@ function jsonContainsSqd(
  * @param usage - Result of findDecisionUsages
  * @returns Multiline message listing affected tables + proposal IDs
  */
-export function formatUsageError(
-  soQuyetDinh: string,
-  usage: DecisionUsageSummary
-): string {
-  const lines: string[] = [
-    `Không thể xóa quyết định "${soQuyetDinh}" vì đang được sử dụng:`,
-  ];
+export function formatUsageError(soQuyetDinh: string, usage: DecisionUsageSummary): string {
+  const lines: string[] = [`Không thể xóa quyết định "${soQuyetDinh}" vì đang được sử dụng:`];
   const labels: Array<[number, string]> = [
     [usage.awardCounts.thanhTichKhoaHoc, 'Thành tích khoa học'],
     [usage.awardCounts.danhHieuHangNamMain, 'Danh hiệu hằng năm cá nhân'],
     [usage.awardCounts.danhHieuHangNamBkbqp, 'BKBQP cá nhân'],
     [usage.awardCounts.danhHieuHangNamCstdtq, 'CSTDTQ cá nhân'],
     [usage.awardCounts.danhHieuHangNamBkttcp, 'BKTTCP cá nhân'],
-    [usage.awardCounts.contributionMedal, 'Huân chương Bảo vệ Tổ quốc'],
+    [usage.awardCounts.contributionMedal, CONG_HIEN_LABEL],
     [usage.awardCounts.militaryFlag, 'Huy chương Quân kỳ quyết thắng'],
     [usage.awardCounts.commemorativeMedal, 'Kỷ niệm chương'],
-    [usage.awardCounts.tenureMedal, 'Huy chương Chiến sĩ vẻ vang'],
+    [usage.awardCounts.tenureMedal, NIEN_HAN_LABEL],
     [usage.awardCounts.adhocAward, 'Khen thưởng đột xuất'],
     [usage.awardCounts.danhHieuDonViHangNamMain, 'Danh hiệu hằng năm đơn vị'],
     [usage.awardCounts.danhHieuDonViHangNamBkbqp, 'BKBQP đơn vị'],

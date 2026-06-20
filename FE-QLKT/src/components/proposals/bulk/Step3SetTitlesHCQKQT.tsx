@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Alert, Typography, Space, Tag, Select, Input, Empty, message } from 'antd';
+import { Table, Typography, Space, Tag, Select, Input, Empty, message } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/api';
@@ -11,6 +11,8 @@ import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types/common';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { DANH_HIEU_DAC_BIET, AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
+import { StepGuide } from './StepGuide';
+import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
 
 const { Text } = Typography;
 
@@ -278,26 +280,21 @@ export function Step3SetTitlesHCQKQT({
 
   return (
     <div>
-      <Alert
-        message={`Bước 3: Thiết lập danh hiệu - ${AWARD_TAB_LABELS.HCQKQT}`}
-        description={
-          <div>
-            <p>
-              1. Xác nhận danh hiệu cho từng quân nhân đã chọn (<strong>{personnel.length}</strong>{' '}
-              quân nhân)
-            </p>
-            <p>
-              2. Điều kiện tối thiểu: thời gian phục vụ từ <strong>25 năm</strong> trở lên (không
-              phân biệt giới tính).
-            </p>
-            <p>3. Đảm bảo tất cả quân nhân đã có danh hiệu trước khi chuyển bước.</p>
-            <p>4. Hoàn tất khai báo, nhấn &quot;Tiếp tục&quot; để sang bước đính kèm tệp.</p>
-          </div>
-        }
-        type="info"
-        showIcon
+      <StepGuide
+        title={stepGuideTitle(3, 'Thiết lập danh hiệu', AWARD_TAB_LABELS.HCQKQT)}
         icon={<EditOutlined />}
-        style={{ marginBottom: 24 }}
+        steps={[
+          <span key="0">
+            Xác nhận danh hiệu cho từng quân nhân đã chọn (<strong>{personnel.length}</strong> quân
+            nhân).
+          </span>,
+          <span key="1">
+            Điều kiện tối thiểu: thời gian phục vụ từ <strong>25 năm</strong> trở lên, không phân
+            biệt giới tính.
+          </span>,
+          GUIDE_LINES.allHaveTitle,
+          GUIDE_LINES.nextToAttach,
+        ]}
       />
 
       <div

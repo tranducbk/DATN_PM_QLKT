@@ -17,6 +17,6 @@ export const AUDIT_ACTIONS = {
   BULK_BYPASS: 'BULK_BYPASS',
   BACKUP: 'BACKUP',
   BACKUP_FAILED: 'BACKUP_FAILED',
+  ERROR: 'ERROR',
+  RATE_LIMIT: 'RATE_LIMIT',
 } as const;
-
-export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];

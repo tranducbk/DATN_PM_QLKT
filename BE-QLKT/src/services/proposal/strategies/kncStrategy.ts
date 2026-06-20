@@ -1,5 +1,5 @@
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
-import { DANH_HIEU_DAC_BIET } from '../../../constants/danhHieu.constants';
+import { DANH_HIEU_DAC_BIET, getDanhHieuName } from '../../../constants/danhHieu.constants';
 import {
   batchEvaluateServiceYears,
   buildServiceYearsErrorMessage,
@@ -21,6 +21,8 @@ import {
   buildNienHanPayloadItem,
   type NienHanInputItem,
 } from './nienHanPayloadHelper';
+
+const KNC_LABEL = getDanhHieuName(PROPOSAL_TYPES.KNC_VSNXD_QDNDVN);
 
 class KncStrategy implements ProposalStrategy {
   readonly type = PROPOSAL_TYPES.KNC_VSNXD_QDNDVN;
@@ -47,7 +49,7 @@ class KncStrategy implements ProposalStrategy {
     const invalidDanhHieus = danhHieus.filter(dh => dh !== PROPOSAL_TYPES.KNC_VSNXD_QDNDVN);
     if (invalidDanhHieus.length > 0) {
       errors.push(
-        `Loại đề xuất "Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN" chỉ cho phép danh hiệu KNC_VSNXD_QDNDVN. ` +
+        `Loại đề xuất "${KNC_LABEL}" chỉ cho phép danh hiệu KNC_VSNXD_QDNDVN. ` +
           `Các danh hiệu không hợp lệ: ${invalidDanhHieus.join(', ')}.`
       );
       return { errors, payload: { data_nien_han: dataNienHan } };
@@ -65,7 +67,7 @@ class KncStrategy implements ProposalStrategy {
         .filter((m): m is string => m !== null);
       if (lines.length > 0) {
         errors.push(
-          `Một số quân nhân chưa đủ điều kiện để đề xuất Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN:\n${lines.join('\n')}`
+          `Một số quân nhân chưa đủ điều kiện để đề xuất ${KNC_LABEL}:\n${lines.join('\n')}`
         );
       }
     }
@@ -91,7 +93,7 @@ class KncStrategy implements ProposalStrategy {
   ): Promise<void> {
     const nienHanData = (editedData.data_nien_han ?? []) as ProposalNienHanItem[];
     await importSingleMedal(nienHanData, ctx, acc, prismaTx, {
-      medalLabel: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
+      medalLabel: KNC_LABEL,
       logTag: 'KNC',
       decisionKey: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN,
       upsert: async (tx, personnelId, writeData) => {
@@ -116,7 +118,7 @@ class KncStrategy implements ProposalStrategy {
   }
 
   buildSuccessMessage(acc: ImportAccumulator): string {
-    return `Đã phê duyệt Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN cho ${acc.affectedPersonnelIds.size} quân nhân`;
+    return `Đã phê duyệt ${KNC_LABEL} cho ${acc.affectedPersonnelIds.size} quân nhân`;
   }
 }
 

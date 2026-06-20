@@ -1,5 +1,6 @@
 import {
   PROPOSAL_TYPES,
+  PROPOSAL_SUBMITTER_DELETED_LABEL,
   requiresProposalMonth,
   type ProposalType,
 } from '../../constants/proposalTypes.constants';
@@ -149,7 +150,10 @@ async function submitProposal(
       id: proposal.id,
       loai_de_xuat: proposal.loai_de_xuat,
       don_vi: (proposal.DonViTrucThuoc || proposal.CoQuanDonVi)?.ten_don_vi || '-',
-      nguoi_de_xuat: proposal.NguoiDeXuat.QuanNhan?.ho_ten || proposal.NguoiDeXuat.username,
+      nguoi_de_xuat:
+        proposal.NguoiDeXuat?.QuanNhan?.ho_ten ||
+        proposal.NguoiDeXuat?.username ||
+        PROPOSAL_SUBMITTER_DELETED_LABEL,
       status: proposal.status,
       so_personnel: titleData.length,
       createdAt: proposal.createdAt,

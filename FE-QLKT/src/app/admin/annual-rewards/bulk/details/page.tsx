@@ -10,7 +10,6 @@ import {
   Table,
   message,
   Typography,
-  Breadcrumb,
   Upload,
   Alert,
   Select,
@@ -20,13 +19,13 @@ import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
 import {
   ArrowLeftOutlined,
-  HomeOutlined,
   SaveOutlined,
   UploadOutlined,
   FilePdfOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { apiClient } from '@/lib/http/apiClient';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
@@ -482,18 +481,12 @@ export default function BulkRewardDetailsPage() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Breadcrumb */}
-      <Breadcrumb>
-        <Breadcrumb.Item>
-          <Link href="/admin/dashboard">
-            <HomeOutlined />
-          </Link>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>
-          <Link href="/admin/annual-rewards/bulk">Thêm danh hiệu đồng loạt</Link>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>Nhập thông tin chi tiết</Breadcrumb.Item>
-      </Breadcrumb>
+      <PageBreadcrumb
+        items={[
+          { title: 'Thêm danh hiệu đồng loạt', href: '/admin/annual-rewards/bulk' },
+          { title: 'Nhập thông tin chi tiết' },
+        ]}
+      />
 
       {/* Header */}
       <div className="flex items-center justify-between">

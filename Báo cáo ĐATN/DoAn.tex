@@ -50,9 +50,6 @@
 \widowpenalty=10000
 \clubpenalty=10000
 
-\usepackage[nonumberlist, nopostdot, nogroupskip, acronym]{glossaries}
-\usepackage{glossary-superragged}
-\setglossarystyle{superraggedheaderborder}
 \usepackage{setspace}
 \usepackage{parskip}
 
@@ -71,8 +68,6 @@
 
 
 \addbibresource{Danh_sach_tai_lieu_tham_khao.bib} % chèn file chứa danh mục tài liệu tham khảo vào 
-
-\input{Tu_viet_tat}
 
 % Tên cột DB trong bảng schema — monospace, ngắt dòng sát _ không thêm trắng
 \makeatletter
@@ -244,6 +239,10 @@
 
 \newpage
 \subfile{Chuong/0_3_Tom_tat_noi_dung.tex}
+
+% Tóm tắt tiếng Anh (Abstract) là phần tuỳ chọn theo mẫu SOICT — tạm không trình bày.
+%\newpage
+%\subfile{Chuong/0_4_Tom_tat_noi_dung_English.tex}
 
 % ===================================================
 \renewcommand*\contentsname{MỤC LỤC}

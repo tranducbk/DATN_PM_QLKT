@@ -11,6 +11,8 @@ export const PROPOSAL_TYPES = {
 
 export type ProposalType = (typeof PROPOSAL_TYPES)[keyof typeof PROPOSAL_TYPES];
 
+export const PROPOSAL_SUBMITTER_DELETED_LABEL = 'Quân nhân không tồn tại';
+
 export const PROPOSAL_TYPES_REQUIRING_MONTH = new Set<ProposalType>([
   PROPOSAL_TYPES.NIEN_HAN,
   PROPOSAL_TYPES.HC_QKQT,

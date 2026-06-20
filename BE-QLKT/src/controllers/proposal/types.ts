@@ -58,16 +58,16 @@ export interface RejectProposalBody {
   ly_do?: string;
 }
 
+export interface AwardFilterInput {
+  don_vi_id?: string;
+  nam?: number;
+  danh_hieu?: string;
+}
+
 export interface AwardsFilterQuery {
   don_vi_id?: string;
   nam?: number;
   danh_hieu?: string;
-  [key: string]: unknown;
-}
-
-export interface UnitYearFilterQuery {
-  don_vi_id?: string;
-  nam?: number;
   [key: string]: unknown;
 }
 

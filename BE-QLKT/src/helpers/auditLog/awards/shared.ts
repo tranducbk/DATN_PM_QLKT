@@ -1,7 +1,5 @@
 import type { Prisma } from '../../../generated/prisma';
-import { prisma } from '../../../models';
 import { Request, Response } from 'express';
-import { queryPersonnelName, getFileName } from '../constants';
 import { getDanhHieuName } from '../../../constants/danhHieu.constants';
 import { AWARD_LABELS } from '../../../constants/awardLabels.constants';
 
@@ -22,6 +20,29 @@ export type KhenThuongDotXuatWithAuditRels = Prisma.KhenThuongDotXuatGetPayload<
     DonViTrucThuoc: { select: { ten_don_vi: true } };
   };
 }>;
+
+type AwardSubjectRels =
+  | {
+      QuanNhan?: { ho_ten?: string | null } | null;
+      CoQuanDonVi?: { ten_don_vi?: string | null; ten_co_quan_don_vi?: string | null } | null;
+      DonViTrucThuoc?: { ten_don_vi?: string | null } | null;
+    }
+  | null
+  | undefined;
+
+/** Resolves the personnel name or unit name an award record points to. */
+export function resolveAwardSubject(award: AwardSubjectRels): { hoTen: string; tenDonVi: string } {
+  if (award?.QuanNhan?.ho_ten) return { hoTen: award.QuanNhan.ho_ten, tenDonVi: '' };
+  if (award?.CoQuanDonVi) {
+    return {
+      hoTen: '',
+      tenDonVi: award.CoQuanDonVi.ten_don_vi || award.CoQuanDonVi.ten_co_quan_don_vi || '',
+    };
+  }
+  if (award?.DonViTrucThuoc?.ten_don_vi)
+    return { hoTen: '', tenDonVi: award.DonViTrucThuoc.ten_don_vi };
+  return { hoTen: '', tenDonVi: '' };
+}
 
 type AwardModelRecord = {
   QuanNhan?: { ho_ten?: string | null } | null;
@@ -44,28 +65,6 @@ export function buildAwardTypeHelpers(
   };
 
   return {
-    CREATE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-      const nam = req.body?.nam || '';
-      const personnelId = req.body?.quan_nhan_id || null;
-      const danhHieu = req.body?.danh_hieu || '';
-
-      let hoTen = '';
-      try {
-        const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
-        hoTen = (data?.data || data)?.QuanNhan?.ho_ten || '';
-      } catch (error) {
-        console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-      }
-      if (!hoTen && personnelId) {
-        hoTen = await queryPersonnelName(personnelId, prisma);
-      }
-
-      let description = `Tạo ${getAwardLabel(danhHieu)}`;
-      if (hoTen) description += ` cho quân nhân ${hoTen}`;
-      if (nam) description += ` năm ${nam}`;
-      return description;
-    },
-
     DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
       let hoTen = '';
       let nam = '';
@@ -80,37 +79,13 @@ export function buildAwardTypeHelpers(
           danhHieu = record.danh_hieu || '';
         }
       } catch (error) {
-        console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
+        console.error('[auditLog] best-effort fallback:', error);
       }
 
       if (hoTen) {
         return `Xóa ${getAwardLabel(danhHieu)} của quân nhân ${hoTen}${nam ? ` năm ${nam}` : ''}`;
       }
       return `Xóa ${typeName} (không xác định được thông tin)`;
-    },
-
-    IMPORT: (req: Request, res: Response, responseData: unknown): string => {
-      const fileName = getFileName(req);
-      let successCount = 0;
-      let failCount = 0;
-
-      try {
-        const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
-        const result = data?.data || data;
-        successCount = result?.success || result?.successCount || result?.total || 0;
-        failCount = result?.failed || result?.failCount || 0;
-
-        if (successCount > 0 || failCount > 0) {
-          return `Import ${typeName} từ file: ${fileName} (${successCount} thành công${
-            failCount > 0 ? `, ${failCount} thất bại` : ''
-          })`;
-        }
-      } catch (error) {
-        console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-        // best-effort — audit description must not throw
-      }
-
-      return `Import ${typeName} từ file: ${fileName}`;
     },
   };
 }

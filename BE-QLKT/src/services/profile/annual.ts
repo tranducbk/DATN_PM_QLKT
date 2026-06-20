@@ -1,18 +1,25 @@
-import type {
-  HoSoHangNam,
-  DanhHieuHangNam,
-  ThanhTichKhoaHoc,
-} from '../../generated/prisma';
+import type { HoSoHangNam, DanhHieuHangNam, ThanhTichKhoaHoc } from '../../generated/prisma';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { annualProfileRepository } from '../../repositories/annualProfile.repository';
 import { writeSystemLog } from '../../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../../constants/auditActions.constants';
+import { logMessages } from '../../constants/logMessages.constants';
 import { NotFoundError } from '../../middlewares/errorHandler';
-import { DANH_HIEU_CA_NHAN_BANG_KHEN, DANH_HIEU_CA_NHAN_HANG_NAM, getDanhHieuName } from '../../constants/danhHieu.constants';
+import {
+  DANH_HIEU_CA_NHAN_BANG_KHEN,
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+  getDanhHieuName,
+} from '../../constants/danhHieu.constants';
 import { RESOURCE_SLUGS } from '../../constants/resourceSlugs.constants';
 import { AWARD_SLUGS } from '../../constants/awardSlugs.constants';
 import { type EligibilityResult } from '../eligibility/chainEligibility';
 import { evaluatePersonalChain } from '../eligibility/personalChainEvaluator';
-import type { AnnualStreakResult, NCKHYearsResult, RecalculateResult, SpecialCaseResult } from './types';
+import type {
+  AnnualStreakResult,
+  NCKHYearsResult,
+  RecalculateResult,
+  SpecialCaseResult,
+} from './types';
 
 /**
  * Loads or creates the annual profile with unit and position context.
@@ -123,10 +130,15 @@ export function calculateContinuousNCKH(thanhTichList: ThanhTichKhoaHoc[], year:
 /**
  * Đếm tổng số lần nhận BKBQP trong chuỗi CSTDCS liên tục.
  */
-export function countBKBQPInStreak(danhHieuList: DanhHieuHangNam[], year: number, cstdcsStreak: number): number {
+export function countBKBQPInStreak(
+  danhHieuList: DanhHieuHangNam[],
+  year: number,
+  cstdcsStreak: number
+): number {
   const endYear = year - 1;
   const startYear = endYear - cstdcsStreak + 1;
-  return danhHieuList.filter(r => r.nhan_bkbqp === true && r.nam >= startYear && r.nam <= endYear).length;
+  return danhHieuList.filter(r => r.nhan_bkbqp === true && r.nam >= startYear && r.nam <= endYear)
+    .length;
 }
 
 /**
@@ -138,10 +150,15 @@ export function countBKBQPInStreak(danhHieuList: DanhHieuHangNam[], year: number
 /**
  * Đếm tổng số lần nhận CSTDTQ trong chuỗi CSTDCS liên tục.
  */
-export function countCSTDTQInStreak(danhHieuList: DanhHieuHangNam[], year: number, cstdcsStreak: number): number {
+export function countCSTDTQInStreak(
+  danhHieuList: DanhHieuHangNam[],
+  year: number,
+  cstdcsStreak: number
+): number {
   const endYear = year - 1;
   const startYear = endYear - cstdcsStreak + 1;
-  return danhHieuList.filter(r => r.nhan_cstdtq === true && r.nam >= startYear && r.nam <= endYear).length;
+  return danhHieuList.filter(r => r.nhan_cstdtq === true && r.nam >= startYear && r.nam <= endYear)
+    .length;
 }
 
 /**
@@ -176,7 +193,7 @@ export function handleSpecialCases(danhHieuList: DanhHieuHangNam[]): SpecialCase
   if (latestReward.nhan_bkttcp === true) {
     return {
       isSpecialCase: true,
-      goiY: `Đã nhận Bằng khen thi đua cấp phòng (Năm ${latestReward.nam}). Bắt đầu chuỗi thành tích mới.`,
+      goiY: `Đã nhận ${getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP)} (Năm ${latestReward.nam}). Bắt đầu chuỗi thành tích mới.`,
       resetChain: true,
     };
   }
@@ -185,7 +202,7 @@ export function handleSpecialCases(danhHieuList: DanhHieuHangNam[]): SpecialCase
   if (latestReward.nhan_cstdtq === true) {
     return {
       isSpecialCase: true,
-      goiY: `Đã nhận Chiến sĩ thi đua Toàn quân (Năm ${latestReward.nam}). Bắt đầu chuỗi thành tích mới.`,
+      goiY: `Đã nhận ${getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ)} (Năm ${latestReward.nam}). Bắt đầu chuỗi thành tích mới.`,
       resetChain: true,
     };
   }
@@ -194,13 +211,16 @@ export function handleSpecialCases(danhHieuList: DanhHieuHangNam[]): SpecialCase
   if (latestReward.nhan_bkbqp === true && !latestReward.nhan_cstdtq) {
     return {
       isSpecialCase: true,
-      goiY: `Đã nhận Bằng khen Bộ Quốc phòng (Năm ${latestReward.nam}).`,
+      goiY: `Đã nhận ${getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP)} (Năm ${latestReward.nam}).`,
       resetChain: false,
     };
   }
 
   // Case 4: Not eligible for CSTDCS this year
-  if (latestReward.danh_hieu !== DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS && latestReward.danh_hieu !== null) {
+  if (
+    latestReward.danh_hieu !== DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS &&
+    latestReward.danh_hieu !== null
+  ) {
     return {
       isSpecialCase: true,
       goiY: 'Chưa có CSTDCS liên tục. Cần đạt CSTDCS để bắt đầu tính điều kiện khen thưởng.',
@@ -217,7 +237,10 @@ export function handleSpecialCases(danhHieuList: DanhHieuHangNam[]): SpecialCase
  * @param year - Evaluation anchor year
  * @returns Personnel data, lists, and computed streaks
  */
-export async function computeAnnualStreaks(personnelId: string, year: number): Promise<AnnualStreakResult> {
+export async function computeAnnualStreaks(
+  personnelId: string,
+  year: number
+): Promise<AnnualStreakResult> {
   const personnel = await quanNhanRepository.findUniqueRaw({
     where: { id: personnelId },
     include: {
@@ -262,18 +285,38 @@ export async function computeAnnualStreaks(personnelId: string, year: number): P
  * @returns Eligibility booleans for the three medal tiers
  */
 export function computeEligibilityFlags(
-  streaks: { cstdcs_lien_tuc: number; nckh_lien_tuc: number; bkbqp_lien_tuc: number; cstdtq_lien_tuc: number },
+  streaks: {
+    cstdcs_lien_tuc: number;
+    nckh_lien_tuc: number;
+    bkbqp_lien_tuc: number;
+    cstdtq_lien_tuc: number;
+  },
   danhHieuList: Array<Record<string, unknown> & { nam: number }>,
   year: number
 ) {
   const { cstdcs_lien_tuc, nckh_lien_tuc } = streaks;
   return {
     du_dieu_kien_bkbqp: evaluatePersonalChain(
-      DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, danhHieuList, year, cstdcs_lien_tuc, nckh_lien_tuc).eligible,
+      DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
+      danhHieuList,
+      year,
+      cstdcs_lien_tuc,
+      nckh_lien_tuc
+    ).eligible,
     du_dieu_kien_cstdtq: evaluatePersonalChain(
-      DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ, danhHieuList, year, cstdcs_lien_tuc, nckh_lien_tuc).eligible,
+      DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ,
+      danhHieuList,
+      year,
+      cstdcs_lien_tuc,
+      nckh_lien_tuc
+    ).eligible,
     du_dieu_kien_bkttcp: evaluatePersonalChain(
-      DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP, danhHieuList, year, cstdcs_lien_tuc, nckh_lien_tuc).eligible,
+      DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP,
+      danhHieuList,
+      year,
+      cstdcs_lien_tuc,
+      nckh_lien_tuc
+    ).eligible,
   };
 }
 
@@ -283,13 +326,26 @@ export function computeEligibilityFlags(
  * @param year - Evaluation year (defaults to current calendar year)
  * @returns Success response with message and updated profile row
  */
-export async function recalculateAnnualProfile(personnelId: string, year: number = new Date().getFullYear()): Promise<{ success: boolean; message: string; data: HoSoHangNam }> {
-  const { danhHieuList, thanhTichList, cstdcs_lien_tuc, nckh_lien_tuc, bkbqp_lien_tuc, cstdtq_lien_tuc } =
-    await computeAnnualStreaks(personnelId, year);
+export async function recalculateAnnualProfile(
+  personnelId: string,
+  year: number = new Date().getFullYear()
+): Promise<{ success: boolean; message: string; data: HoSoHangNam }> {
+  const {
+    danhHieuList,
+    thanhTichList,
+    cstdcs_lien_tuc,
+    nckh_lien_tuc,
+    bkbqp_lien_tuc,
+    cstdtq_lien_tuc,
+  } = await computeAnnualStreaks(personnelId, year);
 
   const tong_cstdcs_json = danhHieuList
     .filter(
-      dh => dh.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS || dh.nhan_bkbqp || dh.nhan_cstdtq || dh.nhan_bkttcp
+      dh =>
+        dh.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS ||
+        dh.nhan_bkbqp ||
+        dh.nhan_cstdtq ||
+        dh.nhan_bkttcp
     )
     .map(dh => ({
       nam: dh.nam,
@@ -314,12 +370,11 @@ export async function recalculateAnnualProfile(personnelId: string, year: number
     .sort((a, b) => a.nam - b.nam);
   const tong_nckh = tong_nckh_json.length;
 
-  const { du_dieu_kien_bkbqp, du_dieu_kien_cstdtq, du_dieu_kien_bkttcp } =
-    computeEligibilityFlags(
-      { cstdcs_lien_tuc, nckh_lien_tuc, bkbqp_lien_tuc, cstdtq_lien_tuc },
-      danhHieuList,
-      year
-    );
+  const { du_dieu_kien_bkbqp, du_dieu_kien_cstdtq, du_dieu_kien_bkttcp } = computeEligibilityFlags(
+    { cstdcs_lien_tuc, nckh_lien_tuc, bkbqp_lien_tuc, cstdtq_lien_tuc },
+    danhHieuList,
+    year
+  );
 
   const hasReceivedBKTTCP = danhHieuList.some(dh => dh.nhan_bkttcp === true);
 
@@ -384,7 +439,7 @@ export async function safeRecalculateAnnualProfile(
     await recalculateAnnualProfile(personnelId);
   } catch (e) {
     void writeSystemLog({
-      action: 'ERROR',
+      action: AUDIT_ACTIONS.ERROR,
       resource,
       description: `Lỗi tính lại hồ sơ hằng năm: ${e}`,
     });
@@ -398,7 +453,11 @@ export async function safeRecalculateAnnualProfile(
  * @param danhHieu - Medal code to validate
  * @returns Eligibility result with operator-facing reason
  */
-export async function checkAwardEligibility(personnelId: string, year: number, danhHieu: string): Promise<EligibilityResult> {
+export async function checkAwardEligibility(
+  personnelId: string,
+  year: number,
+  danhHieu: string
+): Promise<EligibilityResult> {
   if (!DANH_HIEU_CA_NHAN_BANG_KHEN.has(danhHieu)) {
     return { eligible: true, reason: '' };
   }
@@ -432,9 +491,9 @@ export async function recalculateAll(): Promise<RecalculateResult> {
   });
 
   void writeSystemLog({
-    action: 'RECALCULATE',
+    action: AUDIT_ACTIONS.RECALCULATE,
     resource: RESOURCE_SLUGS.PROFILES,
-    description: `[Recalculate] Bắt đầu tính toán cho ${allPersonnel.length} quân nhân`,
+    description: `Bắt đầu tính toán lại hồ sơ cho ${allPersonnel.length} quân nhân`,
   });
 
   let successCount = 0;
@@ -451,18 +510,21 @@ export async function recalculateAll(): Promise<RecalculateResult> {
         error: error.message,
       });
       void writeSystemLog({
-        action: 'ERROR',
+        action: AUDIT_ACTIONS.ERROR,
         resource: RESOURCE_SLUGS.PROFILES,
         resourceId: personnel.id,
-        description: `[Recalculate] Lỗi: ${personnel.ho_ten} (${personnel.id}) — ${error.message}`,
+        description: logMessages.recalcPersonnelError(
+          `${personnel.ho_ten} (${personnel.id})`,
+          error.message
+        ),
       });
     }
   }
 
   void writeSystemLog({
-    action: 'RECALCULATE',
+    action: AUDIT_ACTIONS.RECALCULATE,
     resource: RESOURCE_SLUGS.PROFILES,
-    description: `[Recalculate] Hoàn tất: ${successCount} thành công, ${errors.length} lỗi`,
+    description: `Tính toán lại hồ sơ hoàn tất: ${successCount} thành công, ${errors.length} lỗi`,
     payload: errors.length > 0 ? { errors } : null,
   });
 

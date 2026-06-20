@@ -2,11 +2,17 @@ import { Request, Response } from 'express';
 import tenureMedalService, { HccsvvValidItem } from '../services/tenureMedal.service';
 import { ROLES } from '../constants/roles.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
-import { parsePersonnelIdsFromQuery, getManagerUnitFilter, getAdminUsername } from '../helpers/controllerHelper';
+import {
+  parsePersonnelIdsFromQuery,
+  getManagerUnitFilter,
+  getAdminUsername,
+  logImportPreview,
+} from '../helpers/controllerHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { logMessages } from '../constants/logMessages.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { notifyOnImport } from '../helpers/notification';
@@ -51,9 +57,9 @@ class TenureMedalController {
         Object.assign(repeatMap, JSON.parse(query.repeat_map));
       } catch (e) {
         void writeSystemLog({
-          action: 'ERROR',
+          action: AUDIT_ACTIONS.ERROR,
           resource: AWARD_SLUGS.TENURE_MEDALS,
-          description: `Dữ liệu repeat_map (${AWARD_LABEL}) không hợp lệ: ${e}`,
+          description: logMessages.invalidRepeatMap(AWARD_LABEL, e),
         });
       }
     }
@@ -69,24 +75,12 @@ class TenureMedalController {
   });
 
   previewImport = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
     const file = req.file;
     if (!file) {
       return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
     }
     const result = await tenureMedalService.previewImport(file.buffer);
-    await writeSystemLog({
-      userId: user.id,
-      userRole: user.role,
-      action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: AWARD_SLUGS.TENURE_MEDALS,
-      description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để xem trước ${AWARD_LABEL}: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
-      payload: {
-        filename: file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : undefined,
-        total: result.total,
-        errors: result.errors?.length || 0,
-      },
-    });
+    await logImportPreview(req, AWARD_SLUGS.TENURE_MEDALS, AWARD_LABEL, file.originalname, result);
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 
@@ -100,11 +94,18 @@ class TenureMedalController {
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
       resource: AWARD_SLUGS.TENURE_MEDALS,
-      description: `Nhập dữ liệu ${AWARD_LABEL} thành công: ${result.imported || items.length} bản ghi`,
+      description: logMessages.importSuccess(AWARD_LABEL, result.imported || items.length),
       payload: { imported: result.imported || items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(user.id, AWARD_SLUGS.TENURE_MEDALS, result.imported || items.length, personnelIds).catch((e) => { console.error('[tenure-medals] notifyOnImport failed:', e); });
+    notifyOnImport(
+      user.id,
+      AWARD_SLUGS.TENURE_MEDALS,
+      result.imported || items.length,
+      personnelIds
+    ).catch(e => {
+      console.error('[tenure-medals] notifyOnImport failed:', e);
+    });
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 

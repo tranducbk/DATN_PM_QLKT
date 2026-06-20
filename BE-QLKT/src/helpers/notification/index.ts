@@ -6,15 +6,14 @@ import {
   notifyOnProposalDeletion,
 } from './proposals';
 import {
-  notifyManagersOnAwardAdded,
-  notifyUserOnAchievementApproved,
   notifyOnAwardDeleted,
   notifyUsersOnAwardApproved,
   notifyOnBulkAwardAdded,
+  notifyOnUnitAwardDeleted,
   notifyAdminsOnBulkBypass,
   notifyOnImport,
 } from './awards';
-import { notifyManagerOnPersonnelAdded, notifyOnPersonnelTransfer } from './personnel';
+import { notifyOnPersonnelTransfer, notifyOnPersonnelDeleted } from './personnel';
 
 export {
   getDisplayName,
@@ -23,13 +22,12 @@ export {
   notifyManagerOnProposalApproval,
   notifyManagerOnProposalRejection,
   notifyOnProposalDeletion,
-  notifyManagersOnAwardAdded,
-  notifyUserOnAchievementApproved,
   notifyOnAwardDeleted,
   notifyUsersOnAwardApproved,
   notifyOnBulkAwardAdded,
+  notifyOnUnitAwardDeleted,
   notifyAdminsOnBulkBypass,
   notifyOnImport,
-  notifyManagerOnPersonnelAdded,
   notifyOnPersonnelTransfer,
+  notifyOnPersonnelDeleted,
 };

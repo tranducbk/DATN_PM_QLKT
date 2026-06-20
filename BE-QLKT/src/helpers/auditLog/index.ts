@@ -61,6 +61,7 @@ const ACTION_VI: Record<string, string> = {
   LOGOUT: 'Đăng xuất',
   RESET_PASSWORD: 'Đặt lại mật khẩu',
   CHANGE_PASSWORD: 'Đổi mật khẩu',
+  RATE_LIMIT: 'Quá giới hạn yêu cầu',
 };
 const RESOURCE_VI: Record<string, string> = {
   [RESOURCE_SLUGS.ACCOUNTS]: 'tài khoản',

@@ -2,6 +2,7 @@ import { prismaMock, resetPrismaMock } from '../helpers/prismaMock';
 import { ROLES } from '../../src/constants/roles.constants';
 import { ADHOC_TYPE } from '../../src/constants/adhocType.constants';
 import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../../src/constants/notificationTypes.constants';
+import { NOTIFICATION_TITLES } from '../../src/constants/notificationMessages.constants';
 
 jest.mock('../../src/utils/socketService', () => ({
   emitNotificationToUser: jest.fn(),
@@ -262,7 +263,7 @@ describe('notification dispatch - adhoc award create', () => {
     expect(args.data).toHaveLength(2);
     expect(args.data.map(d => d.nguoi_nhan_id)).toEqual(['acc-mgr-A', 'acc-mgr-B']);
     args.data.forEach(d => {
-      expect(d.title).toBe('Đơn vị được khen thưởng đột xuất');
+      expect(d.title).toBe(NOTIFICATION_TITLES.UNIT_AWARD_RECEIVED);
       expect(d.type).toBe(NOTIFICATION_TYPES.AWARD_ADDED);
     });
   });

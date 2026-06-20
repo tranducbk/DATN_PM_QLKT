@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Button,
-  Breadcrumb,
   Card,
   Tabs,
   Table,
@@ -17,7 +16,7 @@ import {
   theme as antdTheme,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { ArrowLeftOutlined, HomeOutlined, PlusOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, PlusOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
 import { UnitForm } from '@/components/categories/UnitForm';
 import { UnitsTable } from '@/components/categories/UnitsTable';
 import { PositionForm } from '@/components/categories/PositionForm';
@@ -27,6 +26,7 @@ import type { UnitApiRow } from '@/lib/types/personnelList';
 import { calcUnitTotal } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import Link from 'next/link';
 import { DEFAULT_PAGE_SIZE } from '@/constants/pagination.constants';
 
@@ -225,28 +225,14 @@ export default function UnitDetailPage() {
       }}
     >
       <div style={{ padding: '24px' }}>
-        {/* Breadcrumb */}
-        <Breadcrumb
-          style={{ marginBottom: 16 }}
+        <PageBreadcrumb
           items={[
-            {
-              title: (
-                <Link href="/admin/dashboard">
-                  <HomeOutlined />
-                </Link>
-              ),
-            },
-            {
-              title: <Link href="/admin/categories">Quản lý cơ quan đơn vị</Link>,
-            },
+            { title: 'Quản lý cơ quan đơn vị', href: '/admin/categories' },
             ...(isDonViTrucThuoc && unit.CoQuanDonVi
               ? [
                   {
-                    title: (
-                      <Link href={`/admin/categories/units/${unit.CoQuanDonVi.id}`}>
-                        {unit.CoQuanDonVi.ten_don_vi}
-                      </Link>
-                    ),
+                    title: unit.CoQuanDonVi.ten_don_vi,
+                    href: `/admin/categories/units/${unit.CoQuanDonVi.id}`,
                   },
                 ]
               : []),

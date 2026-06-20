@@ -38,10 +38,7 @@ export interface TemplateConfig {
   redColumns?: number[];
   editableColumnLetters?: string[];
   personnelMapping?: Partial<PersonnelColumnMapping>;
-  customRowFiller?: (
-    worksheet: ExcelJS.Worksheet,
-    workbook: ExcelJS.Workbook
-  ) => Promise<number>;
+  customRowFiller?: (worksheet: ExcelJS.Worksheet, workbook: ExcelJS.Workbook) => Promise<number>;
 }
 
 /** Validation payload for decision number dropdown. */
@@ -457,6 +454,24 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
 
   applyThinBordersToGrid(worksheet, maxRows, columns.length);
   applyAlignment(worksheet, columns, maxRows);
+
+  // Lock the header row so column names cannot be renamed; data cells stay editable.
+  const colCount = columns.length;
+  for (let c = 1; c <= colCount; c++) {
+    worksheet.getRow(1).getCell(c).protection = { locked: true };
+  }
+  for (let r = 2; r <= maxRows; r++) {
+    for (let c = 1; c <= colCount; c++) {
+      worksheet.getRow(r).getCell(c).protection = { locked: false };
+    }
+  }
+  await worksheet.protect('', {
+    selectLockedCells: true,
+    selectUnlockedCells: true,
+    formatCells: false,
+    insertRows: true,
+    deleteRows: true,
+  });
 
   return workbook;
 }

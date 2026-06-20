@@ -1,14 +1,15 @@
-import type {
-  HoSoNienHan,
-} from '../../generated/prisma';
+import type { HoSoNienHan } from '../../generated/prisma';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { tenureMedalRepository } from '../../repositories/tenureMedal.repository';
 import { tenureProfileRepository } from '../../repositories/tenureProfile.repository';
 import { ELIGIBILITY_STATUS } from '../../constants/eligibilityStatus.constants';
 import { formatServiceDuration } from '../../helpers/serviceYearsHelper';
 import { NotFoundError } from '../../middlewares/errorHandler';
-import { DANH_HIEU_HCCSVV } from '../../constants/danhHieu.constants';
+import { DANH_HIEU_HCCSVV, getLoaiDeXuatName } from '../../constants/danhHieu.constants';
+import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import type { HCCSVVCalcResult, TenureProfileUpdate } from './types';
+
+const NIEN_HAN_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.NIEN_HAN);
 
 /**
  * Loads or creates the tenure profile and augments it with award year/month data.
@@ -46,7 +47,10 @@ export async function getTenureProfile(personnelId: string) {
   }
 
   (profile as Record<string, unknown>).hccsvv_nam_nhan = Object.fromEntries(
-    (profile.QuanNhan?.KhenThuongHCCSVV || []).map(r => [r.danh_hieu, { nam: r.nam, thang: r.thang }])
+    (profile.QuanNhan?.KhenThuongHCCSVV || []).map(r => [
+      r.danh_hieu,
+      { nam: r.nam, thang: r.thang },
+    ])
   );
 
   return profile;
@@ -58,7 +62,10 @@ export async function getTenureProfile(personnelId: string) {
  * @param soNam - Required tenure (10 / 15 / 20)
  * @returns Calendar date when the tier becomes eligible, or `null` without enlistment
  */
-export function calculateEligibilityDate(ngayNhapNgu: Date | null | undefined, soNam: number): Date | null {
+export function calculateEligibilityDate(
+  ngayNhapNgu: Date | null | undefined,
+  soNam: number
+): Date | null {
   if (!ngayNhapNgu) return null;
   const eligibilityDate = new Date(ngayNhapNgu);
   eligibilityDate.setFullYear(eligibilityDate.getFullYear() + soNam);
@@ -107,9 +114,11 @@ export function calculateHCCSVV(
     };
   }
 
-  const monthsLeft = Math.max(0,
+  const monthsLeft = Math.max(
+    0,
     (eligibilityDate.getFullYear() - today.getFullYear()) * 12 +
-    eligibilityDate.getMonth() - today.getMonth()
+      eligibilityDate.getMonth() -
+      today.getMonth()
   );
   return {
     status: ELIGIBILITY_STATUS.CHUA_DU,
@@ -159,101 +168,99 @@ export async function recalculateTenureProfile(personnelId: string): Promise<{ m
     select: { id: true, ngay_nhap_ngu: true },
   });
 
-    if (!personnel) {
-      throw new NotFoundError('Quân nhân');
+  if (!personnel) {
+    throw new NotFoundError('Quân nhân');
+  }
+
+  const existingProfile = await tenureProfileRepository.findByPersonnelId(personnelId);
+
+  const khenthuonghccsvv = await tenureMedalRepository.findManyRaw({
+    where: { quan_nhan_id: personnelId },
+  });
+
+  // Reset status when no HCCSVV awards exist
+  let newProfile: Partial<HoSoNienHan> = existingProfile ?? {};
+  newProfile.hccsvv_hang_ba_status = ELIGIBILITY_STATUS.CHUA_DU;
+  newProfile.hccsvv_hang_nhi_status = ELIGIBILITY_STATUS.CHUA_DU;
+  newProfile.hccsvv_hang_nhat_status = ELIGIBILITY_STATUS.CHUA_DU;
+
+  // Store actual award year for FE display (differs from eligibility year)
+  const hccsvvNamNhan: Record<string, number | null> = {
+    [DANH_HIEU_HCCSVV.HANG_BA]: null,
+    [DANH_HIEU_HCCSVV.HANG_NHI]: null,
+    [DANH_HIEU_HCCSVV.HANG_NHAT]: null,
+  };
+  for (const kt of khenthuonghccsvv) {
+    if (kt.danh_hieu === DANH_HIEU_HCCSVV.HANG_BA) {
+      newProfile.hccsvv_hang_ba_status = ELIGIBILITY_STATUS.DA_NHAN;
+      hccsvvNamNhan[DANH_HIEU_HCCSVV.HANG_BA] = kt.nam;
     }
-
-    const existingProfile = await tenureProfileRepository.findByPersonnelId(personnelId);
-
-    const khenthuonghccsvv = await tenureMedalRepository.findManyRaw({
-      where: { quan_nhan_id: personnelId },
-    });
-
-    // Reset status when no HCCSVV awards exist
-    let newProfile: Partial<HoSoNienHan> = existingProfile ?? {};
-    newProfile.hccsvv_hang_ba_status = ELIGIBILITY_STATUS.CHUA_DU;
-    newProfile.hccsvv_hang_nhi_status = ELIGIBILITY_STATUS.CHUA_DU;
-    newProfile.hccsvv_hang_nhat_status = ELIGIBILITY_STATUS.CHUA_DU;
-
-    // Store actual award year for FE display (differs from eligibility year)
-    const hccsvvNamNhan: Record<string, number | null> = {
-      [DANH_HIEU_HCCSVV.HANG_BA]: null,
-      [DANH_HIEU_HCCSVV.HANG_NHI]: null,
-      [DANH_HIEU_HCCSVV.HANG_NHAT]: null,
-    };
-    for (const kt of khenthuonghccsvv) {
-      if (kt.danh_hieu === DANH_HIEU_HCCSVV.HANG_BA) {
-        newProfile.hccsvv_hang_ba_status = ELIGIBILITY_STATUS.DA_NHAN;
-        hccsvvNamNhan[DANH_HIEU_HCCSVV.HANG_BA] = kt.nam;
-      }
-      if (kt.danh_hieu === DANH_HIEU_HCCSVV.HANG_NHI) {
-        newProfile.hccsvv_hang_nhi_status = ELIGIBILITY_STATUS.DA_NHAN;
-        hccsvvNamNhan[DANH_HIEU_HCCSVV.HANG_NHI] = kt.nam;
-      }
-      if (kt.danh_hieu === DANH_HIEU_HCCSVV.HANG_NHAT) {
-        newProfile.hccsvv_hang_nhat_status = ELIGIBILITY_STATUS.DA_NHAN;
-        hccsvvNamNhan[DANH_HIEU_HCCSVV.HANG_NHAT] = kt.nam;
-      }
+    if (kt.danh_hieu === DANH_HIEU_HCCSVV.HANG_NHI) {
+      newProfile.hccsvv_hang_nhi_status = ELIGIBILITY_STATUS.DA_NHAN;
+      hccsvvNamNhan[DANH_HIEU_HCCSVV.HANG_NHI] = kt.nam;
     }
-
-    // HCCSVV calculation
-    const hccsvvBa = calculateHCCSVV(
-      personnel.ngay_nhap_ngu,
-      10,
-      newProfile.hccsvv_hang_ba_status || ELIGIBILITY_STATUS.CHUA_DU,
-      'Ba'
-    );
-    // Preserve the approval date entered by admins; do not recompute it here.
-    if (hccsvvBa.status === ELIGIBILITY_STATUS.DA_NHAN && existingProfile?.hccsvv_hang_ba_ngay) {
-      hccsvvBa.ngay = existingProfile.hccsvv_hang_ba_ngay;
+    if (kt.danh_hieu === DANH_HIEU_HCCSVV.HANG_NHAT) {
+      newProfile.hccsvv_hang_nhat_status = ELIGIBILITY_STATUS.DA_NHAN;
+      hccsvvNamNhan[DANH_HIEU_HCCSVV.HANG_NHAT] = kt.nam;
     }
+  }
 
-    // Rank 2 requires Rank 3 to already be received (DA_NHAN), not just eligible
-    const hccsvvNhi = computeNextTier(
-      newProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN,
-      personnel.ngay_nhap_ngu,
-      15,
-      newProfile.hccsvv_hang_nhi_status || ELIGIBILITY_STATUS.CHUA_DU,
-      'Nhì',
-      existingProfile?.hccsvv_hang_nhi_ngay
-    );
+  // HCCSVV calculation
+  const hccsvvBa = calculateHCCSVV(
+    personnel.ngay_nhap_ngu,
+    10,
+    newProfile.hccsvv_hang_ba_status || ELIGIBILITY_STATUS.CHUA_DU,
+    'Ba'
+  );
+  // Preserve the approval date entered by admins; do not recompute it here.
+  if (hccsvvBa.status === ELIGIBILITY_STATUS.DA_NHAN && existingProfile?.hccsvv_hang_ba_ngay) {
+    hccsvvBa.ngay = existingProfile.hccsvv_hang_ba_ngay;
+  }
 
-    // Rank 1 requires Rank 2 to already be received (DA_NHAN)
-    const hccsvvNhat = computeNextTier(
-      newProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN,
-      personnel.ngay_nhap_ngu,
-      20,
-      newProfile.hccsvv_hang_nhat_status || ELIGIBILITY_STATUS.CHUA_DU,
-      'Nhất',
-      existingProfile?.hccsvv_hang_nhat_ngay
-    );
+  // Rank 2 requires Rank 3 to already be received (DA_NHAN), not just eligible
+  const hccsvvNhi = computeNextTier(
+    newProfile.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DA_NHAN,
+    personnel.ngay_nhap_ngu,
+    15,
+    newProfile.hccsvv_hang_nhi_status || ELIGIBILITY_STATUS.CHUA_DU,
+    'Nhì',
+    existingProfile?.hccsvv_hang_nhi_ngay
+  );
 
-    const goiYList = [];
-    if (hccsvvBa.goiY) goiYList.push(hccsvvBa.goiY);
-    if (hccsvvNhi.goiY) goiYList.push(hccsvvNhi.goiY);
-    if (hccsvvNhat.goiY) goiYList.push(hccsvvNhat.goiY);
+  // Rank 1 requires Rank 2 to already be received (DA_NHAN)
+  const hccsvvNhat = computeNextTier(
+    newProfile.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DA_NHAN,
+    personnel.ngay_nhap_ngu,
+    20,
+    newProfile.hccsvv_hang_nhat_status || ELIGIBILITY_STATUS.CHUA_DU,
+    'Nhất',
+    existingProfile?.hccsvv_hang_nhat_ngay
+  );
 
-    const finalGoiY =
-      goiYList.length > 0
-        ? goiYList.join('\n')
-        : 'Chưa đủ điều kiện xét Huy chương Chiến sĩ vẻ vang.';
+  const goiYList = [];
+  if (hccsvvBa.goiY) goiYList.push(hccsvvBa.goiY);
+  if (hccsvvNhi.goiY) goiYList.push(hccsvvNhi.goiY);
+  if (hccsvvNhat.goiY) goiYList.push(hccsvvNhat.goiY);
 
-    const tenureData = {
-      hccsvv_hang_ba_status: hccsvvBa.status,
-      hccsvv_hang_ba_ngay: hccsvvBa.ngay,
-      hccsvv_hang_nhi_status: hccsvvNhi.status,
-      hccsvv_hang_nhi_ngay: hccsvvNhi.ngay,
-      hccsvv_hang_nhat_status: hccsvvNhat.status,
-      hccsvv_hang_nhat_ngay: hccsvvNhat.ngay,
-      goi_y: finalGoiY,
-    };
+  const finalGoiY =
+    goiYList.length > 0 ? goiYList.join('\n') : `Chưa đủ điều kiện xét ${NIEN_HAN_LABEL}.`;
 
-    await tenureProfileRepository.upsert(
-      personnelId,
-      { quan_nhan_id: personnelId, ...tenureData },
-      tenureData
-    );
-  return { message: 'Tính toán lại hồ sơ Huy chương Chiến sĩ vẻ vang thành công' };
+  const tenureData = {
+    hccsvv_hang_ba_status: hccsvvBa.status,
+    hccsvv_hang_ba_ngay: hccsvvBa.ngay,
+    hccsvv_hang_nhi_status: hccsvvNhi.status,
+    hccsvv_hang_nhi_ngay: hccsvvNhi.ngay,
+    hccsvv_hang_nhat_status: hccsvvNhat.status,
+    hccsvv_hang_nhat_ngay: hccsvvNhat.ngay,
+    goi_y: finalGoiY,
+  };
+
+  await tenureProfileRepository.upsert(
+    personnelId,
+    { quan_nhan_id: personnelId, ...tenureData },
+    tenureData
+  );
+  return { message: `Tính toán lại hồ sơ ${NIEN_HAN_LABEL} thành công` };
 }
 
 /**
@@ -289,11 +296,14 @@ export async function getAllTenureProfiles(): Promise<HoSoNienHan[]> {
  * @param updates - Subset of HCCSVV / HCBVTQ status fields
  * @returns Updated `ho_so_nien_han` row (status columns only; no relation includes)
  */
-export async function updateTenureProfile(personnelId: string, updates: TenureProfileUpdate): Promise<HoSoNienHan> {
+export async function updateTenureProfile(
+  personnelId: string,
+  updates: TenureProfileUpdate
+): Promise<HoSoNienHan> {
   const profile = await tenureProfileRepository.findByPersonnelId(personnelId);
 
   if (!profile) {
-    throw new NotFoundError('Hồ sơ Huy chương Chiến sĩ vẻ vang');
+    throw new NotFoundError(`Hồ sơ ${NIEN_HAN_LABEL}`);
   }
 
   const validStatuses: string[] = [
@@ -309,10 +319,7 @@ export async function updateTenureProfile(personnelId: string, updates: TenurePr
   if (updates.hccsvv_hang_nhi_status && validStatuses.includes(updates.hccsvv_hang_nhi_status)) {
     updateData.hccsvv_hang_nhi_status = updates.hccsvv_hang_nhi_status;
   }
-  if (
-    updates.hccsvv_hang_nhat_status &&
-    validStatuses.includes(updates.hccsvv_hang_nhat_status)
-  ) {
+  if (updates.hccsvv_hang_nhat_status && validStatuses.includes(updates.hccsvv_hang_nhat_status)) {
     updateData.hccsvv_hang_nhat_status = updates.hccsvv_hang_nhat_status;
   }
 
@@ -322,10 +329,7 @@ export async function updateTenureProfile(personnelId: string, updates: TenurePr
   if (updates.hcbvtq_hang_nhi_status && validStatuses.includes(updates.hcbvtq_hang_nhi_status)) {
     updateData.hcbvtq_hang_nhi_status = updates.hcbvtq_hang_nhi_status;
   }
-  if (
-    updates.hcbvtq_hang_nhat_status &&
-    validStatuses.includes(updates.hcbvtq_hang_nhat_status)
-  ) {
+  if (updates.hcbvtq_hang_nhat_status && validStatuses.includes(updates.hcbvtq_hang_nhat_status)) {
     updateData.hcbvtq_hang_nhat_status = updates.hcbvtq_hang_nhat_status;
   }
 

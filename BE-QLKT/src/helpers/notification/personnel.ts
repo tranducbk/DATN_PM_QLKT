@@ -7,6 +7,7 @@ import {
 } from './helpers';
 import { accountRepository } from '../../repositories/account.repository';
 import { notificationRepository } from '../../repositories/notification.repository';
+import { NOTIFICATION_TITLES } from '../../constants/notificationMessages.constants';
 import { donViTrucThuocRepository } from '../../repositories/unit.repository';
 
 interface PersonnelBasicInfo {
@@ -26,48 +27,6 @@ interface NotificationInput {
   tai_nguyen_id: string;
   link: string | null;
   [key: string]: unknown;
-}
-
-async function notifyManagerOnPersonnelAdded(
-  personnel: PersonnelBasicInfo,
-  adminUsername: string
-): Promise<number> {
-  const managers = await accountRepository.findManyRaw({
-    where: {
-      role: ROLES.MANAGER,
-      QuanNhan: {
-        co_quan_don_vi_id: personnel.don_vi_id,
-      },
-    },
-    select: {
-      id: true,
-      role: true,
-    },
-  });
-
-  if (managers.length === 0) {
-    return 0;
-  }
-
-  const adminDisplayName = await getDisplayName(adminUsername);
-
-  const notifications = managers.map(manager => ({
-    nguoi_nhan_id: manager.id,
-    recipient_role: manager.role,
-    type: NOTIFICATION_TYPES.PERSONNEL_ADDED,
-    title: 'Quân nhân mới được thêm',
-    message: `${adminDisplayName} đã thêm quân nhân mới: ${personnel.ho_ten} (CCCD: ${personnel.cccd})`,
-    resource: RESOURCE_TYPES.PERSONNEL,
-    tai_nguyen_id: personnel.id,
-    link: `/manager/personnel/${personnel.id}`,
-  }));
-
-  await notificationRepository.createMany(
-    notifications
-  );
-  notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
-
-  return notifications.length;
 }
 
 interface UnitInfo {
@@ -122,7 +81,7 @@ async function notifyOnPersonnelTransfer(
           nguoi_nhan_id: manager.id,
           recipient_role: manager.role,
           type: NOTIFICATION_TYPES.PERSONNEL_TRANSFERRED,
-          title: 'Quân nhân chuyển đơn vị trực thuộc',
+          title: NOTIFICATION_TITLES.PERSONNEL_TRANSFERRED_SUBUNIT,
           message: `${adminDisplayName} đã chuyển quân nhân ${personnel.ho_ten || 'Chưa xác định'} từ ${oldUnit?.ten_don_vi || 'đơn vị cũ'} sang ${newUnit?.ten_don_vi || 'đơn vị mới'}`,
           resource: RESOURCE_TYPES.PERSONNEL,
           tai_nguyen_id: personnel.id,
@@ -149,7 +108,7 @@ async function notifyOnPersonnelTransfer(
             nguoi_nhan_id: manager.id,
             recipient_role: manager.role,
             type: NOTIFICATION_TYPES.PERSONNEL_TRANSFERRED,
-            title: 'Quân nhân mới chuyển đến',
+            title: NOTIFICATION_TITLES.PERSONNEL_TRANSFERRED_IN,
             message: `${adminDisplayName} đã chuyển quân nhân ${personnel.ho_ten || 'Chưa xác định'} đến đơn vị của bạn${newUnit && !newUnit.isCoQuanDonVi ? ` (${newUnit.ten_don_vi})` : ''}`,
             resource: RESOURCE_TYPES.PERSONNEL,
             tai_nguyen_id: personnel.id,
@@ -181,7 +140,7 @@ async function notifyOnPersonnelTransfer(
               nguoi_nhan_id: manager.id,
               recipient_role: manager.role,
               type: NOTIFICATION_TYPES.PERSONNEL_TRANSFERRED,
-              title: 'Quân nhân đã chuyển đi',
+              title: NOTIFICATION_TITLES.PERSONNEL_TRANSFERRED_OUT,
               message: `Quân nhân ${personnel.ho_ten || 'Chưa xác định'} đã được ${adminDisplayName} chuyển sang đơn vị khác`,
               resource: RESOURCE_TYPES.PERSONNEL,
               tai_nguyen_id: personnel.id,
@@ -207,7 +166,7 @@ async function notifyOnPersonnelTransfer(
         nguoi_nhan_id: personnelAccount.id,
         recipient_role: personnelAccount.role,
         type: NOTIFICATION_TYPES.PERSONNEL_TRANSFERRED,
-        title: 'Bạn đã được chuyển đơn vị',
+        title: NOTIFICATION_TITLES.PERSONNEL_SELF_TRANSFERRED,
         message: `${adminDisplayName} đã chuyển bạn từ đơn vị ${oldUnit?.ten_don_vi || 'cũ'} sang đơn vị ${newUnit?.ten_don_vi || 'mới'}`,
         resource: RESOURCE_TYPES.PERSONNEL,
         tai_nguyen_id: personnel.id,
@@ -227,4 +186,62 @@ async function notifyOnPersonnelTransfer(
   }
 }
 
-export { notifyManagerOnPersonnelAdded, notifyOnPersonnelTransfer };
+interface DeletedPersonnelInfo {
+  id: string;
+  ho_ten?: string | null;
+  co_quan_don_vi_id?: string | null;
+  don_vi_truc_thuoc_id?: string | null;
+}
+
+/**
+ * Notifies the managers of a deleted personnel's unit. The personnel's own account
+ * is gone (cascade), so only unit managers are notified.
+ * @param personnel - Snapshot captured before deletion (id, name, unit ids)
+ * @param adminUsername - Username of the admin who performed the deletion
+ * @returns Number of notifications created
+ */
+async function notifyOnPersonnelDeleted(
+  personnel: DeletedPersonnelInfo,
+  adminUsername: string
+): Promise<number> {
+  try {
+    const donViId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;
+    if (!donViId) return 0;
+
+    const adminDisplayName = await getDisplayName(adminUsername);
+    const managers = await accountRepository.findManyRaw({
+      where: {
+        role: ROLES.MANAGER,
+        QuanNhan: {
+          OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
+        },
+      },
+      select: { id: true, role: true },
+    });
+
+    const notifications: NotificationInput[] = managers.map(manager => ({
+      nguoi_nhan_id: manager.id,
+      recipient_role: manager.role,
+      type: NOTIFICATION_TYPES.PERSONNEL_DELETED,
+      title: NOTIFICATION_TITLES.PERSONNEL_DELETED,
+      message: `${adminDisplayName} đã xóa quân nhân ${
+        personnel.ho_ten || 'Chưa xác định'
+      } cùng toàn bộ dữ liệu khen thưởng khỏi hệ thống`,
+      resource: RESOURCE_TYPES.PERSONNEL,
+      tai_nguyen_id: personnel.id,
+      link: null,
+    }));
+
+    if (notifications.length > 0) {
+      await notificationRepository.createMany(notifications);
+      notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
+    }
+
+    return notifications.length;
+  } catch (error) {
+    console.error('NotificationPersonnel.notifyOnPersonnelDeleted failed', { error });
+    return 0;
+  }
+}
+
+export { notifyOnPersonnelTransfer, notifyOnPersonnelDeleted };

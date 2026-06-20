@@ -49,36 +49,21 @@ router.post(
  * @desc    List Contribution Awards (HCBVTQ) (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
-router.get(
-  '/',
-  verifyToken,
-  requireManager,
-  contributionAwardController.getAll
-);
+router.get('/', verifyToken, requireManager, contributionAwardController.getAll);
 
 /**
  * @route   GET /api/contribution-medals/export
  * @desc    Export Contribution Awards (HCBVTQ) to Excel (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
-router.get(
-  '/export',
-  verifyToken,
-  requireManager,
-  contributionAwardController.exportToExcel
-);
+router.get('/export', verifyToken, requireAdminOnly, contributionAwardController.exportToExcel);
 
 /**
  * @route   GET /api/contribution-medals/statistics
  * @desc    Get Contribution Award (HCBVTQ) statistics by grade
  * @access  ADMIN, MANAGER
  */
-router.get(
-  '/statistics',
-  verifyToken,
-  requireManager,
-  contributionAwardController.getStatistics
-);
+router.get('/statistics', verifyToken, requireManager, contributionAwardController.getStatistics);
 
 /**
  * @route   DELETE /api/contribution-medals/:id

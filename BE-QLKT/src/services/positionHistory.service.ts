@@ -93,16 +93,25 @@ class PositionHistoryService {
 
     const today = new Date();
     const updatedHistory = history.map(item => {
-      if (!item.ngay_ket_thuc) {
-        const ngayBatDau = new Date(item.ngay_bat_dau);
-        const soThang = calculateTenureMonthsWithDayPrecision(ngayBatDau, today);
+      const live = item.ChucVu;
+      // Names: live while the position exists, snapshot as fallback after it is deleted.
+      const enriched = {
+        ...item,
+        ten_chuc_vu: live?.ten_chuc_vu ?? item.ten_chuc_vu ?? null,
+        ten_don_vi_truc_thuoc:
+          live?.DonViTrucThuoc?.ten_don_vi ?? item.ten_don_vi_truc_thuoc ?? null,
+        ten_co_quan_don_vi:
+          live?.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi ??
+          live?.CoQuanDonVi?.ten_don_vi ??
+          item.ten_co_quan_don_vi ??
+          null,
+      };
 
-        return {
-          ...item,
-          so_thang: soThang,
-        };
+      if (!item.ngay_ket_thuc) {
+        const soThang = calculateTenureMonthsWithDayPrecision(new Date(item.ngay_bat_dau), today);
+        return { ...enriched, so_thang: soThang };
       }
-      return item;
+      return enriched;
     });
 
     return updatedHistory;

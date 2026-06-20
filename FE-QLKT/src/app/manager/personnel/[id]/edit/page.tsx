@@ -10,11 +10,10 @@ import {
   Select,
   DatePicker,
   message,
-  Breadcrumb,
   ConfigProvider,
   theme as antdTheme,
 } from 'antd';
-import { ArrowLeftOutlined, SaveOutlined, HomeOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
@@ -26,6 +25,7 @@ import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { ROLES } from '@/constants/roles.constants';
 import { isMissingGender } from '@/constants/gender.constants';
 import { VietnamAddressCascader } from '@/components/shared/VietnamAddressCascader';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import type { ManagerPositionRow } from '@/lib/types/personnelList';
 
 const { Title } = Typography;
@@ -313,18 +313,10 @@ export default function ManagerPersonnelEditPage() {
       }}
     >
       <div className="space-y-6 p-6">
-        {/* Breadcrumb */}
-        <Breadcrumb
+        <PageBreadcrumb
           items={[
-            {
-              title: (
-                <Link href="/manager/dashboard">
-                  <HomeOutlined />
-                </Link>
-              ),
-            },
-            { title: <Link href="/manager/personnel">Quân nhân</Link> },
-            { title: <Link href={`/manager/personnel/${personnelId}`}>#{personnelId}</Link> },
+            { title: 'Quân nhân', href: '/manager/personnel' },
+            { title: `#${personnelId}`, href: `/manager/personnel/${personnelId}` },
             { title: 'Chỉnh sửa' },
           ]}
         />

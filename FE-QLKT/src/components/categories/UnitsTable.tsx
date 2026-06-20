@@ -37,7 +37,11 @@ export function UnitsTable({
     try {
       setLoading(true);
       setDeletingId(id);
-      await apiClient.deleteUnit(id);
+      const result = await apiClient.deleteUnit(id);
+      if (!result.success) {
+        message.error(result.message || 'Có lỗi xảy ra khi xóa');
+        return;
+      }
       message.success('Xóa cơ quan đơn vị/đơn vị trực thuộc thành công');
       onRefresh?.();
     } catch (error) {

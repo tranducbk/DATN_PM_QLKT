@@ -56,24 +56,14 @@ router.get('/', verifyToken, requireManager, tenureMedalController.getAll);
  * @desc    Export HCCSVV medals to Excel (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
-router.get(
-  '/export',
-  verifyToken,
-  requireManager,
-  tenureMedalController.exportToExcel
-);
+router.get('/export', verifyToken, requireAdminOnly, tenureMedalController.exportToExcel);
 
 /**
  * @route   GET /api/tenure-medals/statistics
  * @desc    Get HCCSVV medal statistics by grade
  * @access  ADMIN, MANAGER
  */
-router.get(
-  '/statistics',
-  verifyToken,
-  requireManager,
-  tenureMedalController.getStatistics
-);
+router.get('/statistics', verifyToken, requireManager, tenureMedalController.getStatistics);
 
 /**
  * @route   DELETE /api/tenure-medals/:id

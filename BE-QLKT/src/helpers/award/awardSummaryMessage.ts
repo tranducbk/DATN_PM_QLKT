@@ -45,40 +45,62 @@ export function buildBulkAwardSummaryMessage(params: BuildBulkAwardSummaryParams
   return 'Không có dữ liệu nào được thêm';
 }
 
+type ApproveSummarySpec = { count: number; noun: string; scope: number; scopeLabel: string };
+
+/** Resolves the count/noun/scope tuple that varies per proposal type. */
+function resolveApproveSummarySpec(params: BuildApproveSummaryParams): ApproveSummarySpec {
+  const {
+    proposalType,
+    importedDanhHieu,
+    importedThanhTich,
+    importedNienHan,
+    affectedPersonnelCount,
+    affectedUnitCount,
+  } = params;
+
+  if (proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
+    return {
+      count: importedDanhHieu,
+      noun: 'danh hiệu',
+      scope: affectedUnitCount,
+      scopeLabel: 'đơn vị',
+    };
+  }
+  if (proposalType === PROPOSAL_TYPES.NCKH) {
+    return {
+      count: importedThanhTich,
+      noun: 'thành tích',
+      scope: affectedPersonnelCount,
+      scopeLabel: 'quân nhân',
+    };
+  }
+  if (
+    proposalType === PROPOSAL_TYPES.NIEN_HAN ||
+    proposalType === PROPOSAL_TYPES.HC_QKQT ||
+    proposalType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN
+  ) {
+    return {
+      count: importedNienHan,
+      noun: 'danh hiệu',
+      scope: affectedPersonnelCount,
+      scopeLabel: 'quân nhân',
+    };
+  }
+  return {
+    count: importedDanhHieu,
+    noun: 'danh hiệu',
+    scope: affectedPersonnelCount,
+    scopeLabel: 'quân nhân',
+  };
+}
+
 /**
  * Builds user-facing summary text for proposal approval import.
  * @param params - Aggregated import counts and target scope
  * @returns Human-readable Vietnamese message
  */
 export function buildApproveSummaryMessage(params: BuildApproveSummaryParams): string {
-  const {
-    proposalType,
-    importedDanhHieu,
-    importedThanhTich,
-    importedNienHan,
-    errorCount,
-    affectedPersonnelCount,
-    affectedUnitCount,
-  } = params;
-
-  let message = 'Phê duyệt thành công';
-  if (proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-    message = `Phê duyệt thành công, đã thêm ${importedDanhHieu} danh hiệu cho ${affectedUnitCount} đơn vị`;
-  } else if (proposalType === PROPOSAL_TYPES.NCKH) {
-    message = `Phê duyệt thành công, đã thêm ${importedThanhTich} thành tích cho ${affectedPersonnelCount} quân nhân`;
-  } else if (
-    proposalType === PROPOSAL_TYPES.NIEN_HAN ||
-    proposalType === PROPOSAL_TYPES.HC_QKQT ||
-    proposalType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN
-  ) {
-    message = `Phê duyệt thành công, đã thêm ${importedNienHan} danh hiệu cho ${affectedPersonnelCount} quân nhân`;
-  } else {
-    message = `Phê duyệt thành công, đã thêm ${importedDanhHieu} danh hiệu cho ${affectedPersonnelCount} quân nhân`;
-  }
-
-  if (errorCount > 0) {
-    return `${message}, ${errorCount} lỗi`;
-  }
-
-  return message;
+  const { count, noun, scope, scopeLabel } = resolveApproveSummarySpec(params);
+  const message = `Phê duyệt thành công, đã thêm ${count} ${noun} cho ${scope} ${scopeLabel}`;
+  return params.errorCount > 0 ? `${message}, ${params.errorCount} lỗi` : message;
 }

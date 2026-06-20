@@ -1,6 +1,9 @@
 import { danhHieuHangNamRepository } from '../../repositories/danhHieu.repository';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
-import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
+import {
+  coQuanDonViRepository,
+  donViTrucThuocRepository,
+} from '../../repositories/unit.repository';
 import { tenureMedalRepository } from '../../repositories/tenureMedal.repository';
 import { militaryFlagRepository } from '../../repositories/militaryFlag.repository';
 import { commemorativeMedalRepository } from '../../repositories/commemorativeMedal.repository';
@@ -9,7 +12,12 @@ import { accountRepository } from '../../repositories/account.repository';
 import { proposalRepository } from '../../repositories/proposal.repository';
 import type { Prisma } from '../../generated/prisma';
 import { ROLES } from '../../constants/roles.constants';
-import { PROPOSAL_TYPES, type ProposalType } from '../../constants/proposalTypes.constants';
+import {
+  PROPOSAL_TYPES,
+  PROPOSAL_SUBMITTER_DELETED_LABEL,
+  type ProposalType,
+} from '../../constants/proposalTypes.constants';
+import { UNIT_TYPE } from '../../constants/unitType.constants';
 import { NotFoundError, ForbiddenError, ValidationError } from '../../middlewares/errorHandler';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import type {
@@ -24,6 +32,50 @@ type AnyProposalDataItem =
   | ProposalThanhTichItem
   | ProposalNienHanItem
   | ProposalCongHienItem;
+
+/** Normalizes a Prisma JSON column into a typed array (single object → one-element array). */
+function toArray<T>(value: unknown): T[] {
+  if (Array.isArray(value)) return value as T[];
+  return value ? [value as T] : [];
+}
+
+interface NienHanMedalRecord {
+  quan_nhan_id: string;
+  danh_hieu?: string | null;
+  so_quyet_dinh?: string | null;
+  file_quyet_dinh?: string | null;
+  thoi_gian?: unknown;
+}
+
+type NienHanEnrichConfig = {
+  fetch: (personnelIds: string[], nam: number) => Promise<NienHanMedalRecord[]>;
+  recordKey: (record: NienHanMedalRecord) => string;
+  itemKey: (item: ProposalNienHanItem) => string;
+};
+
+// Approved tenure-family proposals hydrate so_quyet_dinh/file_quyet_dinh/thoi_gian from the
+// persisted medal table. Only the source repo and match key differ per type; the merge is
+// identical, so per-type variance lives here instead of three near-duplicate branches.
+const NIEN_HAN_ENRICH: Partial<Record<ProposalType, NienHanEnrichConfig>> = {
+  [PROPOSAL_TYPES.NIEN_HAN]: {
+    fetch: (ids, nam) =>
+      tenureMedalRepository.findManyRaw({ where: { quan_nhan_id: { in: ids }, nam } }),
+    recordKey: r => `${r.quan_nhan_id}_${r.danh_hieu}`,
+    itemKey: i => `${i.personnel_id}_${i.danh_hieu}`,
+  },
+  [PROPOSAL_TYPES.HC_QKQT]: {
+    fetch: (ids, nam) =>
+      militaryFlagRepository.findManyRaw({ where: { quan_nhan_id: { in: ids }, nam } }),
+    recordKey: r => String(r.quan_nhan_id),
+    itemKey: i => String(i.personnel_id),
+  },
+  [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: {
+    fetch: (ids, nam) =>
+      commemorativeMedalRepository.findManyRaw({ where: { quan_nhan_id: { in: ids }, nam } }),
+    recordKey: r => String(r.quan_nhan_id),
+    itemKey: i => String(i.personnel_id),
+  },
+};
 
 /**
  * Fetches user with their associated QuanNhan and unit relations.
@@ -64,7 +116,7 @@ async function getProposals(
 ) {
   const skip = (page - 1) * limit;
 
-  let whereCondition: Prisma.BangDeXuatWhereInput = {};
+  const whereCondition: Prisma.BangDeXuatWhereInput = {};
 
   if (userRole === ROLES.MANAGER) {
     // Manager can only view proposals from their own unit
@@ -127,13 +179,19 @@ async function getProposals(
       nam: p.nam,
       thang: p.thang,
       don_vi: (p.DonViTrucThuoc || p.CoQuanDonVi)?.ten_don_vi || '-',
-      nguoi_de_xuat: p.NguoiDeXuat.QuanNhan?.ho_ten || p.NguoiDeXuat.username,
+      nguoi_de_xuat:
+        p.NguoiDeXuat?.QuanNhan?.ho_ten ||
+        p.NguoiDeXuat?.username ||
+        PROPOSAL_SUBMITTER_DELETED_LABEL,
       status: p.status,
       so_danh_hieu: Array.isArray(p.data_danh_hieu) ? p.data_danh_hieu.length : 0,
       so_thanh_tich: Array.isArray(p.data_thanh_tich) ? p.data_thanh_tich.length : 0,
       so_nien_han: Array.isArray(p.data_nien_han) ? p.data_nien_han.length : 0,
       so_cong_hien: Array.isArray(p.data_cong_hien) ? p.data_cong_hien.length : 0,
-      nguoi_duyet: p.NguoiDuyet?.QuanNhan?.ho_ten || null,
+      nguoi_duyet:
+        p.NguoiDuyet?.QuanNhan?.ho_ten ||
+        p.NguoiDuyet?.username ||
+        (p.ngay_duyet ? PROPOSAL_SUBMITTER_DELETED_LABEL : null),
       ngay_duyet: p.ngay_duyet,
       ghi_chu: p.ghi_chu,
       createdAt: p.createdAt,
@@ -155,145 +213,122 @@ async function getProposals(
  * @returns Proposal with all related data included
  */
 async function getProposalById(proposalId: string, userId: string, userRole: string) {
-  const proposal = await proposalRepository.findUniqueRaw({
-    where: { id: proposalId },
-    include: {
-      CoQuanDonVi: true,
-      DonViTrucThuoc: {
-        include: {
-          CoQuanDonVi: true,
+  const [proposal, manager] = await Promise.all([
+    proposalRepository.findUniqueRaw({
+      where: { id: proposalId },
+      include: {
+        CoQuanDonVi: true,
+        DonViTrucThuoc: {
+          include: {
+            CoQuanDonVi: true,
+          },
         },
-      },
-      NguoiDeXuat: {
-        include: {
-          QuanNhan: {
-            include: {
-              CoQuanDonVi: true,
-              DonViTrucThuoc: {
-                include: {
-                  CoQuanDonVi: true,
+        NguoiDeXuat: {
+          include: {
+            QuanNhan: {
+              include: {
+                CoQuanDonVi: true,
+                DonViTrucThuoc: {
+                  include: {
+                    CoQuanDonVi: true,
+                  },
                 },
               },
             },
           },
         },
-      },
-      NguoiDuyet: {
-        include: {
-          QuanNhan: true,
+        NguoiDuyet: {
+          include: {
+            QuanNhan: true,
+          },
         },
       },
-    },
-  });
+    }),
+    userRole === ROLES.MANAGER
+      ? accountRepository.findUniqueRaw({
+          where: { id: userId },
+          select: {
+            QuanNhan: { select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true } },
+          },
+        })
+      : Promise.resolve(null),
+  ]);
 
   if (!proposal) {
     throw new NotFoundError('Đề xuất');
   }
 
-  if (userRole === ROLES.MANAGER) {
-    const user = await accountRepository.findUniqueRaw({
-      where: { id: userId },
-      include: {
-        QuanNhan: {
-          include: {
-            CoQuanDonVi: true,
-            DonViTrucThuoc: true,
-          },
-        },
-      },
-    });
+  if (userRole === ROLES.MANAGER && manager?.QuanNhan) {
+    const userDonViId = manager.QuanNhan.co_quan_don_vi_id || manager.QuanNhan.don_vi_truc_thuoc_id;
+    const proposalDonViId = proposal.co_quan_don_vi_id || proposal.don_vi_truc_thuoc_id;
 
-    if (user && user.QuanNhan) {
-      const userDonViId = user.QuanNhan.co_quan_don_vi_id || user.QuanNhan.don_vi_truc_thuoc_id;
-      const proposalDonViId = proposal.co_quan_don_vi_id || proposal.don_vi_truc_thuoc_id;
-
-      if (userDonViId !== proposalDonViId) {
-        throw new ForbiddenError('Bạn không có quyền xem đề xuất này');
-      }
+    if (userDonViId !== proposalDonViId) {
+      throw new ForbiddenError('Bạn không có quyền xem đề xuất này');
     }
   }
 
-  let dataDanhHieu = (
-    Array.isArray(proposal.data_danh_hieu)
-      ? proposal.data_danh_hieu
-      : proposal.data_danh_hieu
-        ? [proposal.data_danh_hieu]
-        : []
-  ) as ProposalDanhHieuItem[];
-
-  let dataThanhTich = (
-    Array.isArray(proposal.data_thanh_tich)
-      ? proposal.data_thanh_tich
-      : proposal.data_thanh_tich
-        ? [proposal.data_thanh_tich]
-        : []
-  ) as ProposalThanhTichItem[];
-
-  let dataNienHan = (
-    Array.isArray(proposal.data_nien_han)
-      ? proposal.data_nien_han
-      : proposal.data_nien_han
-        ? [proposal.data_nien_han]
-        : []
-  ) as ProposalNienHanItem[];
-
-  let dataCongHien = (
-    Array.isArray(proposal.data_cong_hien)
-      ? proposal.data_cong_hien
-      : proposal.data_cong_hien
-        ? [proposal.data_cong_hien]
-        : []
-  ) as ProposalCongHienItem[];
+  let dataDanhHieu = toArray<ProposalDanhHieuItem>(proposal.data_danh_hieu);
+  let dataThanhTich = toArray<ProposalThanhTichItem>(proposal.data_thanh_tich);
+  let dataNienHan = toArray<ProposalNienHanItem>(proposal.data_nien_han);
+  let dataCongHien = toArray<ProposalCongHienItem>(proposal.data_cong_hien);
 
   // Enrich stale records with latest personnel/unit data
   if (proposal.loai_de_xuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
-    dataDanhHieu = await Promise.all(
-      dataDanhHieu.map(async item => {
-        if (item.ten_don_vi && item.ma_don_vi) {
-          return {
-            ...item,
-            nam: item.nam ?? proposal.createdAt.getFullYear(),
-          };
-        }
+    const fallbackYear = proposal.createdAt.getFullYear();
+    const needsLookup = (item: ProposalDanhHieuItem) =>
+      !(item.ten_don_vi && item.ma_don_vi) && Boolean(item.don_vi_id);
 
-        let donViInfo = null;
-        let coQuanDonViCha = null;
+    const coQuanIds = dataDanhHieu
+      .filter(i => needsLookup(i) && i.don_vi_type === UNIT_TYPE.CO_QUAN_DON_VI)
+      .map(i => i.don_vi_id as string);
+    const trucThuocIds = dataDanhHieu
+      .filter(i => needsLookup(i) && i.don_vi_type === UNIT_TYPE.DON_VI_TRUC_THUOC)
+      .map(i => i.don_vi_id as string);
 
-        if (item.don_vi_type === 'CO_QUAN_DON_VI' && item.don_vi_id) {
-          const donVi = await coQuanDonViRepository.findLightById(item.don_vi_id);
-          donViInfo = donVi;
-        } else if (item.don_vi_type === 'DON_VI_TRUC_THUOC' && item.don_vi_id) {
-          const selectedDonVi = await donViTrucThuocRepository.findUniqueRaw({
-            where: { id: item.don_vi_id },
-            include: {
-              CoQuanDonVi: {
-                select: {
-                  id: true,
-                  ten_don_vi: true,
-                  ma_don_vi: true,
-                },
-              },
+    const [coQuanList, trucThuocList] = await Promise.all([
+      coQuanIds.length
+        ? coQuanDonViRepository.findManyRaw({
+            where: { id: { in: coQuanIds } },
+            select: { id: true, ten_don_vi: true, ma_don_vi: true },
+          })
+        : Promise.resolve([]),
+      trucThuocIds.length
+        ? donViTrucThuocRepository.findManyRaw({
+            where: { id: { in: trucThuocIds } },
+            select: {
+              id: true,
+              ten_don_vi: true,
+              ma_don_vi: true,
+              CoQuanDonVi: { select: { id: true, ten_don_vi: true, ma_don_vi: true } },
             },
-          });
-          if (selectedDonVi) {
-            donViInfo = {
-              id: selectedDonVi.id,
-              ten_don_vi: selectedDonVi.ten_don_vi,
-              ma_don_vi: selectedDonVi.ma_don_vi,
-            };
-            coQuanDonViCha = selectedDonVi.CoQuanDonVi;
-          }
-        }
+          })
+        : Promise.resolve([]),
+    ]);
 
-        return {
-          ...item,
-          ten_don_vi: item.ten_don_vi || donViInfo?.ten_don_vi || '',
-          ma_don_vi: item.ma_don_vi || donViInfo?.ma_don_vi || '',
-          nam: item.nam ?? proposal.createdAt.getFullYear(),
-          co_quan_don_vi_cha: item.co_quan_don_vi_cha || coQuanDonViCha,
-        };
-      })
-    );
+    const coQuanMap = new Map(coQuanList.map(d => [d.id, d]));
+    const trucThuocMap = new Map(trucThuocList.map(d => [d.id, d]));
+
+    dataDanhHieu = dataDanhHieu.map(item => {
+      if (item.ten_don_vi && item.ma_don_vi) {
+        return { ...item, nam: item.nam ?? fallbackYear };
+      }
+
+      const trucThuoc =
+        item.don_vi_type === UNIT_TYPE.DON_VI_TRUC_THUOC
+          ? trucThuocMap.get(item.don_vi_id)
+          : undefined;
+      const coQuan =
+        item.don_vi_type === UNIT_TYPE.CO_QUAN_DON_VI ? coQuanMap.get(item.don_vi_id) : undefined;
+      const donViInfo = trucThuoc ?? coQuan ?? null;
+
+      return {
+        ...item,
+        ten_don_vi: item.ten_don_vi || donViInfo?.ten_don_vi || '',
+        ma_don_vi: item.ma_don_vi || donViInfo?.ma_don_vi || '',
+        nam: item.nam ?? fallbackYear,
+        co_quan_don_vi_cha: item.co_quan_don_vi_cha || trucThuoc?.CoQuanDonVi || null,
+      };
+    });
   } else {
     const allPersonnelIds = [
       ...dataDanhHieu.map(d => d.personnel_id).filter(Boolean),
@@ -354,7 +389,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
         const personnel = item.personnel_id ? personnelMap[item.personnel_id] : undefined;
         const enrichedItem: T = {
           ...item,
-          ho_ten: item.ho_ten || personnel?.ho_ten || '',
+          ho_ten: personnel?.ho_ten || item.ho_ten || '',
           nam: item.nam ?? proposal.createdAt.getFullYear(),
           cap_bac: item.cap_bac ?? null,
           chuc_vu: item.chuc_vu ?? null,
@@ -453,93 +488,27 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
   }
 
   if (proposal.status === PROPOSAL_STATUS.APPROVED && dataNienHan.length > 0) {
-    const nienHanTypes: ProposalType[] = [
-      PROPOSAL_TYPES.NIEN_HAN,
-      PROPOSAL_TYPES.HC_QKQT,
-      PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-    ];
-    if (nienHanTypes.includes(proposal.loai_de_xuat as ProposalType)) {
-      const personnelIds = dataNienHan.map(d => d.personnel_id).filter(Boolean);
-      if (personnelIds.length > 0) {
-        if (proposal.loai_de_xuat === PROPOSAL_TYPES.NIEN_HAN) {
-          const hccsvvFromDB = await tenureMedalRepository.findManyRaw({
-            where: {
-              quan_nhan_id: { in: personnelIds },
-              nam: proposal.nam,
-            },
-          });
+    const enrich = NIEN_HAN_ENRICH[proposal.loai_de_xuat as ProposalType];
+    const personnelIds = dataNienHan.map(d => d.personnel_id).filter(Boolean);
+    if (enrich && personnelIds.length > 0) {
+      const recordsFromDB = await enrich.fetch(personnelIds, proposal.nam);
+      const dbMap: Record<string, NienHanMedalRecord> = {};
+      recordsFromDB.forEach(record => {
+        dbMap[enrich.recordKey(record)] = record;
+      });
 
-          const hccsvvMap = {};
-          hccsvvFromDB.forEach(dh => {
-            const key = `${dh.quan_nhan_id}_${dh.danh_hieu}`;
-            hccsvvMap[key] = dh;
-          });
-
-            dataNienHan = dataNienHan.map(item => {
-            const key = `${item.personnel_id}_${item.danh_hieu}`;
-            const dbRecord = hccsvvMap[key];
-            if (dbRecord) {
-              return {
-                ...item,
-                so_quyet_dinh: dbRecord.so_quyet_dinh || item.so_quyet_dinh,
-                file_quyet_dinh: dbRecord.file_quyet_dinh,
-                thoi_gian: dbRecord.thoi_gian || item.thoi_gian,
-              };
-            }
-            return item;
-          });
-        } else if (proposal.loai_de_xuat === PROPOSAL_TYPES.HC_QKQT) {
-          const hcqkqtFromDB = await militaryFlagRepository.findManyRaw({
-            where: {
-              quan_nhan_id: { in: personnelIds },
-              nam: proposal.nam,
-            },
-          });
-
-          const hcqkqtMap = {};
-          hcqkqtFromDB.forEach(dh => {
-            hcqkqtMap[dh.quan_nhan_id] = dh;
-          });
-
-            dataNienHan = dataNienHan.map(item => {
-            const dbRecord = hcqkqtMap[item.personnel_id];
-            if (dbRecord) {
-              return {
-                ...item,
-                so_quyet_dinh: dbRecord.so_quyet_dinh || item.so_quyet_dinh,
-                file_quyet_dinh: dbRecord.file_quyet_dinh,
-                thoi_gian: dbRecord.thoi_gian || item.thoi_gian,
-              };
-            }
-            return item;
-          });
-        } else if (proposal.loai_de_xuat === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) {
-          const kncFromDB = await commemorativeMedalRepository.findManyRaw({
-            where: {
-              quan_nhan_id: { in: personnelIds },
-              nam: proposal.nam,
-            },
-          });
-
-          const kncMap = {};
-          kncFromDB.forEach(dh => {
-            kncMap[dh.quan_nhan_id] = dh;
-          });
-
-            dataNienHan = dataNienHan.map(item => {
-            const dbRecord = kncMap[item.personnel_id];
-            if (dbRecord) {
-              return {
-                ...item,
-                so_quyet_dinh: dbRecord.so_quyet_dinh || item.so_quyet_dinh,
-                file_quyet_dinh: dbRecord.file_quyet_dinh,
-                thoi_gian: dbRecord.thoi_gian || item.thoi_gian,
-              };
-            }
-            return item;
-          });
+      dataNienHan = dataNienHan.map(item => {
+        const dbRecord = dbMap[enrich.itemKey(item)];
+        if (dbRecord) {
+          return {
+            ...item,
+            so_quyet_dinh: dbRecord.so_quyet_dinh || item.so_quyet_dinh,
+            file_quyet_dinh: dbRecord.file_quyet_dinh,
+            thoi_gian: (dbRecord.thoi_gian as ProposalNienHanItem['thoi_gian']) || item.thoi_gian,
+          };
         }
-      }
+        return item;
+      });
     }
   }
 
@@ -570,8 +539,7 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
             file_quyet_dinh: dbRecord.file_quyet_dinh,
             thoi_gian_nhom_0_7: dbRecord.thoi_gian_nhom_0_7 || item.thoi_gian_nhom_0_7,
             thoi_gian_nhom_0_8: dbRecord.thoi_gian_nhom_0_8 || item.thoi_gian_nhom_0_8,
-            thoi_gian_nhom_0_9_1_0:
-              dbRecord.thoi_gian_nhom_0_9_1_0 || item.thoi_gian_nhom_0_9_1_0,
+            thoi_gian_nhom_0_9_1_0: dbRecord.thoi_gian_nhom_0_9_1_0 || item.thoi_gian_nhom_0_9_1_0,
           };
         }
         return item;
@@ -590,9 +558,11 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
       ten_don_vi: (proposal.DonViTrucThuoc || proposal.CoQuanDonVi)?.ten_don_vi || '',
     },
     nguoi_de_xuat: {
-      id: proposal.NguoiDeXuat.id,
-      username: proposal.NguoiDeXuat.username,
-      ho_ten: proposal.NguoiDeXuat.QuanNhan?.ho_ten,
+      id: proposal.NguoiDeXuat?.id ?? null,
+      username: proposal.NguoiDeXuat?.username ?? null,
+      ho_ten: proposal.NguoiDeXuat
+        ? proposal.NguoiDeXuat.QuanNhan?.ho_ten
+        : PROPOSAL_SUBMITTER_DELETED_LABEL,
     },
     status: proposal.status,
     data_danh_hieu: dataDanhHieu,
@@ -609,7 +579,9 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
           username: proposal.NguoiDuyet.username,
           ho_ten: proposal.NguoiDuyet.QuanNhan?.ho_ten,
         }
-      : null,
+      : proposal.ngay_duyet
+        ? { id: null, username: null, ho_ten: PROPOSAL_SUBMITTER_DELETED_LABEL }
+        : null,
     ngay_duyet: proposal.ngay_duyet,
     createdAt: proposal.createdAt,
     updatedAt: proposal.updatedAt,

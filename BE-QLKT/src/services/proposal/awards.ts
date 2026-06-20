@@ -1,4 +1,8 @@
-import { danhHieuHangNamRepository, danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
+import { styleHeaderRow } from '../../helpers/excel/excelTemplateHelper';
+import {
+  danhHieuHangNamRepository,
+  danhHieuDonViHangNamRepository,
+} from '../../repositories/danhHieu.repository';
 import { contributionMedalRepository } from '../../repositories/contributionMedal.repository';
 import { tenureMedalRepository } from '../../repositories/tenureMedal.repository';
 import { militaryFlagRepository } from '../../repositories/militaryFlag.repository';
@@ -27,7 +31,6 @@ import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { DANH_HIEU_HCBVTQ } from '../../constants/danhHieu.constants';
 import {
   AWARD_EXCEL_SHEETS,
-  EXCEL_HEADER_FILL_COLOR,
   PROPOSAL_AWARDS_EXPORT_COLUMNS,
 } from '../../constants/awardExcel.constants';
 
@@ -67,43 +70,43 @@ async function getAllAwards(
   if (don_vi_id) {
     filteredAwards = awards.filter(
       a =>
-        a.QuanNhan.don_vi_truc_thuoc_id === don_vi_id ||
-        a.QuanNhan.co_quan_don_vi_id === don_vi_id
+        a.QuanNhan.don_vi_truc_thuoc_id === don_vi_id || a.QuanNhan.co_quan_don_vi_id === don_vi_id
     );
   }
 
-  const awardsWithNCKH = await Promise.all(
-    filteredAwards.map(async a => {
-      const thanhTichList = await scientificAchievementRepository.findManyRaw({
-        where: {
-          quan_nhan_id: a.QuanNhan.id,
-          nam: a.nam,
-        },
-        select: {
-          id: true,
-          loai: true,
-          mo_ta: true,
-        },
-      });
-      return {
-        id: a.id,
-        cccd: a.QuanNhan.cccd,
-        ho_ten: a.QuanNhan.ho_ten,
-        don_vi: (a.QuanNhan.DonViTrucThuoc || a.QuanNhan.CoQuanDonVi)?.ten_don_vi || '-',
-        chuc_vu: a.chuc_vu,
-        cap_bac: a.cap_bac,
-        nam: a.nam,
-        danh_hieu: a.danh_hieu,
-        nhan_bkbqp: a.nhan_bkbqp,
-        so_quyet_dinh_bkbqp: a.so_quyet_dinh_bkbqp,
-        nhan_cstdtq: a.nhan_cstdtq,
-        so_quyet_dinh_cstdtq: a.so_quyet_dinh_cstdtq,
-        nhan_bkttcp: a.nhan_bkttcp,
-        so_quyet_dinh_bkttcp: a.so_quyet_dinh_bkttcp,
-        thanh_tich_khoa_hoc: thanhTichList,
-      };
-    })
-  );
+  const nckhPersonnelIds = filteredAwards.map(a => a.QuanNhan.id);
+  const nckhYears = filteredAwards.map(a => a.nam);
+  const allThanhTich = nckhPersonnelIds.length
+    ? await scientificAchievementRepository.findManyRaw({
+        where: { quan_nhan_id: { in: nckhPersonnelIds }, nam: { in: nckhYears } },
+        select: { id: true, loai: true, mo_ta: true, quan_nhan_id: true, nam: true },
+      })
+    : [];
+  const thanhTichMap = new Map<string, Array<{ id: string; loai: string; mo_ta: string }>>();
+  for (const tt of allThanhTich) {
+    const key = `${tt.quan_nhan_id}_${tt.nam}`;
+    const list = thanhTichMap.get(key) ?? [];
+    list.push({ id: tt.id, loai: tt.loai, mo_ta: tt.mo_ta });
+    thanhTichMap.set(key, list);
+  }
+
+  const awardsWithNCKH = filteredAwards.map(a => ({
+    id: a.id,
+    cccd: a.QuanNhan.cccd,
+    ho_ten: a.QuanNhan.ho_ten,
+    don_vi: (a.QuanNhan.DonViTrucThuoc || a.QuanNhan.CoQuanDonVi)?.ten_don_vi || '-',
+    chuc_vu: a.chuc_vu,
+    cap_bac: a.cap_bac,
+    nam: a.nam,
+    danh_hieu: a.danh_hieu,
+    nhan_bkbqp: a.nhan_bkbqp,
+    so_quyet_dinh_bkbqp: a.so_quyet_dinh_bkbqp,
+    nhan_cstdtq: a.nhan_cstdtq,
+    so_quyet_dinh_cstdtq: a.so_quyet_dinh_cstdtq,
+    nhan_bkttcp: a.nhan_bkttcp,
+    so_quyet_dinh_bkttcp: a.so_quyet_dinh_bkttcp,
+    thanh_tich_khoa_hoc: thanhTichMap.get(`${a.QuanNhan.id}_${a.nam}`) ?? [],
+  }));
 
   return {
     awards: awardsWithNCKH,
@@ -139,8 +142,7 @@ async function exportAllAwardsExcel(filters: Record<string, unknown> = {}) {
   if (don_vi_id) {
     filteredAwards = awards.filter(
       a =>
-        a.QuanNhan.don_vi_truc_thuoc_id === don_vi_id ||
-        a.QuanNhan.co_quan_don_vi_id === don_vi_id
+        a.QuanNhan.don_vi_truc_thuoc_id === don_vi_id || a.QuanNhan.co_quan_don_vi_id === don_vi_id
     );
   }
 
@@ -149,33 +151,30 @@ async function exportAllAwardsExcel(filters: Record<string, unknown> = {}) {
 
   sheet.columns = [...PROPOSAL_AWARDS_EXPORT_COLUMNS];
 
-  sheet.getRow(1).font = { bold: true };
-  sheet.getRow(1).fill = {
-    type: 'pattern' as const,
-    pattern: 'solid' as const,
-    fgColor: { argb: EXCEL_HEADER_FILL_COLOR },
-  };
+  styleHeaderRow(sheet);
   sheet.getRow(1).alignment = { horizontal: 'center', vertical: 'middle' };
 
   // Format CCCD as Text to preserve leading zeros
   sheet.getColumn(2).numFmt = '@';
 
   filteredAwards.forEach((award, index) => {
-    sheet.addRow(sanitizeRowData({
-      stt: index + 1,
-      cccd: award.QuanNhan.cccd,
-      ho_ten: award.QuanNhan.ho_ten,
-      don_vi: (award.QuanNhan.DonViTrucThuoc || award.QuanNhan.CoQuanDonVi)?.ten_don_vi ?? '-',
-      chuc_vu: award.QuanNhan.ChucVu.ten_chuc_vu,
-      nam: award.nam,
-      danh_hieu: award.danh_hieu || '',
-      bkbqp: award.nhan_bkbqp ? 'X' : '',
-      so_qd_bkbqp: award.so_quyet_dinh_bkbqp || '',
-      cstdtq: award.nhan_cstdtq ? 'X' : '',
-      so_qd_cstdtq: award.so_quyet_dinh_cstdtq || '',
-      bkttcp: award.nhan_bkttcp ? 'X' : '',
-      so_qd_bkttcp: award.so_quyet_dinh_bkttcp || '',
-    }));
+    sheet.addRow(
+      sanitizeRowData({
+        stt: index + 1,
+        cccd: award.QuanNhan.cccd,
+        ho_ten: award.QuanNhan.ho_ten,
+        don_vi: (award.QuanNhan.DonViTrucThuoc || award.QuanNhan.CoQuanDonVi)?.ten_don_vi ?? '-',
+        chuc_vu: award.QuanNhan.ChucVu.ten_chuc_vu,
+        nam: award.nam,
+        danh_hieu: award.danh_hieu || '',
+        bkbqp: award.nhan_bkbqp ? 'X' : '',
+        so_qd_bkbqp: award.so_quyet_dinh_bkbqp || '',
+        cstdtq: award.nhan_cstdtq ? 'X' : '',
+        so_qd_cstdtq: award.so_quyet_dinh_cstdtq || '',
+        bkttcp: award.nhan_bkttcp ? 'X' : '',
+        so_qd_bkttcp: award.so_quyet_dinh_bkttcp || '',
+      })
+    );
   });
 
   return await workbook.xlsx.writeBuffer();
@@ -262,8 +261,4 @@ async function getAwardsStatistics() {
   return statistics;
 }
 
-export {
-  getAllAwards,
-  exportAllAwardsExcel,
-  getAwardsStatistics,
-};
+export { getAllAwards, exportAllAwardsExcel, getAwardsStatistics };

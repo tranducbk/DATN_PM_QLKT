@@ -9,9 +9,13 @@ import { DANH_HIEU_MAP, getDanhHieuName } from '../../constants/danhHieu.constan
 import {
   batchEvaluateServiceYears,
   buildServiceYearsErrorMessage,
+  SERVICE_YEARS_PERSONNEL_NOT_FOUND,
 } from '../eligibility/serviceYearsEligibility';
 
-type AwardTableQueryFn = (personnelIds: string[], nam: number) => Promise<Array<Record<string, unknown>>>;
+type AwardTableQueryFn = (
+  personnelIds: string[],
+  nam: number
+) => Promise<Array<Record<string, unknown>>>;
 
 /** Award table query per proposal type. Returns raw rows containing `quan_nhan_id` (and `danh_hieu` when relevant). */
 export const AWARD_TABLE_QUERIES: Partial<Record<ProposalType, AwardTableQueryFn>> = {
@@ -79,13 +83,21 @@ type ServiceYearCheckFn = (personnelIds: string[]) => Promise<string[]>;
 /** Personnel-condition checks keyed by proposal type. */
 export const SERVICE_YEAR_CHECKS: Partial<Record<ProposalType, ServiceYearCheckFn>> = {
   [PROPOSAL_TYPES.HC_QKQT]: async personnelIds => {
-    const results = await batchEvaluateServiceYears(personnelIds, PROPOSAL_TYPES.HC_QKQT, new Date());
+    const results = await batchEvaluateServiceYears(
+      personnelIds,
+      PROPOSAL_TYPES.HC_QKQT,
+      new Date()
+    );
     return results
       .map(r => buildServiceYearsErrorMessage(r, PROPOSAL_TYPES.HC_QKQT))
       .filter((m): m is string => m !== null);
   },
   [PROPOSAL_TYPES.KNC_VSNXD_QDNDVN]: async personnelIds => {
-    const results = await batchEvaluateServiceYears(personnelIds, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN, new Date());
+    const results = await batchEvaluateServiceYears(
+      personnelIds,
+      PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+      new Date()
+    );
     return results
       .map(r => buildServiceYearsErrorMessage(r, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN))
       .filter((m): m is string => m !== null);
@@ -100,7 +112,7 @@ export const SERVICE_YEAR_CHECKS: Partial<Record<ProposalType, ServiceYearCheckF
     for (const id of personnelIds) {
       const qn = map.get(id);
       if (!qn) {
-        errors.push(`${id}: Không tìm thấy quân nhân`);
+        errors.push(SERVICE_YEARS_PERSONNEL_NOT_FOUND);
         continue;
       }
       if (!qn.ngay_nhap_ngu) {

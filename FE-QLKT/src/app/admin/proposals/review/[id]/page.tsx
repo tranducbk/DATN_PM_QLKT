@@ -8,7 +8,6 @@ import {
   Table,
   Alert,
   Typography,
-  Breadcrumb,
   Space,
   Empty,
   Modal,
@@ -28,7 +27,6 @@ import { getApiErrorMessage } from '@/lib/http/apiError';
 import { LoadingState } from '@/components/shared/LoadingState';
 
 import {
-  HomeOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
   LoadingOutlined,
@@ -38,6 +36,7 @@ import {
   DeleteOutlined,
   UploadOutlined,
 } from '@ant-design/icons';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { DecisionModal } from '@/components/decisions/DecisionModal';
 import { PersonnelRewardHistoryModal } from '@/components/proposals/bulk/PersonnelRewardHistoryModal';
 import { ServiceHistoryModal } from '@/components/proposals/bulk/ServiceHistoryModal';
@@ -51,6 +50,7 @@ import { apiClient } from '@/lib/http/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
 import { ProposalStatusTag } from '@/components/proposals/ProposalStatusTag';
+import { InfoNote } from '@/components/shared/InfoNote';
 import { useTheme } from '@/components/ThemeProvider';
 import { type CongHienHeSoGroup } from '@/constants/danhHieu.constants';
 import type { ServiceTimeRow } from '@/lib/award/serviceTimeHelpers';
@@ -719,13 +719,12 @@ export default function ProposalDetailPage() {
       }}
     >
       <div style={{ padding: '24px', maxWidth: '1600px', margin: '0 auto' }}>
-        <Breadcrumb style={{ marginBottom: '16px' }}>
-          <Breadcrumb.Item href="/">
-            <HomeOutlined />
-          </Breadcrumb.Item>
-          <Breadcrumb.Item href="/admin/proposals/review">Duyệt đề xuất</Breadcrumb.Item>
-          <Breadcrumb.Item>Chi tiết</Breadcrumb.Item>
-        </Breadcrumb>
+        <PageBreadcrumb
+          items={[
+            { title: 'Duyệt đề xuất', href: '/admin/proposals/review' },
+            { title: 'Chi tiết' },
+          ]}
+        />
 
         <div style={{ marginBottom: '24px' }}>
           <Button
@@ -1280,16 +1279,14 @@ export default function ProposalDetailPage() {
           width={600}
           centered
         >
-          <Alert
-            message="Lưu ý"
-            description={
-              <div style={{ textAlign: 'center' }}>
-                Vui lòng nhập lý do từ chối để Manager biết và chỉnh sửa lại đề xuất.
-              </div>
-            }
+          <InfoNote
             type="warning"
-            showIcon
-            style={{ marginBottom: 16 }}
+            description={
+              <>
+                <strong>Lưu ý:</strong> Nhập lý do từ chối để Chỉ huy đơn vị nắm được và chỉnh sửa
+                lại đề xuất.
+              </>
+            }
           />
           <Input.TextArea
             placeholder="Nhập lý do từ chối (bắt buộc)"

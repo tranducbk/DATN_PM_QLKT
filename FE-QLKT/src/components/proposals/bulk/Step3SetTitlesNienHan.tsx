@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Select, Alert, Typography, Space, Tag, message, Button, Input, Empty } from 'antd';
+import { Table, Select, Typography, Space, Tag, message, Button, Input, Empty } from 'antd';
 import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/http/apiClient';
@@ -18,6 +18,8 @@ import {
 } from '@/constants/danhHieu.constants';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
+import { StepGuide } from './StepGuide';
+import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
 import type { DateInput } from '@/lib/types/common';
 import type { ServiceProfile } from '@/lib/types/personnelList';
 
@@ -451,26 +453,19 @@ export function Step3SetTitlesNienHan({
 
   return (
     <div>
-      <Alert
-        message={`Bước 3: Thiết lập danh hiệu - ${AWARD_TAB_LABELS.HCCSVV}`}
-        description={
-          <div>
-            <p>
-              1. Hệ thống tự động gợi ý danh hiệu theo thời gian phục vụ và lịch sử đã nhận cho{' '}
-              <strong>{personnel.length}</strong> quân nhân.
-            </p>
-            <p>
-              2. Yêu cầu thời gian: hạng Ba 10 năm, hạng Nhì 15 năm, hạng Nhất 20 năm.
-            </p>
-            <p>3. Quy tắc xét: nhận theo thứ tự hạng Ba → hạng Nhì → hạng Nhất.</p>
-            <p>4. Kiểm tra để tất cả quân nhân đều đã có danh hiệu trước khi chuyển bước.</p>
-            <p>5. Hoàn tất khai báo, nhấn &quot;Tiếp tục&quot; để sang bước đính kèm tệp.</p>
-          </div>
-        }
-        type="info"
-        showIcon
+      <StepGuide
+        title={stepGuideTitle(3, 'Thiết lập danh hiệu', AWARD_TAB_LABELS.HCCSVV)}
         icon={<EditOutlined />}
-        style={{ marginBottom: 24 }}
+        steps={[
+          <span key="0">
+            Hệ thống tự động gợi ý danh hiệu theo thời gian phục vụ và lịch sử đã nhận cho{' '}
+            <strong>{personnel.length}</strong> quân nhân.
+          </span>,
+          'Yêu cầu thời gian: hạng Ba 10 năm, hạng Nhì 15 năm, hạng Nhất 20 năm.',
+          'Quy tắc xét: nhận theo thứ tự hạng Ba → hạng Nhì → hạng Nhất.',
+          GUIDE_LINES.allHaveTitle,
+          GUIDE_LINES.nextToAttach,
+        ]}
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>

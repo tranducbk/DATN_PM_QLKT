@@ -1,5 +1,10 @@
 import type { TemplateColumn } from '../helpers/excel/excelTemplateHelper';
-import { buildDanhHieuExcelOptions, DANH_HIEU_HCBVTQ, DANH_HIEU_HCCSVV, DANH_HIEU_NCKH } from './danhHieu.constants';
+import {
+  buildDanhHieuExcelOptions,
+  DANH_HIEU_HCBVTQ,
+  DANH_HIEU_HCCSVV,
+  DANH_HIEU_NCKH,
+} from './danhHieu.constants';
 
 const MONTH_VALIDATION_FORMULA = '"1,2,3,4,5,6,7,8,9,10,11,12"';
 
@@ -14,7 +19,6 @@ export const AWARD_EXCEL_SHEETS = {
   PROPOSAL_AWARDS: 'Danh Sách Khen Thưởng',
 } as const;
 
-export const EXCEL_HEADER_FILL_COLOR = 'FFD3D3D3';
 export const EXCEL_HIGHLIGHT_FILL_COLOR = 'FFFFFFCC';
 
 export const HCCSVV_TEMPLATE_COLUMNS: TemplateColumn[] = [
@@ -148,7 +152,7 @@ export const ANNUAL_PERSONAL_EXPORT_COLUMNS = [
   { header: 'Ghi chú', key: 'ghi_chu', width: 25 },
   { header: 'BKBQP', key: 'nhan_bkbqp', width: 10 },
   { header: 'Số QĐ BKBQP', key: 'so_quyet_dinh_bkbqp', width: 20 },
-  { header: 'CSTDTQ', key: 'nhan_cstdtq', width: 10 },
+  { header: 'CSTĐTQ', key: 'nhan_cstdtq', width: 10 },
   { header: 'Số QĐ CSTDTQ', key: 'so_quyet_dinh_cstdtq', width: 20 },
   { header: 'BKTTCP', key: 'nhan_bkttcp', width: 10 },
   { header: 'Số QĐ BKTTCP', key: 'so_quyet_dinh_bkttcp', width: 20 },
@@ -171,7 +175,7 @@ export const UNIT_ANNUAL_EXPORT_COLUMNS = [
 export const KNC_EXPORT_COLUMNS = [
   { header: 'STT', key: 'stt', width: 5 },
   { header: 'CCCD', key: 'cccd', width: 15 },
-  { header: 'Họ tên', key: 'ho_ten', width: 25 },
+  { header: 'Họ và tên', key: 'ho_ten', width: 25 },
   { header: 'Đơn vị', key: 'don_vi', width: 30 },
   { header: 'Năm', key: 'nam', width: 10 },
   { header: 'Tháng', key: 'thang', width: 8 },
@@ -243,11 +247,11 @@ export const MILITARY_FLAG_EXPORT_COLUMNS = [
 export const PROPOSAL_AWARDS_EXPORT_COLUMNS = [
   { header: 'STT', key: 'stt', width: 8 },
   { header: 'CCCD', key: 'cccd', width: 15 },
-  { header: 'Họ và Tên', key: 'ho_ten', width: 30 },
-  { header: 'Đơn Vị', key: 'don_vi', width: 25 },
-  { header: 'Chức Vụ', key: 'chuc_vu', width: 25 },
+  { header: 'Họ và tên', key: 'ho_ten', width: 30 },
+  { header: 'Đơn vị', key: 'don_vi', width: 25 },
+  { header: 'Chức vụ', key: 'chuc_vu', width: 25 },
   { header: 'Năm', key: 'nam', width: 10 },
-  { header: 'Danh Hiệu', key: 'danh_hieu', width: 15 },
+  { header: 'Danh hiệu', key: 'danh_hieu', width: 15 },
   { header: 'BKBQP', key: 'bkbqp', width: 10 },
   { header: 'Số QĐ BKBQP', key: 'so_qd_bkbqp', width: 20 },
   { header: 'CSTĐTQ', key: 'cstdtq', width: 10 },

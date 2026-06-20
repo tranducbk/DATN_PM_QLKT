@@ -31,7 +31,7 @@ router.get(
  * @desc    Download Excel template for unit annual award import
  * @access  ADMIN, MANAGER
  */
-router.get('/template', verifyToken, requireManager, unitAnnualAwardController.getTemplate);
+router.get('/template', verifyToken, requireAdminOnly, unitAnnualAwardController.getTemplate);
 
 /**
  * @route   POST /api/unit-annual-awards/import/preview
@@ -67,7 +67,7 @@ router.post(
 router.get(
   '/export',
   verifyToken,
-  requireManager,
+  requireAdminOnly,
   validate(unitAnnualAwardValidation.exportUnitAnnualAwardsQuery, 'query'),
   unitAnnualAwardController.exportToExcel
 );
@@ -90,12 +90,7 @@ router.get(
  * @desc    List all award history for a unit
  * @access  ADMIN, MANAGER
  */
-router.get(
-  '/history',
-  verifyToken,
-  requireManager,
-  unitAnnualAwardController.getUnitAnnualAwards
-);
+router.get('/history', verifyToken, requireManager, unitAnnualAwardController.getUnitAnnualAwards);
 
 /**
  * @route   GET /api/unit-annual-awards/profile/:don_vi_id
@@ -163,7 +158,7 @@ router.put(
 router.delete(
   '/:id',
   verifyToken,
-  requireManager,
+  requireAdminOnly,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,

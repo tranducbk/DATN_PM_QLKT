@@ -5,7 +5,6 @@ import { FALLBACK } from './constants';
 import { ROLE_LABELS } from '../../constants/roles.constants';
 import { accountRepository } from '../../repositories/account.repository';
 
-
 type TaiKhoanHoTenSelect = Prisma.TaiKhoanGetPayload<{
   select: { username: true; QuanNhan: { select: { ho_ten: true } } };
 }>;
@@ -48,7 +47,7 @@ const accounts: Record<
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       username = data?.data?.username || username;
-      hoTen = data?.data?.QuanNhan?.ho_ten || '';
+      hoTen = data?.data?.QuanNhan?.ho_ten || data?.data?.ho_ten || '';
     } catch (error) {
       console.error('[auditLog/accounts:UPDATE] failed to parse response data:', error);
     }

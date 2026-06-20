@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import adhocAwardController from '../controllers/adhocAward.controller';
-import { verifyToken, checkRole, requireAdminOnly } from '../middlewares/auth';
+import {
+  verifyToken,
+  checkRole,
+  requireAdminOnly,
+  requireAdminOrManager,
+} from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -18,7 +23,7 @@ router.use(verifyToken);
  * @desc    Get all ad-hoc awards with filters
  * @access  Admin (all), Manager (own unit only)
  */
-router.get('/', checkRole([ROLES.ADMIN, ROLES.MANAGER]), adhocAwardController.getAdhocAwards);
+router.get('/', requireAdminOrManager, adhocAwardController.getAdhocAwards);
 
 /**
  * @route   GET /api/adhoc-awards/personnel/:personnelId
@@ -38,7 +43,7 @@ router.get(
  */
 router.get(
   '/unit/:unitId',
-  checkRole([ROLES.ADMIN, ROLES.MANAGER]),
+  requireAdminOrManager,
   adhocAwardController.getAdhocAwardsByUnit
 );
 
@@ -47,7 +52,7 @@ router.get(
  * @desc    Get single ad-hoc award by ID
  * @access  Admin (all), Manager (own unit only)
  */
-router.get('/:id', checkRole([ROLES.ADMIN, ROLES.MANAGER]), adhocAwardController.getAdhocAwardById);
+router.get('/:id', requireAdminOrManager, adhocAwardController.getAdhocAwardById);
 
 // Routes accessible by ADMIN only (write operations)
 router.use(requireAdminOnly);

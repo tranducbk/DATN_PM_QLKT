@@ -16,6 +16,7 @@ import {
   DANH_HIEU_HCCSVV,
   DANH_HIEU_HCBVTQ,
   CONG_HIEN_HE_SO_GROUPS,
+  getLoaiDeXuatName,
 } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../../constants/proposalTypes.constants';
 import { GENDER } from '../../constants/gender.constants';
@@ -32,6 +33,8 @@ import type { QuanNhan, Prisma } from '../../generated/prisma';
 import type { ServiceTimeJson } from '../../types/proposal';
 import type { BulkCreateContext, CreateHandler, TitleDataItem } from './types';
 import { throwValidationErrors } from './validation';
+
+const CONG_HIEN_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
 
 /** Build the JSON service-time payload stored on award rows. */
 export function calculateThoiGian(quanNhan: QuanNhan): ServiceTimeJson | null {
@@ -381,7 +384,7 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
       const genderText = gioiTinh === GENDER.FEMALE ? ' (Nữ giảm 1/3 thời gian)' : '';
 
       errors.push(
-        `Quân nhân "${hoTen}" không đủ điều kiện Huân chương Bảo vệ Tổ quốc ${result.rankName}. ` +
+        `Quân nhân "${hoTen}" không đủ điều kiện ${CONG_HIEN_LABEL} ${result.rankName}. ` +
           `Yêu cầu: ít nhất ${requiredYearsText}${genderText}. Hiện tại: ${totalYearsText}.`
       );
       continue;

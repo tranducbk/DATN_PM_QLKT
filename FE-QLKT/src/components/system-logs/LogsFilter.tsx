@@ -64,7 +64,7 @@ export function LogsFilter({ onFilterChange }: LogsFilterProps) {
       actorRole,
       action,
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- onFilterChange is stable from parent
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, startDate, endDate, actorRole, action]);
 
   const handleReset = () => {

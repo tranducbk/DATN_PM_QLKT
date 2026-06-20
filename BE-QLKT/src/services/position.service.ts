@@ -1,6 +1,7 @@
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories/unit.repository';
 import { positionRepository } from '../repositories/position.repository';
+import { positionHistoryRepository } from '../repositories/positionHistory.repository';
 import type { Prisma } from '../generated/prisma';
 import { NotFoundError, AppError, ValidationError } from '../middlewares/errorHandler';
 
@@ -118,11 +119,25 @@ class PositionService {
       throw new ValidationError('Không có thay đổi nào để cập nhật');
     }
 
-    return positionRepository.updateRaw({
+    const updated = await positionRepository.updateRaw({
       where: { id },
       data: { ten_chuc_vu: newTenChucVu, is_manager: newIsManager, he_so_chuc_vu: newHeSoChucVu },
       include: positionInclude,
     });
+
+    // Keep the history snapshot in sync (defense-in-depth): name on every row (identity),
+    // coefficient only on open rows (closed periods stay frozen for award eligibility).
+    if (newTenChucVu !== position.ten_chuc_vu) {
+      await positionHistoryRepository.updateMany({ chuc_vu_id: id }, { ten_chuc_vu: newTenChucVu });
+    }
+    if (Number(newHeSoChucVu) !== Number(position.he_so_chuc_vu)) {
+      await positionHistoryRepository.updateMany(
+        { chuc_vu_id: id, ngay_ket_thuc: null },
+        { he_so_chuc_vu: Number(newHeSoChucVu) }
+      );
+    }
+
+    return updated;
   }
 
   async deletePosition(id: string) {
@@ -147,6 +162,19 @@ class PositionService {
         409
       );
     }
+
+    // Freeze the latest names into history rows before SetNull so the ledger survives deletion.
+    const tenDonViTrucThuoc = position.DonViTrucThuoc?.ten_don_vi || null;
+    const tenCoQuanDonVi =
+      position.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi || position.CoQuanDonVi?.ten_don_vi || null;
+    await positionHistoryRepository.updateMany(
+      { chuc_vu_id: id },
+      {
+        ten_chuc_vu: position.ten_chuc_vu,
+        ten_co_quan_don_vi: tenCoQuanDonVi,
+        ten_don_vi_truc_thuoc: tenDonViTrucThuoc,
+      }
+    );
 
     await positionRepository.delete(id);
 

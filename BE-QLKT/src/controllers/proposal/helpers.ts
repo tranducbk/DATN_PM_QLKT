@@ -1,8 +1,10 @@
 import type { Response } from 'express';
 import { writeSystemLog } from '../../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../../constants/auditActions.constants';
 import { ROLES } from '../../constants/roles.constants';
 import type {
   ApproveProposalBody,
+  AwardFilterInput,
   NotifyContext,
   ParsedApproveBody,
 } from './types';
@@ -82,6 +84,19 @@ export function sendExcelResponse(res: Response, buffer: unknown, filenamePrefix
 }
 
 /**
+ * Builds the award list/export filter map from query params, omitting empty values.
+ * @param query - Award filter query (don_vi_id / nam / danh_hieu)
+ * @returns Filter map ready for the service layer
+ */
+export function buildAwardFilters(query: AwardFilterInput): Record<string, unknown> {
+  const filters: Record<string, unknown> = {};
+  if (query.don_vi_id) filters.don_vi_id = query.don_vi_id;
+  if (query.nam) filters.nam = query.nam;
+  if (query.danh_hieu) filters.danh_hieu = query.danh_hieu;
+  return filters;
+}
+
+/**
  * Applies a MANAGER-role unit filter to the filters object in place.
  * Returns 'forbidden' when the manager's unit cannot be resolved.
  * @param user - Authenticated user
@@ -109,17 +124,14 @@ export async function applyManagerUnitFilter(
  * Best-effort wrapper for fire-and-forget notification calls — logs a system
  * error if the notifier throws but never propagates the error.
  */
-export async function safeNotify(
-  ctx: NotifyContext,
-  fn: () => Promise<unknown>
-): Promise<void> {
+export async function safeNotify(ctx: NotifyContext, fn: () => Promise<unknown>): Promise<void> {
   try {
     await fn();
   } catch (error) {
     void writeSystemLog({
       userId: ctx.userId,
       userRole: ctx.userRole,
-      action: 'ERROR',
+      action: AUDIT_ACTIONS.ERROR,
       resource: ctx.resource,
       description: ctx.description,
       payload: { error: String(error) },

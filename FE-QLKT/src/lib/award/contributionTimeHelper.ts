@@ -1,8 +1,10 @@
 import {
   CONG_HIEN_BASE_REQUIRED_MONTHS,
   CONG_HIEN_FEMALE_REQUIRED_MONTHS,
+  DANH_HIEU_HCBVTQ,
 } from '@/constants/danhHieu.constants';
 import { GENDER } from '@/constants/gender.constants';
+import { formatMonths } from '@/lib/utils';
 
 export type CongHienGroup = '0.7' | '0.8' | '0.9-1.0';
 
@@ -50,14 +52,7 @@ export const calculateContributionMonthsByGroup = (
   }, 0);
 };
 
-export const formatMonthsToText = (totalMonths: number): string => {
-  const years = Math.floor(totalMonths / 12);
-  const remainingMonths = totalMonths % 12;
-  if (totalMonths === 0) return '-';
-  if (years > 0 && remainingMonths > 0) return `${years} năm ${remainingMonths} tháng`;
-  if (years > 0) return `${years} năm`;
-  return `${remainingMonths} tháng`;
-};
+export const formatMonthsToText = formatMonths;
 
 export const getContributionRequiredMonths = (gender?: string | null): number =>
   gender === GENDER.FEMALE ? CONG_HIEN_FEMALE_REQUIRED_MONTHS : CONG_HIEN_BASE_REQUIRED_MONTHS;
@@ -68,8 +63,8 @@ export const getHighestEligibleContributionMedal = (
   months0910: number,
   requiredMonths: number
 ): string | null => {
-  if (months0910 >= requiredMonths) return 'HCBVTQ_HANG_NHAT';
-  if (months08 + months0910 >= requiredMonths) return 'HCBVTQ_HANG_NHI';
-  if (months07 + months08 + months0910 >= requiredMonths) return 'HCBVTQ_HANG_BA';
+  if (months0910 >= requiredMonths) return DANH_HIEU_HCBVTQ.HANG_NHAT;
+  if (months08 + months0910 >= requiredMonths) return DANH_HIEU_HCBVTQ.HANG_NHI;
+  if (months07 + months08 + months0910 >= requiredMonths) return DANH_HIEU_HCBVTQ.HANG_BA;
   return null;
 };

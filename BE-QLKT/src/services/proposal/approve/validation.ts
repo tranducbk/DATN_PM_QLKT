@@ -8,6 +8,7 @@ import {
   DANH_HIEU_CA_NHAN_BANG_KHEN,
   DANH_HIEU_DON_VI_HANG_NAM,
   DANH_HIEU_DON_VI_BANG_KHEN,
+  getLoaiDeXuatName,
 } from '../../../constants/danhHieu.constants';
 import { ValidationError } from '../../../middlewares/errorHandler';
 import { validateHCBVTQHighestRank } from '../../../helpers/awardValidation/contributionMedalHighestRank';
@@ -47,6 +48,8 @@ import type {
 } from '../../../types/proposal';
 import type { ProposalContext, DecisionInputMap } from './types';
 
+const CONG_HIEN_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
+
 /** Collects "duplicate award" errors for personal annual proposals. */
 async function collectCaNhanHangNamDuplicates(
   ctx: ProposalContext,
@@ -66,9 +69,7 @@ async function collectCaNhanHangNamDuplicates(
     personnelId => personnelHoTenMap.get(personnelId) || personnelId
   );
   if (duplicatePayloadItems.length > 0) {
-    throw new ValidationError(
-      `${DUPLICATE_IN_PAYLOAD_ERROR}\n${duplicatePayloadItems.join('\n')}`
-    );
+    throw new ValidationError(`${DUPLICATE_IN_PAYLOAD_ERROR}\n${duplicatePayloadItems.join('\n')}`);
   }
   const hasChinh = selectedDanhHieu.some(danhHieu => DANH_HIEU_CA_NHAN_CO_BAN.has(danhHieu));
   const chuoiSet: ReadonlySet<string> = new Set([
@@ -136,9 +137,7 @@ async function collectDonViHangNamDuplicates(
   }
   const duplicatePayloadItems = collectDuplicateDonViPayload(danhHieuData);
   if (duplicatePayloadItems.length > 0) {
-    throw new ValidationError(
-      `${DUPLICATE_IN_PAYLOAD_ERROR}\n${duplicatePayloadItems.join('\n')}`
-    );
+    throw new ValidationError(`${DUPLICATE_IN_PAYLOAD_ERROR}\n${duplicatePayloadItems.join('\n')}`);
   }
   const donViSet: ReadonlySet<string> = new Set([
     DANH_HIEU_DON_VI_HANG_NAM.DVQT,
@@ -260,7 +259,11 @@ async function collectHCQKQTEligibilityErrors(
   nienHanData: ProposalNienHanItem[]
 ): Promise<string[]> {
   const personnelIds = nienHanData.map(item => item.personnel_id).filter(Boolean);
-  const results = await batchEvaluateServiceYears(personnelIds, PROPOSAL_TYPES.HC_QKQT, ctx.refDate);
+  const results = await batchEvaluateServiceYears(
+    personnelIds,
+    PROPOSAL_TYPES.HC_QKQT,
+    ctx.refDate
+  );
   return results
     .map(r => buildServiceYearsErrorMessage(r, PROPOSAL_TYPES.HC_QKQT))
     .filter((m): m is string => m !== null);
@@ -272,7 +275,11 @@ async function collectKNCEligibilityErrors(
   nienHanData: ProposalNienHanItem[]
 ): Promise<string[]> {
   const personnelIds = nienHanData.map(item => item.personnel_id).filter(Boolean);
-  const results = await batchEvaluateServiceYears(personnelIds, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN, ctx.refDate);
+  const results = await batchEvaluateServiceYears(
+    personnelIds,
+    PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+    ctx.refDate
+  );
   return results
     .map(r => buildServiceYearsErrorMessage(r, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN))
     .filter((m): m is string => m !== null);
@@ -324,7 +331,7 @@ async function collectCongHienEligibilityErrors(
       const requiredYearsText = formatServiceDuration(result.requiredMonths);
       const genderText = gioiTinh === GENDER.FEMALE ? ' (Nữ giảm 1/3 thời gian)' : '';
       errors.push(
-        `${hoTen}: Không đủ điều kiện Huân chương Bảo vệ Tổ quốc ${result.rankName}. ` +
+        `${hoTen}: Không đủ điều kiện ${CONG_HIEN_LABEL} ${result.rankName}. ` +
           `Yêu cầu: ${requiredYearsText}${genderText}. Hiện tại: ${totalYearsText}.`
       );
     }
@@ -337,21 +344,21 @@ async function collectCaNhanChainEligibilityErrors(
   ctx: ProposalContext,
   danhHieuData: ProposalDanhHieuItem[]
 ): Promise<string[]> {
-  const errors: string[] = [];
-  for (const item of danhHieuData) {
-    if (!item.personnel_id || !item.danh_hieu) continue;
-    if (!DANH_HIEU_CA_NHAN_BANG_KHEN.has(item.danh_hieu)) continue;
-    const eligibility = await profileService.checkAwardEligibility(
-      item.personnel_id,
-      ctx.proposalYear,
-      item.danh_hieu
-    );
-    if (!eligibility.eligible) {
+  const checks = await Promise.all(
+    danhHieuData.map(async item => {
+      if (!item.personnel_id || !item.danh_hieu) return null;
+      if (!DANH_HIEU_CA_NHAN_BANG_KHEN.has(item.danh_hieu)) return null;
+      const eligibility = await profileService.checkAwardEligibility(
+        item.personnel_id,
+        ctx.proposalYear,
+        item.danh_hieu
+      );
+      if (eligibility.eligible) return null;
       const hoTen = ctx.personnelHoTenMap.get(item.personnel_id) || item.personnel_id;
-      errors.push(`${hoTen}: ${eligibility.reason}`);
-    }
-  }
-  return errors;
+      return `${hoTen}: ${eligibility.reason}`;
+    })
+  );
+  return checks.filter((e): e is string => e !== null);
 }
 
 /** Collects chain-award eligibility errors for unit annual proposals. */
@@ -359,21 +366,21 @@ async function collectDonViChainEligibilityErrors(
   ctx: ProposalContext,
   danhHieuData: ProposalDanhHieuItem[]
 ): Promise<string[]> {
-  const errors: string[] = [];
-  for (const item of danhHieuData) {
-    if (!item.don_vi_id || !item.danh_hieu) continue;
-    if (!DANH_HIEU_DON_VI_BANG_KHEN.has(item.danh_hieu)) continue;
-    const eligibility = await unitAnnualAwardService.checkUnitAwardEligibility(
-      item.don_vi_id,
-      ctx.proposalYear,
-      item.danh_hieu
-    );
-    if (!eligibility.eligible) {
+  const checks = await Promise.all(
+    danhHieuData.map(async item => {
+      if (!item.don_vi_id || !item.danh_hieu) return null;
+      if (!DANH_HIEU_DON_VI_BANG_KHEN.has(item.danh_hieu)) return null;
+      const eligibility = await unitAnnualAwardService.checkUnitAwardEligibility(
+        item.don_vi_id,
+        ctx.proposalYear,
+        item.danh_hieu
+      );
+      if (eligibility.eligible) return null;
       const tenDonVi = item.ten_don_vi || item.don_vi_id;
-      errors.push(`${tenDonVi}: ${eligibility.reason}`);
-    }
-  }
-  return errors;
+      return `${tenDonVi}: ${eligibility.reason}`;
+    })
+  );
+  return checks.filter((e): e is string => e !== null);
 }
 
 /**
@@ -438,11 +445,16 @@ export function runDecisionNumberChecks(
       const isCoBan = DANH_HIEU_CA_NHAN_CO_BAN.has(item.danh_hieu);
       const sqdCoBan =
         item.so_quyet_dinh ||
-        (item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS ? decisions.so_quyet_dinh_cstdcs : null) ||
+        (item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS
+          ? decisions.so_quyet_dinh_cstdcs
+          : null) ||
         (item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT ? decisions.so_quyet_dinh_cstt : null);
-      const sqdBkbqp = item.so_quyet_dinh_bkbqp || decisions.so_quyet_dinh_bkbqp || item.so_quyet_dinh;
-      const sqdCstdtq = item.so_quyet_dinh_cstdtq || decisions.so_quyet_dinh_cstdtq || item.so_quyet_dinh;
-      const sqdBkttcp = item.so_quyet_dinh_bkttcp || decisions.so_quyet_dinh_bkttcp || item.so_quyet_dinh;
+      const sqdBkbqp =
+        item.so_quyet_dinh_bkbqp || decisions.so_quyet_dinh_bkbqp || item.so_quyet_dinh;
+      const sqdCstdtq =
+        item.so_quyet_dinh_cstdtq || decisions.so_quyet_dinh_cstdtq || item.so_quyet_dinh;
+      const sqdBkttcp =
+        item.so_quyet_dinh_bkttcp || decisions.so_quyet_dinh_bkttcp || item.so_quyet_dinh;
       const hoTen = personnelHoTenMap.get(item.personnel_id) || item.ho_ten || item.personnel_id;
 
       const errs = validateDecisionNumbers(
@@ -471,8 +483,10 @@ export function runDecisionNumberChecks(
         item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVQT ||
         item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVTT;
       const sqdCoBan = item.so_quyet_dinh || decisions.so_quyet_dinh_don_vi_hang_nam;
-      const sqdBkbqp = item.so_quyet_dinh_bkbqp || decisions.so_quyet_dinh_bkbqp || item.so_quyet_dinh;
-      const sqdBkttcp = item.so_quyet_dinh_bkttcp || decisions.so_quyet_dinh_bkttcp || item.so_quyet_dinh;
+      const sqdBkbqp =
+        item.so_quyet_dinh_bkbqp || decisions.so_quyet_dinh_bkbqp || item.so_quyet_dinh;
+      const sqdBkttcp =
+        item.so_quyet_dinh_bkttcp || decisions.so_quyet_dinh_bkttcp || item.so_quyet_dinh;
       const tenDonVi = item.ten_don_vi || item.don_vi_id;
 
       const errs = validateDecisionNumbers(

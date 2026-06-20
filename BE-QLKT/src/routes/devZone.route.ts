@@ -10,6 +10,7 @@ import { getSetting, setSetting, getSettings } from '../helpers/settingsHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
+import { SYSTEM_ACTOR } from '../constants/roles.constants';
 import { authLimiter } from '../configs/rateLimiter';
 import { DEV_ZONE_PASSWORD } from '../configs';
 import { systemSettingRepository } from '../repositories/systemSetting.repository';
@@ -60,11 +61,11 @@ const runCronJob = async () => {
     await setSetting('cron_last_result', JSON.stringify(lastCronResult));
 
     await writeSystemLog({
-      userId: 'SYSTEM',
-      userRole: 'SYSTEM',
+      userId: SYSTEM_ACTOR,
+      userRole: SYSTEM_ACTOR,
       action: AUDIT_ACTIONS.RECALCULATE,
       resource: RESOURCE_SLUGS.PROFILES,
-      description: `Cron job tính toán hồ sơ: cá nhân ${personnelResult.success} thành công (${totalErrors} lỗi), đơn vị ${unitRecalculated} bản ghi, quân số ${unitCountUpdated} đơn vị cập nhật`,
+      description: `Tác vụ định kỳ tính toán hồ sơ: cá nhân ${personnelResult.success} thành công (${totalErrors} lỗi), đơn vị ${unitRecalculated} bản ghi, quân số ${unitCountUpdated} đơn vị cập nhật`,
       payload: {
         personnelSuccess: personnelResult.success,
         personnelErrors: totalErrors,
@@ -111,7 +112,7 @@ const updateBackupCronTask = async () => {
   if (enabled && cron.validate(schedule)) {
     backupCronTask = cron.schedule(schedule, () => {
       backupService
-        .createBackup({ triggeredBy: 'SYSTEM', userId: 'SYSTEM', type: 'scheduled' })
+        .createBackup({ triggeredBy: SYSTEM_ACTOR, userId: SYSTEM_ACTOR, type: 'scheduled' })
         .catch(err => console.error('[BackupCron] Failed:', err));
     });
   }
@@ -209,8 +210,8 @@ router.get('/status', verifyDevPassword, async (req: Request, res: Response) => 
       parsedLastResult = JSON.parse(storedLastResult);
     } catch (e) {
       void writeSystemLog({
-        action: 'ERROR',
-        resource: 'dev-zone',
+        action: AUDIT_ACTIONS.ERROR,
+        resource: RESOURCE_SLUGS.DEV_ZONE,
         description: `Dữ liệu cron_last_result không hợp lệ: ${e}`,
       });
     }
@@ -245,15 +246,15 @@ router.post('/cron/trigger', verifyDevPassword, async (req: Request, res: Respon
     const result = await runCronJob();
 
     await writeSystemLog({
-      userId: 'SYSTEM',
-      userRole: 'SYSTEM',
+      userId: SYSTEM_ACTOR,
+      userRole: SYSTEM_ACTOR,
       action: AUDIT_ACTIONS.RECALCULATE,
       resource: RESOURCE_SLUGS.PROFILES,
-      description: `Tính toán lại hồ sơ: ${result.success} thành công, ${result.errors || 0} lỗi (trigger thủ công)`,
+      description: `Tính toán lại hồ sơ: ${result.success} thành công, ${result.errors || 0} lỗi (kích hoạt thủ công)`,
       payload: { success: result.success, errors: result.errors || 0 },
     });
 
-    res.json({ success: true, message: 'Cron job đã chạy xong', data: result });
+    res.json({ success: true, message: 'Tác vụ định kỳ đã chạy xong', data: result });
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({ success: false, message: errMessage });
@@ -286,7 +287,7 @@ router.put('/cron/schedule', verifyDevPassword, async (req: Request, res: Respon
 
   res.json({
     success: true,
-    message: `Cron job ${cronEnabled ? 'đã bật' : 'đã tắt'}. Lịch: ${cronSchedule}`,
+    message: `Tác vụ định kỳ ${cronEnabled ? 'đã bật' : 'đã tắt'}. Lịch: ${cronSchedule}`,
     data: { enabled: cronEnabled, schedule: cronSchedule },
   });
 });
@@ -301,8 +302,8 @@ router.post('/recalculate-unit-count', verifyDevPassword, async (req: Request, r
     const updated = await unitService.recalculatePersonnelCount();
 
     await writeSystemLog({
-      userId: 'SYSTEM',
-      userRole: 'SYSTEM',
+      userId: SYSTEM_ACTOR,
+      userRole: SYSTEM_ACTOR,
       action: AUDIT_ACTIONS.RECALCULATE,
       resource: RESOURCE_SLUGS.UNITS,
       description: `Tính lại quân số đơn vị: ${updated} đơn vị đã cập nhật`,
@@ -350,7 +351,7 @@ router.post('/backup/trigger', verifyDevPassword, async (req: Request, res: Resp
   try {
     const result = await backupService.createBackup({
       triggeredBy: 'devzone',
-      userId: 'SYSTEM',
+      userId: SYSTEM_ACTOR,
       type: 'manual',
     });
     res.json({ success: true, message: 'Backup thành công', data: result });

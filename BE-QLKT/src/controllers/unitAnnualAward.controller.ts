@@ -4,9 +4,11 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { logMessages } from '../constants/logMessages.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
-import { notifyOnImport } from '../helpers/notification';
+import { notifyOnImport, notifyOnUnitAwardDeleted } from '../helpers/notification';
+import { logImportPreview, getAdminUsername } from '../helpers/controllerHelper';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.UNIT_ANNUAL_AWARDS];
 
@@ -21,6 +23,10 @@ interface ListQuery {
 
 interface IdParams {
   id?: string;
+}
+
+interface AwardTypeQuery {
+  awardType?: string;
 }
 
 interface RecalculateBody {
@@ -147,9 +153,10 @@ class UnitAnnualAwardController {
 
   remove = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
-    const query = req.query as { awardType?: string };
+    const query = req.query as AwardTypeQuery;
     const awardType = typeof query.awardType === 'string' ? query.awardType.trim() || null : null;
     const record = await service.remove(String(params.id), awardType);
+    void notifyOnUnitAwardDeleted(record, awardType, getAdminUsername(req));
     return ResponseHelper.success(res, { data: record, message: 'Đã xóa bản ghi' });
   });
 
@@ -190,26 +197,18 @@ class UnitAnnualAwardController {
   });
 
   previewImport = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
     const file = req.file;
     if (!file) {
       return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
     }
     const result = await service.previewImport(file.buffer);
-    await writeSystemLog({
-      userId: user.id,
-      userRole: user.role,
-      action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-      description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để xem trước ${AWARD_LABEL}: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
-      payload: {
-        filename: file.originalname
-          ? Buffer.from(file.originalname, 'latin1').toString('utf8')
-          : undefined,
-        total: result.total,
-        errors: result.errors?.length || 0,
-      },
-    });
+    await logImportPreview(
+      req,
+      AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+      AWARD_LABEL,
+      file.originalname,
+      result
+    );
     return ResponseHelper.success(res, { data: result });
   });
 
@@ -226,7 +225,7 @@ class UnitAnnualAwardController {
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
       resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-      description: `Nhập dữ liệu ${AWARD_LABEL} thành công: ${result.imported ?? items.length} bản ghi`,
+      description: logMessages.importSuccess(AWARD_LABEL, result.imported ?? items.length),
       payload: { imported: result.imported ?? items.length },
     });
     const unitIds = items.map((i: { unit_id: string }) => i.unit_id);
@@ -258,9 +257,9 @@ class UnitAnnualAwardController {
         Object.assign(repeatMap, JSON.parse(query.repeat_map));
       } catch (e) {
         void writeSystemLog({
-          action: 'ERROR',
+          action: AUDIT_ACTIONS.ERROR,
           resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-          description: `Dữ liệu repeat_map (${AWARD_LABEL}) không hợp lệ: ${e}`,
+          description: logMessages.invalidRepeatMap(AWARD_LABEL, e),
         });
       }
     }

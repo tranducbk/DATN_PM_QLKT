@@ -90,7 +90,7 @@ export function ActivityLineChart({
   };
 
   return (
-    <Card>
+    <Card className="h-full">
       <div style={{ height: `${height}px` }}>
         <Line data={chartData} options={options} />
       </div>

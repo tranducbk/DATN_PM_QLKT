@@ -21,6 +21,7 @@ import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import bcrypt from 'bcrypt';
 import { parseCCCD } from '../helpers/cccdHelper';
+import { notifyOnPersonnelDeleted } from '../helpers/notification';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import {
@@ -220,7 +221,7 @@ class PersonnelService {
     }
 
     const isCoQuanDonVi = !!coQuanDonVi;
-    let personnelData: Prisma.QuanNhanUncheckedCreateInput = {
+    const personnelData: Prisma.QuanNhanUncheckedCreateInput = {
       cccd,
       ho_ten: username,
       ngay_sinh: null,
@@ -313,7 +314,7 @@ class PersonnelService {
    * Deletes personnel and all related records through cascade constraints.
    * Cascade covers accounts, histories, awards, and annual profile snapshots.
    */
-  async deletePersonnel(id, userRole, userQuanNhanId) {
+  async deletePersonnel(id, userRole, userQuanNhanId, adminUsername?: string) {
     const personnel = await quanNhanRepository.findByIdWithAccount(String(id));
 
     if (!personnel) {
@@ -365,6 +366,20 @@ class PersonnelService {
         }
       }
     });
+
+    try {
+      await notifyOnPersonnelDeleted(
+        {
+          id: String(id),
+          ho_ten: personnel.ho_ten,
+          co_quan_don_vi_id: personnel.co_quan_don_vi_id,
+          don_vi_truc_thuoc_id: personnel.don_vi_truc_thuoc_id,
+        },
+        adminUsername
+      );
+    } catch (error) {
+      console.error('[deletePersonnel] notifyOnPersonnelDeleted failed', error);
+    }
 
     return {
       message: 'Xóa quân nhân và toàn bộ dữ liệu liên quan thành công',

@@ -6,7 +6,6 @@ import {
   Typography,
   Button,
   Space,
-  Breadcrumb,
   ConfigProvider,
   Tag,
   message,
@@ -27,12 +26,13 @@ import {
   ExperimentOutlined,
   HistoryOutlined,
   SafetyOutlined,
-  HomeOutlined,
+  InfoCircleOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useParams, useSearchParams, useRouter } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
 import { MedalProgressCard } from '@/components/personnel/MedalProgressCard';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { apiClient } from '@/lib/http/apiClient';
 import { formatDate, formatHeSoChucVu } from '@/lib/utils';
@@ -105,7 +105,7 @@ export function PersonnelDetailView({ role, infoOnly = false }: PersonnelDetailV
         if (infoOnly) return;
 
         const [serviceRes, annualRes, contributionRes, militaryRes, commRes] = await Promise.all([
-          apiClient.getServiceProfile(personnelId),
+          apiClient.getTenureProfile(personnelId),
           apiClient.getAnnualProfile(personnelId, current_year),
           apiClient.getContributionProfile(personnelId),
           apiClient.getMilitaryFlagByPersonnel(personnelId),
@@ -374,7 +374,8 @@ export function PersonnelDetailView({ role, infoOnly = false }: PersonnelDetailV
                   <>
                     <Divider className="my-4" />
                     <Card size="small" className="bg-blue-50 dark:bg-gray-800">
-                      <Text strong>💡 Gợi ý: </Text>
+                      <InfoCircleOutlined className="text-blue-500 mr-1.5" />
+                      <Text strong>Gợi ý: </Text>
                       <Text>{serviceProfile.goi_y}</Text>
                     </Card>
                   </>
@@ -438,9 +439,6 @@ export function PersonnelDetailView({ role, infoOnly = false }: PersonnelDetailV
                         );
                         return `${years} năm ${months} tháng`;
                       })()}
-                      valueRender={node => (
-                        <span className="text-green-700 dark:text-emerald-300">{node}</span>
-                      )}
                     />
                   </Card>
                 </Col>
@@ -454,9 +452,6 @@ export function PersonnelDetailView({ role, infoOnly = false }: PersonnelDetailV
                         );
                         return `${years} năm ${months} tháng`;
                       })()}
-                      valueRender={node => (
-                        <span className="text-green-700 dark:text-emerald-300">{node}</span>
-                      )}
                     />
                   </Card>
                 </Col>
@@ -470,9 +465,6 @@ export function PersonnelDetailView({ role, infoOnly = false }: PersonnelDetailV
                         );
                         return `${years} năm ${months} tháng`;
                       })()}
-                      valueRender={node => (
-                        <span className="text-green-700 dark:text-emerald-300">{node}</span>
-                      )}
                     />
                   </Card>
                 </Col>
@@ -537,9 +529,6 @@ export function PersonnelDetailView({ role, infoOnly = false }: PersonnelDetailV
                             : annualProfile.tong_cstdcs || 0
                         }
                         suffix="năm"
-                        valueRender={node => (
-                          <span className="text-blue-500 dark:text-blue-400">{node}</span>
-                        )}
                       />
                     </Card>
                   </Col>
@@ -549,7 +538,6 @@ export function PersonnelDetailView({ role, infoOnly = false }: PersonnelDetailV
                         title="CSTDCS liên tục"
                         value={annualProfile.cstdcs_lien_tuc || 0}
                         suffix="năm"
-                        valueStyle={{ color: '#13c2c2' }}
                       />
                     </Card>
                   </Col>
@@ -562,7 +550,6 @@ export function PersonnelDetailView({ role, infoOnly = false }: PersonnelDetailV
                             ? annualProfile.tong_nckh.length
                             : annualProfile.tong_nckh || 0
                         }
-                        valueStyle={{ color: '#722ed1' }}
                       />
                     </Card>
                   </Col>
@@ -624,7 +611,8 @@ export function PersonnelDetailView({ role, infoOnly = false }: PersonnelDetailV
                 <>
                   <Divider className="my-4" />
                   <Card size="small" className="bg-blue-50 dark:bg-gray-800">
-                    <Text strong>💡 Gợi ý: </Text>
+                    <InfoCircleOutlined className="text-blue-500 mr-1.5" />
+                    <Text strong>Gợi ý: </Text>
                     <Text style={{ whiteSpace: 'pre-wrap' }}>{annualProfile.goi_y}</Text>
                   </Card>
                 </>
@@ -823,16 +811,9 @@ export function PersonnelDetailView({ role, infoOnly = false }: PersonnelDetailV
   return (
     <ConfigProvider theme={getAntdThemeConfig(isDark)}>
       <div className="p-6 space-y-6">
-        <Breadcrumb
+        <PageBreadcrumb
           items={[
-            {
-              title: (
-                <Link href={`${basePath}/dashboard`}>
-                  <HomeOutlined />
-                </Link>
-              ),
-            },
-            { title: <Link href={`${basePath}/personnel`}>Quân nhân</Link> },
+            { title: 'Quân nhân', href: `${basePath}/personnel` },
             { title: personnel.ho_ten },
           ]}
         />

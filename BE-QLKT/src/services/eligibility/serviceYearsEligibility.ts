@@ -16,6 +16,11 @@ const SERVICE_YEARS_AWARD_LABEL: Record<ServiceYearsProposalType, string> = {
   KNC_VSNXD_QDNDVN: 'KNC VSNXD QĐNDVN',
 };
 
+// Personnel selected from the system can only be "not found" if deleted mid-flow (a race);
+// the CUID is not actionable for the operator, so guide them to reload instead of leaking it.
+export const SERVICE_YEARS_PERSONNEL_NOT_FOUND =
+  'Không tìm thấy thông tin một quân nhân (có thể đã bị xoá khỏi hệ thống) — vui lòng tải lại và thử lại.';
+
 export interface ServiceYearsPersonnel {
   id: string;
   ho_ten: string;
@@ -140,8 +145,8 @@ export function buildServiceYearsErrorMessage(
   proposalType: ServiceYearsProposalType
 ): string | null {
   if (result.eligible) return null;
-  const name = result.hoTen ?? result.personnelId;
-  if (result.reason === 'NOT_FOUND') return `${result.personnelId}: Không tìm thấy quân nhân`;
+  if (result.reason === 'NOT_FOUND') return SERVICE_YEARS_PERSONNEL_NOT_FOUND;
+  const name = result.hoTen ?? 'một quân nhân';
   if (result.reason === 'MISSING_GENDER') return `${name}: Chưa cập nhật thông tin giới tính`;
   if (result.reason === 'MISSING_NHAP_NGU') return `${name}: Chưa có thông tin ngày nhập ngũ`;
   if (result.reason === 'NOT_ENOUGH_YEARS') {

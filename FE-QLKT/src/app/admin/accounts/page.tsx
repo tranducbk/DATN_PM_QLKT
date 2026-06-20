@@ -7,7 +7,6 @@ import {
   Button,
   Table,
   message,
-  Breadcrumb,
   Tag,
   Space,
   Modal,
@@ -21,10 +20,10 @@ import {
   PlusOutlined,
   DeleteOutlined,
   LockOutlined,
-  HomeOutlined,
   SearchOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { useTheme } from '@/components/ThemeProvider';
 import { apiClient } from '@/lib/http/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
@@ -278,19 +277,7 @@ export default function AdminAccountsPage() {
       }}
     >
       <div className="space-y-6 p-6">
-        {/* Breadcrumb */}
-        <Breadcrumb
-          items={[
-            {
-              title: (
-                <Link href="/admin/dashboard">
-                  <HomeOutlined />
-                </Link>
-              ),
-            },
-            { title: 'Quản lý tài khoản' },
-          ]}
-        />
+        <PageBreadcrumb items={[{ title: 'Quản lý tài khoản' }]} />
 
         {/* Header */}
         <div className="flex justify-between items-center">

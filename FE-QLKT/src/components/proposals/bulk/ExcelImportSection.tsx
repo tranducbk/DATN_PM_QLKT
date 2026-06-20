@@ -63,7 +63,6 @@ export function ExcelImportSection({
       }
       const blob = await downloadTemplate(params);
 
-      // Check if response is actually a blob
       if (!(blob instanceof Blob)) {
         throw new Error('Response is not a valid file');
       }

@@ -35,10 +35,7 @@ interface SuperAdminDashboardChartsProps {
   theme: string;
 }
 
-export function SuperAdminDashboardCharts({
-  chartData,
-  theme,
-}: SuperAdminDashboardChartsProps) {
+export function SuperAdminDashboardCharts({ chartData, theme }: SuperAdminDashboardChartsProps) {
   const isDark = theme === 'dark';
   const textColor = isDark ? '#e5e7eb' : '#374151';
   const gridColor = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.1)';
@@ -113,9 +110,7 @@ export function SuperAdminDashboardCharts({
       {
         label: 'Số lượng hoạt động',
         data:
-          chartData.dailyActivity.length > 0
-            ? chartData.dailyActivity.map(item => item.count)
-            : [],
+          chartData.dailyActivity.length > 0 ? chartData.dailyActivity.map(item => item.count) : [],
         borderColor: 'rgba(59, 130, 246, 1)',
         backgroundColor: 'rgba(59, 130, 246, 0.1)',
         fill: true,
@@ -178,18 +173,13 @@ export function SuperAdminDashboardCharts({
   const logsChartData = {
     labels:
       chartData.logsByAction.length > 0
-        ? chartData.logsByAction.map(item => {
-            const label = getActionLabel(item.action?.toUpperCase() || '');
-            return label.length > 20 ? label.substring(0, 20) + '...' : label;
-          })
+        ? chartData.logsByAction.map(item => getActionLabel(item.action?.toUpperCase() || ''))
         : ['Chưa có dữ liệu'],
     datasets: [
       {
         label: 'Số lượng',
         data:
-          chartData.logsByAction.length > 0
-            ? chartData.logsByAction.map(item => item.count)
-            : [0],
+          chartData.logsByAction.length > 0 ? chartData.logsByAction.map(item => item.count) : [0],
         backgroundColor: 'rgba(59, 130, 246, 0.8)',
         borderColor: 'rgba(59, 130, 246, 1)',
         borderWidth: 2,
@@ -200,6 +190,7 @@ export function SuperAdminDashboardCharts({
   };
 
   const logsChartOptions = {
+    indexAxis: 'y' as const,
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
@@ -220,17 +211,8 @@ export function SuperAdminDashboardCharts({
       },
     },
     scales: {
-      y: {
+      x: {
         beginAtZero: true,
-        title: {
-          display: true,
-          text: 'Số lượng',
-          color: textColor,
-          font: {
-            size: 14,
-            weight: 'bold' as const,
-          },
-        },
         ticks: {
           color: textColor,
           stepSize: 1,
@@ -239,20 +221,10 @@ export function SuperAdminDashboardCharts({
           color: gridColor,
         },
       },
-      x: {
-        title: {
-          display: true,
-          text: 'Hành động',
-          color: textColor,
-          font: {
-            size: 14,
-            weight: 'bold' as const,
-          },
-        },
+      y: {
         ticks: {
           color: textColor,
-          maxRotation: 45,
-          minRotation: 45,
+          autoSkip: false,
         },
         grid: {
           display: false,
@@ -327,6 +299,8 @@ export function SuperAdminDashboardCharts({
       x: {
         ticks: {
           color: textColor,
+          autoSkip: true,
+          maxTicksLimit: 10,
         },
         grid: {
           color: gridColor,
@@ -337,16 +311,16 @@ export function SuperAdminDashboardCharts({
 
   return (
     <>
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row align="stretch" gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} lg={12}>
-          <Card>
+          <Card className="h-full">
             <div style={{ height: '250px' }}>
               <Doughnut data={roleChartData} options={roleChartOptions} />
             </div>
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card>
+          <Card className="h-full">
             <div style={{ height: '250px' }}>
               <Line data={activityChartData} options={activityChartOptions} />
             </div>
@@ -354,16 +328,16 @@ export function SuperAdminDashboardCharts({
         </Col>
       </Row>
 
-      <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+      <Row align="stretch" gutter={[16, 16]} style={{ marginBottom: '24px' }}>
         <Col xs={24} lg={12}>
-          <Card>
+          <Card className="h-full">
             <div style={{ height: '250px' }}>
               <Bar data={logsChartData} options={logsChartOptions} />
             </div>
           </Card>
         </Col>
         <Col xs={24} lg={12}>
-          <Card>
+          <Card className="h-full">
             <div style={{ height: '250px' }}>
               <Line data={accountsChartData} options={accountsChartOptions} />
             </div>

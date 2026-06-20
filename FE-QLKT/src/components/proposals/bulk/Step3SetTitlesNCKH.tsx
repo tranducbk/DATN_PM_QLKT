@@ -5,7 +5,6 @@ import {
   Table,
   Select,
   Input,
-  Alert,
   Typography,
   Space,
   Button,
@@ -23,7 +22,13 @@ import { apiClient } from '@/lib/http/apiClient';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import { ScientificAchievementHistoryModal } from './ScientificAchievementHistoryModal';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
-import { getDanhHieuName, THANH_TICH_KHOA_HOC_OPTIONS } from '@/constants/danhHieu.constants';
+import {
+  getDanhHieuName,
+  THANH_TICH_KHOA_HOC_OPTIONS,
+  AWARD_TAB_LABELS,
+} from '@/constants/danhHieu.constants';
+import { StepGuide } from './StepGuide';
+import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
 import type { AnnualProfile } from '@/lib/types/personnelList';
 
 const { Text } = Typography;
@@ -353,22 +358,17 @@ export function Step3SetTitlesNCKH({
 
   return (
     <div>
-      <Alert
-        message="Bước 3: Thiết lập thông tin thành tích - Nghiên cứu khoa học"
-        description={
-          <div>
-            <p>
-              1. Chọn loại thành tích và nhập mô tả cho từng quân nhân (
-              <strong>{personnel.length}</strong> quân nhân)
-            </p>
-            <p>2. Đảm bảo mọi quân nhân đều có đủ thông tin bắt buộc trước khi chuyển bước.</p>
-            <p>3. Hoàn tất khai báo, nhấn &quot;Tiếp tục&quot; để sang bước đính kèm tệp.</p>
-          </div>
-        }
-        type="info"
-        showIcon
+      <StepGuide
+        title={stepGuideTitle(3, 'Thiết lập thông tin', AWARD_TAB_LABELS.NCKH)}
         icon={<EditOutlined />}
-        style={{ marginBottom: 24 }}
+        steps={[
+          <span key="0">
+            Chọn loại thành tích và nhập mô tả cho từng quân nhân (<strong>{personnel.length}</strong>{' '}
+            quân nhân).
+          </span>,
+          'Đảm bảo mọi quân nhân đều có đủ thông tin bắt buộc trước khi chuyển bước.',
+          GUIDE_LINES.nextToAttach,
+        ]}
       />
 
       <div

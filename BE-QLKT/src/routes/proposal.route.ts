@@ -1,6 +1,12 @@
 import { Router } from 'express';
 import proposalController from '../controllers/proposal.controller';
-import { verifyToken, checkRole, requireManager, requireAdminOnly } from '../middlewares/auth';
+import {
+  verifyToken,
+  checkRole,
+  requireManager,
+  requireAdminOnly,
+  requireAdminOrManager,
+} from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -19,7 +25,7 @@ const router = Router();
 router.post(
   '/',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   writeLimiter,
   upload.fields([
     { name: 'attached_files' }, // No file count limit

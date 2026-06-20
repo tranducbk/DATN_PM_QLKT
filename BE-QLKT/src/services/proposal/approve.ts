@@ -2,6 +2,7 @@ import { proposalRepository } from '../../repositories/proposal.repository';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import {
   PROPOSAL_TYPES,
+  PROPOSAL_SUBMITTER_DELETED_LABEL,
   requiresProposalMonth,
   type ProposalType,
 } from '../../constants/proposalTypes.constants';
@@ -12,6 +13,7 @@ import { buildApproveSummaryMessage } from '../../helpers/award/awardSummaryMess
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { RESOURCE_SLUGS } from '../../constants/resourceSlugs.constants';
 import { writeSystemLog } from '../../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../../constants/auditActions.constants';
 import type {
   ProposalDanhHieuItem,
   ProposalThanhTichItem,
@@ -62,10 +64,20 @@ async function loadApproveProposal(proposalId: ProposalId) {
       CoQuanDonVi: true,
       DonViTrucThuoc: { include: { CoQuanDonVi: true } },
       NguoiDeXuat: {
-        select: { id: true, username: true, role: true, QuanNhan: { select: { id: true, ho_ten: true } } },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          QuanNhan: { select: { id: true, ho_ten: true } },
+        },
       },
       NguoiDuyet: {
-        select: { id: true, username: true, role: true, QuanNhan: { select: { id: true, ho_ten: true } } },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          QuanNhan: { select: { id: true, ho_ten: true } },
+        },
       },
     },
   });
@@ -186,10 +198,10 @@ function logImportErrors(
   if (errors.length === 0) return;
   void writeSystemLog({
     userId: adminId,
-    action: 'ERROR',
+    action: AUDIT_ACTIONS.ERROR,
     resource: RESOURCE_SLUGS.PROPOSALS,
     resourceId: proposalId,
-    description: `[Phê duyệt đề xuất] ${proposal.loai_de_xuat} năm ${proposal.nam}: ${errors.length} lỗi. Chi tiết: ${errors.join('; ')}`,
+    description: `Phê duyệt đề xuất ${proposal.loai_de_xuat} năm ${proposal.nam}: ${errors.length} lỗi. Chi tiết: ${errors.join('; ')}`,
   });
 }
 
@@ -223,7 +235,10 @@ function buildApproveResponse(
     affectedPersonnelIds: Array.from(acc.affectedPersonnelIds),
     result: {
       don_vi: (proposal.DonViTrucThuoc || proposal.CoQuanDonVi)?.ten_don_vi || '-',
-      nguoi_de_xuat: proposal.NguoiDeXuat.QuanNhan?.ho_ten || proposal.NguoiDeXuat.username,
+      nguoi_de_xuat:
+        proposal.NguoiDeXuat?.QuanNhan?.ho_ten ||
+        proposal.NguoiDeXuat?.username ||
+        PROPOSAL_SUBMITTER_DELETED_LABEL,
       imported_danh_hieu: acc.importedDanhHieu,
       imported_thanh_tich: acc.importedThanhTich,
       imported_nien_han: acc.importedNienHan,
@@ -359,7 +374,12 @@ async function rejectProposal(proposalId: ProposalId, lyDo: string, adminId: Adm
       CoQuanDonVi: true,
       DonViTrucThuoc: { include: { CoQuanDonVi: true } },
       NguoiDeXuat: {
-        select: { id: true, username: true, role: true, QuanNhan: { select: { id: true, ho_ten: true } } },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          QuanNhan: { select: { id: true, ho_ten: true } },
+        },
       },
     },
   });
@@ -393,7 +413,10 @@ async function rejectProposal(proposalId: ProposalId, lyDo: string, adminId: Adm
     proposal: proposal,
     result: {
       don_vi: (proposal.DonViTrucThuoc || proposal.CoQuanDonVi)?.ten_don_vi || '-',
-      nguoi_de_xuat: proposal.NguoiDeXuat.QuanNhan?.ho_ten || proposal.NguoiDeXuat.username,
+      nguoi_de_xuat:
+        proposal.NguoiDeXuat?.QuanNhan?.ho_ten ||
+        proposal.NguoiDeXuat?.username ||
+        PROPOSAL_SUBMITTER_DELETED_LABEL,
       ly_do: lyDo,
     },
   };

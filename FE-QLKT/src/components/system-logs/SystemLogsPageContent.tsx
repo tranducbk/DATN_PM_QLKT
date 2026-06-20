@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import {
   Card,
-  Breadcrumb,
   Typography,
   message,
   ConfigProvider,
@@ -12,7 +11,7 @@ import {
   Button,
   Popconfirm,
 } from 'antd';
-import { FileTextOutlined, FundOutlined, HomeOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
+import { FileTextOutlined, FundOutlined, DeleteOutlined, ReloadOutlined } from '@ant-design/icons';
 import { LogsFilter, LogsFilterValues } from '@/components/system-logs/LogsFilter';
 import { LogsTable, LogEntry } from '@/components/system-logs/LogsTable';
 import { apiClient } from '@/lib/http/apiClient';
@@ -23,7 +22,7 @@ import { useDevZone } from '@/contexts/DevZoneContext';
 import type { SystemLogStats } from '@/lib/api/systemLogs';
 import { ROLE_LABELS, ROLES } from '@/constants/roles.constants';
 import { useAuth } from '@/contexts/AuthContext';
-import Link from 'next/link';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 
 const { Title, Text } = Typography;
 
@@ -186,14 +185,7 @@ export function SystemLogsPageContent({ basePath }: SystemLogsPageContentProps) 
       }}
     >
       <div style={{ padding: '24px' }}>
-        <Breadcrumb style={{ marginBottom: '24px' }}>
-          <Breadcrumb.Item>
-            <Link href={`${basePath}/dashboard`}>
-              <HomeOutlined />
-            </Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>Nhật ký hệ thống</Breadcrumb.Item>
-        </Breadcrumb>
+        <PageBreadcrumb items={[{ title: 'Nhật ký hệ thống' }]} />
 
         <div style={{ marginBottom: '24px' }}>
           <Title level={1} style={{ margin: 0 }}>

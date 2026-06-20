@@ -145,19 +145,22 @@ model TaiKhoan {
 
 // 6. Bảng Lịch sử chức vụ (INPUT - để tính thời gian cống hiến)
 model LichSuChucVu {
-  id            String    @id @default(cuid()) @db.VarChar(30)
-  quan_nhan_id  String    @db.VarChar(30)
-  chuc_vu_id    String    @db.VarChar(30)
-  he_so_chuc_vu Float     @default(0) // Hệ số chức vụ tại thời điểm đó (lưu snapshot)
-  ngay_bat_dau  DateTime  @db.Date
-  ngay_ket_thuc DateTime? @db.Date
-  so_thang      Int? // Số tháng giữ chức vụ (tính từ ngày bắt đầu đến ngày kết thúc, tính tới tháng)
-  createdAt     DateTime  @default(now()) @db.Timestamp(0)
-  updatedAt     DateTime  @updatedAt @db.Timestamp(0)
+  id                 String    @id @default(cuid()) @db.VarChar(30)
+  quan_nhan_id       String    @db.VarChar(30)
+  chuc_vu_id         String?   @db.VarChar(30)
+  he_so_chuc_vu      Float     @default(0) // Hệ số chức vụ tại thời điểm đó (lưu snapshot)
+  ten_chuc_vu          String?   @db.VarChar(255) // Snapshot tên chức vụ (fallback khi chức vụ bị xóa)
+  ten_co_quan_don_vi   String?   @db.VarChar(255) // Snapshot tên cơ quan đơn vị (trực tiếp hoặc cha)
+  ten_don_vi_truc_thuoc String?  @db.VarChar(255) // Snapshot tên đơn vị trực thuộc (chỉ chức vụ thuộc DVTT)
+  ngay_bat_dau       DateTime  @db.Date
+  ngay_ket_thuc      DateTime? @db.Date
+  so_thang           Int? // Số tháng giữ chức vụ (tính từ ngày bắt đầu đến ngày kết thúc, tính tới tháng)
+  createdAt          DateTime  @default(now()) @db.Timestamp(0)
+  updatedAt          DateTime  @updatedAt @db.Timestamp(0)
 
   // Relations
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
-  ChucVu   ChucVu   @relation(fields: [chuc_vu_id], references: [id], onDelete: Cascade)
+  ChucVu   ChucVu?  @relation(fields: [chuc_vu_id], references: [id], onDelete: SetNull)
 
   @@map("LichSuChucVu")
 }
@@ -479,7 +482,7 @@ model BangDeXuat {
   id                   String    @id @default(cuid()) @db.VarChar(30)
   co_quan_don_vi_id    String?   @db.VarChar(30) // ID cơ quan đơn vị của Manager nộp đề xuất (nullable)
   don_vi_truc_thuoc_id String?   @db.VarChar(30) // ID đơn vị trực thuộc của Manager nộp đề xuất (nullable)
-  nguoi_de_xuat_id     String    @db.VarChar(30) // ID tài khoản người đề xuất
+  nguoi_de_xuat_id     String?   @db.VarChar(30) // ID tài khoản người đề xuất (nullable: giữ đề xuất khi tài khoản bị xóa)
   loai_de_xuat         String    @db.VarChar(20) // CA_NHAN_HANG_NAM, DON_VI_HANG_NAM, NIEN_HAN, CONG_HIEN, DOT_XUAT, NCKH
   nam                  Int // Năm đề xuất
   thang                Int? // Tháng đề xuất (1-12), chỉ bắt buộc cho HCCSVV/HCQKQT/KNC
@@ -500,7 +503,7 @@ model BangDeXuat {
   // Relations
   CoQuanDonVi    CoQuanDonVi?    @relation(fields: [co_quan_don_vi_id], references: [id], onDelete: Cascade)
   DonViTrucThuoc DonViTrucThuoc? @relation(fields: [don_vi_truc_thuoc_id], references: [id], onDelete: Cascade)
-  NguoiDeXuat    TaiKhoan        @relation("NguoiDeXuat", fields: [nguoi_de_xuat_id], references: [id], onDelete: Cascade)
+  NguoiDeXuat    TaiKhoan?       @relation("NguoiDeXuat", fields: [nguoi_de_xuat_id], references: [id], onDelete: SetNull)
   NguoiDuyet     TaiKhoan?       @relation("NguoiDuyet", fields: [nguoi_duyet_id], references: [id], onDelete: SetNull)
 
   @@index([status, loai_de_xuat])

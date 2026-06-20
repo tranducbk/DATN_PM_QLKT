@@ -151,6 +151,51 @@ describe('position.service - updatePosition', () => {
       'Chức vụ không tồn tại'
     );
   });
+
+  it('Cho đổi hệ số → Khi updatePosition → Thì sync hệ số vào dòng lịch sử ĐANG MỞ', async () => {
+    prismaMock.chucVu.findUnique.mockResolvedValueOnce({
+      id: CV_ID,
+      ten_chuc_vu: 'Trợ lý',
+      is_manager: false,
+      he_so_chuc_vu: 0.5,
+      co_quan_don_vi_id: CQDV_ID,
+      don_vi_truc_thuoc_id: null,
+    });
+    prismaMock.chucVu.update.mockResolvedValueOnce({ id: CV_ID });
+    prismaMock.lichSuChucVu.updateMany.mockResolvedValue({ count: 1 });
+
+    await positionService.updatePosition(CV_ID, { he_so_chuc_vu: 0.7 });
+
+    expect(prismaMock.lichSuChucVu.updateMany).toHaveBeenCalledWith({
+      where: { chuc_vu_id: CV_ID, ngay_ket_thuc: null },
+      data: { he_so_chuc_vu: 0.7 },
+    });
+  });
+
+  it('Cho đổi tên → Khi updatePosition → Thì sync tên vào MỌI dòng lịch sử, không đụng hệ số', async () => {
+    prismaMock.chucVu.findUnique.mockResolvedValueOnce({
+      id: CV_ID,
+      ten_chuc_vu: 'Trợ lý',
+      is_manager: false,
+      he_so_chuc_vu: 0.5,
+      co_quan_don_vi_id: CQDV_ID,
+      don_vi_truc_thuoc_id: null,
+    });
+    prismaMock.chucVu.update.mockResolvedValueOnce({ id: CV_ID });
+    prismaMock.lichSuChucVu.updateMany.mockResolvedValue({ count: 3 });
+
+    await positionService.updatePosition(CV_ID, { ten_chuc_vu: 'Trưởng ban' });
+
+    expect(prismaMock.lichSuChucVu.updateMany).toHaveBeenCalledWith({
+      where: { chuc_vu_id: CV_ID },
+      data: { ten_chuc_vu: 'Trưởng ban' },
+    });
+    expect(prismaMock.lichSuChucVu.updateMany).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ he_so_chuc_vu: expect.anything() }),
+      })
+    );
+  });
 });
 
 describe('position.service - deletePosition', () => {
@@ -187,5 +232,27 @@ describe('position.service - deletePosition', () => {
     );
     expect(err.statusCode).toBe(409);
     expect(prismaMock.chucVu.delete).not.toHaveBeenCalled();
+  });
+
+  it('Cho DVTT position → Khi deletePosition → Thì freeze tên mới nhất vào lịch sử TRƯỚC khi xoá', async () => {
+    prismaMock.chucVu.findUnique.mockResolvedValueOnce({
+      id: CV_ID,
+      ten_chuc_vu: 'Trợ lý',
+      CoQuanDonVi: null,
+      DonViTrucThuoc: { ten_don_vi: 'Ban A', CoQuanDonVi: { ten_don_vi: 'Phòng X' } },
+    });
+    prismaMock.quanNhan.count.mockResolvedValueOnce(0);
+    prismaMock.lichSuChucVu.updateMany.mockResolvedValueOnce({ count: 2 });
+    prismaMock.chucVu.delete.mockResolvedValueOnce({ id: CV_ID });
+
+    await positionService.deletePosition(CV_ID);
+
+    expect(prismaMock.lichSuChucVu.updateMany).toHaveBeenCalledWith({
+      where: { chuc_vu_id: CV_ID },
+      data: { ten_chuc_vu: 'Trợ lý', ten_co_quan_don_vi: 'Phòng X', ten_don_vi_truc_thuoc: 'Ban A' },
+    });
+    const freezeOrder = prismaMock.lichSuChucVu.updateMany.mock.invocationCallOrder[0];
+    const deleteOrder = prismaMock.chucVu.delete.mock.invocationCallOrder[0];
+    expect(freezeOrder).toBeLessThan(deleteOrder);
   });
 });

@@ -8,6 +8,8 @@ import { sanitizeRowData } from '../helpers/excel/excelHelper';
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
 import { fetchTemplateData } from './excel/templateData.service';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { logMessages } from '../constants/logMessages.constants';
 import { NotFoundError } from '../middlewares/errorHandler';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
@@ -18,7 +20,10 @@ import {
   HCCSVV_TEMPLATE_COLUMNS,
   HCCSVV_TEMPLATE_OPTIONS,
 } from '../constants/awardExcel.constants';
-import { previewImport as doPreviewImport, confirmImport as doConfirmImport } from './tenureMedal/import';
+import {
+  previewImport as doPreviewImport,
+  confirmImport as doConfirmImport,
+} from './tenureMedal/import';
 import type { HccsvvValidItem } from './tenureMedal/types';
 
 export type { HccsvvValidItem } from './tenureMedal/types';
@@ -202,10 +207,10 @@ class HCCSVVService {
       await profileService.recalculateTenureProfile(personnelId);
     } catch (recalcError) {
       void writeSystemLog({
-        action: 'ERROR',
+        action: AUDIT_ACTIONS.ERROR,
         resource: AWARD_SLUGS.TENURE_MEDALS,
         resourceId: id,
-        description: `Lỗi tính lại hồ sơ khen thưởng niên hạn sau khi xóa ${AWARD_LABEL}: ${recalcError}`,
+        description: logMessages.recalcError('xóa', AWARD_LABEL, recalcError),
       });
     }
 
@@ -218,10 +223,10 @@ class HCCSVVService {
       );
     } catch (notifyError) {
       void writeSystemLog({
-        action: 'ERROR',
+        action: AUDIT_ACTIONS.ERROR,
         resource: AWARD_SLUGS.TENURE_MEDALS,
         resourceId: id,
-        description: `Lỗi gửi thông báo xóa khen thưởng ${AWARD_LABEL}: ${notifyError}`,
+        description: logMessages.notifyError('xóa', AWARD_LABEL, notifyError),
       });
     }
 

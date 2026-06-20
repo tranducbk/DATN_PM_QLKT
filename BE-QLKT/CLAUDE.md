@@ -106,6 +106,19 @@ router.post(
 - Model naming: PascalCase Vietnamese (`QuanNhan`, `CoQuanDonVi`) with `@@map("snake_case")`
 - Field naming: snake_case Vietnamese (`ho_ten`, `ngay_sinh`, `co_quan_don_vi_id`)
 
+## Data lifecycle & cascade design (BẮT BUỘC khi đặt `onDelete`)
+
+Phân 2 tầng dữ liệu, quyết định `onDelete` theo tầng — đừng quyết từng ca:
+
+- **Vận hành** (trạng thái hiện tại): đơn vị, chức vụ, gán quân nhân, tài khoản. Xóa = **block** khi còn ràng buộc sống (guard đếm dependents → `ValidationError`). Không xóa âm thầm.
+- **Lịch sử/sổ cái** (append-only, bất biến): lịch sử chức vụ, khen thưởng đã trao, đề xuất, audit log. **Phải sống sót** khi entity vận hành bị xóa → FK = **nullable + `onDelete: SetNull`**, kèm **snapshot** ngữ cảnh để hiển thị khi nguồn mất.
+
+Quy tắc field snapshot trong bảng lịch sử:
+- **Tên/định danh** (`ten_chuc_vu`, `ten_don_vi`, `ho_ten`): hiển thị **live-first** (`live ?? snapshot`) → đổi tên lan tỏa ngay; snapshot chỉ là fallback khi nguồn bị xóa. Ghi snapshot **lúc xóa nguồn** (freeze-on-delete, chụp giá trị mới nhất), không cần sync mỗi update.
+- **Giá trị nuôi tính toán** (`he_so_chuc_vu`, cấp bậc tại thời điểm): **frozen** — không sửa retroactive (sai tính điều kiện khen thưởng). Ngoại lệ: dòng **đang mở** (`ngay_ket_thuc = null`) sync theo giá trị mới nhất; dòng đã đóng giữ nguyên.
+
+Đã áp dụng: `BangDeXuat.nguoi_de_xuat_id` (SetNull); `LichSuChucVu.chuc_vu_id` (SetNull + snapshot `ten_chuc_vu/ten_co_quan_don_vi/ten_don_vi_truc_thuoc`, `he_so` sync dòng mở). Tên snapshot khớp FK: `ten_co_quan_don_vi` ↔ cơ quan đơn vị, `ten_don_vi_truc_thuoc` ↔ đơn vị trực thuộc.
+
 ## Response Format
 
 All API responses follow `ApiResponse<T>`:

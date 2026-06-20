@@ -1,7 +1,10 @@
 import type { Prisma } from '../../generated/prisma';
 import { danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
-import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
+import {
+  coQuanDonViRepository,
+  donViTrucThuocRepository,
+} from '../../repositories/unit.repository';
 import { unitAnnualProfileRepository } from '../../repositories/unitAnnualProfile.repository';
 import {
   getDanhHieuName,
@@ -28,15 +31,18 @@ export async function getSubUnits(coQuanDonViId) {
   return subUnits.map(u => u.id);
 }
 
-export async function list({
-  page = 1,
-  limit = 10,
-  year,
-  donViId,
-  danhHieu,
-  userRole,
-  userQuanNhanId,
-}: Record<string, any> = {}, deps: UnitAnnualAwardDeps = defaultDeps) {
+export async function list(
+  {
+    page = 1,
+    limit = 10,
+    year,
+    donViId,
+    danhHieu,
+    userRole,
+    userQuanNhanId,
+  }: Record<string, any> = {},
+  deps: UnitAnnualAwardDeps = defaultDeps
+) {
   const where: Record<string, any> = {};
   if (year) where.nam = Number(year);
   if (danhHieu) where.danh_hieu = danhHieu;
@@ -135,21 +141,24 @@ export async function getById(
   return record;
 }
 
-export async function upsert({
-  don_vi_id,
-  nam,
-  danh_hieu,
-  so_quyet_dinh,
-  ghi_chu,
-  nguoi_tao_id,
-}: {
-  don_vi_id: string;
-  nam: number | string;
-  danh_hieu?: string | null;
-  so_quyet_dinh?: string | null;
-  ghi_chu?: string | null;
-  nguoi_tao_id: string;
-}, deps: UnitAnnualAwardDeps = defaultDeps) {
+export async function upsert(
+  {
+    don_vi_id,
+    nam,
+    danh_hieu,
+    so_quyet_dinh,
+    ghi_chu,
+    nguoi_tao_id,
+  }: {
+    don_vi_id: string;
+    nam: number | string;
+    danh_hieu?: string | null;
+    so_quyet_dinh?: string | null;
+    ghi_chu?: string | null;
+    nguoi_tao_id: string;
+  },
+  deps: UnitAnnualAwardDeps = defaultDeps
+) {
   const year = Number(nam);
   const unitId = don_vi_id;
 
@@ -177,10 +186,14 @@ export async function upsert({
         );
       }
       if (isBkbqp && existing.nhan_bkbqp) {
-        throw new ValidationError(`Đơn vị đã có Bằng khen Bộ Quốc phòng năm ${year}`);
+        throw new ValidationError(
+          `Đơn vị đã có ${getDanhHieuName(DANH_HIEU_DON_VI_HANG_NAM.BKBQP)} năm ${year}`
+        );
       }
       if (isBkttcp && existing.nhan_bkttcp) {
-        throw new ValidationError(`Đơn vị đã có Bằng khen Thủ tướng Chính phủ năm ${year}`);
+        throw new ValidationError(
+          `Đơn vị đã có ${getDanhHieuName(DANH_HIEU_DON_VI_HANG_NAM.BKTTCP)} năm ${year}`
+        );
       }
     }
   }
@@ -234,9 +247,9 @@ export async function upsert({
     create: {
       ...buildUnitIdFields(unitId, isCoQuanDonVi),
       nam: year,
-      danh_hieu: isBk ? null : (danh_hieu || null),
-      so_quyet_dinh: isBk ? null : (so_quyet_dinh || null),
-      ghi_chu: isBk ? null : (ghi_chu || null),
+      danh_hieu: isBk ? null : danh_hieu || null,
+      so_quyet_dinh: isBk ? null : so_quyet_dinh || null,
+      ghi_chu: isBk ? null : ghi_chu || null,
       nhan_bkbqp: isBkbqp,
       ...(isBkbqp && so_quyet_dinh && { so_quyet_dinh_bkbqp: so_quyet_dinh }),
       ...(isBkbqp && ghi_chu && { ghi_chu_bkbqp: ghi_chu }),
@@ -273,10 +286,7 @@ export async function remove(
   const donViId = danhHieu.co_quan_don_vi_id || danhHieu.don_vi_truc_thuoc_id;
 
   if (awardType) {
-    const validTypes = new Set<string>([
-      ...DANH_HIEU_DON_VI_CO_BAN,
-      ...DANH_HIEU_DON_VI_BANG_KHEN,
-    ]);
+    const validTypes = new Set<string>([...DANH_HIEU_DON_VI_CO_BAN, ...DANH_HIEU_DON_VI_BANG_KHEN]);
     if (!validTypes.has(awardType)) {
       throw new ValidationError(
         `Loại danh hiệu không hợp lệ. Chỉ được chọn: ${formatDanhHieuList([...validTypes])}.`

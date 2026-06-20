@@ -1,3 +1,5 @@
+import { UNIT_ANNUAL_TEMPLATE_COLUMNS } from '../../constants/awardExcel.constants';
+import { resolveTemplateColumns } from './excelHelper';
 import type ExcelJS from 'exceljs';
 import { parseHeaderMap, getHeaderCol } from './excelHelper';
 import { ValidationError } from '../../middlewares/errorHandler';
@@ -32,14 +34,15 @@ export interface ParsedUnitAnnualImport {
 export function parseUnitAnnualRewardImport(worksheet: ExcelJS.Worksheet): ParsedUnitAnnualImport {
   const headerMap = parseHeaderMap(worksheet);
 
+  const cols = resolveTemplateColumns(headerMap, UNIT_ANNUAL_TEMPLATE_COLUMNS);
   const columns: UnitAnnualColumnMap = {
-    idCol: getHeaderCol(headerMap, ['id', 'unit_id']),
-    maDonViCol: getHeaderCol(headerMap, ['ma_don_vi', 'ma_donvi', 'ma', 'madonvi']),
-    tenDonViCol: getHeaderCol(headerMap, ['ten_don_vi', 'ten_donvi', 'ten', 'tendonvi']),
-    namCol: getHeaderCol(headerMap, ['nam', 'year']),
-    danhHieuCol: getHeaderCol(headerMap, ['danh_hieu', 'danhhieu', 'danh_hiu', 'danhieu']),
-    soQuyetDinhCol: getHeaderCol(headerMap, ['so_quyet_dinh', 'soquyetdinh', 'so_qd', 'soqd']),
-    ghiChuCol: getHeaderCol(headerMap, ['ghi_chu', 'ghichu', 'ghi_ch', 'ghich']),
+    idCol: cols.id,
+    maDonViCol: cols.ma_don_vi,
+    tenDonViCol: cols.ten_don_vi,
+    namCol: cols.nam,
+    danhHieuCol: cols.danh_hieu,
+    soQuyetDinhCol: cols.so_quyet_dinh,
+    ghiChuCol: cols.ghi_chu,
     bkbqpCol: getHeaderCol(headerMap, ['bkbqp', 'nhan_bkbqp', 'bkbqp_khong_dien']),
     bkttcpCol: getHeaderCol(headerMap, ['bkttcp', 'nhan_bkttcp', 'bkttcp_khong_dien']),
     soQdBkbqpCol: getHeaderCol(headerMap, ['so_quyet_dinh_bkbqp', 'so_qd_bkbqp', 'soqdbkbqp']),

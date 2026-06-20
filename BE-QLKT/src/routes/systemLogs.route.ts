@@ -8,21 +8,21 @@ const router = Router();
 /**
  * @route   GET /api/system-logs
  * @desc    List system logs (filtered by caller's role level)
- * @access  Private - ADMIN+ only
+ * @access  Private - MANAGER+ only
  */
 router.get('/', verifyToken, requireManager, systemLogsController.getLogs);
 
 /**
  * @route   GET /api/system-logs/actions
  * @desc    List filterable action types
- * @access  Private - ADMIN+ only
+ * @access  Private - MANAGER+ only
  */
 router.get('/actions', verifyToken, requireManager, systemLogsController.getActions);
 
 /**
  * @route   GET /api/system-logs/resources
  * @desc    List filterable resource types
- * @access  Private - ADMIN+ only
+ * @access  Private - MANAGER+ only
  */
 router.get('/resources', verifyToken, requireManager, systemLogsController.getResources);
 

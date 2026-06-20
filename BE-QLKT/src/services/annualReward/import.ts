@@ -25,6 +25,7 @@ import { ValidationError } from '../../middlewares/errorHandler';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.ANNUAL_REWARDS];
 import { writeSystemLog } from '../../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../../constants/auditActions.constants';
 import { validateDecisionNumbers } from '../eligibility/decisionNumberValidation';
 import {
   parseBooleanValue,
@@ -42,7 +43,9 @@ import type {
   ConfirmImportItem,
 } from './types';
 
-async function resolveAnnualRewardImportContext(buffer: Buffer): Promise<AnnualRewardImportContext> {
+async function resolveAnnualRewardImportContext(
+  buffer: Buffer
+): Promise<AnnualRewardImportContext> {
   const parsed = await parseAnnualRewardImport(buffer);
 
   const [personnelList, existingRewards] = await Promise.all([
@@ -246,33 +249,39 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
         const existing = existingRewardByKey.get(`${personnel.id}_${nam}`) ?? null;
 
         if (!existing) {
-          const createdReward = await danhHieuHangNamRepository.createRaw({
-            data: {
-              quan_nhan_id: personnel.id,
-              nam,
-              danh_hieu,
-              cap_bac: cap_bac || null,
-              chuc_vu: chuc_vu || null,
-              ghi_chu: ghi_chu || null,
-              nhan_bkbqp: nhan_bkbqp || false,
-              nhan_cstdtq: nhan_cstdtq || false,
-              nhan_bkttcp: nhan_bkttcp || false,
+          const createdReward = await danhHieuHangNamRepository.createRaw(
+            {
+              data: {
+                quan_nhan_id: personnel.id,
+                nam,
+                danh_hieu,
+                cap_bac: cap_bac || null,
+                chuc_vu: chuc_vu || null,
+                ghi_chu: ghi_chu || null,
+                nhan_bkbqp: nhan_bkbqp || false,
+                nhan_cstdtq: nhan_cstdtq || false,
+                nhan_bkttcp: nhan_bkttcp || false,
+              },
             },
-          }, prismaTx);
+            prismaTx
+          );
           txCreated.push(createdReward.id);
         } else {
-          await danhHieuHangNamRepository.updateRaw({
-            where: { id: existing.id },
-            data: {
-              danh_hieu,
-              cap_bac: cap_bac !== undefined ? cap_bac : existing.cap_bac,
-              chuc_vu: chuc_vu !== undefined ? chuc_vu : existing.chuc_vu,
-              ghi_chu: ghi_chu !== undefined ? ghi_chu : existing.ghi_chu,
-              nhan_bkbqp: nhan_bkbqp || existing.nhan_bkbqp,
-              nhan_cstdtq: nhan_cstdtq || existing.nhan_cstdtq,
-              nhan_bkttcp: nhan_bkttcp || existing.nhan_bkttcp,
+          await danhHieuHangNamRepository.updateRaw(
+            {
+              where: { id: existing.id },
+              data: {
+                danh_hieu,
+                cap_bac: cap_bac !== undefined ? cap_bac : existing.cap_bac,
+                chuc_vu: chuc_vu !== undefined ? chuc_vu : existing.chuc_vu,
+                ghi_chu: ghi_chu !== undefined ? ghi_chu : existing.ghi_chu,
+                nhan_bkbqp: nhan_bkbqp || existing.nhan_bkbqp,
+                nhan_cstdtq: nhan_cstdtq || existing.nhan_cstdtq,
+                nhan_bkttcp: nhan_bkttcp || existing.nhan_bkttcp,
+              },
             },
-          }, prismaTx);
+            prismaTx
+          );
           txUpdated.push(existing.id);
         }
 
@@ -306,9 +315,9 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
 
   const imported = created.length + updated.length;
   void writeSystemLog({
-    action: 'IMPORT',
+    action: AUDIT_ACTIONS.IMPORT,
     resource: AWARD_SLUGS.ANNUAL_REWARDS,
-    description: `[Import ${AWARD_LABEL}] Hoàn tất: ${imported}/${total} thành công, ${errors.length} lỗi`,
+    description: `Nhập dữ liệu ${AWARD_LABEL} hoàn tất: ${imported}/${total} thành công, ${errors.length} lỗi`,
     payload: errors.length > 0 ? { errors: errors.slice(0, 10) } : null,
   });
 
@@ -629,7 +638,14 @@ export async function confirmImport(
         quan_nhan_id: { in: personnelIds },
         nam: { in: uniqueYears },
       },
-      select: { quan_nhan_id: true, nam: true, danh_hieu: true, nhan_bkbqp: true, nhan_cstdtq: true, nhan_bkttcp: true },
+      select: {
+        quan_nhan_id: true,
+        nam: true,
+        danh_hieu: true,
+        nhan_bkbqp: true,
+        nhan_cstdtq: true,
+        nhan_bkttcp: true,
+      },
     }),
     quanNhanRepository.findManyRaw({
       where: { id: { in: personnelIds } },
@@ -646,7 +662,9 @@ export async function confirmImport(
   const pendingConflicts: string[] = [];
   for (const item of validItems) {
     if (pendingKeys.has(`${item.personnel_id}_${item.nam}`)) {
-      pendingConflicts.push(`${hoTenMap.get(item.personnel_id) || item.ho_ten || item.personnel_id} năm ${item.nam}: đang có đề xuất chờ duyệt`);
+      pendingConflicts.push(
+        `${hoTenMap.get(item.personnel_id) || item.ho_ten || item.personnel_id} năm ${item.nam}: đang có đề xuất chờ duyệt`
+      );
     }
   }
   if (pendingConflicts.length > 0) {
@@ -705,10 +723,8 @@ export async function confirmImport(
       for (const item of validItems) {
         const isBangKhen = DANH_HIEU_CA_NHAN_BANG_KHEN.has(item.danh_hieu);
         const nhanBKBQP = item.nhan_bkbqp || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP;
-        const nhanCSTDTQ =
-          item.nhan_cstdtq || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ;
-        const nhanBKTTCP =
-          item.nhan_bkttcp || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP;
+        const nhanCSTDTQ = item.nhan_cstdtq || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ;
+        const nhanBKTTCP = item.nhan_bkttcp || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP;
         const finalDanhHieu = isBangKhen ? null : item.danh_hieu;
 
         const sharedData = {
@@ -733,24 +749,27 @@ export async function confirmImport(
           }),
         };
 
-        const result = await danhHieuHangNamRepository.upsertRaw({
-          where: {
-            quan_nhan_id_nam: {
+        const result = await danhHieuHangNamRepository.upsertRaw(
+          {
+            where: {
+              quan_nhan_id_nam: {
+                quan_nhan_id: item.personnel_id,
+                nam: item.nam,
+              },
+            },
+            update: {
+              danh_hieu: finalDanhHieu,
+              ...sharedData,
+            },
+            create: {
               quan_nhan_id: item.personnel_id,
               nam: item.nam,
+              danh_hieu: finalDanhHieu,
+              ...sharedData,
             },
           },
-          update: {
-            danh_hieu: finalDanhHieu,
-            ...sharedData,
-          },
-          create: {
-            quan_nhan_id: item.personnel_id,
-            nam: item.nam,
-            danh_hieu: finalDanhHieu,
-            ...sharedData,
-          },
-        }, prismaTx);
+          prismaTx
+        );
         results.push(result);
       }
       return { imported: results.length, data: results };

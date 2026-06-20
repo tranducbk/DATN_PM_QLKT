@@ -6,20 +6,19 @@ import {
   Table,
   Input,
   Button,
-  Breadcrumb,
   Typography,
   message,
   ConfigProvider,
   theme as antdTheme,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { HomeOutlined, SearchOutlined, EyeOutlined } from '@ant-design/icons';
-import Link from 'next/link';
+import { SearchOutlined, EyeOutlined } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/http/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
 import { useDebounce } from '@/hooks/useDebounce';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 
 const { Title } = Typography;
@@ -116,18 +115,7 @@ export default function SuperAdminPersonnelPage() {
       theme={{ algorithm: theme === 'dark' ? antdTheme.darkAlgorithm : antdTheme.defaultAlgorithm }}
     >
       <div className="p-6 space-y-4">
-        <Breadcrumb
-          items={[
-            {
-              title: (
-                <Link href="/super-admin/dashboard">
-                  <HomeOutlined />
-                </Link>
-              ),
-            },
-            { title: 'Quản lý quân nhân' },
-          ]}
-        />
+        <PageBreadcrumb items={[{ title: 'Quản lý quân nhân' }]} />
         <Title level={2} style={{ margin: 0 }}>
           Quản lý quân nhân
         </Title>

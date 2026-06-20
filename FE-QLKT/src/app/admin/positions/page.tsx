@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react';
 import {
   Button,
   Card,
-  Breadcrumb,
   Typography,
   Space,
   Modal,
@@ -15,18 +14,17 @@ import {
 } from 'antd';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { PositionForm } from '@/components/categories/PositionForm';
 import { PositionsTable, type PositionRow } from '@/components/categories/PositionsTable';
 import { apiClient } from '@/lib/http/apiClient';
 import {
   PlusOutlined,
-  HomeOutlined,
   SyncOutlined,
   IdcardOutlined,
   CrownOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
-import Link from 'next/link';
 
 const { Title, Text } = Typography;
 
@@ -88,15 +86,7 @@ export default function PositionsPage() {
       }}
     >
       <div style={{ padding: '24px' }}>
-        {/* Breadcrumb */}
-        <Breadcrumb style={{ marginBottom: '24px' }}>
-          <Breadcrumb.Item>
-            <Link href="/admin/dashboard">
-              <HomeOutlined />
-            </Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>Quản lý chức vụ</Breadcrumb.Item>
-        </Breadcrumb>
+        <PageBreadcrumb items={[{ title: 'Quản lý chức vụ' }]} />
 
         {/* Header */}
         <div

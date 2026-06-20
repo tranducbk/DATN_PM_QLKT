@@ -32,7 +32,11 @@ export function AccountsTable({ accounts, onEdit, onRefresh }: AccountsTableProp
     if (!deleteId) return;
     try {
       setLoading(true);
-      await apiClient.deleteAccount(deleteId);
+      const result = await apiClient.deleteAccount(deleteId);
+      if (!result.success) {
+        message.error(result.message || 'Có lỗi xảy ra khi xóa');
+        return;
+      }
       message.success('Xóa tài khoản thành công');
       onRefresh?.();
       setDeleteId(null);

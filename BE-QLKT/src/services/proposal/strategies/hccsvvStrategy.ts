@@ -2,7 +2,7 @@ import { tenureMedalRepository } from '../../../repositories/tenureMedal.reposit
 import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
 import { tenureProfileRepository } from '../../../repositories/tenureProfile.repository';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
-import { DANH_HIEU_HCCSVV } from '../../../constants/danhHieu.constants';
+import { DANH_HIEU_HCCSVV, getLoaiDeXuatName } from '../../../constants/danhHieu.constants';
 import { ELIGIBILITY_STATUS } from '../../../constants/eligibilityStatus.constants';
 import { validateHCCSVVRankOrder } from '../../../helpers/awardValidation/tenureMedalRankOrder';
 import { formatPersonnelLabel } from './personnelLabel';
@@ -21,6 +21,8 @@ import {
   buildNienHanPayloadItem,
   type NienHanInputItem,
 } from './nienHanPayloadHelper';
+
+const NIEN_HAN_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.NIEN_HAN);
 
 class HccsvvStrategy implements ProposalStrategy {
   readonly type = PROPOSAL_TYPES.NIEN_HAN;
@@ -48,7 +50,7 @@ class HccsvvStrategy implements ProposalStrategy {
     const invalidDanhHieus = danhHieus.filter(dh => !allowedDanhHieus.includes(dh));
     if (invalidDanhHieus.length > 0) {
       errors.push(
-        `Loại đề xuất "Huy chương Chiến sĩ vẻ vang" chỉ cho phép các hạng HCCSVV. ` +
+        `Loại đề xuất "${NIEN_HAN_LABEL}" chỉ cho phép các hạng HCCSVV. ` +
           `Các danh hiệu không hợp lệ: ${invalidDanhHieus.join(', ')}. ` +
           `Vui lòng sử dụng loại đề xuất riêng cho HC_QKQT hoặc KNC_VSNXD_QDNDVN.`
       );
@@ -132,7 +134,7 @@ class HccsvvStrategy implements ProposalStrategy {
     for (const item of nienHanData) {
       try {
         if (!item.personnel_id) {
-          acc.errors.push('Thiếu thông tin quân nhân khi xử lý Huy chương Chiến sĩ vẻ vang.');
+          acc.errors.push(`Thiếu thông tin quân nhân khi xử lý ${NIEN_HAN_LABEL}.`);
           continue;
         }
         const personnel = await quanNhanRepository.findUniqueRaw(
@@ -141,15 +143,13 @@ class HccsvvStrategy implements ProposalStrategy {
         );
         if (!personnel) {
           acc.errors.push(
-            'Không tìm thấy thông tin quân nhân khi xử lý Huy chương Chiến sĩ vẻ vang. ' +
+            `Không tìm thấy thông tin quân nhân khi xử lý ${NIEN_HAN_LABEL}. ` +
               'Quân nhân có thể đã bị xoá khỏi hệ thống — vui lòng tải lại đề xuất.'
           );
           continue;
         }
         if (!item.danh_hieu) {
-          acc.errors.push(
-            `${formatPersonnelLabel(personnel)} chưa chọn hạng Huy chương Chiến sĩ vẻ vang.`
-          );
+          acc.errors.push(`${formatPersonnelLabel(personnel)} chưa chọn hạng ${NIEN_HAN_LABEL}.`);
           continue;
         }
         if (!allowedDanhHieus.includes(item.danh_hieu)) continue;
@@ -262,13 +262,13 @@ class HccsvvStrategy implements ProposalStrategy {
           personnel_id: item.personnel_id,
           error,
         });
-        acc.errors.push('Có lỗi xảy ra khi lưu Huy chương Chiến sĩ vẻ vang, vui lòng thử lại.');
+        acc.errors.push(`Có lỗi xảy ra khi lưu ${NIEN_HAN_LABEL}, vui lòng thử lại.`);
       }
     }
   }
 
   buildSuccessMessage(acc: ImportAccumulator): string {
-    return `Đã phê duyệt Huy chương Chiến sĩ vẻ vang cho ${acc.affectedPersonnelIds.size} quân nhân`;
+    return `Đã phê duyệt ${NIEN_HAN_LABEL} cho ${acc.affectedPersonnelIds.size} quân nhân`;
   }
 }
 

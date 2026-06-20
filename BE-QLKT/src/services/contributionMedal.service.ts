@@ -8,6 +8,8 @@ import { getDanhHieuName } from '../constants/danhHieu.constants';
 import { NotFoundError } from '../middlewares/errorHandler';
 import { sanitizeRowData } from '../helpers/excel/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { logMessages } from '../constants/logMessages.constants';
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
 import { fetchTemplateData } from './excel/templateData.service';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
@@ -145,7 +147,10 @@ class ContributionAwardService {
           const months = parsed.months ?? 0;
           return years * 12 + months;
         } catch (error) {
-          console.error('Failed to parse thoi_gian JSON when exporting contribution medals:', error);
+          console.error(
+            'Failed to parse thoi_gian JSON when exporting contribution medals:',
+            error
+          );
           return thoiGian;
         }
       }
@@ -252,10 +257,10 @@ class ContributionAwardService {
       await profileService.recalculateContributionProfile(personnelId);
     } catch (recalcError) {
       void writeSystemLog({
-        action: 'ERROR',
+        action: AUDIT_ACTIONS.ERROR,
         resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,
         resourceId: id,
-        description: `Lỗi tính lại hồ sơ khen thưởng cống hiến sau khi xóa ${AWARD_LABEL}: ${recalcError}`,
+        description: logMessages.recalcError('xóa', AWARD_LABEL, recalcError),
       });
     }
 
@@ -268,10 +273,10 @@ class ContributionAwardService {
       );
     } catch (notifyError) {
       void writeSystemLog({
-        action: 'ERROR',
+        action: AUDIT_ACTIONS.ERROR,
         resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,
         resourceId: id,
-        description: `Lỗi gửi thông báo xóa khen thưởng ${AWARD_LABEL}: ${notifyError}`,
+        description: logMessages.notifyError('xóa', AWARD_LABEL, notifyError),
       });
     }
 

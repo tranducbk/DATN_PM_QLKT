@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Alert, Typography, Space, Tag, message, Select, Input, Empty } from 'antd';
+import { Table, Typography, Space, Tag, message, Select, Input, Empty } from 'antd';
 import { EditOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/http/apiClient';
@@ -12,6 +12,8 @@ import type { DateInput } from '@/lib/types/common';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { DANH_HIEU_DAC_BIET, AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
 import { GENDER } from '@/constants/gender.constants';
+import { StepGuide } from './StepGuide';
+import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
 
 const { Text } = Typography;
 
@@ -290,25 +292,21 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
 
   return (
     <div>
-      <Alert
-        message={`Bước 3: Thiết lập danh hiệu - ${AWARD_TAB_LABELS.KNC_VSNXD_QDNDVN}`}
-        description={
-          <div>
-            <p>
-              1. Xác nhận danh hiệu cho từng quân nhân đã chọn (
-              <strong>{personnel.length}</strong> quân nhân)
-            </p>
-            <p>
-              2. Điều kiện thời gian phục vụ: <strong>Nữ từ 20 năm</strong>, <strong>Nam từ 25 năm</strong>.
-            </p>
-            <p>3. Đảm bảo tất cả quân nhân đã có danh hiệu trước khi chuyển bước.</p>
-            <p>4. Hoàn tất khai báo, nhấn &quot;Tiếp tục&quot; để sang bước đính kèm tệp.</p>
-          </div>
-        }
-        type="info"
-        showIcon
+      <StepGuide
+        title={stepGuideTitle(3, 'Thiết lập danh hiệu', AWARD_TAB_LABELS.KNC_VSNXD_QDNDVN)}
         icon={<EditOutlined />}
-        style={{ marginBottom: 24 }}
+        steps={[
+          <span key="0">
+            Xác nhận danh hiệu cho từng quân nhân đã chọn (<strong>{personnel.length}</strong> quân
+            nhân).
+          </span>,
+          <span key="1">
+            Điều kiện thời gian phục vụ: <strong>Nữ từ 20 năm</strong>, <strong>Nam từ 25 năm</strong>
+            .
+          </span>,
+          GUIDE_LINES.allHaveTitle,
+          GUIDE_LINES.nextToAttach,
+        ]}
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>

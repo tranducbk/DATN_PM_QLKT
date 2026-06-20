@@ -1,13 +1,13 @@
 import { danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repository';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
-import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
+import {
+  coQuanDonViRepository,
+  donViTrucThuocRepository,
+} from '../../repositories/unit.repository';
 import { decisionFileRepository } from '../../repositories/decisionFile.repository';
 import type { Prisma } from '../../generated/prisma';
 import ExcelJS from 'exceljs';
-import {
-  getDanhHieuName,
-  DANH_HIEU_DON_VI_HANG_NAM,
-} from '../../constants/danhHieu.constants';
+import { getDanhHieuName, DANH_HIEU_DON_VI_HANG_NAM } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { ROLES } from '../../constants/roles.constants';
 import { sanitizeRowData } from '../../helpers/excel/excelHelper';
@@ -19,7 +19,6 @@ import {
 } from '../../constants/excel.constants';
 import {
   AWARD_EXCEL_SHEETS,
-  EXCEL_HEADER_FILL_COLOR,
   EXCEL_HIGHLIGHT_FILL_COLOR,
   UNIT_ANNUAL_DANH_HIEU_VALIDATION_FORMULA,
   UNIT_ANNUAL_EXPORT_COLUMNS,
@@ -37,13 +36,8 @@ export async function exportTemplate(
 
   worksheet.columns = columns;
 
+  styleHeaderRow(worksheet);
   const headerRowObj = worksheet.getRow(1);
-  headerRowObj.font = { bold: true };
-  headerRowObj.fill = {
-    type: 'pattern' as const,
-    pattern: 'solid' as const,
-    fgColor: { argb: EXCEL_HEADER_FILL_COLOR },
-  };
 
   const readonlyFill = {
     type: 'pattern' as const,

@@ -6,7 +6,6 @@ import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { ROLE_LABELS } from '../../constants/roles.constants';
 import { proposalRepository } from '../../repositories/proposal.repository';
 
-
 /** Loose shape for proposal data from JSON or Prisma */
 interface ParsedProposal {
   loai_de_xuat?: string;
@@ -97,7 +96,9 @@ const proposals: Record<
     const proposalId = normalizeParam(req.params?.id) ?? FALLBACK.UNKNOWN;
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
-      const result = data?.data?.result || data?.result || {};
+      // The approve response puts the summary object directly in `data` (not data.result),
+      // so total_danh_hieu / total_thanh_tich / total_nien_han live here.
+      const result = data?.data || data?.result || {};
 
       let proposal = data?.data?.proposal || data?.proposal;
 
@@ -115,17 +116,16 @@ const proposals: Record<
               CoQuanDonVi: true,
             },
           });
-        } catch (e) { console.error('auditLog/proposals fetch failed:', e); }
+        } catch (e) {
+          console.error('auditLog/proposals fetch failed:', e);
+        }
       }
 
       if (!proposal) {
         proposal = data?.data || data;
       }
 
-      if (
-        proposal &&
-        (proposal.loai_de_xuat || proposal.type || proposalId !== FALLBACK.UNKNOWN)
-      ) {
+      if (proposal && (proposal.loai_de_xuat || proposal.type || proposalId !== FALLBACK.UNKNOWN)) {
         const loaiDeXuat = proposal.loai_de_xuat || proposal.type;
         const typeName = getLoaiDeXuatName(loaiDeXuat);
 
@@ -203,7 +203,9 @@ const proposals: Record<
 
         return description;
       }
-    } catch (e) { console.error('auditLog/proposals fetch failed:', e); }
+    } catch (e) {
+      console.error('auditLog/proposals fetch failed:', e);
+    }
     return `Phê duyệt đề xuất: ${proposalId}`;
   },
   REJECT: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
@@ -216,7 +218,9 @@ const proposals: Record<
       proposal = data?.data?.proposal || data?.proposal || data?.data;
     } catch {}
 
-    if (!proposal && proposalId) {
+    // The reject response may carry a slim proposal object without loai_de_xuat/nam;
+    // fetch the full row so the description keeps the award type, year, and proposer.
+    if ((!proposal || !proposal.loai_de_xuat) && proposalId) {
       try {
         proposal = await proposalRepository.findUniqueRaw({
           where: { id: proposalId },
@@ -226,7 +230,9 @@ const proposals: Record<
             },
           },
         });
-      } catch (e) { console.error('auditLog/proposals fetch failed:', e); }
+      } catch (e) {
+        console.error('auditLog/proposals fetch failed:', e);
+      }
     }
 
     if (proposal) {
@@ -245,7 +251,10 @@ const proposals: Record<
           try {
             return JSON.parse(value);
           } catch (error) {
-   console.error('Audit log helper fallback triggered (helpers/auditLog/proposals.ts):', error);
+            console.error(
+              'Audit log helper fallback triggered (helpers/auditLog/proposals.ts):',
+              error
+            );
             return [];
           }
         }

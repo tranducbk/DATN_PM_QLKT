@@ -173,7 +173,12 @@ class PersonnelController {
     if (!id) return ResponseHelper.badRequest(res, 'ID quân nhân không hợp lệ');
     const userRole = user.role;
     const userQuanNhanId = user.quan_nhan_id;
-    const result = await personnelService.deletePersonnel(id, userRole, userQuanNhanId);
+    const result = await personnelService.deletePersonnel(
+      id,
+      userRole,
+      userQuanNhanId,
+      user.username
+    );
     return ResponseHelper.success(res, { data: result, message: 'Xóa quân nhân thành công' });
   });
 

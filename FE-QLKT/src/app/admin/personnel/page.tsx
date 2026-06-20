@@ -8,7 +8,6 @@ import {
   Select,
   Card,
   Space,
-  Breadcrumb,
   Typography,
   message,
   ConfigProvider,
@@ -20,11 +19,11 @@ import type { ColumnsType } from 'antd/es/table';
 import { useTheme } from '@/components/ThemeProvider';
 import {
   PlusOutlined,
-  HomeOutlined,
   SearchOutlined,
   EyeOutlined,
   FilterOutlined,
 } from '@ant-design/icons';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/lib/http/apiClient';
@@ -360,22 +359,7 @@ export default function PersonnelPage() {
       }}
     >
       <div style={{ padding: '24px' }}>
-        {/* Breadcrumb */}
-        <Breadcrumb
-          style={{ marginBottom: 16 }}
-          items={[
-            {
-              title: (
-                <Link href="/admin/dashboard">
-                  <HomeOutlined />
-                </Link>
-              ),
-            },
-            {
-              title: 'Quản lý quân nhân',
-            },
-          ]}
-        />
+        <PageBreadcrumb items={[{ title: 'Quản lý quân nhân' }]} />
 
         {/* Header */}
         <div

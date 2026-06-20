@@ -14,23 +14,44 @@ function removeVietnameseAccents(str: string): string {
  * @param worksheet - Worksheet to parse
  * @returns Header key to 1-based column number map
  */
+/** Normalizes a header label into a match key (lowercase, accent-free, spaces → `_`). */
+function normalizeHeaderKey(text: string): string {
+  return removeVietnameseAccents(
+    String(text ?? '')
+      .trim()
+      .toLowerCase()
+  )
+    .replace(/\s+/g, '_')
+    .replace(/[^a-z0-9_]/g, '')
+    .replace(/_+/g, '_')
+    .replace(/^_|_$/g, '');
+}
+
 function parseHeaderMap(worksheet: Worksheet): Record<string, number> {
   const headerRow = worksheet.getRow(1);
   const headerMap: Record<string, number> = {};
 
   headerRow.eachCell((cell, colNumber) => {
-    const rawValue = String(cell.value ?? '')
-      .trim()
-      .toLowerCase();
-    const key = removeVietnameseAccents(rawValue)
-      .replace(/\s+/g, '_')
-      .replace(/[^a-z0-9_]/g, '')
-      .replace(/_+/g, '_')
-      .replace(/^_|_$/g, '');
+    const key = normalizeHeaderKey(String(cell.value ?? ''));
     if (key) headerMap[key] = colNumber;
   });
 
   return headerMap;
+}
+
+/**
+ * Maps each template column to its 1-based worksheet column (null if absent), keyed by `col.key`.
+ * Lets imports read expected headers straight from the export config — one source of truth.
+ */
+function resolveTemplateColumns(
+  headerMap: Record<string, number>,
+  columns: readonly { header: string; key: string }[]
+): Record<string, number | null> {
+  const result: Record<string, number | null> = {};
+  for (const col of columns) {
+    result[col.key] = headerMap[normalizeHeaderKey(col.header)] ?? null;
+  }
+  return result;
 }
 
 /**
@@ -39,7 +60,10 @@ function parseHeaderMap(worksheet: Worksheet): Record<string, number> {
  * @param variations - Candidate header keys (e.g. ['ho_ten', 'hoten'])
  * @returns 1-based column number, or null when not found
  */
-function getHeaderCol(headerMap: Record<string, number>, variations: string[]): number | null {
+function getHeaderCol(
+  headerMap: Record<string, number>,
+  variations: readonly string[]
+): number | null {
   for (const v of variations) {
     if (headerMap[v]) return headerMap[v];
   }
@@ -127,7 +151,10 @@ function sanitizeRowData<T extends Record<string, unknown>>(row: T): T {
  * @param dbName - Name from the database
  * @returns Error message if mismatch, null if OK or no name provided
  */
-function validatePersonnelNameMatch(excelName: string | null | undefined, dbName: string): string | null {
+function validatePersonnelNameMatch(
+  excelName: string | null | undefined,
+  dbName: string
+): string | null {
   if (!excelName || !excelName.trim()) return null;
   const normalizedExcel = excelName.trim().toLowerCase().replace(/\s+/g, ' ');
   const normalizedDb = dbName.trim().toLowerCase().replace(/\s+/g, ' ');
@@ -137,4 +164,15 @@ function validatePersonnelNameMatch(excelName: string | null | undefined, dbName
   return null;
 }
 
-export { removeVietnameseAccents, parseHeaderMap, getHeaderCol, parseBooleanValue, resolvePersonnelInfo, buildPendingKeys, sanitizeRowData, validatePersonnelNameMatch };
+export {
+  removeVietnameseAccents,
+  normalizeHeaderKey,
+  parseHeaderMap,
+  resolveTemplateColumns,
+  getHeaderCol,
+  parseBooleanValue,
+  resolvePersonnelInfo,
+  buildPendingKeys,
+  sanitizeRowData,
+  validatePersonnelNameMatch,
+};

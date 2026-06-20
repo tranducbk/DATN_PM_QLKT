@@ -1,5 +1,9 @@
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
-import { HCQKQT_YEARS_REQUIRED, DANH_HIEU_DAC_BIET } from '../../../constants/danhHieu.constants';
+import {
+  HCQKQT_YEARS_REQUIRED,
+  DANH_HIEU_DAC_BIET,
+  getDanhHieuName,
+} from '../../../constants/danhHieu.constants';
 import {
   batchEvaluateServiceYears,
   buildServiceYearsErrorMessage,
@@ -86,7 +90,7 @@ class HcqkqtStrategy implements ProposalStrategy {
   ): Promise<void> {
     const nienHanData = (editedData.data_nien_han ?? []) as ProposalNienHanItem[];
     await importSingleMedal(nienHanData, ctx, acc, prismaTx, {
-      medalLabel: 'Huân chương Quân kỳ quyết thắng',
+      medalLabel: getDanhHieuName(DANH_HIEU_DAC_BIET.HC_QKQT),
       logTag: 'HC_QKQT',
       decisionKey: DANH_HIEU_DAC_BIET.HC_QKQT,
       upsert: async (tx, personnelId, writeData) => {

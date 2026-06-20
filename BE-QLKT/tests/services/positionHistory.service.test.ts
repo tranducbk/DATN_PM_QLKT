@@ -428,4 +428,54 @@ describe('positionHistory.service - getPositionHistory', () => {
     const closedRecord = result.find(r => r.id === 'lscv-closed');
     expect(closedRecord?.so_thang).toBe(12);
   });
+
+  it('hiển thị tên LIVE khi còn chức vụ, FALLBACK snapshot khi chức vụ đã xoá', async () => {
+    prismaMock.quanNhan.findUnique.mockResolvedValueOnce(makePersonnelStub());
+    const records = [
+      {
+        id: 'lscv-live',
+        quan_nhan_id: PERSONNEL_ID,
+        chuc_vu_id: CHUC_VU_ID,
+        ten_chuc_vu: 'Tên cũ trong snapshot',
+        ten_don_vi_truc_thuoc: 'ĐV cũ trong snapshot',
+        ten_co_quan_don_vi: null,
+        ngay_bat_dau: new Date('2022-01-01'),
+        ngay_ket_thuc: new Date('2023-01-01'),
+        so_thang: 12,
+        ChucVu: {
+          ten_chuc_vu: 'Trưởng ban (live)',
+          CoQuanDonVi: null,
+          DonViTrucThuoc: {
+            ten_don_vi: 'Ban A (live)',
+            CoQuanDonVi: { ten_don_vi: 'Phòng X (live)' },
+          },
+        },
+      },
+      {
+        id: 'lscv-deleted',
+        quan_nhan_id: PERSONNEL_ID,
+        chuc_vu_id: null,
+        ten_chuc_vu: 'Trợ lý (snapshot)',
+        ten_don_vi_truc_thuoc: 'Ban B (snapshot)',
+        ten_co_quan_don_vi: 'Phòng Y (snapshot)',
+        ngay_bat_dau: new Date('2019-01-01'),
+        ngay_ket_thuc: new Date('2020-01-01'),
+        so_thang: 12,
+        ChucVu: null,
+      },
+    ];
+    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(records);
+
+    const result = await positionHistoryService.getPositionHistory(PERSONNEL_ID);
+
+    const liveRow = result.find(r => r.id === 'lscv-live');
+    expect(liveRow?.ten_chuc_vu).toBe('Trưởng ban (live)');
+    expect(liveRow?.ten_don_vi_truc_thuoc).toBe('Ban A (live)');
+    expect(liveRow?.ten_co_quan_don_vi).toBe('Phòng X (live)');
+
+    const deletedRow = result.find(r => r.id === 'lscv-deleted');
+    expect(deletedRow?.ten_chuc_vu).toBe('Trợ lý (snapshot)');
+    expect(deletedRow?.ten_don_vi_truc_thuoc).toBe('Ban B (snapshot)');
+    expect(deletedRow?.ten_co_quan_don_vi).toBe('Phòng Y (snapshot)');
+  });
 });

@@ -170,7 +170,6 @@ export const apiClient = {
   getAnnualProfile: profilesApi.getAnnualProfile,
   getTenureProfile: profilesApi.getTenureProfile,
   getContributionProfile: profilesApi.getContributionProfile,
-  getServiceProfile: profilesApi.getServiceProfile,
   recalculateProfile: profilesApi.recalculateProfile,
   getAllServiceProfiles: profilesApi.getAllServiceProfiles,
   updateServiceProfile: profilesApi.updateServiceProfile,

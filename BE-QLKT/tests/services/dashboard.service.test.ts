@@ -13,9 +13,7 @@ describe('dashboard.service - getStatistics (SUPER_ADMIN)', () => {
       { role: ROLES.MANAGER, _count: { id: 5 } },
     ]);
     prismaMock.systemLog.findMany.mockResolvedValueOnce([]);
-    prismaMock.systemLog.groupBy.mockResolvedValueOnce([
-      { action: 'CREATE', _count: { id: 12 } },
-    ]);
+    prismaMock.systemLog.groupBy.mockResolvedValueOnce([{ action: 'CREATE', _count: { id: 12 } }]);
     prismaMock.taiKhoan.findMany.mockResolvedValueOnce([]);
     prismaMock.taiKhoan.count.mockResolvedValueOnce(20);
     prismaMock.quanNhan.count.mockResolvedValueOnce(150);
@@ -47,6 +45,7 @@ describe('dashboard.service - getAdminStatistics', () => {
       .mockResolvedValueOnce([{ loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM, _count: { id: 3 } }])
       .mockResolvedValueOnce([{ status: PROPOSAL_STATUS.PENDING, _count: { id: 5 } }]);
     prismaMock.thanhTichKhoaHoc.findMany.mockResolvedValueOnce([]);
+    prismaMock.systemLog.findMany.mockResolvedValueOnce([]);
     prismaMock.quanNhan.count.mockResolvedValueOnce(100);
     prismaMock.donViTrucThuoc.count.mockResolvedValueOnce(8);
     prismaMock.chucVu.count.mockResolvedValueOnce(15);
@@ -58,16 +57,16 @@ describe('dashboard.service - getAdminStatistics', () => {
     expect(result.totalUnits).toBe(8);
     expect(result.totalPositions).toBe(15);
     expect(result.pendingApprovals).toBe(5);
-    expect(result.proposalsByStatus).toEqual([
-      { status: PROPOSAL_STATUS.PENDING, count: 5 },
-    ]);
+    expect(result.proposalsByStatus).toEqual([{ status: PROPOSAL_STATUS.PENDING, count: 5 }]);
     expect(result.scientificAchievementsByMonth).toHaveLength(6);
+    expect(result.dailyActivity).toHaveLength(7);
   });
 
   it('Cho count proposal pending → Khi gọi count → Thì truyền filter status=PENDING', async () => {
     prismaMock.thanhTichKhoaHoc.groupBy.mockResolvedValueOnce([]);
     prismaMock.bangDeXuat.groupBy.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     prismaMock.thanhTichKhoaHoc.findMany.mockResolvedValueOnce([]);
+    prismaMock.systemLog.findMany.mockResolvedValueOnce([]);
     prismaMock.quanNhan.count.mockResolvedValueOnce(0);
     prismaMock.donViTrucThuoc.count.mockResolvedValueOnce(0);
     prismaMock.chucVu.count.mockResolvedValueOnce(0);
@@ -105,15 +104,18 @@ describe('dashboard.service - getManagerStatistics', () => {
         { danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS },
       ])
       .mockResolvedValueOnce([]);
-    prismaMock.quanNhan.groupBy.mockResolvedValueOnce([
-      { cap_bac: 'Thiếu tá', _count: { id: 2 } },
-    ]);
+    prismaMock.quanNhan.groupBy.mockResolvedValueOnce([{ cap_bac: 'Thiếu tá', _count: { id: 2 } }]);
     prismaMock.bangDeXuat.groupBy
       .mockResolvedValueOnce([{ status: PROPOSAL_STATUS.PENDING, _count: { id: 1 } }])
-      .mockResolvedValueOnce([{ loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM, _count: { id: 1 } }]);
+      .mockResolvedValueOnce([
+        { loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM, _count: { id: 1 } },
+      ]);
     prismaMock.thanhTichKhoaHoc.findMany.mockResolvedValueOnce([]);
     prismaMock.thanhTichKhoaHoc.groupBy.mockResolvedValueOnce([]);
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ chuc_vu_id: 'cv-1' }, { chuc_vu_id: 'cv-1' }]);
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
+      { chuc_vu_id: 'cv-1' },
+      { chuc_vu_id: 'cv-1' },
+    ]);
     prismaMock.chucVu.findMany.mockResolvedValueOnce([{ id: 'cv-1', ten_chuc_vu: 'Trợ lý' }]);
 
     const result = (await dashboardService.getManagerStatistics('user-1', 'qn-mgr')) as any;

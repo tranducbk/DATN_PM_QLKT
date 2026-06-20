@@ -1,3 +1,5 @@
+import { PERSONAL_ANNUAL_TEMPLATE_COLUMNS } from '../../constants/awardExcel.constants';
+import { resolveTemplateColumns } from './excelHelper';
 import ExcelJS from 'exceljs';
 import { loadWorkbook, getAndValidateWorksheet } from './excelImportHelper';
 import { parseHeaderMap, getHeaderCol } from './excelHelper';
@@ -58,18 +60,19 @@ export async function parseAnnualRewardImport(buffer: Buffer): Promise<ParsedAnn
 
   const headerMap = parseHeaderMap(worksheet);
 
+  const cols = resolveTemplateColumns(headerMap, PERSONAL_ANNUAL_TEMPLATE_COLUMNS);
   const columns: ColumnMap = {
-    idCol: getHeaderCol(headerMap, ['id', 'ma_quan_nhan', 'personnel_id']),
-    hoTenCol: getHeaderCol(headerMap, ['ho_va_ten', 'ho_ten', 'hoten', 'hovaten', 'ten']),
-    namCol: getHeaderCol(headerMap, ['nam', 'year']),
-    danhHieuCol: getHeaderCol(headerMap, ['danh_hieu', 'danhhieu', 'danh_hiu']),
-    capBacCol: getHeaderCol(headerMap, ['cap_bac', 'capbac', 'cap_bc']),
-    chucVuCol: getHeaderCol(headerMap, ['chuc_vu', 'chucvu', 'chc_vu']),
-    ghiChuCol: getHeaderCol(headerMap, ['ghi_chu', 'ghichu', 'ghi_ch']),
+    idCol: cols.id,
+    hoTenCol: cols.ho_ten,
+    namCol: cols.nam,
+    danhHieuCol: cols.danh_hieu,
+    capBacCol: cols.cap_bac,
+    chucVuCol: cols.chuc_vu,
+    ghiChuCol: cols.ghi_chu,
     bkbqpCol: getHeaderCol(headerMap, ['nhan_bkbqp', 'bkbqp']),
     cstdtqCol: getHeaderCol(headerMap, ['nhan_cstdtq', 'cstdtq']),
     bkttcpCol: getHeaderCol(headerMap, ['nhan_bkttcp', 'bkttcp']),
-    soQuyetDinhCol: getHeaderCol(headerMap, ['so_quyet_dinh', 'soquyetdinh', 'so_qd']),
+    soQuyetDinhCol: cols.so_quyet_dinh,
   };
 
   if (!columns.idCol || !columns.namCol || !columns.danhHieuCol) {

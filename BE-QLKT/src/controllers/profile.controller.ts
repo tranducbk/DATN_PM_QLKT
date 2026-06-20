@@ -5,6 +5,11 @@ import personnelService from '../services/personnel.service';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { ADHOC_TYPE } from '../constants/adhocType.constants';
+import { getLoaiDeXuatName } from '../constants/danhHieu.constants';
+import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
+
+const NIEN_HAN_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.NIEN_HAN);
+const CONG_HIEN_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
 
 interface PersonnelIdParams {
   personnel_id?: string;
@@ -36,7 +41,11 @@ class ProfileController {
     const query = req.query as YearQuery;
     const { personnel_id } = params;
     const { year } = query;
-    await personnelService.assertCanViewPersonnel(personnel_id, req.user?.role, req.user?.quan_nhan_id);
+    await personnelService.assertCanViewPersonnel(
+      personnel_id,
+      req.user?.role,
+      req.user?.quan_nhan_id
+    );
     const yearNumber = year ? parseInt(year, 10) : null;
     if (yearNumber) await profileService.recalculateAnnualProfile(personnel_id, yearNumber);
     const result = await profileService.getAnnualProfile(personnel_id);
@@ -49,11 +58,15 @@ class ProfileController {
   getTenureProfile = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as PersonnelIdParams;
     const { personnel_id } = params;
-    await personnelService.assertCanViewPersonnel(personnel_id, req.user?.role, req.user?.quan_nhan_id);
+    await personnelService.assertCanViewPersonnel(
+      personnel_id,
+      req.user?.role,
+      req.user?.quan_nhan_id
+    );
     await profileService.recalculateTenureProfile(personnel_id);
     const result = await profileService.getTenureProfile(personnel_id);
     return ResponseHelper.success(res, {
-      message: 'Lấy hồ sơ Huy chương Chiến sĩ vẻ vang thành công',
+      message: `Lấy hồ sơ ${NIEN_HAN_LABEL} thành công`,
       data: result,
     });
   });
@@ -61,11 +74,15 @@ class ProfileController {
   getContributionProfile = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as PersonnelIdParams;
     const { personnel_id } = params;
-    await personnelService.assertCanViewPersonnel(personnel_id, req.user?.role, req.user?.quan_nhan_id);
+    await personnelService.assertCanViewPersonnel(
+      personnel_id,
+      req.user?.role,
+      req.user?.quan_nhan_id
+    );
     await profileService.recalculateContributionProfile(personnel_id);
     const result = await profileService.getContributionProfile(personnel_id);
     return ResponseHelper.success(res, {
-      message: 'Lấy hồ sơ Huân chương Bảo vệ Tổ quốc thành công',
+      message: `Lấy hồ sơ ${CONG_HIEN_LABEL} thành công`,
       data: result,
     });
   });
@@ -94,37 +111,36 @@ class ProfileController {
     if (!items || !Array.isArray(items) || items.length === 0) {
       return ResponseHelper.badRequest(res, 'Thiếu danh sách cần kiểm tra');
     }
-    const results = [];
-    for (const item of items) {
-      let result: { eligible: boolean; reason: string };
-      if (item.type === 'DON_VI' && item.don_vi_id) {
-        result = await unitAnnualAwardService.checkUnitAwardEligibility(
-          item.don_vi_id,
-          item.nam,
-          item.danh_hieu
-        );
-        results.push({
-          don_vi_id: item.don_vi_id,
-          nam: item.nam,
-          danh_hieu: item.danh_hieu,
-          type: 'DON_VI',
-          ...result,
-        });
-      } else {
-        result = await profileService.checkAwardEligibility(
+    const results = await Promise.all(
+      items.map(async item => {
+        if (item.type === 'DON_VI' && item.don_vi_id) {
+          const result = await unitAnnualAwardService.checkUnitAwardEligibility(
+            item.don_vi_id,
+            item.nam,
+            item.danh_hieu
+          );
+          return {
+            don_vi_id: item.don_vi_id,
+            nam: item.nam,
+            danh_hieu: item.danh_hieu,
+            type: 'DON_VI',
+            ...result,
+          };
+        }
+        const result = await profileService.checkAwardEligibility(
           item.personnel_id,
           item.nam,
           item.danh_hieu
         );
-        results.push({
+        return {
           personnel_id: item.personnel_id,
           nam: item.nam,
           danh_hieu: item.danh_hieu,
           type: ADHOC_TYPE.CA_NHAN,
           ...result,
-        });
-      }
-    }
+        };
+      })
+    );
     return ResponseHelper.success(res, {
       message: 'Kiểm tra điều kiện khen thưởng thành công',
       data: results,
@@ -134,7 +150,7 @@ class ProfileController {
   getAllTenureProfiles = catchAsync(async (req: Request, res: Response) => {
     const result = await profileService.getAllTenureProfiles();
     return ResponseHelper.success(res, {
-      message: 'Lấy danh sách hồ sơ Huy chương Chiến sĩ vẻ vang thành công',
+      message: `Lấy danh sách hồ sơ ${NIEN_HAN_LABEL} thành công`,
       data: result,
     });
   });
@@ -146,7 +162,7 @@ class ProfileController {
     const updates = body;
     const result = await profileService.updateTenureProfile(personnel_id, updates);
     return ResponseHelper.success(res, {
-      message: 'Cập nhật hồ sơ Huy chương Chiến sĩ vẻ vang thành công',
+      message: `Cập nhật hồ sơ ${NIEN_HAN_LABEL} thành công`,
       data: result,
     });
   });

@@ -191,7 +191,7 @@ describe('unitAnnualAward.service - upsert', () => {
         nguoi_tao_id: 'admin-1',
       }),
       ValidationError,
-      'Đơn vị đã có Bằng khen Bộ Quốc phòng năm 2024'
+      'Đơn vị đã có Bằng khen của Bộ trưởng Bộ Quốc phòng năm 2024'
     );
     expect(prismaMock.danhHieuDonViHangNam.upsert).not.toHaveBeenCalled();
   });
@@ -234,7 +234,7 @@ describe('unitAnnualAward.service - upsert', () => {
         nguoi_tao_id: 'admin-1',
       }),
       ValidationError,
-      'Đơn vị đã có Bằng khen Thủ tướng Chính phủ năm 2024'
+      'Đơn vị đã có Bằng khen của Thủ tướng Chính phủ năm 2024'
     );
   });
 

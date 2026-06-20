@@ -1,12 +1,13 @@
 'use client';
 
-import { Button, Typography, Breadcrumb, ConfigProvider } from 'antd';
-import { ArrowLeftOutlined, HomeOutlined } from '@ant-design/icons';
+import { Button, Typography, ConfigProvider } from 'antd';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter, useParams } from 'next/navigation';
 import { useTheme } from '@/components/ThemeProvider';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { PersonnelEditForm } from '@/components/personnel/PersonnelEditForm';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 
 const { Title } = Typography;
 
@@ -20,17 +21,10 @@ export default function PersonnelEditPage() {
   return (
     <ConfigProvider theme={getAntdThemeConfig(theme === 'dark')}>
       <div className="space-y-6 p-6">
-        <Breadcrumb
+        <PageBreadcrumb
           items={[
-            {
-              title: (
-                <Link href="/admin/dashboard">
-                  <HomeOutlined />
-                </Link>
-              ),
-            },
-            { title: <Link href="/admin/personnel">Quân nhân</Link> },
-            { title: <Link href={detailPath}>Chi tiết</Link> },
+            { title: 'Quân nhân', href: '/admin/personnel' },
+            { title: 'Chi tiết', href: detailPath },
             { title: 'Chỉnh sửa' },
           ]}
         />

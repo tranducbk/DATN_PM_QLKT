@@ -3,7 +3,6 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import {
   Button,
-  Breadcrumb,
   Card,
   Input,
   Select,
@@ -20,19 +19,19 @@ import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import {
   SyncOutlined,
-  HomeOutlined,
   UserOutlined,
   ApartmentOutlined,
-  SafetyCertificateOutlined,
+  IdcardOutlined,
   EyeOutlined,
 } from '@ant-design/icons';
+import { StatCard, getStatCardPalette } from '@/components/dashboard/StatCard';
 import { PersonnelTable } from '@/components/personnel/PersonnelTable';
 import { PersonnelForm } from '@/components/personnel/PersonnelForm';
 import { apiClient } from '@/lib/http/apiClient';
 import { personnelFormSchema } from '@/lib/schemas';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import type { z } from 'zod';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
-import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 import type {
   ManagerPositionRow,
@@ -246,15 +245,7 @@ export default function ManagerPersonnelPage() {
     personnel.map(p => p.chuc_vu_id).filter(id => id !== null && id !== undefined)
   );
   const uniquePositions = uniquePositionIds.size;
-  const statTextColor = theme === 'dark' ? '#e5e7eb' : '#0f172a';
-  const statSubTextColor = theme === 'dark' ? '#cbd5e1' : '#475569';
-  const iconBgBlue = theme === 'dark' ? '#1e3a8a' : '#e6f0ff';
-  const iconBgGreen = theme === 'dark' ? '#0b3d2e' : '#e8f5e9';
-  const iconBgPurple = theme === 'dark' ? '#3b0764' : '#f3e8ff';
-  const iconShadow =
-    theme === 'dark' ? '0 1px 3px rgba(0, 0, 0, 0.45)' : '0 1px 3px rgba(0, 0, 0, 0.05)';
-  const cardShadow =
-    theme === 'dark' ? '0 1px 6px rgba(0, 0, 0, 0.35)' : '0 1px 4px rgba(0, 0, 0, 0.06)';
+  const isDark = theme === 'dark';
 
   if (loading && personnel.length === 0 && managerUnitId !== null) {
     return <LoadingState fullPage text="Đang tải danh sách quân nhân..." />;
@@ -267,15 +258,7 @@ export default function ManagerPersonnelPage() {
       }}
     >
       <div style={{ padding: '24px' }}>
-        {/* Breadcrumb */}
-        <Breadcrumb style={{ marginBottom: '24px' }}>
-          <Breadcrumb.Item>
-            <Link href="/manager/dashboard">
-              <HomeOutlined />
-            </Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>Quản lý quân nhân đơn vị</Breadcrumb.Item>
-        </Breadcrumb>
+        <PageBreadcrumb items={[{ title: 'Quản lý quân nhân đơn vị' }]} />
 
         {/* Header */}
         <div
@@ -310,159 +293,27 @@ export default function ManagerPersonnelPage() {
             marginBottom: '24px',
           }}
         >
-          <Card
-            hoverable
-            style={{
-              borderRadius: '10px',
-              boxShadow: cardShadow,
-              transition: 'all 0.3s ease',
-            }}
-            styles={{ body: { padding: '20px' } }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '12px',
-                  background: iconBgBlue,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: iconShadow,
-                }}
-              >
-                <UserOutlined
-                  style={{
-                    fontSize: '26px',
-                    color: theme === 'dark' ? '#93c5fd' : '#1d4ed8',
-                  }}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <Text
-                  type="secondary"
-                  style={{
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    display: 'block',
-                    marginBottom: '4px',
-                    color: statSubTextColor,
-                  }}
-                >
-                  Tổng quân nhân
-                </Text>
-                <div
-                  style={{
-                    fontSize: '32px',
-                    fontWeight: 'bold',
-                    color: statTextColor,
-                    lineHeight: '1.1',
-                  }}
-                >
-                  {totalPersonnel}
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card
-            hoverable
-            style={{
-              borderRadius: '10px',
-              boxShadow: cardShadow,
-              transition: 'all 0.3s ease',
-            }}
-            styles={{ body: { padding: '20px' } }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '12px',
-                  background: iconBgGreen,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: iconShadow,
-                }}
-              >
-                <ApartmentOutlined
-                  style={{
-                    fontSize: '26px',
-                    color: theme === 'dark' ? '#6ee7b7' : '#0f9d58',
-                  }}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <Text
-                  type="secondary"
-                  style={{
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    display: 'block',
-                    marginBottom: '4px',
-                    color: statSubTextColor,
-                  }}
-                >
-                  Số đơn vị trực thuộc
-                </Text>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: statTextColor }}>
-                  {totalSubUnits}
-                </div>
-              </div>
-            </div>
-          </Card>
-
-          <Card
-            hoverable
-            style={{
-              borderRadius: '10px',
-              boxShadow: cardShadow,
-              transition: 'all 0.3s ease',
-            }}
-            styles={{ body: { padding: '20px' } }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-              <div
-                style={{
-                  width: '56px',
-                  height: '56px',
-                  borderRadius: '12px',
-                  background: iconBgPurple,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  boxShadow: iconShadow,
-                }}
-              >
-                <SafetyCertificateOutlined
-                  style={{
-                    fontSize: '26px',
-                    color: theme === 'dark' ? '#c4b5fd' : '#7c3aed',
-                  }}
-                />
-              </div>
-              <div style={{ flex: 1 }}>
-                <Text
-                  type="secondary"
-                  style={{
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    display: 'block',
-                    marginBottom: '4px',
-                    color: statSubTextColor,
-                  }}
-                >
-                  Số chức vụ
-                </Text>
-                <div style={{ fontSize: '28px', fontWeight: 'bold', color: statTextColor }}>
-                  {uniquePositions}
-                </div>
-              </div>
-            </div>
-          </Card>
+          <StatCard
+            icon={<UserOutlined />}
+            label="Tổng quân nhân"
+            value={totalPersonnel}
+            isDark={isDark}
+            {...getStatCardPalette('blue')}
+          />
+          <StatCard
+            icon={<ApartmentOutlined />}
+            label="Số đơn vị trực thuộc"
+            value={totalSubUnits}
+            isDark={isDark}
+            {...getStatCardPalette('green')}
+          />
+          <StatCard
+            icon={<IdcardOutlined />}
+            label="Số chức vụ"
+            value={uniquePositions}
+            isDark={isDark}
+            {...getStatCardPalette('purple')}
+          />
         </div>
 
         {/* Filters */}

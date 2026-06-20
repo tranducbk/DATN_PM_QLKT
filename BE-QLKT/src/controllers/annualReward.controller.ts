@@ -7,6 +7,7 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { logMessages } from '../constants/logMessages.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { notifyOnImport } from '../helpers/notification';
@@ -16,7 +17,12 @@ import {
   parsePersonnelIdsFromQuery,
   buildManagerQuanNhanFilter,
   getAdminUsername,
+  logImportPreview,
 } from '../helpers/controllerHelper';
+
+interface AwardTypeQuery {
+  awardType?: string;
+}
 
 interface GetAnnualRewardsQuery {
   personnel_id?: string;
@@ -134,7 +140,8 @@ class AnnualRewardController {
     }
 
     const managerQuanNhanWhere = await buildManagerQuanNhanFilter(req, quanNhanFilter);
-    const quanNhanWhere = managerQuanNhanWhere ?? (Object.keys(quanNhanFilter).length > 0 ? quanNhanFilter : null);
+    const quanNhanWhere =
+      managerQuanNhanWhere ?? (Object.keys(quanNhanFilter).length > 0 ? quanNhanFilter : null);
 
     const { awards, total } = await annualRewardService.getAnnualRewardsList({
       page: pageNum,
@@ -192,9 +199,9 @@ class AnnualRewardController {
       await writeSystemLog({
         userId: user?.id,
         userRole: user?.role,
-        action: 'ERROR',
+        action: AUDIT_ACTIONS.ERROR,
         resource: AWARD_SLUGS.ANNUAL_REWARDS,
-        description: `Lỗi tính lại hồ sơ hằng năm sau khi thêm ${AWARD_LABEL}`,
+        description: logMessages.recalcError('thêm', AWARD_LABEL, recalcError),
         payload: { error: String(recalcError), personnel_id },
       });
     }
@@ -243,9 +250,9 @@ class AnnualRewardController {
       await writeSystemLog({
         userId: user?.id,
         userRole: user?.role,
-        action: 'ERROR',
+        action: AUDIT_ACTIONS.ERROR,
         resource: AWARD_SLUGS.ANNUAL_REWARDS,
-        description: `Lỗi tính lại hồ sơ hằng năm sau khi cập nhật ${AWARD_LABEL}`,
+        description: logMessages.recalcError('cập nhật', AWARD_LABEL, recalcError),
         payload: { error: String(recalcError), personnel_id: result.quan_nhan_id },
       });
     }
@@ -258,7 +265,7 @@ class AnnualRewardController {
     const id = normalizeParam(params.id);
     if (!id) return ResponseHelper.badRequest(res, 'Thiếu id');
 
-    const query = req.query as { awardType?: string };
+    const query = req.query as AwardTypeQuery;
     const awardType = normalizeParam(query.awardType) || null;
     const adminUsername = getAdminUsername(req);
     const result = await annualRewardService.deleteAnnualReward(id, adminUsername, awardType);
@@ -306,23 +313,11 @@ class AnnualRewardController {
   });
 
   previewImport = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
     const file = req.file;
     if (!file) return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
 
     const result = await annualRewardService.previewImport(file.buffer);
-    await writeSystemLog({
-      userId: user.id,
-      userRole: user.role,
-      action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: AWARD_SLUGS.ANNUAL_REWARDS,
-      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để xem trước ${AWARD_LABEL}: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
-      payload: {
-        filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
-        total: result.total,
-        errors: result.errors?.length ?? 0,
-      },
-    });
+    await logImportPreview(req, AWARD_SLUGS.ANNUAL_REWARDS, AWARD_LABEL, file.originalname, result);
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
@@ -339,11 +334,18 @@ class AnnualRewardController {
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
       resource: AWARD_SLUGS.ANNUAL_REWARDS,
-      description: `Nhập dữ liệu ${AWARD_LABEL} thành công: ${result.imported ?? items.length} bản ghi`,
+      description: logMessages.importSuccess(AWARD_LABEL, result.imported ?? items.length),
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(user.id, AWARD_SLUGS.ANNUAL_REWARDS, result.imported ?? items.length, personnelIds).catch((e) => { console.error('[annual-rewards] notifyOnImport failed:', e); });
+    notifyOnImport(
+      user.id,
+      AWARD_SLUGS.ANNUAL_REWARDS,
+      result.imported ?? items.length,
+      personnelIds
+    ).catch(e => {
+      console.error('[annual-rewards] notifyOnImport failed:', e);
+    });
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
@@ -372,9 +374,9 @@ class AnnualRewardController {
         Object.assign(repeatMap, parsed);
       } catch (e) {
         void writeSystemLog({
-          action: 'ERROR',
+          action: AUDIT_ACTIONS.ERROR,
           resource: AWARD_SLUGS.ANNUAL_REWARDS,
-          description: `Dữ liệu repeat_map (${AWARD_LABEL}) không hợp lệ: ${e}`,
+          description: logMessages.invalidRepeatMap(AWARD_LABEL, e),
         });
       }
     }

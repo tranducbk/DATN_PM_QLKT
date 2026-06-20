@@ -1,19 +1,14 @@
 'use client';
 
 import { useState, useEffect, type ReactNode } from 'react';
-import {
-  StatCard,
-  getStatCardPalette,
-  type StatCardColor,
-} from '@/components/dashboard/StatCard';
+import { StatCard, getStatCardPalette, type StatCardColor } from '@/components/dashboard/StatCard';
+import { QuickActions } from '@/components/dashboard/QuickActions';
 import {
   Card,
   Typography,
-  Button,
   Space,
   Tag,
   Timeline,
-  Breadcrumb,
   ConfigProvider,
   theme as antdTheme,
   Row,
@@ -26,17 +21,16 @@ import {
   FileTextOutlined,
   CheckCircleOutlined,
   ApartmentOutlined,
-  HomeOutlined,
   UserOutlined,
   SafetyOutlined,
   ClockCircleOutlined,
   LockOutlined,
   IdcardOutlined,
 } from '@ant-design/icons';
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { useAuth } from '@/contexts/AuthContext';
 import { apiClient } from '@/lib/http/apiClient';
 import { getApiErrorMessage } from '@/lib/http/apiError';
@@ -48,7 +42,7 @@ import {
   PROPOSAL_TYPE_LABELS,
 } from '@/constants/proposal.constants';
 import { ROLE_LABELS, ROLE_COLORS } from '@/constants/roles.constants';
-import { THANH_TICH_KHOA_HOC_SHORT_LABELS } from '@/constants/danhHieu.constants';
+import { THANH_TICH_KHOA_HOC_FULL_LABELS } from '@/constants/danhHieu.constants';
 
 const { Title } = Typography;
 
@@ -61,7 +55,8 @@ const ActionBarChart = dynamic(
   { ssr: false, loading: chartLoading }
 );
 const ActivityLineChart = dynamic(
-  () => import('@/components/charts/ActivityLineChart').then(m => ({ default: m.ActivityLineChart })),
+  () =>
+    import('@/components/charts/ActivityLineChart').then(m => ({ default: m.ActivityLineChart })),
   { ssr: false, loading: chartLoading }
 );
 const PieChart = dynamic(
@@ -86,6 +81,7 @@ export default function AdminDashboard() {
     proposalsByType: [],
     proposalsByStatus: [],
     scientificAchievementsByMonth: [],
+    dailyActivity: [],
   });
 
   useEffect(() => {
@@ -124,6 +120,7 @@ export default function AdminDashboard() {
             proposalsByType: statisticsRes.data.proposalsByType || [],
             proposalsByStatus: statisticsRes.data.proposalsByStatus || [],
             scientificAchievementsByMonth: statisticsRes.data.scientificAchievementsByMonth || [],
+            dailyActivity: statisticsRes.data.dailyActivity || [],
           });
         }
       } catch (error: unknown) {
@@ -187,13 +184,7 @@ export default function AdminDashboard() {
       }}
     >
       <div className="space-y-8 p-6 animate-in fade-in duration-500">
-        {/* Breadcrumb */}
-        <Breadcrumb
-          items={[
-            { title: <Link href="/admin/dashboard"><HomeOutlined /></Link> },
-            { title: 'Tổng quan' },
-          ]}
-        />
+        <PageBreadcrumb items={[{ title: 'Tổng quan' }]} />
 
         {/* Header */}
         <div className="mb-2">
@@ -252,32 +243,40 @@ export default function AdminDashboard() {
         {!loading && (
           <>
             {/* Charts Section */}
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+            <Row align="stretch" gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               <Col xs={24} lg={8}>
                 <PieChart
-                  data={chartData.scientificAchievementsByType.map((item: { type: string; count: number }) => ({
-                    label: THANH_TICH_KHOA_HOC_SHORT_LABELS[item.type] || item.type,
-                    value: item.count,
-                  }))}
+                  data={chartData.scientificAchievementsByType.map(
+                    (item: { type: string; count: number }) => ({
+                      label: THANH_TICH_KHOA_HOC_FULL_LABELS[item.type] || item.type,
+                      value: item.count,
+                    })
+                  )}
                   title="Thành tích Nghiên cứu khoa học theo loại"
                   colors={['rgba(59, 130, 246, 0.8)', 'rgba(34, 197, 94, 0.8)']}
                 />
               </Col>
               <Col xs={24} lg={8}>
-                <PieChart
-                  data={chartData.proposalsByType.map((item: { type: string; count: number }) => ({
-                    label: isProposalType(item.type) ? PROPOSAL_TYPE_LABELS[item.type] : item.type,
-                    value: item.count,
-                  }))}
-                  title="Đề xuất theo loại (7 ngày gần nhất)"
+                <ActivityLineChart
+                  data={chartData.scientificAchievementsByMonth.map(
+                    (item: { month: string; count: number }) => ({
+                      date: item.month,
+                      count: item.count,
+                    })
+                  )}
+                  title="Thành tích Nghiên cứu khoa học (6 tháng gần nhất)"
+                  label="Số lượng thành tích"
+                  color="rgba(34, 197, 94, 1)"
                 />
               </Col>
               <Col xs={24} lg={8}>
                 <ActionBarChart
-                  data={chartData.proposalsByStatus.map((item: { status: string; count: number }) => ({
-                    action: item.status,
-                    count: item.count,
-                  }))}
+                  data={chartData.proposalsByStatus.map(
+                    (item: { status: string; count: number }) => ({
+                      action: item.status,
+                      count: item.count,
+                    })
+                  )}
                   title="Đề xuất theo trạng thái"
                   labelMapper={(label: string) => PROPOSAL_STATUS_LABELS[label] || label}
                   color="rgba(249, 115, 22, 1)"
@@ -285,16 +284,16 @@ export default function AdminDashboard() {
               </Col>
             </Row>
 
-            <Row gutter={[16, 16]} style={{ marginBottom: '24px' }}>
+            <Row align="stretch" gutter={[16, 16]} style={{ marginBottom: '24px' }}>
               <Col xs={24} lg={12}>
                 <ActivityLineChart
-                  data={chartData.scientificAchievementsByMonth.map((item: { month: string; count: number }) => ({
-                    date: item.month,
+                  data={chartData.dailyActivity.map((item: { date: string; count: number }) => ({
+                    date: item.date,
                     count: item.count,
                   }))}
-                  title="Thành tích Nghiên cứu khoa học (6 tháng gần nhất)"
-                  label="Số lượng thành tích"
-                  color="rgba(34, 197, 94, 1)"
+                  title="Hoạt động hệ thống (7 ngày gần nhất)"
+                  label="Số lượt thao tác"
+                  color="rgba(147, 51, 234, 1)"
                 />
               </Col>
               <Col xs={24} lg={12}>
@@ -304,7 +303,7 @@ export default function AdminDashboard() {
                     count: item.count,
                   }))}
                   title="Đề xuất theo loại (7 ngày gần nhất)"
-                  maxLabelLength={20}
+                  horizontal
                   labelMapper={(label: string) =>
                     isProposalType(label) ? PROPOSAL_TYPE_LABELS[label] : label
                   }
@@ -314,47 +313,26 @@ export default function AdminDashboard() {
             </Row>
 
             {/* Quick Actions */}
-            <Card
-              title={<span className="text-lg font-semibold">Thao tác nhanh</span>}
-              className="shadow-lg"
-            >
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
-                {[
-                  {
-                    href: '/admin/personnel',
-                    icon: <TeamOutlined />,
-                    label: 'Quản lý quân nhân',
-                    primary: true,
-                  },
-                  {
-                    href: '/admin/proposals/review',
-                    icon: <ClockCircleOutlined />,
-                    label: 'Duyệt đề xuất',
-                  },
-                  {
-                    href: '/admin/categories',
-                    icon: <ApartmentOutlined />,
-                    label: 'Quản lý cơ quan đơn vị',
-                  },
-                  {
-                    href: '/admin/positions',
-                    icon: <IdcardOutlined />,
-                    label: 'Quản lý chức vụ',
-                  },
-                ].map(({ href, icon, label, primary }) => (
-                  <Link key={href} href={href} className="block h-full">
-                    <Button
-                      type={primary ? 'primary' : 'default'}
-                      icon={icon}
-                      size="large"
-                      className="w-full h-full min-h-[84px] py-4 text-base font-medium whitespace-normal break-words transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-                    >
-                      {label}
-                    </Button>
-                  </Link>
-                ))}
-              </div>
-            </Card>
+            <QuickActions
+              actions={[
+                {
+                  href: '/admin/personnel',
+                  icon: <TeamOutlined />,
+                  label: 'Quản lý quân nhân',
+                },
+                {
+                  href: '/admin/proposals/review',
+                  icon: <ClockCircleOutlined />,
+                  label: 'Duyệt đề xuất',
+                },
+                {
+                  href: '/admin/categories',
+                  icon: <ApartmentOutlined />,
+                  label: 'Quản lý cơ quan đơn vị',
+                },
+                { href: '/admin/positions', icon: <IdcardOutlined />, label: 'Quản lý chức vụ' },
+              ]}
+            />
 
             {/* System Info */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -369,24 +347,47 @@ export default function AdminDashboard() {
                 styles={{ body: { padding: '0 20px' } }}
               >
                 <div>
-                  <div className={`flex items-center gap-4 py-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-100'}`}>
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${theme === 'dark' ? 'bg-blue-900/40' : 'bg-blue-50'}`}>
-                      <UserOutlined style={{ color: theme === 'dark' ? '#60a5fa' : '#2563eb', fontSize: 15 }} />
+                  <div
+                    className={`flex items-center gap-4 py-4 border-b ${theme === 'dark' ? 'border-gray-700' : 'border-gray-100'}`}
+                  >
+                    <div
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${theme === 'dark' ? 'bg-blue-900/40' : 'bg-blue-50'}`}
+                    >
+                      <UserOutlined
+                        style={{ color: theme === 'dark' ? '#60a5fa' : '#2563eb', fontSize: 15 }}
+                      />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Vai trò</p>
-                      <Tag color={ROLE_COLORS[user?.role?.toUpperCase() ?? ''] ?? 'blue'} style={{ fontSize: 13, padding: '2px 10px', margin: 0 }}>
+                      <p
+                        className={`text-xs font-medium uppercase tracking-wide mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+                      >
+                        Vai trò
+                      </p>
+                      <Tag
+                        color={ROLE_COLORS[user?.role?.toUpperCase() ?? ''] ?? 'blue'}
+                        style={{ fontSize: 13, padding: '2px 10px', margin: 0 }}
+                      >
                         {ROLE_LABELS[user?.role?.toUpperCase() ?? ''] ?? displayName}
                       </Tag>
                     </div>
                   </div>
                   <div className="flex items-start gap-4 py-4">
-                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${theme === 'dark' ? 'bg-purple-900/40' : 'bg-purple-50'}`}>
-                      <LockOutlined style={{ color: theme === 'dark' ? '#a78bfa' : '#7c3aed', fontSize: 15 }} />
+                    <div
+                      className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${theme === 'dark' ? 'bg-purple-900/40' : 'bg-purple-50'}`}
+                    >
+                      <LockOutlined
+                        style={{ color: theme === 'dark' ? '#a78bfa' : '#7c3aed', fontSize: 15 }}
+                      />
                     </div>
                     <div className="flex-1">
-                      <p className={`text-xs font-medium uppercase tracking-wide mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>Quyền hạn</p>
-                      <p className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>
+                      <p
+                        className={`text-xs font-medium uppercase tracking-wide mb-1 ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+                      >
+                        Quyền hạn
+                      </p>
+                      <p
+                        className={`text-sm leading-relaxed ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+                      >
                         Xét duyệt đề xuất khen thưởng · Quản lý quân nhân, đơn vị, chức vụ
                       </p>
                     </div>
@@ -410,11 +411,17 @@ export default function AdminDashboard() {
                       color: 'blue',
                       children: (
                         <div>
-                          <div className={`flex items-center gap-1.5 mb-1 text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <div
+                            className={`flex items-center gap-1.5 mb-1 text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+                          >
                             <ClockCircleOutlined style={{ fontSize: 12 }} />
                             Thời gian đăng nhập
                           </div>
-                          <p className={`text-sm font-semibold ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}>{formatDateTime(new Date())}</p>
+                          <p
+                            className={`text-sm font-semibold ${theme === 'dark' ? 'text-gray-200' : 'text-gray-800'}`}
+                          >
+                            {formatDateTime(new Date())}
+                          </p>
                         </div>
                       ),
                     },
@@ -422,13 +429,20 @@ export default function AdminDashboard() {
                       color: 'green',
                       children: (
                         <div>
-                          <div className={`flex items-center gap-1.5 mb-1 text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <div
+                            className={`flex items-center gap-1.5 mb-1 text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+                          >
                             <CheckCircleOutlined style={{ fontSize: 12 }} />
                             Trạng thái hệ thống
                           </div>
                           <div className="flex items-center gap-2">
-                            <span className="inline-block w-2 h-2 rounded-full bg-green-500" style={{ boxShadow: '0 0 0 3px rgba(16,185,129,0.2)' }} />
-                            <span className="text-sm font-semibold text-green-500">Hoạt động bình thường</span>
+                            <span
+                              className="inline-block w-2 h-2 rounded-full bg-green-500"
+                              style={{ boxShadow: '0 0 0 3px rgba(16,185,129,0.2)' }}
+                            />
+                            <span className="text-sm font-semibold text-green-500">
+                              Hoạt động bình thường
+                            </span>
                           </div>
                         </div>
                       ),
@@ -437,11 +451,17 @@ export default function AdminDashboard() {
                       color: 'gray',
                       children: (
                         <div>
-                          <div className={`flex items-center gap-1.5 mb-1 text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}>
+                          <div
+                            className={`flex items-center gap-1.5 mb-1 text-xs font-semibold uppercase tracking-wide ${theme === 'dark' ? 'text-gray-400' : 'text-gray-500'}`}
+                          >
                             <UserOutlined style={{ fontSize: 12 }} />
                             Phiên làm việc
                           </div>
-                          <p className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}>{user?.username || displayName}</p>
+                          <p
+                            className={`text-sm ${theme === 'dark' ? 'text-gray-300' : 'text-gray-700'}`}
+                          >
+                            {user?.username || displayName}
+                          </p>
                         </div>
                       ),
                     },

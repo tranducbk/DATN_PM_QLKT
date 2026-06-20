@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Select, Alert, Typography, Space, Tag, Button, message, Empty } from 'antd';
+import { Table, Select, Typography, Space, Tag, Button, message, Empty } from 'antd';
 import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/http/apiClient';
@@ -14,7 +14,10 @@ import {
   DANH_HIEU_DON_VI_HANG_NAM,
   DANH_HIEU_MAP,
   DANH_HIEU_OPTIONS,
+  AWARD_TAB_LABELS,
 } from '@/constants/danhHieu.constants';
+import { StepGuide } from './StepGuide';
+import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
 
 const { Text } = Typography;
 
@@ -450,25 +453,17 @@ export function Step3SetTitlesDonViHangNam({
 
   return (
     <div>
-      <Alert
-        message="Bước 3: Thiết lập danh hiệu - Đơn vị hằng năm"
-        description={
-          <div>
-            <p>
-              1. Thiết lập danh hiệu cho <strong>{units.length}</strong> đơn vị đã chọn.
-            </p>
-            <p>
-              2. Quy tắc nghiệp vụ: không đề xuất ĐVQT/ĐVTT cùng BKBQP/BKTTCP trong cùng một hồ sơ;
-              BKBQP và BKTTCP có thể đi cùng nhau.
-            </p>
-            <p>3. Đảm bảo tất cả đơn vị đã có danh hiệu trước khi chuyển bước.</p>
-            <p>4. Hoàn tất khai báo, nhấn &quot;Tiếp tục&quot; để sang bước đính kèm tệp.</p>
-          </div>
-        }
-        type="info"
-        showIcon
+      <StepGuide
+        title={stepGuideTitle(3, 'Thiết lập danh hiệu', AWARD_TAB_LABELS.DVHN)}
         icon={<EditOutlined />}
-        style={{ marginBottom: 24 }}
+        steps={[
+          <span key="0">
+            Thiết lập danh hiệu cho <strong>{units.length}</strong> đơn vị đã chọn.
+          </span>,
+          'Quy tắc nghiệp vụ: không đề xuất ĐVQT/ĐVTT cùng BKBQP/BKTTCP trong cùng một hồ sơ; BKBQP và BKTTCP có thể đi cùng nhau.',
+          GUIDE_LINES.allUnitsHaveTitle,
+          GUIDE_LINES.nextToAttach,
+        ]}
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>

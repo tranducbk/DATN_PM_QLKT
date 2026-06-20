@@ -16,6 +16,8 @@ export const RESOURCE_SLUGS = {
   PROFILES: 'profiles',
   AWARDS: 'awards',
   AUTH: 'auth',
+  AWARD_BULK: 'award-bulk',
+  SYSTEM_LOGS: 'system-logs',
+  BACKUP: 'backup',
+  DEV_ZONE: 'dev-zone',
 } as const;
-
-export type ResourceSlug = (typeof RESOURCE_SLUGS)[keyof typeof RESOURCE_SLUGS];

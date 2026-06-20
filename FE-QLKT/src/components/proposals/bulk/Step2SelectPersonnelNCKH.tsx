@@ -6,7 +6,6 @@ import {
   Input,
   Select,
   Space,
-  Alert,
   Typography,
   InputNumber,
   Empty,
@@ -19,6 +18,9 @@ import { apiClient } from '@/lib/http/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import { usePersonnelList } from './usePersonnelList';
+import { StepGuide } from './StepGuide';
+import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
+import { AWARD_TAB_LABELS } from '@/constants/danhHieu.constants';
 import * as XLSX from 'xlsx';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import type {
@@ -320,19 +322,14 @@ export function Step2SelectPersonnelNCKH({
 
   return (
     <div>
-      <Alert
-        message="Bước 2: Lựa chọn quân nhân - Đề tài khoa học/Sáng kiến khoa học"
-        description={
-          <div>
-            <p>1. Chọn năm đề xuất để hệ thống lọc dữ liệu theo đúng kỳ xét.</p>
-            <p>2. Lựa chọn quân nhân có thành tích phù hợp từ danh sách.</p>
-            <p>3. Kiểm tra lại số lượng đã chọn, sau đó nhấn &quot;Tiếp tục&quot; để sang bước khai báo chi tiết.</p>
-          </div>
-        }
-        type="info"
-        showIcon
+      <StepGuide
+        title={stepGuideTitle(2, 'Lựa chọn quân nhân', AWARD_TAB_LABELS.NCKH)}
         icon={<TeamOutlined />}
-        style={{ marginBottom: 24 }}
+        steps={[
+          'Chọn năm đề xuất để hệ thống lọc dữ liệu theo đúng kỳ xét.',
+          'Lựa chọn quân nhân có thành tích phù hợp từ danh sách.',
+          GUIDE_LINES.nextToInfoNckh,
+        ]}
       />
 
       {/* Upload Excel Section */}

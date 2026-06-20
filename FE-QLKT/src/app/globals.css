@@ -2708,8 +2708,8 @@ body.ant-modal-open {
 }
 
 .ant-modal-body {
-  overflow-y: auto !important;
-  overflow-x: auto !important;
+  max-height: calc(100vh - 220px);
+  overflow-y: auto;
 }
 
 .ant-table-wrapper {

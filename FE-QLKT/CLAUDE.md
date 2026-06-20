@@ -118,9 +118,9 @@ export function FeatureForm({ onSuccess }: { onSuccess: () => void }) {
 
 ## API Calls
 
-Always use `apiClient` from `@/lib/api`:
+Always use the shared `apiClient` — components import it from `@/lib/http/apiClient` (a thin re-export of the single source defined in `@/lib/api`). Both paths resolve to the same instance; do not call `fetch`/`axios` directly:
 ```typescript
-import { apiClient } from '@/lib/api';
+import { apiClient } from '@/lib/http/apiClient';
 const result = await apiClient.getPersonnel({ page: 1, limit: 10 });
 ```
 

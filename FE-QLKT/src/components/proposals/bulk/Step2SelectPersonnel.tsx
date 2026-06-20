@@ -1,6 +1,6 @@
 'use client';
 
-import { Table, Input, Select, Space, Alert, Typography, InputNumber, Empty } from 'antd';
+import { Table, Input, Select, Space, Typography, InputNumber, Empty } from 'antd';
 import { SearchOutlined, TeamOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
@@ -8,6 +8,8 @@ import { formatDate } from '@/lib/utils';
 import type { DateInput } from '@/lib/types/common';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import { usePersonnelList } from './usePersonnelList';
+import { StepGuide } from './StepGuide';
+import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
 import type { Step2Personnel as Personnel } from './types';
 
 const { Text } = Typography;
@@ -214,22 +216,14 @@ export function Step2SelectPersonnel({
 
   return (
     <div>
-      <Alert
-        message="Bước 2: Lựa chọn quân nhân"
-        description={
-          <div>
-            <p>1. Chọn năm đề xuất để xác định kỳ xét.</p>
-            <p>
-              2. Lựa chọn quân nhân trong phạm vi đơn vị quản lý (bao gồm cơ quan đơn vị và đơn vị
-              trực thuộc).
-            </p>
-            <p>3. Kiểm tra lại danh sách đã chọn và nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu.</p>
-          </div>
-        }
-        type="info"
-        showIcon
+      <StepGuide
+        title={stepGuideTitle(2, 'Lựa chọn quân nhân')}
         icon={<TeamOutlined />}
-        style={{ marginBottom: 24 }}
+        steps={[
+          GUIDE_LINES.pickYear,
+          'Lựa chọn quân nhân trong phạm vi đơn vị quản lý, gồm cơ quan đơn vị và đơn vị trực thuộc.',
+          GUIDE_LINES.nextToTitles,
+        ]}
       />
 
       {/* Filters */}

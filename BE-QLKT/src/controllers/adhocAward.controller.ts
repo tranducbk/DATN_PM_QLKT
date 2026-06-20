@@ -6,6 +6,7 @@ import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { getManagerUnitFilter, getSubordinateUnitIds } from '../helpers/controllerHelper';
 import { ADHOC_TYPE } from '../constants/adhocType.constants';
+import { UNIT_TYPE } from '../constants/unitType.constants';
 
 interface CreateAdhocAwardBody {
   type?: (typeof ADHOC_TYPE)[keyof typeof ADHOC_TYPE];
@@ -115,7 +116,10 @@ class AdhocAwardController {
       position,
       note,
       decisionNumber,
-      decisionYear: decisionYear != null && decisionYear !== '' ? parseInt(String(decisionYear), 10) : undefined,
+      decisionYear:
+        decisionYear != null && decisionYear !== ''
+          ? parseInt(String(decisionYear), 10)
+          : undefined,
       signDate,
       signer,
       decisionFile,
@@ -200,7 +204,8 @@ class AdhocAwardController {
       return ResponseHelper.badRequest(res, 'Thiếu id');
     }
     const adminId = user.id;
-    const { awardForm, year, rank, position, note, decisionNumber, removeAttachedFileIndexes } = body;
+    const { awardForm, year, rank, position, note, decisionNumber, removeAttachedFileIndexes } =
+      body;
 
     const files = req.files as Record<string, Express.Multer.File[]> | undefined;
     const attachedFiles = files?.attachedFiles || [];
@@ -277,7 +282,7 @@ class AdhocAwardController {
     }
     const { unitType } = query;
 
-    if (!unitType || !['CO_QUAN_DON_VI', 'DON_VI_TRUC_THUOC'].includes(unitType as string)) {
+    if (!unitType || !(Object.values(UNIT_TYPE) as string[]).includes(unitType as string)) {
       return ResponseHelper.badRequest(res, 'Thiếu hoặc sai loại đơn vị (unitType)');
     }
 
@@ -288,7 +293,6 @@ class AdhocAwardController {
       message: 'Lấy danh sách khen thưởng đột xuất của đơn vị thành công',
     });
   });
-
 }
 
 export default new AdhocAwardController();

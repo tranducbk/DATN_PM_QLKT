@@ -65,8 +65,11 @@ Table QuanNhan {
 Table LichSuChucVu {
   id varchar(30) [pk]
   quan_nhan_id varchar(30) [not null]
-  chuc_vu_id varchar(30) [not null]
+  chuc_vu_id varchar(30) [note: 'nullable — SetNull khi xóa chức vụ']
   he_so_chuc_vu float [not null, default: 0]
+  ten_chuc_vu varchar(255) [note: 'snapshot tên chức vụ']
+  ten_co_quan_don_vi varchar(255) [note: 'snapshot tên cơ quan đơn vị']
+  ten_don_vi_truc_thuoc varchar(255) [note: 'snapshot tên đơn vị trực thuộc']
   ngay_bat_dau date [not null]
   ngay_ket_thuc date
   so_thang int
@@ -93,5 +96,5 @@ Ref: QuanNhan.chuc_vu_id > ChucVu.id [delete: restrict]
 Ref: QuanNhan.co_quan_don_vi_id > CoQuanDonVi.id [delete: cascade]
 Ref: QuanNhan.don_vi_truc_thuoc_id > DonViTrucThuoc.id [delete: cascade]
 Ref: LichSuChucVu.quan_nhan_id > QuanNhan.id [delete: cascade]
-Ref: LichSuChucVu.chuc_vu_id > ChucVu.id [delete: cascade]
+Ref: LichSuChucVu.chuc_vu_id > ChucVu.id [delete: set null]
 Ref: TaiKhoan.quan_nhan_id > QuanNhan.id [delete: cascade]

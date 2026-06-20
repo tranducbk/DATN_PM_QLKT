@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Select, Alert, Typography, Space, Tag, message, Button, Input, Empty } from 'antd';
+import { Table, Select, Typography, Space, Tag, message, Button, Input, Empty } from 'antd';
 import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
@@ -9,8 +9,10 @@ import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/http/apiClient';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import { PositionHistoryModal } from './PositionHistoryModal';
+import { StepGuide } from './StepGuide';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { AWARD_TAB_LABELS, getDanhHieuName } from '@/constants/danhHieu.constants';
+import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
 import {
   calculateContributionMonthsByGroup,
   formatMonthsToText,
@@ -379,28 +381,25 @@ export function Step3SetTitlesCongHien({
 
   return (
     <div>
-      <Alert
-        message={`Bước 3: Thiết lập danh hiệu - ${AWARD_TAB_LABELS.HCBVTQ}`}
-        description={
-          <div>
-            <p>
-              1. Thiết lập danh hiệu cho <strong>{personnel.length}</strong> quân nhân đã chọn.
-            </p>
-            <p style={{ marginTop: 8, paddingLeft: 16, borderLeft: '3px solid #1890ff' }}>
+      <StepGuide
+        title={stepGuideTitle(3, 'Thiết lập danh hiệu', AWARD_TAB_LABELS.HCBVTQ)}
+        icon={<EditOutlined />}
+        steps={[
+          <span key="0">
+            Thiết lập danh hiệu cho <strong>{personnel.length}</strong> quân nhân đã chọn.
+            <span
+              style={{ display: 'block', marginTop: 8, paddingLeft: 16, borderLeft: '3px solid #1890ff' }}
+            >
               <strong>Quy tắc xét điều kiện:</strong>
               <br />- Thời gian phục vụ tối thiểu: Nam 10 năm (120 tháng), Nữ 6 năm 8 tháng (80 tháng).
               <br />- hạng Nhất: xét nhóm hệ số 0.9-1.0.
               <br />- hạng Nhì: xét nhóm 0.8 + 0.9-1.0.
               <br />- hạng Ba: xét nhóm 0.7 + 0.8 + 0.9-1.0.
-            </p>
-            <p>2. Kiểm tra để tất cả quân nhân đều đã có danh hiệu trước khi chuyển bước.</p>
-            <p>3. Hoàn tất khai báo, nhấn &quot;Tiếp tục&quot; để sang bước đính kèm tệp.</p>
-          </div>
-        }
-        type="info"
-        showIcon
-        icon={<EditOutlined />}
-        style={{ marginBottom: 24 }}
+            </span>
+          </span>,
+          GUIDE_LINES.allHaveTitle,
+          GUIDE_LINES.nextToAttach,
+        ]}
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>

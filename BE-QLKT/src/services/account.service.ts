@@ -20,8 +20,17 @@ import profileService from './profile.service';
 import { adjustUnitCount } from './personnel/unitCount';
 import { rotatePositionHistory } from './personnel/positionHistory';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { logMessages } from '../constants/logMessages.constants';
 import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 import { emitToUser } from '../utils/socketService';
+import type {
+  CreateAccountData,
+  UpdateAccountData,
+  FormattedAccount,
+  PaginatedAccounts,
+} from './account/types';
+import { formatAccount } from './account/helpers';
 
 const ACCOUNT_QUAN_NHAN_INCLUDE = {
   QuanNhan: {
@@ -36,46 +45,6 @@ const ACCOUNT_QUAN_NHAN_INCLUDE = {
     },
   },
 } as const;
-
-interface CreateAccountData {
-  personnel_id?: string | null;
-  username: string;
-  password: string;
-  role: string;
-  co_quan_don_vi_id?: string | null;
-  don_vi_truc_thuoc_id?: string | null;
-  chuc_vu_id?: string | null;
-}
-
-interface UpdateAccountData {
-  role?: string;
-  password?: string;
-  co_quan_don_vi_id?: string | null;
-  don_vi_truc_thuoc_id?: string | null;
-  chuc_vu_id?: string | null;
-}
-
-interface FormattedAccount {
-  id: string;
-  username: string;
-  role: string;
-  quan_nhan_id: string | null;
-  ho_ten: string | null;
-  don_vi: string | null;
-  cap_bac?: string | null;
-  chuc_vu: string | null;
-  createdAt?: Date;
-}
-
-interface PaginatedAccounts {
-  accounts: FormattedAccount[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
 
 class AccountService {
   async getAccounts(
@@ -394,17 +363,7 @@ class AccountService {
       );
     });
 
-    return {
-      id: newAccount.id,
-      username: newAccount.username,
-      role: newAccount.role,
-      quan_nhan_id: newAccount.quan_nhan_id,
-      ho_ten: newAccount.QuanNhan?.ho_ten || null,
-      don_vi:
-        (newAccount.QuanNhan?.DonViTrucThuoc || newAccount.QuanNhan?.CoQuanDonVi)?.ten_don_vi ||
-        null,
-      chuc_vu: newAccount.QuanNhan?.ChucVu?.ten_chuc_vu || null,
-    };
+    return formatAccount(newAccount);
   }
 
   async updateAccount(id: string, data: UpdateAccountData): Promise<FormattedAccount> {
@@ -568,7 +527,8 @@ class AccountService {
 
         // Unit move: keep so_luong counters correct (decrement old, increment new).
         const oldPrimaryUnitId = qn.don_vi_truc_thuoc_id || qn.co_quan_don_vi_id;
-        const newPrimaryUnitId = resolvedUnit.don_vi_truc_thuoc_id || resolvedUnit.co_quan_don_vi_id;
+        const newPrimaryUnitId =
+          resolvedUnit.don_vi_truc_thuoc_id || resolvedUnit.co_quan_don_vi_id;
         if (oldPrimaryUnitId !== newPrimaryUnitId) {
           if (oldPrimaryUnitId) {
             await adjustUnitCount(tx, oldPrimaryUnitId, !qn.don_vi_truc_thuoc_id, 'decrement');
@@ -594,9 +554,9 @@ class AccountService {
         await profileService.recalculateAnnualProfile(account.quan_nhan_id);
       } catch (recalcError) {
         void writeSystemLog({
-          action: 'ERROR',
+          action: AUDIT_ACTIONS.ERROR,
           resource: RESOURCE_SLUGS.PERSONNEL,
-          description: `Lỗi tính lại hồ sơ hằng năm quân nhân ${account.quan_nhan_id}: ${recalcError}`,
+          description: logMessages.recalcPersonnelError(account.quan_nhan_id, recalcError),
         });
       }
     }
@@ -607,17 +567,7 @@ class AccountService {
       });
     }
 
-    return {
-      id: updatedAccount.id,
-      username: updatedAccount.username,
-      role: updatedAccount.role,
-      quan_nhan_id: updatedAccount.quan_nhan_id,
-      ho_ten: updatedAccount.QuanNhan?.ho_ten || null,
-      don_vi:
-        (updatedAccount.QuanNhan?.DonViTrucThuoc || updatedAccount.QuanNhan?.CoQuanDonVi)
-          ?.ten_don_vi || null,
-      chuc_vu: updatedAccount.QuanNhan?.ChucVu?.ten_chuc_vu || null,
-    };
+    return formatAccount(updatedAccount);
   }
 
   async resetPassword(accountId: string, callerRole?: string): Promise<{ message: string }> {
@@ -631,7 +581,11 @@ class AccountService {
     }
 
     // ADMIN must not reset passwords of ADMIN/SUPER_ADMIN accounts (privilege escalation).
-    if (callerRole === ROLES.ADMIN && account.role !== ROLES.MANAGER && account.role !== ROLES.USER) {
+    if (
+      callerRole === ROLES.ADMIN &&
+      account.role !== ROLES.MANAGER &&
+      account.role !== ROLES.USER
+    ) {
       throw new ForbiddenError('Không có quyền đặt lại mật khẩu cho tài khoản này');
     }
 

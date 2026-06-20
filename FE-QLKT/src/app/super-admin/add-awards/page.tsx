@@ -8,7 +8,6 @@ import {
   Button,
   Steps,
   Space,
-  Breadcrumb,
   Alert,
   Radio,
   message as antMessage,
@@ -21,7 +20,6 @@ import {
 import { getApiErrorMessage } from '@/lib/http/apiError';
 
 import {
-  HomeOutlined,
   TrophyOutlined,
   TeamOutlined,
   CheckCircleOutlined,
@@ -30,9 +28,9 @@ import {
   FileTextOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons';
-import Link from 'next/link';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/http/apiClient';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import { Step2SelectPersonnelNienHan } from '@/components/proposals/bulk/Step2SelectPersonnelNienHan';
@@ -108,7 +106,7 @@ export default function SuperAdminAddAwardsPage() {
     }
   }, [selectedPersonnelIds]);
 
-  // Fetch personnel details when reaching review step
+  // Lazy-load personnel details only when the review step opens
   useEffect(() => {
     if (currentStep === 3 && selectedPersonnelIds.length > 0) {
       fetchPersonnelDetails();
@@ -271,7 +269,7 @@ export default function SuperAdminAddAwardsPage() {
           </div>
         );
 
-      case 1: // Step 2: Select Personnel (with bypassEligibility)
+      case 1:
         return (
           <Step2SelectPersonnelNienHan
             selectedPersonnelIds={selectedPersonnelIds}
@@ -286,7 +284,7 @@ export default function SuperAdminAddAwardsPage() {
           />
         );
 
-      case 2: // Step 3: Set Titles (with bypassEligibility)
+      case 2:
         return (
           <Step3SetTitlesNienHan
             selectedPersonnelIds={selectedPersonnelIds}
@@ -604,22 +602,7 @@ export default function SuperAdminAddAwardsPage() {
 
   return (
     <div style={{ padding: '24px' }}>
-      {/* Breadcrumb */}
-      <Breadcrumb
-        style={{ marginBottom: 16 }}
-        items={[
-          {
-            title: (
-              <Link href="/super-admin/dashboard">
-                <HomeOutlined />
-              </Link>
-            ),
-          },
-          {
-            title: 'Thêm khen thưởng HCCSVV',
-          },
-        ]}
-      />
+      <PageBreadcrumb items={[{ title: 'Thêm khen thưởng HCCSVV' }]} />
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>

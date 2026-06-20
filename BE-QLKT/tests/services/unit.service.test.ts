@@ -142,6 +142,39 @@ describe('unit.service - updateUnit', () => {
       /Mã đơn vị đã tồn tại/,
     );
   });
+
+  it('Cho đổi tên DVTT, Khi updateUnit, Thì sync ten_don_vi vào lịch sử các chức vụ của DVTT', async () => {
+    prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce(null);
+    prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce({ id: 'dvtt-1', ten_don_vi: 'Tên cũ' });
+    prismaMock.donViTrucThuoc.update.mockResolvedValueOnce({ id: 'dvtt-1', ten_don_vi: 'Tên mới' });
+    prismaMock.chucVu.findMany.mockResolvedValueOnce([{ id: 'cv-1' }, { id: 'cv-2' }]);
+    prismaMock.lichSuChucVu.updateMany.mockResolvedValueOnce({ count: 4 });
+
+    await unitService.updateUnit('dvtt-1', { ten_don_vi: 'Tên mới' });
+
+    expect(prismaMock.lichSuChucVu.updateMany).toHaveBeenCalledWith({
+      where: { chuc_vu_id: { in: ['cv-1', 'cv-2'] } },
+      data: { ten_don_vi_truc_thuoc: 'Tên mới' },
+    });
+  });
+
+  it('Cho đổi tên CQDV, Khi updateUnit, Thì sync ten_co_quan_don_vi cho cả chức vụ trực tiếp lẫn chức vụ đơn vị con', async () => {
+    prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({ id: 'cqdv-1', ten_don_vi: 'CQ cũ' });
+    prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce(null);
+    prismaMock.coQuanDonVi.update.mockResolvedValueOnce({ id: 'cqdv-1', ten_don_vi: 'CQ mới' });
+    // 1st findMany = chức vụ trực tiếp của CQDV; 2nd = chức vụ của các đơn vị con
+    prismaMock.chucVu.findMany
+      .mockResolvedValueOnce([{ id: 'cv-direct' }])
+      .mockResolvedValueOnce([{ id: 'cv-child' }]);
+    prismaMock.lichSuChucVu.updateMany.mockResolvedValue({ count: 2 });
+
+    await unitService.updateUnit('cqdv-1', { ten_don_vi: 'CQ mới' });
+
+    expect(prismaMock.lichSuChucVu.updateMany).toHaveBeenCalledWith({
+      where: { chuc_vu_id: { in: ['cv-direct', 'cv-child'] } },
+      data: { ten_co_quan_don_vi: 'CQ mới' },
+    });
+  });
 });
 
 describe('unit.service - deleteUnit', () => {

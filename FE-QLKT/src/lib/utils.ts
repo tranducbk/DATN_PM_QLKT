@@ -56,6 +56,20 @@ export function calculateDuration(startDate: DatePoint, endDate?: DatePoint): st
 }
 
 /**
+ * Formats a month count as `X năm Y tháng`, collapsing zero parts.
+ * @param totalMonths - Total months (`<= 0` renders as `-`)
+ * @returns Vietnamese duration label
+ */
+export function formatMonths(totalMonths: number): string {
+  if (!totalMonths || totalMonths <= 0) return '-';
+  const years = Math.floor(totalMonths / 12);
+  const months = totalMonths % 12;
+  if (years > 0 && months > 0) return `${years} năm ${months} tháng`;
+  if (years > 0) return `${years} năm`;
+  return `${months} tháng`;
+}
+
+/**
  * Formats date as `DD/MM/YYYY`.
  * @param date - Input date (string, Date, or nullish)
  * @returns Formatted date string or `-` for nullish values

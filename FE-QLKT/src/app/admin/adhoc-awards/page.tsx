@@ -8,7 +8,6 @@ import {
   Tag,
   Space,
   Typography,
-  Breadcrumb,
   message,
   Select,
   Input,
@@ -21,7 +20,6 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  HomeOutlined,
   UserOutlined,
   TeamOutlined,
   EyeOutlined,
@@ -29,6 +27,7 @@ import {
   FilterOutlined,
 } from '@ant-design/icons';
 import type { TableColumnsType } from 'antd';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { apiClient } from '@/lib/http/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
@@ -343,13 +342,7 @@ export default function AdhocAwardsPage() {
 
   return (
     <div style={{ padding: 24 }}>
-      <Breadcrumb
-        style={{ marginBottom: 16 }}
-        items={[
-          { href: '/admin/dashboard', title: <HomeOutlined /> },
-          { title: 'Khen thưởng đột xuất' },
-        ]}
-      />
+      <PageBreadcrumb items={[{ title: 'Khen thưởng đột xuất' }]} />
 
       <Card>
         <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between' }}>

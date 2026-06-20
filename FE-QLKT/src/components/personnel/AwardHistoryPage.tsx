@@ -9,7 +9,6 @@ import {
   Table,
   Space,
   Typography,
-  Breadcrumb,
   message,
   ConfigProvider,
   theme as antdTheme,
@@ -17,8 +16,9 @@ import {
   Empty,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
+import { LeftOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/http/apiClient';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
@@ -248,20 +248,13 @@ export function AwardHistoryPage({
       }}
     >
       <div style={{ padding: '24px' }}>
-        <Breadcrumb style={{ marginBottom: 24 }}>
-          <Breadcrumb.Item>
-            <Link href={`${basePath}/dashboard`}>
-              <HomeOutlined />
-            </Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <Link href={`${basePath}/personnel`}>Quân nhân</Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <Link href={`${basePath}/personnel/${personnelId}`}>{personnel?.ho_ten}</Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>{awardLabel}</Breadcrumb.Item>
-        </Breadcrumb>
+        <PageBreadcrumb
+          items={[
+            { title: 'Quân nhân', href: `${basePath}/personnel` },
+            { title: personnel?.ho_ten, href: `${basePath}/personnel/${personnelId}` },
+            { title: awardLabel },
+          ]}
+        />
 
         <div
           style={{

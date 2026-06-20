@@ -38,11 +38,6 @@ export async function getContributionProfile(personnelId: string): Promise<ApiRe
   }
 }
 
-// Deprecated: kept for backward compatibility
-export async function getServiceProfile(personnelId: string): Promise<ApiResponse> {
-  return getTenureProfile(personnelId);
-}
-
 export async function recalculateProfile(personnelId: string, year?: number): Promise<ApiResponse> {
   try {
     const url = year

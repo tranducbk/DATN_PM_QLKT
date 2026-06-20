@@ -16,6 +16,7 @@ import {
   TYPE_CONFUSION_INVALID_DANH_HIEU_PREFIX,
   duplicateActualAnnualMessage,
   DUPLICATE_PREFIX,
+  HCQKQT_NOT_FOUND_PERSONNEL,
 } from '../helpers/errorMessages';
 
 import proposalService from '../../src/services/proposal';
@@ -149,8 +150,8 @@ describe('Type confusion — numeric vs string nam/thang', () => {
         'abc' as unknown as number
       ),
       ValidationError,
-      // Flow tới eligibility HC_QKQT — quanNhan.findUnique → null → "Không tìm thấy quân nhân"
-      'Một số quân nhân chưa đủ điều kiện để đề xuất Huy chương Quân kỳ quyết thắng (yêu cầu >= 25 năm phục vụ):\nqn-bad-thang: Không tìm thấy quân nhân'
+      // Personnel deleted mid-flow → service-years NOT_FOUND surfaces the reload guidance
+      `Một số quân nhân chưa đủ điều kiện để đề xuất Huy chương Quân kỳ quyết thắng (yêu cầu >= 25 năm phục vụ):\n${HCQKQT_NOT_FOUND_PERSONNEL}`
     );
   });
 });

@@ -84,13 +84,11 @@ function ApiErrorHandler() {
 
   useEffect(() => {
     const handler = (e: CustomEvent<{ message: string; status: number }>) => {
-      const { status: statusCode } = e.detail;
-      if (statusCode >= 500) {
+      const { status } = e.detail;
+      if (status >= 500) {
         message.error(e.detail.message || 'Lỗi máy chủ. Vui lòng thử lại sau.');
-      } else if (statusCode === 403) {
+      } else if (status === 403) {
         message.warning('Bạn không có quyền thực hiện thao tác này.');
-      } else if (statusCode === 400) {
-        message.warning(e.detail.message || 'Dữ liệu không hợp lệ.');
       }
     };
 
@@ -300,14 +298,24 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     }
   };
 
-  const handleDeleteAllNotifications = async () => {
-    try {
-      await apiClient.deleteAllNotifications();
-      setNotifications([]);
-      setNotificationCount(0);
-    } catch (error: unknown) {
-      message.error(getApiErrorMessage(error, 'Không thể xóa thông báo'));
-    }
+  const handleDeleteAllNotifications = () => {
+    Modal.confirm({
+      title: 'Xóa tất cả thông báo?',
+      content: 'Bạn có chắc muốn xóa toàn bộ thông báo? Hành động này không thể hoàn tác.',
+      okText: 'Xóa',
+      cancelText: 'Hủy',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        const result = await apiClient.deleteAllNotifications();
+        if (!result.success) {
+          message.error(result.message || 'Không thể xóa thông báo');
+          return;
+        }
+        setNotifications([]);
+        setNotificationCount(0);
+        message.success('Đã xóa tất cả thông báo');
+      },
+    });
   };
 
   const handleLogout = async () => {
