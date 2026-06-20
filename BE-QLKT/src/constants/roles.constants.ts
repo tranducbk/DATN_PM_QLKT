@@ -31,7 +31,7 @@ export const ROLE_RANK: Record<Role, number> = {
 
 /**
  * Whether an actor may delete/manage an account of the target role.
- * Only a strictly higher rank qualifies — equal rank (ngang quyền) and higher are blocked.
+ * Only a strictly higher rank qualifies — equal rank and higher are blocked.
  * @param actorRole - Role of the user performing the action
  * @param targetRole - Role of the account being acted on
  * @returns true when the actor outranks the target

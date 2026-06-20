@@ -52,15 +52,6 @@ export async function getDecisionBySoQuyetDinh(soQuyetDinh: string): Promise<Api
   }
 }
 
-export async function getDecisionById(id: string): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.get(`/api/decisions/${id}`);
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
 export async function createDecision(formData: FormData): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/decisions', formData, {
@@ -103,20 +94,6 @@ export async function getDecisionFilePath(soQuyetDinh: string): Promise<ApiRespo
       `/api/decisions/file-path/${encodeURIComponent(soQuyetDinh)}`
     );
     return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
-/**
- * Gets decision file paths for multiple decision numbers.
- * @param soQuyetDinhs - Decision number list
- * @returns API response keyed by decision number
- */
-export async function getDecisionFilePaths(soQuyetDinhs: string[]): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.post('/api/decisions/file-paths', { soQuyetDinhs });
-    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }

@@ -47,7 +47,7 @@ import { formatDate } from '@/lib/utils';
 
 const { Title, Paragraph, Text } = Typography;
 
-/** Một dòng bảng khen thưởng — có thể là cấu trúc lồng (adhoc, scientific, …) */
+/** An award table row — may be a nested structure (adhoc, scientific, …). */
 interface AwardCore {
   id: string;
   cccd: string;
@@ -73,7 +73,7 @@ interface AwardCore {
   ten_de_tai?: string | null;
 }
 
-/** Dòng hiển thị/ghép filter — gồm cả bản ghi adhoc / scientific có quan hệ lồng */
+/** Display/filter row — includes nested adhoc/scientific records. */
 type AwardTableRow = AwardCore & {
   loai?: string;
   QuanNhan?: {

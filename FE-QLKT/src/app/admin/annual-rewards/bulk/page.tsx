@@ -34,14 +34,14 @@ import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagi
 
 const { Title, Text } = Typography;
 
-/** Một dòng kết quả `checkAnnualRewards`. */
+/** A single `checkAnnualRewards` result row. */
 interface AnnualRewardCheckResultRow {
   personnel_id: string;
   has_reward: boolean;
   has_proposal: boolean;
 }
 
-/** Option filter đơn vị (getUnits). */
+/** Unit filter option (from getUnits). */
 interface BulkUnitOptionRow {
   id: string;
   ten_don_vi: string;

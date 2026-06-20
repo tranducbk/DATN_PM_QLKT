@@ -6,7 +6,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { UserRole } from '@/lib/types/common';
 
 /**
- * Redirect map cho từng role
+ * Redirect target per role.
  */
 const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
   SUPER_ADMIN: '/super-admin/dashboard',
@@ -18,8 +18,8 @@ const ROLE_DASHBOARD_MAP: Record<UserRole, string> = {
 /**
  * useAuthGuard - Custom Hook Pattern
  *
- * Thay thế logic auth check duplicate trong 4 layout files.
- * Kiểm tra authentication + authorization và redirect nếu không hợp lệ.
+ * Replaces the auth-check logic duplicated across the 4 layout files.
+ * Verifies authentication + authorization and redirects when invalid.
  *
  * @param requiredRole - Role hoặc danh sách role được phép vào layout
  * @returns { isChecking } - true nếu đang check auth, dùng để render loading

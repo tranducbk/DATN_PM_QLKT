@@ -19,7 +19,7 @@ export interface PositionHistoryEntry {
 }
 
 /**
- * Returns the group a hệ số chức vụ belongs to, or null if outside known ranges.
+ * Returns the group a position coefficient belongs to, or null if outside known ranges.
  * @param heSo - Hệ số chức vụ value
  * @returns Matching group key or null
  */
@@ -35,10 +35,10 @@ export function classifyCoefficientGroup(heSo: number): ContributionCoefficientG
 }
 
 /**
- * Sums months grouped by hệ số chức vụ range from already-recalculated history rows.
+ * Sums months grouped by position coefficient range from already-recalculated history rows.
  * Use when callers have already invoked `recalcPositionMonths` themselves.
  * @param histories - Recalculated position history rows for one personnel
- * @returns Months grouped by hệ số chức vụ range (0.7 / 0.8 / 0.9-1.0)
+ * @returns Months grouped by position coefficient range (0.7 / 0.8 / 0.9-1.0)
  */
 export function sumMonthsByGroup(histories: PositionHistoryEntry[]): PositionMonthsByGroup {
   const totals: PositionMonthsByGroup = {
@@ -60,7 +60,7 @@ export function sumMonthsByGroup(histories: PositionHistoryEntry[]): PositionMon
  * Aggregates contribution months by hệ số group after recalculating per-row tenure.
  * @param histories - Position history rows for a single personnel
  * @param cutoffDate - Eligibility reference date (e.g. last day of proposal month)
- * @returns Months grouped by hệ số chức vụ range (0.7 / 0.8 / 0.9-1.0)
+ * @returns Months grouped by position coefficient range (0.7 / 0.8 / 0.9-1.0)
  */
 export function aggregatePositionMonthsByGroup(
   histories: PositionHistoryEntry[],

@@ -46,7 +46,7 @@ interface Unit {
   };
 }
 
-/** Dòng khen ĐV hằng năm (getUnitAnnualAwards). */
+/** Annual unit-award row (from getUnitAnnualAwards). */
 interface UnitAnnualAwardRow {
   id: string;
   nam?: number;

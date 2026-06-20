@@ -397,8 +397,8 @@ class AccountService {
       don_vi_truc_thuoc_id !== undefined ||
       chuc_vu_id !== undefined;
 
-    // Roles split into two non-bridgeable groups: soldier accounts (MANAGER/USER, tied to a
-    // quân nhân) and admin accounts (SUPER_ADMIN/ADMIN, no quân nhân). Crossing groups is
+    // Roles split into two non-bridgeable groups: personnel accounts (MANAGER/USER, tied to a
+    // quan_nhan) and admin accounts (SUPER_ADMIN/ADMIN, no quan_nhan). Crossing groups is
     // meaningless and error-prone, so a role change may only stay within its own group.
     if (roleChanging) {
       const targetIsSoldierRole = role === ROLES.MANAGER || role === ROLES.USER;

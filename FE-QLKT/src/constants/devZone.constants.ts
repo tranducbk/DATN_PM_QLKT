@@ -10,7 +10,7 @@ export const DEV_ZONE_API = '/api/dev-zone';
 export const DEV_SESSION_KEY = 'dev_zone_session';
 export const DEV_SESSION_DURATION = 15 * 60 * 1000; // 15 minutes
 
-/** Preset lịch chạy cron job */
+/** Cron-job schedule presets. */
 export const CRON_PRESETS = [
   { label: 'Mỗi 5 phút', value: '*/5 * * * *' },
   { label: 'Mỗi 30 phút', value: '*/30 * * * *' },
@@ -69,7 +69,7 @@ export const SYSTEM_FEATURE_OPTIONS = [
   },
 ] as const;
 
-/** Preset lịch backup tự động */
+/** Automatic-backup schedule presets. */
 export const BACKUP_CRON_PRESETS = [
   { label: 'Mỗi ngày lúc 02:00', value: '0 2 * * *' },
   { label: 'Mỗi tuần (Thứ 2 lúc 02:00)', value: '0 2 * * 1' },

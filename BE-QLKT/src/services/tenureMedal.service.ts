@@ -1,11 +1,9 @@
-import ExcelJS from 'exceljs';
 import { tenureMedalRepository } from '../repositories/tenureMedal.repository';
 import { buildMedalListWhere } from '../helpers/unitHelper';
 import { accountRepository } from '../repositories/account.repository';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
-import { sanitizeRowData } from '../helpers/excel/excelHelper';
-import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
+import { buildTemplate, buildAwardExportBuffer } from '../helpers/excel/excelTemplateHelper';
 import { fetchTemplateData } from './excel/templateData.service';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
@@ -112,32 +110,23 @@ class TenureMedalService {
    */
   async exportToExcel(filters: Record<string, unknown> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.HCCSVV);
-
-    worksheet.columns = [...HCCSVV_EXPORT_COLUMNS];
-
-    styleHeaderRow(worksheet);
-
-    data.forEach((item, index) => {
-      worksheet.addRow(
-        sanitizeRowData({
-          stt: index + 1,
-          id: item.quan_nhan_id,
-          ho_ten: item.QuanNhan?.ho_ten ?? '',
-          cap_bac: item.cap_bac ?? '',
-          chuc_vu: item.chuc_vu ?? '',
-          nam: item.nam,
-          thang: item.thang,
-          danh_hieu: item.danh_hieu,
-          so_quyet_dinh: item.so_quyet_dinh ?? '',
-          ghi_chu: item.ghi_chu ?? '',
-        })
-      );
-    });
-
-    return await workbook.xlsx.writeBuffer();
+    return buildAwardExportBuffer(
+      data,
+      AWARD_EXCEL_SHEETS.HCCSVV,
+      [...HCCSVV_EXPORT_COLUMNS],
+      (item, index) => ({
+        stt: index + 1,
+        id: item.quan_nhan_id,
+        ho_ten: item.QuanNhan?.ho_ten ?? '',
+        cap_bac: item.cap_bac ?? '',
+        chuc_vu: item.chuc_vu ?? '',
+        nam: item.nam,
+        thang: item.thang,
+        danh_hieu: item.danh_hieu,
+        so_quyet_dinh: item.so_quyet_dinh ?? '',
+        ghi_chu: item.ghi_chu ?? '',
+      })
+    );
   }
 
   /**

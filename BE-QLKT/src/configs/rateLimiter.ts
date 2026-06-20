@@ -46,7 +46,7 @@ const makeRateLimitHandler =
     res.status(429).json(message);
   };
 
-/** For login/auth endpoints — only count failed requests so legit users không bị chặn */
+/** For login/auth endpoints — only count failed requests so legit users are not blocked */
 export const authLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
   max: 30,

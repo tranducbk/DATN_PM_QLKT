@@ -4,15 +4,13 @@ import { militaryFlagRepository } from '../repositories/militaryFlag.repository'
 import { proposalRepository } from '../repositories/proposal.repository';
 import { accountRepository } from '../repositories/account.repository';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
-import ExcelJS from 'exceljs';
 import * as notificationHelper from '../helpers/notification';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { NotFoundError } from '../middlewares/errorHandler';
-import { sanitizeRowData } from '../helpers/excel/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { logMessages } from '../constants/logMessages.constants';
-import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
+import { buildTemplate, buildAwardExportBuffer } from '../helpers/excel/excelTemplateHelper';
 import { fetchTemplateData } from './excel/templateData.service';
 import {
   AWARD_EXCEL_SHEETS,
@@ -135,35 +133,26 @@ class MilitaryFlagService {
 
   async exportToExcel(filters: MilitaryFlagFilters = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.HC_QKQT);
-
-    worksheet.columns = [...MILITARY_FLAG_EXPORT_COLUMNS];
-
-    styleHeaderRow(worksheet);
-
-    data.forEach((item, index) => {
-      worksheet.addRow(
-        sanitizeRowData({
-          stt: index + 1,
-          id: item.quan_nhan_id,
-          ho_ten: item.QuanNhan?.ho_ten ?? '',
-          cap_bac: item.cap_bac ?? '',
-          chuc_vu: item.chuc_vu ?? '',
-          nam: item.nam,
-          thang: item.thang,
-          so_quyet_dinh: item.so_quyet_dinh ?? '',
-          ghi_chu: item.ghi_chu ?? '',
-          don_vi:
-            item.QuanNhan?.CoQuanDonVi?.ten_don_vi ??
-            item.QuanNhan?.DonViTrucThuoc?.ten_don_vi ??
-            '',
-        })
-      );
-    });
-
-    return await workbook.xlsx.writeBuffer();
+    return buildAwardExportBuffer(
+      data,
+      AWARD_EXCEL_SHEETS.HC_QKQT,
+      [...MILITARY_FLAG_EXPORT_COLUMNS],
+      (item, index) => ({
+        stt: index + 1,
+        id: item.quan_nhan_id,
+        ho_ten: item.QuanNhan?.ho_ten ?? '',
+        cap_bac: item.cap_bac ?? '',
+        chuc_vu: item.chuc_vu ?? '',
+        nam: item.nam,
+        thang: item.thang,
+        so_quyet_dinh: item.so_quyet_dinh ?? '',
+        ghi_chu: item.ghi_chu ?? '',
+        don_vi:
+          item.QuanNhan?.CoQuanDonVi?.ten_don_vi ??
+          item.QuanNhan?.DonViTrucThuoc?.ten_don_vi ??
+          '',
+      })
+    );
   }
 
   async getStatistics() {

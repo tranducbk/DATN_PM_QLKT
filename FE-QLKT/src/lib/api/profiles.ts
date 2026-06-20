@@ -38,36 +38,3 @@ export async function getContributionProfile(personnelId: string): Promise<ApiRe
   }
 }
 
-export async function recalculateProfile(personnelId: string, year?: number): Promise<ApiResponse> {
-  try {
-    const url = year
-      ? `/api/profiles/recalculate/${personnelId}?year=${year}`
-      : `/api/profiles/recalculate/${personnelId}`;
-    const res = await axiosInstance.post(url);
-    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
-
-export async function getAllServiceProfiles(): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.get('/api/profiles/service');
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
-export async function updateServiceProfile(
-  personnelId: string,
-  updates: Record<string, unknown>
-): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.put(`/api/profiles/service/${personnelId}`, updates);
-    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}

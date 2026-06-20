@@ -10,7 +10,7 @@ import { hcbvtqStrategy } from './hcbvtqStrategy';
 
 /**
  * Registry of proposal-type strategies. DOT_XUAT is intentionally null:
- * khen thưởng đột xuất is created directly by ADMIN through `adhocAward.service`
+ * ad-hoc rewards are created directly by ADMIN through `adhocAward.service`
  * (writes straight to `KhenThuongDotXuat`), never goes through the BangDeXuat
  * approval pipeline.
  */

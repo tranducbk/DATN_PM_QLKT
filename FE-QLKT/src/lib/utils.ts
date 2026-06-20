@@ -150,7 +150,7 @@ export function formatFileSize(bytes?: number): string {
 }
 
 /**
- * Format hệ số chức vụ về 1 chữ số thập phân (rule: khoảng 0–1, 1 chữ số).
+ * Formats a position coefficient to one decimal place (expected range ~0–1).
  * @param value - Giá trị he_so_chuc_vu thô (number, chuỗi số, hoặc nullish)
  * @param fallback - Text trả về khi giá trị nullish/rỗng (mặc định '-')
  * @returns Chuỗi đã format, vd '0.7', '1.0', hoặc fallback

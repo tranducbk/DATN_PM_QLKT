@@ -24,7 +24,7 @@ export function flagColumnFor(code: string): keyof DanhHieuHangNam | '' {
  * Both `recalculateAnnualProfile.computeEligibilityFlags` and the proposal-time
  * `checkAwardEligibility` call this so the two paths cannot diverge on cycle
  * semantics. Cycle uses `cstdcs_lien_tuc % cycleYears === 0` per business rule
- * "BKBQP cứ mỗi 2y, CSTDTQ mỗi 3y, BKTTCP mỗi 7y".
+ * "BKBQP every 2y, CSTDTQ every 3y, BKTTCP every 7y".
  * @param code - BKBQP / CSTDTQ / BKTTCP code
  * @param danhHieuList - Annual title rows for this personnel
  * @param year - Evaluation anchor year

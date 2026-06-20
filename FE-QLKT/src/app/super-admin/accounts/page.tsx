@@ -36,7 +36,7 @@ import { formatDateTime } from '@/lib/utils';
 
 const { Title } = Typography;
 
-/** Dòng bảng tài khoản (API getAccounts). */
+/** Account table row (from getAccounts). */
 interface SuperAdminAccountRow {
   id: string;
   username: string;

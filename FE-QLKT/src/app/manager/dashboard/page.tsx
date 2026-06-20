@@ -237,7 +237,7 @@ export default function ManagerDashboard() {
     },
   ];
 
-  // Hai biểu đồ quân số đặt cạnh nhau dùng chung chiều cao để không bị lệch.
+  // The two personnel charts share one height so they line up side by side.
   const positionRowCount = chartData.personnelByPosition.filter(
     (p: PersonnelByPosition) => p.positionName && p.positionName !== 'Chưa xác định'
   ).length;

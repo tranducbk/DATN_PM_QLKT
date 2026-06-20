@@ -15,7 +15,7 @@ export const USER_ROLE_VALUES = [
   ROLES.USER,
 ] as const;
 
-/** Vai trò tài khoản — khớp BE / JWT */
+/** Account role — matches the BE / JWT value. */
 export type UserRole = (typeof USER_ROLE_VALUES)[number];
 
 /** Date input from API/forms: ISO string, Date, null, or undefined. */
@@ -24,7 +24,7 @@ export type DateInput = string | Date | null | undefined;
 /** Required date point (null is not allowed). */
 export type DatePoint = string | Date;
 
-/** Tài khoản trong danh sách / layout (payload tóm tắt từ API). */
+/** Account summary used in lists/layout (trimmed API payload). */
 export interface Account {
   id: string;
   username: string;

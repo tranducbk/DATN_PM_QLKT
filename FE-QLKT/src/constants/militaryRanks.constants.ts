@@ -1,6 +1,6 @@
 /**
- * Danh sách cấp bậc quân đội Việt Nam
- * Từ thấp đến cao
+ * Vietnamese military ranks.
+ * Ordered from lowest to highest.
  */
 export const MILITARY_RANKS = [
   'Binh nhì',

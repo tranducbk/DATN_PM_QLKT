@@ -7,7 +7,7 @@ import {
 } from './chainEligibility';
 
 /**
- * Resolves the unit chain-award config for a danh hiệu code.
+ * Resolves the unit chain-award config for a danh_hieu code.
  * @param code - Unit award code (BKBQP / BKTTCP)
  * @returns Chain-award config, or `null` when the code is not a unit chain award
  */

@@ -56,8 +56,8 @@ type SocketNotificationPayload = {
 };
 
 /**
- * Component hiển thị toast khi có thông báo mới qua socket.
- * Phải đặt bên trong <App> để dùng được App.useApp().
+ * Shows a toast when a new notification arrives over the socket.
+ * Must be rendered inside <App> so App.useApp() is available.
  */
 function NotificationToast({ notification }: { notification: SocketNotificationPayload | null }) {
   const { notification: antNotification } = App.useApp();
@@ -76,8 +76,8 @@ function NotificationToast({ notification }: { notification: SocketNotificationP
 }
 
 /**
- * Component lắng nghe lỗi API toàn cục và hiển thị thông báo.
- * Phải đặt bên trong <App> để dùng được App.useApp().
+ * Listens for global API errors and surfaces them as notifications.
+ * Must be rendered inside <App> so App.useApp() is available.
  */
 function ApiErrorHandler() {
   const { message } = App.useApp();
@@ -100,8 +100,8 @@ function ApiErrorHandler() {
 }
 
 /**
- * Component hiển thị toast khi trạng thái kết nối socket thay đổi.
- * Phải đặt bên trong <App> để dùng được App.useApp().
+ * Shows a toast when the socket connection status changes.
+ * Must be rendered inside <App> so App.useApp() is available.
  */
 const DISCONNECT_TOAST_DEBOUNCE_MS = 3000;
 

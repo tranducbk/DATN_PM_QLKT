@@ -21,13 +21,13 @@ import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.cons
 
 const { Text } = Typography;
 
-/** Nhóm ĐVQT/ĐVTT — không trộn với BKBQP/BKTTCP trong một đề xuất */
+/** ĐVQT/ĐVTT group — never mixed with BKBQP/BKTTCP in one proposal. */
 const UNIT_TITLE_DV = [
   DANH_HIEU_DON_VI_HANG_NAM.DVQT,
   DANH_HIEU_DON_VI_HANG_NAM.DVTT,
 ] as const;
 
-/** Nhóm BKBQP/BKTTCP (mã dùng chung với bảng mã cá nhân) */
+/** BKBQP/BKTTCP group (codes shared with the personal code table). */
 const UNIT_TITLE_BK = [
   DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
   DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP,

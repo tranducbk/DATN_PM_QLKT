@@ -51,7 +51,7 @@ export default function AccountEditPage() {
   const [coQuanList, setCoQuanList] = useState<CoQuanOption[]>([]);
   const [dvttList, setDvttList] = useState<DvttOption[]>([]);
   const [positions, setPositions] = useState<ManagerPositionRow[]>([]);
-  // Soldier accounts (with quân nhân) swap only within {MANAGER, USER}; admin accounts only within
+  // Personnel accounts (with quan_nhan) swap only within {MANAGER, USER}; admin accounts only within
   // {SUPER_ADMIN, ADMIN}. Crossing groups is disallowed.
   const [isSoldierAccount, setIsSoldierAccount] = useState(true);
   const router = useRouter();

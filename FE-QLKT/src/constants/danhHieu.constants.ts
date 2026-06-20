@@ -75,7 +75,7 @@ export const THANH_TICH_KHOA_HOC = {
   SKKH: 'SKKH',
 } as const;
 
-/** Tên viết tắt tiếng Việt cho thành tích khoa học (dùng cho chart labels) */
+/** Short Vietnamese names for scientific achievements (used for chart labels). */
 export const THANH_TICH_KHOA_HOC_SHORT_LABELS: Record<string, string> = {
   DTKH: 'ĐTKH',
   SKKH: 'SKKH',

@@ -88,14 +88,14 @@ class ProfileService {
   }
 
   /**
-   * Đếm tổng số lần nhận BKBQP trong chuỗi CSTDCS liên tục.
+   * Counts total BKBQP received within the continuous CSTDCS streak.
    */
   countBKBQPInStreak(danhHieuList: DanhHieuHangNam[], year: number, cstdcsStreak: number): number {
     return countBKBQPInStreak(danhHieuList, year, cstdcsStreak);
   }
 
   /**
-   * Đếm tổng số lần nhận CSTDTQ trong chuỗi CSTDCS liên tục.
+   * Counts total CSTDTQ received within the continuous CSTDCS streak.
    */
   countCSTDTQInStreak(danhHieuList: DanhHieuHangNam[], year: number, cstdcsStreak: number): number {
     return countCSTDTQInStreak(danhHieuList, year, cstdcsStreak);

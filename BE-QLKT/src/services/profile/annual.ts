@@ -128,7 +128,7 @@ export function calculateContinuousNCKH(thanhTichList: ThanhTichKhoaHoc[], year:
  * @returns Number of BKBQP steps in the active chain
  */
 /**
- * Đếm tổng số lần nhận BKBQP trong chuỗi CSTDCS liên tục.
+ * Counts total BKBQP received within the continuous CSTDCS streak.
  */
 export function countBKBQPInStreak(
   danhHieuList: DanhHieuHangNam[],
@@ -148,7 +148,7 @@ export function countBKBQPInStreak(
  * @returns Number of CSTDTQ steps in the active chain
  */
 /**
- * Đếm tổng số lần nhận CSTDTQ trong chuỗi CSTDCS liên tục.
+ * Counts total CSTDTQ received within the continuous CSTDCS streak.
  */
 export function countCSTDTQInStreak(
   danhHieuList: DanhHieuHangNam[],

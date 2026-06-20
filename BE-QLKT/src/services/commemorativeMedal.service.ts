@@ -3,17 +3,15 @@ import { donViTrucThuocRepository } from '../repositories/unit.repository';
 import { commemorativeMedalRepository } from '../repositories/commemorativeMedal.repository';
 import { proposalRepository } from '../repositories/proposal.repository';
 import { accountRepository } from '../repositories/account.repository';
-import ExcelJS from 'exceljs';
 
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import * as notificationHelper from '../helpers/notification';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { NotFoundError } from '../middlewares/errorHandler';
-import { sanitizeRowData } from '../helpers/excel/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { logMessages } from '../constants/logMessages.constants';
-import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
+import { buildTemplate, buildAwardExportBuffer } from '../helpers/excel/excelTemplateHelper';
 import { durationToMonths } from '../helpers/serviceYearsHelper';
 import { fetchTemplateData } from './excel/templateData.service';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
@@ -148,34 +146,25 @@ class CommemorativeMedalService {
    */
   async exportToExcel(filters: Record<string, unknown> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.KNC);
-
-    worksheet.columns = [...KNC_EXPORT_COLUMNS];
-
-    styleHeaderRow(worksheet);
-
-    data.forEach((item, index) => {
-      worksheet.addRow(
-        sanitizeRowData({
-          stt: index + 1,
-          cccd: item.QuanNhan.cccd,
-          ho_ten: item.QuanNhan.ho_ten,
-          don_vi:
-            item.QuanNhan.CoQuanDonVi?.ten_don_vi ?? item.QuanNhan.DonViTrucThuoc?.ten_don_vi ?? '',
-          nam: item.nam,
-          thang: item.thang,
-          cap_bac: item.cap_bac,
-          chuc_vu: item.chuc_vu,
-          thoi_gian: durationToMonths(item.thoi_gian),
-          so_quyet_dinh: item.so_quyet_dinh,
-          ghi_chu: item.ghi_chu ?? '',
-        })
-      );
-    });
-
-    return await workbook.xlsx.writeBuffer();
+    return buildAwardExportBuffer(
+      data,
+      AWARD_EXCEL_SHEETS.KNC,
+      [...KNC_EXPORT_COLUMNS],
+      (item, index) => ({
+        stt: index + 1,
+        cccd: item.QuanNhan.cccd,
+        ho_ten: item.QuanNhan.ho_ten,
+        don_vi:
+          item.QuanNhan.CoQuanDonVi?.ten_don_vi ?? item.QuanNhan.DonViTrucThuoc?.ten_don_vi ?? '',
+        nam: item.nam,
+        thang: item.thang,
+        cap_bac: item.cap_bac,
+        chuc_vu: item.chuc_vu,
+        thoi_gian: durationToMonths(item.thoi_gian),
+        so_quyet_dinh: item.so_quyet_dinh,
+        ghi_chu: item.ghi_chu ?? '',
+      })
+    );
   }
 
   /**

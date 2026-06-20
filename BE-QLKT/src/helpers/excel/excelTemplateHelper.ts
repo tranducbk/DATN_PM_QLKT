@@ -4,6 +4,7 @@ import {
   MIN_TEMPLATE_ROWS,
   EXCEL_INLINE_VALIDATION_MAX_LENGTH,
 } from '../../constants/excel.constants';
+import { sanitizeRowData } from './excelHelper';
 
 export interface TemplateColumn {
   header: string;
@@ -166,6 +167,31 @@ export function styleHeaderRow(worksheet: ExcelJS.Worksheet): void {
   const headerRow = worksheet.getRow(1);
   headerRow.font = { bold: true };
   headerRow.fill = HEADER_FILL;
+}
+
+/**
+ * Builds an Excel export buffer for an award list — shared workbook/worksheet/header
+ * boilerplate so each award export only supplies its sheet, columns, and row mapping.
+ * @param data - Rows to export
+ * @param sheetName - Worksheet name
+ * @param columns - Excel column definitions
+ * @param mapRow - Maps a data row to a flat cell object (sanitized before adding)
+ * @returns Excel workbook buffer
+ */
+export async function buildAwardExportBuffer<T>(
+  data: T[],
+  sheetName: string,
+  columns: Partial<ExcelJS.Column>[],
+  mapRow: (item: T, index: number) => Record<string, unknown>
+): Promise<ExcelJS.Buffer> {
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet(sheetName);
+  worksheet.columns = [...columns];
+  styleHeaderRow(worksheet);
+  data.forEach((item, index) => {
+    worksheet.addRow(sanitizeRowData(mapRow(item, index)));
+  });
+  return await workbook.xlsx.writeBuffer();
 }
 
 /**

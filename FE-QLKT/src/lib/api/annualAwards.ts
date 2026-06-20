@@ -97,30 +97,6 @@ export async function exportAnnualRewards(params?: {
   }
 }
 
-export async function createAnnualReward(
-  personnelId: string,
-  body: Record<string, unknown>
-): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.post(`/api/personnel/${personnelId}/annual-rewards`, body);
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
-export async function updateAnnualReward(
-  id: string,
-  body: Record<string, unknown>
-): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.put(`/api/annual-rewards/${id}`, body);
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
 export async function deleteAnnualReward(id: string, awardType?: string): Promise<ApiResponse> {
   try {
     const url = awardType

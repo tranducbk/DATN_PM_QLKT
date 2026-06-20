@@ -1,4 +1,4 @@
-/** Mapping action code → label tiếng Việt (dùng cho cả filter và table) */
+/** Maps an action code to its Vietnamese label (shared by filter and table). */
 export const ACTION_LABELS: Record<string, string> = {
   CREATE: 'Tạo',
   UPDATE: 'Cập nhật',
@@ -20,7 +20,7 @@ export const ACTION_LABELS: Record<string, string> = {
 
 export { ROLE_LABELS } from '@/constants/roles.constants';
 
-/** Lấy label tiếng Việt cho action, fallback format đẹp nếu chưa có trong map */
+/** Returns the Vietnamese label for an action, falling back to a prettified code. */
 export function getActionLabel(action: string): string {
   if (!action) return '-';
   const upper = action.toUpperCase();

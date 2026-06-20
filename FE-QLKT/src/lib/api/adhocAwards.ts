@@ -18,15 +18,6 @@ export async function getAdhocAwards(params?: {
   }
 }
 
-export async function getAdhocAwardById(id: string): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.get(`/api/adhoc-awards/${id}`);
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
 export async function createAdhocAward(formData: FormData): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.post('/api/adhoc-awards', formData, {
@@ -61,20 +52,6 @@ export async function deleteAdhocAward(id: string): Promise<ApiResponse> {
 export async function getAdhocAwardsByPersonnel(personnelId: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.get(`/api/adhoc-awards/personnel/${personnelId}`);
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
-export async function getAdhocAwardsByUnit(
-  unitId: string,
-  unitType: 'CO_QUAN_DON_VI' | 'DON_VI_TRUC_THUOC'
-): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.get(`/api/adhoc-awards/unit/${unitId}`, {
-      params: { unitType },
-    });
     return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };

@@ -1,16 +1,13 @@
-import ExcelJS from 'exceljs';
 import { buildMedalListWhere } from '../helpers/unitHelper';
 import { contributionMedalRepository } from '../repositories/contributionMedal.repository';
-import { accountRepository } from '../repositories/account.repository';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { getDanhHieuName } from '../constants/danhHieu.constants';
 import { NotFoundError } from '../middlewares/errorHandler';
-import { sanitizeRowData } from '../helpers/excel/excelHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { logMessages } from '../constants/logMessages.constants';
-import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
+import { buildTemplate, buildAwardExportBuffer } from '../helpers/excel/excelTemplateHelper';
 import { durationToMonths } from '../helpers/serviceYearsHelper';
 import { fetchTemplateData } from './excel/templateData.service';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
@@ -125,40 +122,31 @@ class ContributionMedalService {
    */
   async exportToExcel(filters: Record<string, unknown> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.HCBVTQ);
-
-    worksheet.columns = [...HCBVTQ_EXPORT_COLUMNS];
-
-    styleHeaderRow(worksheet);
-
-    data.forEach((item, index) => {
-      worksheet.addRow(
-        sanitizeRowData({
-          stt: index + 1,
-          id: item.QuanNhan?.id ?? '',
-          cccd: item.QuanNhan?.cccd ?? '',
-          ho_ten: item.QuanNhan?.ho_ten ?? '',
-          cap_bac: item.cap_bac ?? '',
-          chuc_vu: item.chuc_vu ?? '',
-          don_vi:
-            item.QuanNhan?.CoQuanDonVi?.ten_don_vi ??
-            item.QuanNhan?.DonViTrucThuoc?.ten_don_vi ??
-            '',
-          nam: item.nam,
-          thang: item.thang,
-          danh_hieu: getDanhHieuName(item.danh_hieu),
-          thoi_gian_nhom_0_7: durationToMonths(item.thoi_gian_nhom_0_7),
-          thoi_gian_nhom_0_8: durationToMonths(item.thoi_gian_nhom_0_8),
-          thoi_gian_nhom_0_9_1_0: durationToMonths(item.thoi_gian_nhom_0_9_1_0),
-          so_quyet_dinh: item.so_quyet_dinh ?? '',
-          ghi_chu: item.ghi_chu ?? '',
-        })
-      );
-    });
-
-    return await workbook.xlsx.writeBuffer();
+    return buildAwardExportBuffer(
+      data,
+      AWARD_EXCEL_SHEETS.HCBVTQ,
+      [...HCBVTQ_EXPORT_COLUMNS],
+      (item, index) => ({
+        stt: index + 1,
+        id: item.QuanNhan?.id ?? '',
+        cccd: item.QuanNhan?.cccd ?? '',
+        ho_ten: item.QuanNhan?.ho_ten ?? '',
+        cap_bac: item.cap_bac ?? '',
+        chuc_vu: item.chuc_vu ?? '',
+        don_vi:
+          item.QuanNhan?.CoQuanDonVi?.ten_don_vi ??
+          item.QuanNhan?.DonViTrucThuoc?.ten_don_vi ??
+          '',
+        nam: item.nam,
+        thang: item.thang,
+        danh_hieu: getDanhHieuName(item.danh_hieu),
+        thoi_gian_nhom_0_7: durationToMonths(item.thoi_gian_nhom_0_7),
+        thoi_gian_nhom_0_8: durationToMonths(item.thoi_gian_nhom_0_8),
+        thoi_gian_nhom_0_9_1_0: durationToMonths(item.thoi_gian_nhom_0_9_1_0),
+        so_quyet_dinh: item.so_quyet_dinh ?? '',
+        ghi_chu: item.ghi_chu ?? '',
+      })
+    );
   }
 
   /**
@@ -176,25 +164,6 @@ class ContributionMedalService {
       byRank,
       byYear,
     };
-  }
-
-  /**
-   * Get user with unit info.
-   * @param userId - Account id
-   * @returns Account with nested personnel unit ids
-   */
-  async getUserWithUnit(userId: string) {
-    return await accountRepository.findUniqueRaw({
-      where: { id: userId },
-      include: {
-        QuanNhan: {
-          select: {
-            co_quan_don_vi_id: true,
-            don_vi_truc_thuoc_id: true,
-          },
-        },
-      },
-    });
   }
 
   /**

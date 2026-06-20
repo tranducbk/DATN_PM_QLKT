@@ -1,7 +1,6 @@
 import axiosInstance from '@/lib/http/axiosInstance';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import type { ApiResponse } from '@/lib/types/common';
-import { FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { createPreviewImport, createConfirmImport } from './importFactory';
 
 export async function getUnitAnnualAwards(params?: {
@@ -13,23 +12,6 @@ export async function getUnitAnnualAwards(params?: {
   try {
     const res = await axiosInstance.get('/api/unit-annual-awards', { params });
     return { success: res.data?.success, data: res.data?.data, pagination: res.data?.pagination };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
-export async function getUnitAnnualAwardsByUnit(
-  donViId: string,
-  year?: number
-): Promise<ApiResponse> {
-  try {
-    const params: Record<string, string | number> = { don_vi_id: donViId, limit: FETCH_ALL_LIMIT };
-    if (year) params.year = year;
-    const res = await axiosInstance.get('/api/unit-annual-awards/history', { params });
-    return {
-      success: res.data?.success,
-      data: res.data?.data,
-    };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
