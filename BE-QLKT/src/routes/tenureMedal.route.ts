@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import tenureMedalController from '../controllers/tenureMedal.controller';
-import { verifyToken, requireManager, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { excelUpload as upload } from '../configs/multer';
@@ -49,7 +49,7 @@ router.post(
  * @desc    List HCCSVV medals (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
-router.get('/', verifyToken, requireManager, tenureMedalController.getAll);
+router.get('/', verifyToken, requireAdminOrManager, tenureMedalController.getAll);
 
 /**
  * @route   GET /api/tenure-medals/export
@@ -63,7 +63,7 @@ router.get('/export', verifyToken, requireAdminOnly, tenureMedalController.expor
  * @desc    Get HCCSVV medal statistics by grade
  * @access  ADMIN, MANAGER
  */
-router.get('/statistics', verifyToken, requireManager, tenureMedalController.getStatistics);
+router.get('/statistics', verifyToken, requireAdminOrManager, tenureMedalController.getStatistics);
 
 /**
  * @route   DELETE /api/tenure-medals/:id

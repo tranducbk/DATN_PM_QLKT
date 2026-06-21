@@ -32,17 +32,15 @@ import axiosInstance from '@/lib/http/axiosInstance';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import {
   DEV_ZONE_API,
-  DEV_SESSION_KEY,
-  DEV_SESSION_DURATION,
   CRON_PRESETS,
   BACKUP_CRON_PRESETS,
   AWARD_TYPE_OPTIONS,
   SYSTEM_FEATURE_OPTIONS,
 } from '@/constants/devZone.constants';
 import { formatDateTime } from '@/lib/utils';
+import type { DevStatus, BackupStatus } from './types';
+import { DEFAULT_RETENTION_DAYS, saveSession, loadSession, clearSession } from './helpers';
 import './dev-zone.css';
-
-const DEFAULT_RETENTION_DAYS = 15;
 
 function FeatureRow({
   icon,
@@ -74,60 +72,6 @@ function FeatureRow({
       />
     </div>
   );
-}
-
-interface DevStatus {
-  cron: {
-    enabled: boolean;
-    schedule: string;
-    lastRun: string | null;
-    lastResult: {
-      status: string;
-      time: string;
-      success?: number;
-      errors?: number;
-      message?: string;
-    } | null;
-  };
-  features: {
-    import_enabled: boolean;
-    template_enabled: boolean;
-  } & Record<string, boolean | undefined>;
-}
-
-interface BackupStatus {
-  enabled: boolean;
-  schedule: string;
-  retentionDays: number;
-  lastRun: string | null;
-  totalFiles: number;
-}
-
-function saveSession(pwd: string) {
-  sessionStorage.setItem(
-    DEV_SESSION_KEY,
-    JSON.stringify({ t: btoa(encodeURIComponent(pwd)), e: Date.now() + DEV_SESSION_DURATION }),
-  );
-}
-
-function loadSession(): string | null {
-  try {
-    const raw = sessionStorage.getItem(DEV_SESSION_KEY);
-    if (!raw) return null;
-    const { t, e } = JSON.parse(raw);
-    if (Date.now() > e) {
-      sessionStorage.removeItem(DEV_SESSION_KEY);
-      return null;
-    }
-    return decodeURIComponent(atob(t));
-  } catch {
-    sessionStorage.removeItem(DEV_SESSION_KEY);
-    return null;
-  }
-}
-
-function clearSession() {
-  sessionStorage.removeItem(DEV_SESSION_KEY);
 }
 
 export default function DevZonePage() {

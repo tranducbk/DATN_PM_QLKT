@@ -296,7 +296,7 @@ describe('Chuyên gia khen thưởng — HCQKQT 25 năm boundary', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [
         {
           personnel_id: target.id,

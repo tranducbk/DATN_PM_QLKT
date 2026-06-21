@@ -385,11 +385,22 @@ export async function getAnnualUnit(donViId: string, year: number) {
   return profile;
 }
 
-export async function getUnitAnnualAwards(
+/**
+ * Throws unless the caller may access the given unit's award data.
+ * ADMIN/SUPER_ADMIN: any unit. MANAGER: only their own co_quan_don_vi (CQDV itself or
+ * a don_vi_truc_thuoc under it). USER: only their own don_vi_truc_thuoc.
+ * @param donViId - Target unit id (CQDV or DVTT)
+ * @param userRole - Caller role
+ * @param userQuanNhanId - Caller's linked personnel id (resolves their unit scope)
+ * @throws ValidationError when donViId is missing
+ * @throws NotFoundError when the unit or the caller's scope cannot be resolved
+ * @throws ForbiddenError when the unit is outside the caller's scope
+ */
+export async function assertUnitInScope(
   donViId: string,
   userRole: string = ROLES.ADMIN,
   userQuanNhanId: string | null = null
-) {
+): Promise<void> {
   if (!donViId) throw new ValidationError('don_vi_id là bắt buộc');
 
   const donVi =
@@ -398,8 +409,9 @@ export async function getUnitAnnualAwards(
 
   if (!donVi) throw new NotFoundError('Đơn vị');
 
-  if (userRole === ROLES.ADMIN || userRole === ROLES.SUPER_ADMIN) {
-  } else if ((userRole === ROLES.MANAGER || userRole === ROLES.USER) && userQuanNhanId) {
+  if (userRole === ROLES.ADMIN || userRole === ROLES.SUPER_ADMIN) return;
+
+  if ((userRole === ROLES.MANAGER || userRole === ROLES.USER) && userQuanNhanId) {
     const user = await quanNhanRepository.findUnitScope(userQuanNhanId);
 
     if (!user) throw new NotFoundError('Thông tin người dùng');
@@ -412,14 +424,21 @@ export async function getUnitAnnualAwards(
       if (!user.co_quan_don_vi_id || user.co_quan_don_vi_id !== targetCoQuanId) {
         throw new ForbiddenError('Không có quyền xem lịch sử khen thưởng của đơn vị này');
       }
-    } else if (userRole === ROLES.USER) {
-      if (!user.don_vi_truc_thuoc_id || user.don_vi_truc_thuoc_id !== donViId) {
-        throw new ForbiddenError('Không có quyền xem lịch sử khen thưởng của đơn vị này');
-      }
+    } else if (!user.don_vi_truc_thuoc_id || user.don_vi_truc_thuoc_id !== donViId) {
+      throw new ForbiddenError('Không có quyền xem lịch sử khen thưởng của đơn vị này');
     }
-  } else {
-    throw new ForbiddenError('Không có quyền truy cập');
+    return;
   }
+
+  throw new ForbiddenError('Không có quyền truy cập');
+}
+
+export async function getUnitAnnualAwards(
+  donViId: string,
+  userRole: string = ROLES.ADMIN,
+  userQuanNhanId: string | null = null
+) {
+  await assertUnitInScope(donViId, userRole, userQuanNhanId);
 
   const danhHieuRecords = await danhHieuDonViHangNamRepository.findMany({
     where: {

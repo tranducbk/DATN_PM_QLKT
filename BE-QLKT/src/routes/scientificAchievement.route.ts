@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import scientificAchievementController from '../controllers/scientificAchievement.controller';
-import { verifyToken, requireManager, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { excelUpload as upload } from '../configs/multer';
@@ -19,7 +19,7 @@ const router = Router();
 router.get(
   '/',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(scientificAchievementValidation.getAchievementsQuery, 'query'),
   scientificAchievementController.getAchievements
 );
@@ -78,7 +78,7 @@ router.post(
 router.post(
   '/',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(scientificAchievementValidation.createAchievement),
   scientificAchievementController.createAchievement
 );
@@ -91,7 +91,7 @@ router.post(
 router.put(
   '/:id',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(scientificAchievementValidation.updateAchievement),
   scientificAchievementController.updateAchievement
 );

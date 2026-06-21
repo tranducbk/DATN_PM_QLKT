@@ -22,7 +22,7 @@ export const ROLE_LABELS: Record<string, string> = {
 };
 
 /** Privilege ranking — higher number outranks lower. */
-export const ROLE_RANK: Record<Role, number> = {
+const ROLE_RANK: Record<Role, number> = {
   [ROLES.SUPER_ADMIN]: 4,
   [ROLES.ADMIN]: 3,
   [ROLES.MANAGER]: 2,
@@ -69,17 +69,6 @@ export const ROLE_CAPABILITIES: Record<Role, Capability[]> = {
   [ROLES.MANAGER]: [CAPABILITIES.PERSONNEL_MANAGEMENT, CAPABILITIES.PROPOSAL_BUSINESS],
   [ROLES.USER]: [],
 };
-
-/**
- * Whether a role has a capability.
- * @param role - Role to check (undefined treated as no capabilities)
- * @param capability - Capability key
- * @returns true when the role's matrix row includes the capability
- */
-export function hasCapability(role: string | undefined, capability: Capability): boolean {
-  if (!role) return false;
-  return (ROLE_CAPABILITIES[role as Role] ?? []).includes(capability);
-}
 
 /**
  * Lists the roles granted a capability — used to build route guards from the matrix.

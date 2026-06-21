@@ -1,12 +1,12 @@
 import { PROPOSAL_TYPES, type ProposalType } from '../../constants/proposalTypes.constants';
 
-export type ProposalDataField =
+type ProposalDataField =
   | 'data_danh_hieu'
   | 'data_thanh_tich'
   | 'data_nien_han'
   | 'data_cong_hien';
 
-export interface ProposalTypeConfig {
+interface ProposalTypeConfig {
   type: ProposalType;
   /** JSON column on BangDeXuat that holds items for this proposal type. */
   dataField: ProposalDataField;
@@ -16,7 +16,7 @@ export interface ProposalTypeConfig {
   oneTime: boolean;
 }
 
-export const PROPOSAL_TYPE_CONFIGS: Record<ProposalType, ProposalTypeConfig> = {
+const PROPOSAL_TYPE_CONFIGS: Record<ProposalType, ProposalTypeConfig> = {
   [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: {
     type: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
     dataField: 'data_danh_hieu',

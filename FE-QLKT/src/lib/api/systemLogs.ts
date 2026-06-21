@@ -8,7 +8,7 @@ export type SystemLogStats = {
   update?: number;
 };
 
-export type SystemLogsResponse<T = unknown> = ApiResponse<T> & {
+type SystemLogsResponse<T = unknown> = ApiResponse<T> & {
   stats?: SystemLogStats;
 };
 

@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import unitAnnualAwardController from '../controllers/unitAnnualAward.controller';
-import { verifyToken, requireManager, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { excelUpload as upload, decisionUploadDir as uploadDir } from '../configs/multer';
@@ -21,7 +21,7 @@ const router = Router();
 router.get(
   '/',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(unitAnnualAwardValidation.listUnitAnnualAwardsQuery, 'query'),
   unitAnnualAwardController.list
 );
@@ -80,7 +80,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(unitAnnualAwardValidation.getUnitAnnualAwardsStatisticsQuery, 'query'),
   unitAnnualAwardController.getStatistics
 );
@@ -90,7 +90,7 @@ router.get(
  * @desc    List all award history for a unit
  * @access  ADMIN, MANAGER
  */
-router.get('/history', verifyToken, requireManager, unitAnnualAwardController.getUnitAnnualAwards);
+router.get('/history', verifyToken, requireAdminOrManager, unitAnnualAwardController.getUnitAnnualAwards);
 
 /**
  * @route   GET /api/unit-annual-awards/profile/:don_vi_id
@@ -100,7 +100,7 @@ router.get('/history', verifyToken, requireManager, unitAnnualAwardController.ge
 router.get(
   '/profile/:don_vi_id',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   unitAnnualAwardController.getUnitAnnualProfile
 );
 
@@ -109,7 +109,7 @@ router.get(
  * @desc    Get unit annual award details by ID
  * @access  ADMIN, MANAGER
  */
-router.get('/:id', verifyToken, requireManager, unitAnnualAwardController.getById);
+router.get('/:id', verifyToken, requireAdminOrManager, unitAnnualAwardController.getById);
 
 /**
  * @route   POST /api/unit-annual-awards
@@ -176,7 +176,7 @@ router.delete(
 router.post(
   '/recalculate',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   auditLog({
     action: AUDIT_ACTIONS.RECALCULATE,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,

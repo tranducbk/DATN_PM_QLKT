@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import profileController from '../controllers/profile.controller';
-import { verifyToken, requireAdminOnly, requireManager } from '../middlewares/auth';
+import { verifyToken, requireAdminOnly, requireAdminOrManager } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
@@ -44,7 +44,7 @@ router.get(
 router.post(
   '/recalculate/:personnel_id',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   profileController.recalculateProfile
 );
 
@@ -52,9 +52,9 @@ router.post(
  * @route   POST /api/profiles/check-eligibility
  * @desc    Check consecutive award eligibility for one or more personnel
  *          Body: { items: [{ personnel_id, nam, danh_hieu }] }
- * @access  Private - MANAGER and above
+ * @access  Private - ADMIN, MANAGER
  */
-router.post('/check-eligibility', verifyToken, requireManager, profileController.checkEligibility);
+router.post('/check-eligibility', verifyToken, requireAdminOrManager, profileController.checkEligibility);
 
 /**
  * @route   POST /api/profiles/recalculate-all

@@ -44,7 +44,7 @@ describe('approveProposal — HC_QKQT', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_nien_han: [buildItem(personnel.id)],
     });
@@ -81,7 +81,7 @@ describe('approveProposal — HC_QKQT', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [buildItem(personnel.id)],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -112,7 +112,7 @@ describe('approveProposal — HC_QKQT', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [buildItem(personnel.id)],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -135,7 +135,7 @@ describe('approveProposal — HC_QKQT', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: null,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -158,7 +158,7 @@ describe('approveProposal — HC_QKQT', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [buildItem(personnel.id)],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -189,7 +189,7 @@ describe('approveProposal — HC_QKQT', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_nien_han: [buildItem(personnel.id)],
     });

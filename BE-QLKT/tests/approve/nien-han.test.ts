@@ -41,7 +41,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_nien_han: [buildItem(personnel.id, DANH_HIEU_HCCSVV.HANG_BA)],
     });
@@ -82,7 +82,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2024,
       thang: null,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -112,7 +112,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       status: PROPOSAL_STATUS.APPROVED,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
 
@@ -136,7 +136,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_nien_han: [buildItem(personnel.id, DANH_HIEU_HCCSVV.HANG_NHI)],
     });
@@ -174,7 +174,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_nien_han: [buildItem(personnel.id, DANH_HIEU_HCCSVV.HANG_NHI)],
     });
@@ -214,7 +214,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2025,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_nien_han: [buildItem(personnel.id, DANH_HIEU_HCCSVV.HANG_NHAT, { nam_nhan: 2025 })],
     });
@@ -249,7 +249,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [buildItem(personnel.id, DANH_HIEU_HCCSVV.HANG_BA)],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -281,7 +281,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_nien_han: [buildItem(personnel.id, DANH_HIEU_HCCSVV.HANG_BA)],
     });
@@ -326,7 +326,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [
         buildItem(personnel.id, DANH_HIEU_HCCSVV.HANG_BA, { so_quyet_dinh: 'QD-NH-MSG-OK' }),
         {

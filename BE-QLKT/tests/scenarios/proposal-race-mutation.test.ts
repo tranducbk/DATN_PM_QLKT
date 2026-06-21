@@ -297,7 +297,14 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
         QuanNhan: { ...managerQn, CoQuanDonVi: unit.CoQuanDonVi, DonViTrucThuoc: null },
       });
       prismaMock.quanNhan.findMany.mockResolvedValue([
-        { id: target.id, ho_ten: target.ho_ten, gioi_tinh: 'NAM', CoQuanDonVi: null, DonViTrucThuoc: null },
+        {
+          id: target.id,
+          ho_ten: target.ho_ten,
+          gioi_tinh: 'NAM',
+          co_quan_don_vi_id: unit.id,
+          CoQuanDonVi: null,
+          DonViTrucThuoc: null,
+        },
       ]);
       prismaMock.lichSuChucVu.findMany.mockResolvedValue([]);
       prismaMock.bangDeXuat.findMany.mockResolvedValue([]);
@@ -393,6 +400,7 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
           id: target.id,
           ho_ten: target.ho_ten,
           gioi_tinh: 'NAM',
+          co_quan_don_vi_id: unit.id,
           ngay_nhap_ngu: target.ngay_nhap_ngu,
           ngay_xuat_ngu: null,
           CoQuanDonVi: null,
@@ -486,6 +494,7 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
           id: target.id,
           ho_ten: target.ho_ten,
           gioi_tinh: 'NU',
+          co_quan_don_vi_id: unit.id,
           ngay_nhap_ngu: target.ngay_nhap_ngu,
           ngay_xuat_ngu: null,
           CoQuanDonVi: null,
@@ -617,7 +626,13 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
         QuanNhan: { ...managerQn, CoQuanDonVi: unit.CoQuanDonVi, DonViTrucThuoc: null },
       });
       prismaMock.quanNhan.findMany.mockResolvedValue([
-        { id: target.id, ho_ten: target.ho_ten, CoQuanDonVi: null, DonViTrucThuoc: null },
+        {
+          id: target.id,
+          ho_ten: target.ho_ten,
+          co_quan_don_vi_id: unit.id,
+          CoQuanDonVi: null,
+          DonViTrucThuoc: null,
+        },
       ]);
       prismaMock.khenThuongHCCSVV.findMany.mockResolvedValue([]);
       prismaMock.bangDeXuat.findMany.mockResolvedValue([]);

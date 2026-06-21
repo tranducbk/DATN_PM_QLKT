@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import contributionAwardController from '../controllers/contributionMedal.controller';
-import { verifyToken, requireManager, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { excelUpload as upload } from '../configs/multer';
@@ -49,7 +49,7 @@ router.post(
  * @desc    List Contribution Awards (HCBVTQ) (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
-router.get('/', verifyToken, requireManager, contributionAwardController.getAll);
+router.get('/', verifyToken, requireAdminOrManager, contributionAwardController.getAll);
 
 /**
  * @route   GET /api/contribution-medals/export
@@ -63,7 +63,7 @@ router.get('/export', verifyToken, requireAdminOnly, contributionAwardController
  * @desc    Get Contribution Award (HCBVTQ) statistics by grade
  * @access  ADMIN, MANAGER
  */
-router.get('/statistics', verifyToken, requireManager, contributionAwardController.getStatistics);
+router.get('/statistics', verifyToken, requireAdminOrManager, contributionAwardController.getStatistics);
 
 /**
  * @route   DELETE /api/contribution-medals/:id

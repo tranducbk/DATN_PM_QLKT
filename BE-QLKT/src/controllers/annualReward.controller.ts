@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import annualRewardService from '../services/annualReward.service';
 import profileService from '../services/profile.service';
+import personnelService from '../services/personnel.service';
 import { ROLES } from '../constants/roles.constants';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
@@ -125,6 +126,11 @@ class AnnualRewardController {
     const { personnel_id, page, limit, nam, danh_hieu, ho_ten } = query;
 
     if (personnel_id) {
+      await personnelService.assertCanViewPersonnel(
+        personnel_id,
+        req.user?.role,
+        req.user?.quan_nhan_id
+      );
       const result = await annualRewardService.getAnnualRewards(personnel_id);
       return ResponseHelper.success(res, {
         data: result,

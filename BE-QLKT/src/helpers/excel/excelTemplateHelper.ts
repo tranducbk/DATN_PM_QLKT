@@ -54,7 +54,7 @@ interface DecisionValidationResult {
  * @param workbook - ExcelJS workbook
  * @returns Formula range string for data validation
  */
-export function createCapBacHiddenSheet(workbook: ExcelJS.Workbook): string {
+function createCapBacHiddenSheet(workbook: ExcelJS.Workbook): string {
   const items = CAP_BAC_OPTIONS_STRING.split(',');
   const sheet = workbook.addWorksheet('_CapBac', { state: 'veryHidden' });
   items.forEach((cb, idx) => {
@@ -70,7 +70,7 @@ export function createCapBacHiddenSheet(workbook: ExcelJS.Workbook): string {
  * @param decisionList - Decision number list
  * @returns Validation config, or null when list is empty
  */
-export function createDecisionValidation(
+function createDecisionValidation(
   workbook: ExcelJS.Workbook,
   decisionList: string[]
 ): DecisionValidationResult | null {
@@ -201,7 +201,7 @@ export async function buildAwardExportBuffer<T>(
  * @param maxRows - Inclusive last data row
  * @returns void
  */
-export function applyReadonlyFill(
+function applyReadonlyFill(
   worksheet: ExcelJS.Worksheet,
   columns: number[],
   maxRows: number
@@ -222,7 +222,7 @@ export function applyReadonlyFill(
  * @param fill - `ExcelJS` fill definition
  * @returns void
  */
-export function applyColumnFill(
+function applyColumnFill(
   worksheet: ExcelJS.Worksheet,
   columns: number[],
   maxRows: number,
@@ -243,7 +243,7 @@ export function applyColumnFill(
  * @param maxRows - Inclusive last row in the formatted range
  * @returns void
  */
-export function applyConditionalFormatting(
+function applyConditionalFormatting(
   worksheet: ExcelJS.Worksheet,
   editableColumns: string[],
   maxRows: number
@@ -273,7 +273,7 @@ export function applyConditionalFormatting(
  * @param maxRows - Inclusive last row
  * @returns void
  */
-export function applyAlignment(
+function applyAlignment(
   worksheet: ExcelJS.Worksheet,
   columns: TemplateColumn[],
   maxRows: number
@@ -310,7 +310,7 @@ interface PersonnelWithPosition {
  * @param options - Optional column mapping and per-person repeat configuration
  * @returns Total number of inserted data rows
  */
-export function prefillPersonnelRows(
+function prefillPersonnelRows(
   worksheet: ExcelJS.Worksheet,
   personnelList: PersonnelWithPosition[],
   options?: {

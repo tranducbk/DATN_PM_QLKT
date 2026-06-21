@@ -1,13 +1,9 @@
 import { tenureMedalRepository } from '../repositories/tenureMedal.repository';
 import { buildMedalListWhere } from '../helpers/unitHelper';
-import { accountRepository } from '../repositories/account.repository';
 import profileService from './profile.service';
-import * as notificationHelper from '../helpers/notification';
 import { buildTemplate, buildAwardExportBuffer } from '../helpers/excel/excelTemplateHelper';
 import { fetchTemplateData } from './excel/templateData.service';
-import { writeSystemLog } from '../helpers/systemLogHelper';
-import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
-import { logMessages } from '../constants/logMessages.constants';
+import { finalizeMedalAwardDeletion, getAccountUnitScope } from './medalAwardHelpers';
 import { NotFoundError } from '../middlewares/errorHandler';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
@@ -149,17 +145,7 @@ class TenureMedalService {
    * Get user with unit info (helper method)
    */
   async getUserWithUnit(userId: string) {
-    return await accountRepository.findUniqueRaw({
-      where: { id: userId },
-      include: {
-        QuanNhan: {
-          select: {
-            co_quan_don_vi_id: true,
-            don_vi_truc_thuoc_id: true,
-          },
-        },
-      },
-    });
+    return getAccountUnitScope(userId);
   }
 
   /**
@@ -186,44 +172,18 @@ class TenureMedalService {
       throw new NotFoundError('Bản ghi khen thưởng');
     }
 
-    const personnelId = award.quan_nhan_id;
-    const personnel = award.QuanNhan;
-
-    // Delete award only, proposals are kept for audit trail
-    await tenureMedalRepository.delete(id);
-
-    try {
-      await profileService.recalculateTenureProfile(personnelId);
-    } catch (recalcError) {
-      void writeSystemLog({
-        action: AUDIT_ACTIONS.ERROR,
-        resource: AWARD_SLUGS.TENURE_MEDALS,
-        resourceId: id,
-        description: logMessages.recalcError('xóa', AWARD_LABEL, recalcError),
-      });
-    }
-
-    try {
-      await notificationHelper.notifyOnAwardDeleted(
-        award,
-        personnel,
-        PROPOSAL_TYPES.NIEN_HAN,
-        adminUsername
-      );
-    } catch (notifyError) {
-      void writeSystemLog({
-        action: AUDIT_ACTIONS.ERROR,
-        resource: AWARD_SLUGS.TENURE_MEDALS,
-        resourceId: id,
-        description: logMessages.notifyError('xóa', AWARD_LABEL, notifyError),
-      });
-    }
-
-    return {
-      message: `Xóa khen thưởng ${AWARD_LABEL} thành công`,
-      personnelId,
+    return finalizeMedalAwardDeletion({
+      id,
       award,
-    };
+      personnel: award.QuanNhan,
+      personnelId: award.quan_nhan_id,
+      adminUsername,
+      awardLabel: AWARD_LABEL,
+      resourceSlug: AWARD_SLUGS.TENURE_MEDALS,
+      proposalType: PROPOSAL_TYPES.NIEN_HAN,
+      deleteFn: () => tenureMedalRepository.delete(id),
+      recalcProfile: pid => profileService.recalculateTenureProfile(pid),
+    });
   }
 }
 

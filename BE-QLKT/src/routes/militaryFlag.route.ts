@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import militaryFlagController from '../controllers/militaryFlag.controller';
-import { verifyToken, checkRole, requireManager, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, checkRole, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -50,7 +50,7 @@ router.post(
  * @desc    List Military Victory Flags (HC QKQT) (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
-router.get('/', verifyToken, requireManager, militaryFlagController.getAll);
+router.get('/', verifyToken, requireAdminOrManager, militaryFlagController.getAll);
 
 /**
  * @route   GET /api/military-flags/export
@@ -64,7 +64,7 @@ router.get('/export', verifyToken, requireAdminOnly, militaryFlagController.expo
  * @desc    Get Military Victory Flag (HC QKQT) statistics
  * @access  ADMIN, MANAGER
  */
-router.get('/statistics', verifyToken, requireManager, militaryFlagController.getStatistics);
+router.get('/statistics', verifyToken, requireAdminOrManager, militaryFlagController.getStatistics);
 
 /**
  * @route   GET /api/military-flags/personnel/:personnel_id
@@ -86,7 +86,7 @@ router.get(
 router.get(
   '/check-received/:personnel_id',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   militaryFlagController.checkReceived
 );
 

@@ -20,7 +20,7 @@ export interface PositionHistoryLike {
 export const getReferenceEndDate = (year: number, month: number): Date =>
   new Date(year, month, 0);
 
-export const calculateCoveredMonthsByMonth = (startDate: Date, endDate: Date): number =>
+const calculateCoveredMonthsByMonth = (startDate: Date, endDate: Date): number =>
   Math.max(
     0,
     (endDate.getFullYear() - startDate.getFullYear()) * 12 + (endDate.getMonth() - startDate.getMonth())

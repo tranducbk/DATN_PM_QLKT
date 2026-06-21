@@ -1,16 +1,7 @@
 /**
- * SYNC NOTICE — Core danh hieu codes are shared with `BE-QLKT/src/constants/danhHieu.constants.ts`.
- *
- * Shared (must stay value-identical with BE):
- *   DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_DON_VI_HANG_NAM,
- *   DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ, DANH_HIEU_DAC_BIET,
- *   DANH_HIEU_MAP, CONTRIBUTION_COEFFICIENT_GROUPS, CONTRIBUTION_COEFFICIENT_RANGES.
- *
- * FE-only utilities (intentionally not shared): THANH_TICH_KHOA_HOC*,
- *   AWARD_TAB_LABELS, DANH_HIEU_OPTIONS, CONTRIBUTION_BASE_REQUIRED_MONTHS.
- *
- * BE-only utilities live in the BE copy (Excel parsing, NCKH label-to-code resolver,
- * HCBVTQ_RANK_KEYS). When adding a NEW shared code, update BOTH files in the same commit.
+ * Core danh hieu codes/labels are duplicated in `BE-QLKT/src/constants/danhHieu.constants.ts`
+ * and MUST stay value-identical. When adding or renaming a shared code, update BOTH files in the
+ * same commit. Each side also keeps local-only exports (UI options here, Excel parsing on BE).
  */
 
 import { EMPTY_LABEL, UNKNOWN_LABEL } from './labels.constants';
@@ -134,7 +125,7 @@ export const DANH_HIEU_SHORT_MAP: Record<string, string> = {
   SKKH: 'Sáng kiến khoa học',
 };
 
-export const LOAI_DE_XUAT_MAP: Record<string, string> = {
+const LOAI_DE_XUAT_MAP: Record<string, string> = {
   CA_NHAN_HANG_NAM: 'Cá nhân hằng năm',
   DON_VI_HANG_NAM: 'Đơn vị hằng năm',
   NIEN_HAN: 'Huy chương Chiến sĩ vẻ vang',

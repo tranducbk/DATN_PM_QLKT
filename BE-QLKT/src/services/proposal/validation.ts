@@ -26,12 +26,12 @@ export interface DuplicateCheckResult {
   status?: string;
 }
 
-export interface PayloadCaNhanDanhHieuItem {
+interface PayloadCaNhanDanhHieuItem {
   personnel_id?: string;
   danh_hieu?: string;
 }
 
-export interface PayloadDonViDanhHieuItem {
+interface PayloadDonViDanhHieuItem {
   don_vi_id?: string;
   don_vi_type?: string;
   ten_don_vi?: string;
@@ -88,7 +88,7 @@ export function collectDuplicateDonViPayload(items: PayloadDonViDanhHieuItem[]):
     if (!item.don_vi_id || !item.danh_hieu) continue;
     const payloadKey = `${item.don_vi_type || 'UNKNOWN'}::${item.don_vi_id}::${item.danh_hieu}`;
     if (payloadKeys.has(payloadKey)) {
-      const tenDonVi = item.ten_don_vi || item.don_vi_id;
+      const tenDonVi = item.ten_don_vi || 'Một đơn vị';
       duplicatePayloadItems.push(`${tenDonVi}: ${item.danh_hieu}`);
     }
     payloadKeys.add(payloadKey);

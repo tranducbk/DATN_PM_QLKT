@@ -15,7 +15,7 @@ const FLAG_COLUMN_MAP: Record<string, keyof DanhHieuHangNam> = {
 };
 
 /** Maps a chain award code to its boolean flag column on `DanhHieuHangNam`. */
-export function flagColumnFor(code: string): keyof DanhHieuHangNam | '' {
+function flagColumnFor(code: string): keyof DanhHieuHangNam | '' {
   return FLAG_COLUMN_MAP[code] ?? '';
 }
 

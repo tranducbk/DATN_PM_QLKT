@@ -21,7 +21,7 @@ export type ServiceTimeRow = {
 
 type ContributionMonthField = 'months_07' | 'months_08' | 'months_0910';
 
-export function calcServiceTime(
+function calcServiceTime(
   ngayNhapNgu: DateInput,
   ngayXuatNgu: DateInput,
   refNam: number,

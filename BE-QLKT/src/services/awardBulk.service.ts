@@ -1,5 +1,6 @@
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { accountRepository } from '../repositories/account.repository';
+import { decisionFileRepository } from '../repositories/decisionFile.repository';
 import * as notificationHelper from '../helpers/notification';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
@@ -25,7 +26,7 @@ import {
   validatePersonnelConditions,
   throwValidationErrors,
 } from './awardBulk/validation';
-import { CREATE_HANDLERS, calculateThoiGian } from './awardBulk/handlers';
+import { CREATE_HANDLERS } from './awardBulk/handlers';
 import type { BulkCreateAwardsParams, BulkCreateContext } from './awardBulk/types';
 
 export type { TitleDataItem } from './awardBulk/types';
@@ -34,7 +35,6 @@ class AwardBulkService {
   checkDuplicateAwards = checkDuplicateAwards;
   checkDuplicateUnitAwards = checkDuplicateUnitAwards;
   validatePersonnelConditions = validatePersonnelConditions;
-  calculateThoiGian = calculateThoiGian;
 
   async bulkCreateAwards({
     type,
@@ -152,6 +152,36 @@ class AwardBulkService {
       importedCount: importedCountRef,
       bypassEligibility,
     };
+
+    // Award FK (so_quyet_dinh) rejects unknown decision numbers and aborts the batch,
+    // so register every decision number before insert (no-op for existing ones).
+    const decisionsToSync = new Set<string>();
+    for (const item of titleData) {
+      if (item.so_quyet_dinh) decisionsToSync.add(item.so_quyet_dinh);
+    }
+    if (decisionsToSync.size > 0) {
+      const admin = (await accountRepository.findUniqueRaw({
+        where: { id: adminId },
+        include: { QuanNhan: { select: { ho_ten: true } } },
+      })) as { username?: string; QuanNhan?: { ho_ten?: string | null } } | null;
+      const nguoiKy = admin?.QuanNhan?.ho_ten || admin?.username || 'Chưa cập nhật';
+      const ngayKy = new Date();
+      for (const soQuyetDinh of decisionsToSync) {
+        await decisionFileRepository.upsertRaw({
+          where: { so_quyet_dinh: soQuyetDinh },
+          create: {
+            so_quyet_dinh: soQuyetDinh,
+            nam,
+            ngay_ky: ngayKy,
+            nguoi_ky: nguoiKy,
+            file_path: null,
+            loai_khen_thuong: type,
+            ghi_chu: 'Tự động đồng bộ từ thêm khen thưởng đồng loạt',
+          },
+          update: {},
+        });
+      }
+    }
 
     const handler = CREATE_HANDLERS[type as ProposalType];
     if (!handler) {

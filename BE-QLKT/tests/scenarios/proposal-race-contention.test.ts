@@ -99,7 +99,6 @@ describe('Proposal race conditions — direct contention on same proposal', () =
 
   it('Approve vẫn success khi recalc đơn vị fail do dữ liệu vừa bị xóa', async () => {
     const submittedUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-submitted' });
-    const deletedUnitId = 'cqdv-deleted-during-recalc';
 
     const submittedItem = makeProposalItemDonVi({
       unitKind: 'CQDV',
@@ -108,10 +107,11 @@ describe('Proposal race conditions — direct contention on same proposal', () =
       danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVTT,
       so_quyet_dinh: 'QD-DVTT-01',
     });
+    // Cùng đơn vị với đề xuất gốc (reconcile pass); recalc fail mô phỏng dữ liệu vừa bị xóa.
     const editedItem = makeProposalItemDonVi({
       unitKind: 'CQDV',
-      unitId: deletedUnitId,
-      ten_don_vi: 'Đơn vị đã bị xóa',
+      unitId: submittedUnit.id,
+      ten_don_vi: submittedUnit.ten_don_vi,
       danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVTT,
       so_quyet_dinh: 'QD-DVTT-01',
     });
@@ -130,7 +130,7 @@ describe('Proposal race conditions — direct contention on same proposal', () =
     prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValue(null);
     prismaMock.danhHieuDonViHangNam.create.mockResolvedValueOnce({
       id: 'dv-award-new',
-      co_quan_don_vi_id: deletedUnitId,
+      co_quan_don_vi_id: submittedUnit.id,
       nam: 2024,
       danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVTT,
     });

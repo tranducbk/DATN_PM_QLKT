@@ -1,25 +1,9 @@
 import type { ProposalType } from './proposalTypes.constants';
 
 /**
- * SYNC NOTICE — Core danh hieu codes are shared with `FE-QLKT/src/constants/danhHieu.constants.ts`.
- *
- * The following exports MUST stay value-identical between BE and FE:
- *   - DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_DON_VI_HANG_NAM (key set; FE may omit BE-only unit aliases)
- *   - DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ
- *   - DANH_HIEU_DAC_BIET
- *   - DANH_HIEU_MAP (display labels; full list)
- *   - CONTRIBUTION_COEFFICIENT_GROUPS, CONTRIBUTION_COEFFICIENT_RANGES
- *
- * Side-only exports (intentionally not shared):
- *   - BE-only: DANH_HIEU_NCKH (uses Vietnamese labels as values for Excel parsing),
- *              NCKH_LABEL_TO_CODE, resolveNckhCode, buildDanhHieuExcelOptions,
- *              resolveDanhHieuCode, HCBVTQ_RANK_KEYS, formatDanhHieuList
- *   - FE-only: THANH_TICH_KHOA_HOC (codes-as-values for FE enum-style),
- *              THANH_TICH_KHOA_HOC_SHORT_LABELS / FULL_LABELS,
- *              AWARD_TAB_LABELS, AWARD_TYPE_MAP, LOAI_KHEN_THUONG_OPTIONS,
- *              DANH_HIEU_OPTIONS, CONTRIBUTION_BASE_REQUIRED_MONTHS
- *
- * When adding a NEW shared code (e.g. a new tier), update BOTH files in the same commit.
+ * Core danh hieu codes/labels are duplicated in `FE-QLKT/src/constants/danhHieu.constants.ts`
+ * and MUST stay value-identical. When adding or renaming a shared code, update BOTH files in the
+ * same commit. Each side also keeps local-only exports (Excel parsing here, UI options on FE).
  */
 
 export const DANH_HIEU_CA_NHAN_HANG_NAM = {
@@ -77,7 +61,7 @@ export type HcbvtqRankKey = (typeof HCBVTQ_RANK_KEYS)[keyof typeof HCBVTQ_RANK_K
 
 // Coefficient groups ordered low to high. A new higher tier appends here and counts
 // toward every rank automatically — no rule code changes needed.
-export const CONTRIBUTION_COEFFICIENT_GROUP_ORDER = [
+const CONTRIBUTION_COEFFICIENT_GROUP_ORDER = [
   CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07,
   CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08,
   CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10,
@@ -91,7 +75,7 @@ export const HCBVTQ_RANKS_HIGH_TO_LOW = [
 ] as const;
 
 // Lowest coefficient group counted toward each rank; a rank accumulates from its floor up.
-export const HCBVTQ_RANK_MIN_GROUP: Record<HcbvtqRankKey, ContributionCoefficientGroup> = {
+const HCBVTQ_RANK_MIN_GROUP: Record<HcbvtqRankKey, ContributionCoefficientGroup> = {
   [HCBVTQ_RANK_KEYS.HANG_BA]: CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07,
   [HCBVTQ_RANK_KEYS.HANG_NHI]: CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08,
   [HCBVTQ_RANK_KEYS.HANG_NHAT]: CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10,
@@ -129,7 +113,7 @@ export const DANH_HIEU_NCKH = {
 } as const;
 
 /** Maps full label back to DB code. */
-export const NCKH_LABEL_TO_CODE: Record<string, string> = Object.fromEntries(
+const NCKH_LABEL_TO_CODE: Record<string, string> = Object.fromEntries(
   Object.entries(DANH_HIEU_NCKH).map(([code, label]) => [label, code])
 );
 
@@ -181,7 +165,7 @@ export const LOAI_DE_XUAT_MAP: Record<ProposalType, string> = {
   NCKH: 'Thành tích Nghiên cứu khoa học',
 };
 
-export const DANH_HIEU_SHORT_MAP: Record<string, string> = {
+const DANH_HIEU_SHORT_MAP: Record<string, string> = {
   CSTDCS: 'Chiến sĩ thi đua cơ sở',
   CSTT: 'Chiến sĩ tiên tiến',
   HCCSVV_HANG_BA: 'HCCSVV hạng Ba',
@@ -242,7 +226,7 @@ export function buildDanhHieuExcelOptions(
 }
 
 /** Display fallback for a danh hieu / proposal type code that is null or empty. */
-export const UNKNOWN_LABEL = 'Chưa xác định';
+const UNKNOWN_LABEL = 'Chưa xác định';
 
 /**
  * Returns the display label for danh_hieu.

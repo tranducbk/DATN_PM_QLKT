@@ -94,13 +94,6 @@ class HccsvvStrategy implements ProposalStrategy {
   }
 
   /** See HcQkqtStrategy — approve flow lives in approve.ts pipeline. */
-  async validateApprove(
-    _editedData: EditedProposalData,
-    _ctx: ProposalApproveContext
-  ): Promise<string[]> {
-    return [];
-  }
-
   async importInTransaction(
     editedData: EditedProposalData,
     ctx: ProposalApproveContext,
@@ -267,9 +260,6 @@ class HccsvvStrategy implements ProposalStrategy {
     }
   }
 
-  buildSuccessMessage(acc: ImportAccumulator): string {
-    return `Đã phê duyệt ${NIEN_HAN_LABEL} cho ${acc.affectedPersonnelIds.size} quân nhân`;
-  }
 }
 
 export const hccsvvStrategy = new HccsvvStrategy();

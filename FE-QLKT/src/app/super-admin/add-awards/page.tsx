@@ -188,6 +188,7 @@ export default function SuperAdminAddAwardsPage() {
       const formData = new FormData();
       formData.append('type', PROPOSAL_TYPES.NIEN_HAN);
       formData.append('nam', String(nam));
+      formData.append('thang', String(thang));
       formData.append('selected_personnel', JSON.stringify(selectedPersonnelIds));
       formData.append('title_data', JSON.stringify(titleDataWithDecisions));
 

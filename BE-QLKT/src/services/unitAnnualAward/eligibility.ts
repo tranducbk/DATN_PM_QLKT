@@ -9,7 +9,7 @@ import {
 import { evaluateUnitChain, getUnitChainConfig } from '../eligibility/unitChainEvaluator';
 import { resolveUnit, buildUnitIdFields } from '../../helpers/unitHelper';
 
-export async function calculateContinuousYears(donViId: string, year: number) {
+async function calculateContinuousYears(donViId: string, year: number) {
   year = Number(year);
   const records = await danhHieuDonViHangNamRepository.findMany({
     where: {
@@ -31,7 +31,7 @@ export async function calculateContinuousYears(donViId: string, year: number) {
   return continuous;
 }
 
-export async function calculateTotalDVQT(donViId: string, year: number) {
+async function calculateTotalDVQT(donViId: string, year: number) {
   year = Number(year);
   const records = await danhHieuDonViHangNamRepository.findMany({
     where: {
@@ -67,7 +67,7 @@ export async function calculateTotalDVQT(donViId: string, year: number) {
   };
 }
 
-export function buildSuggestion(
+function buildSuggestion(
   du_dieu_kien_bkbqp: boolean,
   du_dieu_kien_bkttcp: boolean
 ) {

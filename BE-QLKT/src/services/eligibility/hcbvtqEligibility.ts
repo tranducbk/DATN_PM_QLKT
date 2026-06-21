@@ -14,7 +14,7 @@ import {
   type PositionMonthsByGroup,
 } from './contributionMonthsAggregator';
 
-export type HcbvtqRank = (typeof HCBVTQ_RANK_KEYS)[keyof typeof HCBVTQ_RANK_KEYS];
+type HcbvtqRank = (typeof HCBVTQ_RANK_KEYS)[keyof typeof HCBVTQ_RANK_KEYS];
 
 export interface HCBVTQRankCheckResult {
   rank: HcbvtqRank | null;
@@ -24,7 +24,7 @@ export interface HCBVTQRankCheckResult {
   requiredMonths: number;
 }
 
-export interface HCBVTQEvaluationContext {
+interface HCBVTQEvaluationContext {
   monthsByPersonnel: Map<string, PositionMonthsByGroup>;
   genderByPersonnel: Map<string, string | null>;
   hoTenByPersonnel: Map<string, string>;

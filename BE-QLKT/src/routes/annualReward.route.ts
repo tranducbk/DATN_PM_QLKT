@@ -2,7 +2,7 @@ import { Router, Request, Response } from 'express';
 import path from 'path';
 import fs from 'fs';
 import annualRewardController from '../controllers/annualReward.controller';
-import { verifyToken, requireManager, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import {
@@ -27,7 +27,7 @@ const router = Router();
 router.get(
   '/',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(annualRewardValidation.getAnnualRewardsQuery, 'query'),
   annualRewardController.getAnnualRewards
 );
@@ -40,7 +40,7 @@ router.get(
 router.post(
   '/',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(annualRewardValidation.createAnnualReward),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
@@ -194,7 +194,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(annualRewardValidation.getAnnualRewardsStatisticsQuery, 'query'),
   annualRewardController.getStatistics
 );

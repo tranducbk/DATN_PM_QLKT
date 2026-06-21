@@ -205,7 +205,7 @@ describe('Type confusion — danh_hieu casing & duplicate detection', () => {
       data_thanh_tich: null,
       data_nien_han: null,
       data_cong_hien: null,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       CoQuanDonVi: { ten_don_vi: 'CQDV M' },
       DonViTrucThuoc: null,
       NguoiDeXuat: { id: ADMIN_ID, username: 'admin', QuanNhan: null },

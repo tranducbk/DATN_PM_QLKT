@@ -14,12 +14,7 @@ import { RESOURCE_SLUGS } from '../../constants/resourceSlugs.constants';
 import { AWARD_SLUGS } from '../../constants/awardSlugs.constants';
 import { type EligibilityResult } from '../eligibility/chainEligibility';
 import { evaluatePersonalChain } from '../eligibility/personalChainEvaluator';
-import type {
-  AnnualStreakResult,
-  NCKHYearsResult,
-  RecalculateResult,
-  SpecialCaseResult,
-} from './types';
+import type { AnnualStreakResult, RecalculateResult } from './types';
 
 /**
  * Loads or creates the annual profile with unit and position context.
@@ -162,82 +157,12 @@ export function countCSTDTQInStreak(
 }
 
 /**
- * Whether approved NCKH exists for any year in the candidate list.
- * @param nckhList - Approved `ThanhTichKhoaHoc` rows
- * @param years - Years to intersect (e.g. streak window)
- * @returns Flags plus the matching year subset
- */
-export function checkNCKHInYears(nckhList: ThanhTichKhoaHoc[], years: number[]): NCKHYearsResult {
-  const nckhYears = nckhList.map(n => n.nam);
-  const foundYears = years.filter(year => nckhYears.includes(year));
-  return {
-    hasNCKH: foundYears.length > 0,
-    years: foundYears,
-  };
-}
-
-/**
- * Detects admin-forced medals or broken CSTDCS chains that restart eligibility messaging.
- * @param danhHieuList - Annual rows (newest first after internal sort)
- * @returns Whether to show a one-off hint and whether streak counters reset
- */
-export function handleSpecialCases(danhHieuList: DanhHieuHangNam[]): SpecialCaseResult {
-  const sortedRewards = [...danhHieuList].sort((a, b) => b.nam - a.nam);
-  const latestReward = sortedRewards[0];
-
-  if (!latestReward) {
-    return { isSpecialCase: false, goiY: '', resetChain: false };
-  }
-
-  // Case 1: Admin explicitly set BKTTCP (highest)
-  if (latestReward.nhan_bkttcp === true) {
-    return {
-      isSpecialCase: true,
-      goiY: `Đã nhận ${getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP)} (Năm ${latestReward.nam}). Bắt đầu chuỗi thành tích mới.`,
-      resetChain: true,
-    };
-  }
-
-  // Case 2: Admin explicitly set CSTDTQ
-  if (latestReward.nhan_cstdtq === true) {
-    return {
-      isSpecialCase: true,
-      goiY: `Đã nhận ${getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ)} (Năm ${latestReward.nam}). Bắt đầu chuỗi thành tích mới.`,
-      resetChain: true,
-    };
-  }
-
-  // Case 3: Admin explicitly set BKBQP (CSTDTQ not yet reached)
-  if (latestReward.nhan_bkbqp === true && !latestReward.nhan_cstdtq) {
-    return {
-      isSpecialCase: true,
-      goiY: `Đã nhận ${getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP)} (Năm ${latestReward.nam}).`,
-      resetChain: false,
-    };
-  }
-
-  // Case 4: Not eligible for CSTDCS this year
-  if (
-    latestReward.danh_hieu !== DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS &&
-    latestReward.danh_hieu !== null
-  ) {
-    return {
-      isSpecialCase: true,
-      goiY: 'Chưa có CSTDCS liên tục. Cần đạt CSTDCS để bắt đầu tính điều kiện khen thưởng.',
-      resetChain: true,
-    };
-  }
-
-  return { isSpecialCase: false, goiY: '', resetChain: false };
-}
-
-/**
  * Loads personnel with awards/achievements and computes all streak counters.
  * @param personnelId - Personnel ID
  * @param year - Evaluation anchor year
  * @returns Personnel data, lists, and computed streaks
  */
-export async function computeAnnualStreaks(
+async function computeAnnualStreaks(
   personnelId: string,
   year: number
 ): Promise<AnnualStreakResult> {
@@ -284,7 +209,7 @@ export async function computeAnnualStreaks(
  * @param year - Evaluation year
  * @returns Eligibility booleans for the three medal tiers
  */
-export function computeEligibilityFlags(
+function computeEligibilityFlags(
   streaks: {
     cstdcs_lien_tuc: number;
     nckh_lien_tuc: number;

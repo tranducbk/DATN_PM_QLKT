@@ -15,7 +15,7 @@ import {
 
 import proposalService from '../../src/services/proposal';
 import profileService from '../../src/services/profile.service';
-import { ForbiddenError } from '../../src/middlewares/errorHandler';
+import { ForbiddenError, ValidationError } from '../../src/middlewares/errorHandler';
 import { ROLES } from '../../src/constants/roles.constants';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../src/constants/proposalStatus.constants';
@@ -36,6 +36,8 @@ afterEach(() => {
 
 const AUTH_SNEAKY_MANAGER_ID = 'acc-mgr-sneaky';
 const AUTH_SNEAKY_ADMIN_OTHER_ID = 'acc-admin-other';
+const PERSONNEL_OUT_OF_SCOPE_MSG =
+  'Không thể đề xuất khen thưởng cho quân nhân ngoài đơn vị quản lý của bạn.';
 
 interface SneakyManagerFixture {
   cqdvA: ReturnType<typeof makeUnit>;
@@ -61,7 +63,7 @@ function AUTH_SNEAKY_arrangeManagerCqdvA(): SneakyManagerFixture {
 }
 
 describe('Authorization sneaky — submit cross-unit personnel', () => {
-  it('Manager CQDV-A submit cho QN thuộc CQDV-B → service vẫn tạo proposal (pinned: thiếu guard)', async () => {
+  it('Manager CQDV-A submit cho QN thuộc CQDV-B → reject (guard scope đơn vị)', async () => {
     // Cho trước: manager scope A, quân nhân target thực ra thuộc B
     const { cqdvA, cqdvB } = AUTH_SNEAKY_arrangeManagerCqdvA();
     const targetInOtherUnit = makePersonnel({
@@ -80,24 +82,21 @@ describe('Authorization sneaky — submit cross-unit personnel', () => {
       NguoiDeXuat: { id: AUTH_SNEAKY_MANAGER_ID, username: 'mgr', QuanNhan: null },
     });
 
-    // Khi
-    await proposalService.submitProposal(
-      [{ personnel_id: targetInOtherUnit.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
-      null,      AUTH_SNEAKY_MANAGER_ID,
-      PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-      2024,
-      null,
-      null
+    // Thì: guard chặn — manager không được đề xuất cho quân nhân ngoài đơn vị quản lý.
+    await expectError(
+      proposalService.submitProposal(
+        [{ personnel_id: targetInOtherUnit.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
+        null,
+        AUTH_SNEAKY_MANAGER_ID,
+        PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
+        2024,
+        null,
+        null
+      ),
+      ValidationError,
+      PERSONNEL_OUT_OF_SCOPE_MSG
     );
-
-    // Kết quả: proposal lưu theo đơn vị của manager (CQDV-A), không theo đơn vị target.
-    expect(prismaMock.bangDeXuat.create).toHaveBeenCalledTimes(1);
-    const data = prismaMock.bangDeXuat.create.mock.calls[0][0].data;
-    expect(data.co_quan_don_vi_id).toBe(cqdvA.id);
-    expect(data.nguoi_de_xuat_id).toBe(AUTH_SNEAKY_MANAGER_ID);
-    // TODO: hiện không có guard cross-unit personnel — manager có thể list bất kỳ QN id
-    //   nào trong titleData và service vẫn chấp nhận. Cân nhắc reject item có
-    //   đơn vị quân nhân không khớp scope của manager.
+    expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 });
 
@@ -108,7 +107,7 @@ describe('Authorization sneaky — body field overrides', () => {
     // chắc chắn bị ignore. Test này pin chính xác contract đó.
     const { cqdvA } = AUTH_SNEAKY_arrangeManagerCqdvA();
     const target = makePersonnel({ unit: cqdvA, id: 'qn-token-test' });
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
+    prismaMock.quanNhan.findMany.mockResolvedValue([target]);
     prismaMock.bangDeXuat.create.mockResolvedValueOnce({
       id: 'p-token',
       loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
@@ -215,7 +214,7 @@ describe('Authorization sneaky — delete by SUPER_ADMIN on another admin propos
 });
 
 describe('Authorization sneaky — manager DVTT submitting personnel of parent CQDV', () => {
-  it('Manager DVTT-A submit cho QN thuộc CQDV cha → service vẫn tạo proposal, scope = DVTT-A', async () => {
+  it('Manager DVTT-A submit cho QN thuộc CQDV cha → reject (guard scope đơn vị)', async () => {
     // Cho trước: manager scope dvtt-A; quân nhân target thực ra thuộc cqdv-parent (CQDV cha)
     const dvttA = makeUnit({ kind: 'DVTT', id: 'dvtt-A-parent', parentId: 'cqdv-parent' });
     const parentCqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-parent' });
@@ -246,22 +245,20 @@ describe('Authorization sneaky — manager DVTT submitting personnel of parent C
       NguoiDeXuat: { id: AUTH_SNEAKY_MANAGER_ID, username: 'mgr', QuanNhan: null },
     });
 
-    // Khi
-    await proposalService.submitProposal(
-      [{ personnel_id: targetInParent.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
-      null,      AUTH_SNEAKY_MANAGER_ID,
-      PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-      2024,
-      null,
-      null
+    // Thì: guard chặn — quân nhân thuộc CQDV cha nằm ngoài scope DVTT-A của manager.
+    await expectError(
+      proposalService.submitProposal(
+        [{ personnel_id: targetInParent.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }],
+        null,
+        AUTH_SNEAKY_MANAGER_ID,
+        PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
+        2024,
+        null,
+        null
+      ),
+      ValidationError,
+      PERSONNEL_OUT_OF_SCOPE_MSG
     );
-
-    // Kết quả: proposal scope dvtt-A (đơn vị manager), không phải CQDV cha.
-    const data = prismaMock.bangDeXuat.create.mock.calls[0][0].data;
-    expect(data.don_vi_truc_thuoc_id).toBe(dvttA.id);
-    expect(data.co_quan_don_vi_id).toBeNull();
-    // TODO: hành vi giống case cross-unit — manager DVTT có thể submit cho quân nhân
-    //   thuộc CQDV cha dù không quản lý scope đó. Cân nhắc verify chain đơn vị của
-    //   quân nhân khớp scope manager.
+    expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 });

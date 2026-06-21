@@ -1,19 +1,15 @@
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
-import { donViTrucThuocRepository } from '../repositories/unit.repository';
+import { buildMedalListWhere } from '../helpers/unitHelper';
 import { commemorativeMedalRepository } from '../repositories/commemorativeMedal.repository';
 import { proposalRepository } from '../repositories/proposal.repository';
-import { accountRepository } from '../repositories/account.repository';
 
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
-import * as notificationHelper from '../helpers/notification';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { NotFoundError } from '../middlewares/errorHandler';
-import { writeSystemLog } from '../helpers/systemLogHelper';
-import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
-import { logMessages } from '../constants/logMessages.constants';
 import { buildTemplate, buildAwardExportBuffer } from '../helpers/excel/excelTemplateHelper';
 import { durationToMonths } from '../helpers/serviceYearsHelper';
 import { fetchTemplateData } from './excel/templateData.service';
+import { finalizeMedalAwardDeletion, getAccountUnitScope } from './medalAwardHelpers';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
 
@@ -70,43 +66,7 @@ class CommemorativeMedalService {
    * Get all Commemorative Medals with filters and pagination
    */
   async getAll(filters: Record<string, unknown> = {}, page: number = 1, limit: number = 50) {
-    const where: Record<string, unknown> = {};
-
-    const quanNhanFilter: Record<string, unknown> = {};
-    if (filters.ho_ten) {
-      quanNhanFilter.ho_ten = { contains: filters.ho_ten, mode: 'insensitive' };
-    }
-
-    if (filters.don_vi_id) {
-      if (filters.include_sub_units) {
-        // include_sub_units: expand filter to all DVTT under the parent unit
-        const donViTrucThuocIds = await donViTrucThuocRepository.findIdsByCoQuanDonViId(
-          String(filters.don_vi_id)
-        );
-        const donViTrucThuocIdList = donViTrucThuocIds.map(d => d.id);
-        where.QuanNhan = {
-          ...quanNhanFilter,
-          OR: [
-            { co_quan_don_vi_id: filters.don_vi_id },
-            { don_vi_truc_thuoc_id: { in: donViTrucThuocIdList } },
-          ],
-        };
-      } else {
-        where.QuanNhan = {
-          ...quanNhanFilter,
-          OR: [
-            { co_quan_don_vi_id: filters.don_vi_id },
-            { don_vi_truc_thuoc_id: filters.don_vi_id },
-          ],
-        };
-      }
-    } else if (Object.keys(quanNhanFilter).length > 0) {
-      where.QuanNhan = quanNhanFilter;
-    }
-
-    if (filters.nam) {
-      where.nam = parseInt(String(filters.nam), 10);
-    }
+    const where = await buildMedalListWhere(filters);
 
     const [data, total] = await Promise.all([
       commemorativeMedalRepository.findManyRaw({
@@ -185,17 +145,7 @@ class CommemorativeMedalService {
    * Get user with unit info (helper method)
    */
   async getUserWithUnit(userId: string) {
-    return await accountRepository.findUniqueRaw({
-      where: { id: userId },
-      include: {
-        QuanNhan: {
-          select: {
-            co_quan_don_vi_id: true,
-            don_vi_truc_thuoc_id: true,
-          },
-        },
-      },
-    });
+    return getAccountUnitScope(userId);
   }
 
   /**
@@ -252,35 +202,18 @@ class CommemorativeMedalService {
       throw new NotFoundError('Bản ghi khen thưởng');
     }
 
-    const personnelId = award.quan_nhan_id;
-    const personnel = award.QuanNhan;
-
-    // Delete award only, proposals are kept for audit trail
-    await commemorativeMedalRepository.delete(id);
-
-    // KNC VSNXD does not affect annual/tenure/contribution profiles
-
-    try {
-      await notificationHelper.notifyOnAwardDeleted(
-        award,
-        personnel,
-        PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-        adminUsername
-      );
-    } catch (notifyError) {
-      void writeSystemLog({
-        action: AUDIT_ACTIONS.ERROR,
-        resource: AWARD_SLUGS.COMMEMORATIVE_MEDALS,
-        resourceId: id,
-        description: logMessages.notifyError('xóa', AWARD_LABEL, notifyError),
-      });
-    }
-
-    return {
-      message: `Xóa khen thưởng ${AWARD_LABEL} thành công`,
-      personnelId,
+    // KNC VSNXD does not affect annual/tenure/contribution profiles, so no recalc.
+    return finalizeMedalAwardDeletion({
+      id,
       award,
-    };
+      personnel: award.QuanNhan,
+      personnelId: award.quan_nhan_id,
+      adminUsername,
+      awardLabel: AWARD_LABEL,
+      resourceSlug: AWARD_SLUGS.COMMEMORATIVE_MEDALS,
+      proposalType: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+      deleteFn: () => commemorativeMedalRepository.delete(id),
+    });
   }
 
   /**

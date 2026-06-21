@@ -678,7 +678,7 @@ export async function confirmImport(
     if (!existing) continue;
     // Only conflict when existing has a different base title (CSTDCS vs CSTT)
     if (existing.danh_hieu && existing.danh_hieu !== item.danh_hieu) {
-      const hoTen = hoTenMap.get(item.personnel_id) || item.ho_ten || item.personnel_id;
+      const hoTen = hoTenMap.get(item.personnel_id) || item.ho_ten || 'một quân nhân';
       conflicts.push(
         `${hoTen} năm ${item.nam}: đã có ${getDanhHieuName(existing.danh_hieu)}, không thể ghi đè bằng ${getDanhHieuName(item.danh_hieu)}`
       );
@@ -708,7 +708,7 @@ export async function confirmImport(
       },
       {
         entityType: 'personal',
-        entityName: hoTenMap.get(item.personnel_id) || item.ho_ten || item.personnel_id,
+        entityName: hoTenMap.get(item.personnel_id) || item.ho_ten || 'một quân nhân',
       }
     );
     decisionErrors.push(...errs);

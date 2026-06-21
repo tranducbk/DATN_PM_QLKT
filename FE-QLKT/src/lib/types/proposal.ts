@@ -29,7 +29,7 @@ export interface TitleDataItem {
   thoi_gian_nhom_0_9_1_0?: ContributionTimeAggregate | null;
 }
 
-export interface DecisionRef {
+interface DecisionRef {
   id?: string;
   nam: number;
   thang?: number;
@@ -39,7 +39,7 @@ export interface DecisionRef {
   so_quyet_dinh?: string;
 }
 
-export interface DecisionData {
+interface DecisionData {
   so_quyet_dinh: string;
   decision?: DecisionRef | null;
 }

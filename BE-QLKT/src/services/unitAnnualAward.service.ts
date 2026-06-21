@@ -5,15 +5,6 @@ import * as importHelpers from './unitAnnualAward/import';
 import type { UnitAnnualAwardValidItem } from './unitAnnualAward/types';
 
 class UnitAnnualAwardService {
-  calculateContinuousYears(donViId, year) {
-    return eligibility.calculateContinuousYears(donViId, year);
-  }
-  calculateTotalDVQT(donViId, year) {
-    return eligibility.calculateTotalDVQT(donViId, year);
-  }
-  buildSuggestion(du_dieu_kien_bkbqp: boolean, du_dieu_kien_bkttcp: boolean) {
-    return eligibility.buildSuggestion(du_dieu_kien_bkbqp, du_dieu_kien_bkttcp);
-  }
   checkUnitAwardEligibility(donViId, year, danhHieu) {
     return eligibility.checkUnitAwardEligibility(donViId, year, danhHieu);
   }
@@ -44,6 +35,9 @@ class UnitAnnualAwardService {
   }
   getUnitAnnualAwards(donViId: string, userRole?: string, userQuanNhanId?: string | null) {
     return crud.getUnitAnnualAwards(donViId, userRole, userQuanNhanId);
+  }
+  assertUnitInScope(donViId: string, userRole?: string, userQuanNhanId?: string | null) {
+    return crud.assertUnitInScope(donViId, userRole, userQuanNhanId);
   }
 
   exportTemplate(unitIds?: string[], repeatMap?: Record<string, number>) {

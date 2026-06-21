@@ -245,6 +245,30 @@ describe('positionHistory.service - updatePositionHistory', () => {
     expect(result.warning).toBeNull();
   });
 
+  it('kết thúc thiếu đúng 1 ngày (14 < mốc 15) → so_thang giảm 1 (day-precision, không làm tròn lên)', async () => {
+    const existing = {
+      id: 'lscv-day-edge',
+      quan_nhan_id: PERSONNEL_ID,
+      chuc_vu_id: CHUC_VU_ID,
+      he_so_chuc_vu: 0.5,
+      ngay_bat_dau: new Date('2023-01-15'),
+      ngay_ket_thuc: new Date('2023-06-15'),
+      so_thang: 5,
+    };
+    prismaMock.lichSuChucVu.findUnique.mockResolvedValueOnce(existing);
+    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce([]);
+    prismaMock.lichSuChucVu.update.mockResolvedValueOnce({ ...existing, so_thang: 10 });
+
+    // Khi: kết thúc 2023-12-14 — thiếu đúng 1 ngày so với mốc ngày 15
+    await positionHistoryService.updatePositionHistory(existing.id, {
+      ngay_ket_thuc: '2023-12-14',
+    });
+
+    // Thì: 15/1 → 14/12 = 10 tháng (không phải 11), vì ngày kết thúc < ngày bắt đầu
+    const updateArgs = prismaMock.lichSuChucVu.update.mock.calls[0][0];
+    expect(updateArgs.data.so_thang).toBe(10);
+  });
+
   it('update ngày bắt đầu sau ngày kết thúc → ValidationError', async () => {
     // Cho: bản ghi đã đóng tồn tại
     prismaMock.lichSuChucVu.findUnique.mockResolvedValueOnce({

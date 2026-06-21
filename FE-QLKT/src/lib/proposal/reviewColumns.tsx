@@ -9,7 +9,7 @@ import type { TitleDataItem } from '@/lib/types/proposal';
 
 const { Text } = Typography;
 
-export interface ProposalReviewRow {
+interface ProposalReviewRow {
   id: string;
   co_quan_don_vi_id?: string | null;
   CoQuanDonVi?: Record<string, unknown> | null;

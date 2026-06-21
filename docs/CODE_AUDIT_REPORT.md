@@ -462,3 +462,68 @@ Phụ: `excelHelper.ts:12-16` JSDoc lạc chỗ (mô tả parseHeaderMap nhưng 
 | 29 | Chuẩn hóa JSDoc density per-service (all-or-bare) | BE services | medium |
 
 **Nguyên tắc thực thi**: ưu tiên 1-11 (quick wins) làm ngay vì rủi ro thấp, payoff cao, đặc biệt #1/#2/#11 ảnh hưởng tính đúng đắn (AP-9 + eligibility). Nhóm Large bám 2 trục lớn nhất — **medal abstraction (#23-24)** và **permission/role-page (#25,#28)** — đây là 2 nguồn chi phí mở rộng lớn nhất của dự án.
+
+---
+
+## Kết quả thực thi (đợt audit + refactor)
+
+Gate xuyên suốt: sau mỗi thay đổi chạy `tsc --noEmit` (BE+FE) + `jest` (BE). Trạng thái cuối: **BE typecheck sạch · FE typecheck sạch · 1010/1010 test BE pass** (87 suite).
+
+### Đã áp dụng (chắc chắn đúng, đã test-gate)
+
+- **Dead code (Phase A)**: xóa đã verify từng item bằng `grep` trước khi xóa. BE: bỏ `calculateHCBVTQ` (+ wrapper + `HCBVTQCalcResult`), `validateApprove`/`buildSuccessMessage` chết trong strategy, 3 wrapper unitAnnualAward, `calculateThoiGian`, `hasCapability`. FE: xóa `useFetch`/`UnitTree`/`AccountsTable`/`(auth)/change-password`/`Step2SelectPersonnel` base, `getAwardIcon`, `PROPOSAL_STATUS_COLORS`, 21 method apiClient chết + module def, file `awardSlugs.constants.ts` (whole-file dead).
+- **HCBVTQ về 1 engine (Phase 0a)**: gom rule rank↔nhóm-hệ-số vào single source (`HCBVTQ_RANK_MIN_GROUP`, `cumulativeMonthsForHcbvtqRank`, `HCBVTQ_RANKS_HIGH_TO_LOW`); `computeEligibilityFlags` + `checkAwardEligibility` cùng delegate. Behavior **không đổi** (thêm nhóm hệ số cấp cao hơn = thêm 1 entry map, không sửa logic).
+- **DRY (Phase D)**: `buildAwardExportBuffer<T>` (gom 4 medal export), `finalizeMedalAwardDeletion<TAward>` (gom 4 deleteAward), `getAccountUnitScope` (gom 3 getUserWithUnit), `durationToMonths` (gom convertThoiGian), `safeNotifyImport` (7 controller), `unitAssignment.ts` tách từ account.service.
+- **Capability matrix (Phase G)**: `CAPABILITIES`/`ROLE_CAPABILITIES`/`rolesWithCapability`; `requireCapability(cap)` thay guard named cứng. Thêm role = thêm 1 dòng matrix.
+- **Naming (Phase C)**: `CONG_HIEN`→`CONTRIBUTION`, `HE_SO`→`COEFFICIENT` (cấm từ VN thường; giữ mã viết tắt HCBVTQ/HCCSVV); rename class medal service. ~34 comment dịch sang English (WHY-not-WHAT). 48 narrow-export BE + 22 narrow-export FE (bỏ `export` cho symbol chỉ dùng nội bộ file).
+- **AP-9**: dọn message leak CUID/field nội bộ ra user.
+- **OCP/DRY đợt 2 (discovery workflow + adversarial verify + re-verify thủ công)**:
+  - `lib/api/index.ts`: thay object literal 125 key đăng ký tay bằng spread 11 namespace (`{ ...authApi, ...accountsApi, ... }`). Đã verify 0 collision + 125 mapping đều identity → tương đương tuyệt đối; thêm endpoint mới = 0 sửa index. (~135 LOC.)
+  - `profile.service.ts`: bỏ 8 facade method chết (calculateContinuousCSTDCS/NCKH, countBKBQP/CSTDTQInStreak, checkNCKHInYears, handleSpecialCases, calculateEligibilityDate, calculateHCCSVV) — mỗi cái 0 call-site qua `profileService.X()` (grep src+tests); giữ singleton + 10 method còn dùng. (~90 LOC.)
+  - **Đã từ chối qua adversarial verify**: `getLoaiKhenThuongByDanhHieu` reverse-lookup (registry phân nhánh BKBQP/BKTTCP personal↔unit → kết quả lệch); `auditLog/proposals.ts` quantity dispatch map (REFUTED: edit đề xuất fail `tsc`). FE god-file `review/[id]`, `manager/[id]`, `CreateAdhocAwardModal`: types+pure helper đã extract sẵn từ trước, không còn symbol pure inline để tách.
+- **FE Bước-1 extraction đợt 3 (read-only inventory + adversarial purity-verify 11 file next-tier)**: tách types + pure non-JSX helper sang co-located `types.ts`/`helpers.ts`, ESLint + `tsc` sạch:
+  - `app/dev_zone/page.tsx` 803→747: types.ts (DevStatus, BackupStatus) + helpers.ts (saveSession/loadSession/clearSession + DEFAULT_RETENTION_DAYS).
+  - `app/admin/awards/page.tsx` 674→581: types.ts (7 type/interface) + helpers.ts (INITIAL_FILTERS, AWARD_TYPE_CONFIG).
+  - **Skip có chủ đích**: `user/dashboard`, `PersonnelDetailView`, `super-admin/add-awards` (mọi symbol nằm trong component/JSX hoặc chỉ 1 interface nhỏ); `manager/proposals/create`, `user/profile`, `Step2 NienHan` (đã extract sẵn); `MainLayout` (chỉ ~30 LOC movable, lại nằm ở `components/` chung → co-location lệch chỗ); `Step2/Step3` còn lại (nhạy cảm theo feedback "giữ tách riêng" + cần DRY-check constants).
+
+### Bug-hunt đối kháng (đợt "check mà làm") — 16 lỗi thật / 9 bác bỏ
+
+8 finder × subsystem + skeptic refute từng finding. **Đã sửa 11, test-gate 1017 pass:**
+- **[Excel/HIGH] `thang` bị Zod strip khi confirm import** (`validations/excelImport.validation.ts`): schema confirm thiếu `thang` → HCBVTQ import **crash**, HCCSVV/quân kỳ/KNC **âm thầm lưu tháng = 12**. Đã tách schema có `thang` (required 1-12) cho 4 loại medal; verify FE thực gửi `thang` (preview→confirm forward nguyên item) — AP-10 OK.
+- **[datetime] Dashboard `setMonth` overflow** (`dashboard.service.ts` getLastNMonths + monthsAgo): ngày 29-31 nhảy tháng sai → trục biểu đồ trùng/thiếu tháng. Fix: `setDate(1)` trước `setMonth`.
+- **[excel] Unit-annual import dup check bỏ qua năm** (`unitAnnualAward/import.ts`): proposal pending năm X chặn import năm Y. Fix: thêm `p.nam !== nam`.
+- **[FE] Badge NCKH luôn "(0)"** (`Step3SetTitlesCaNhanHangNam.tsx`): `Array.isArray(number)` luôn false. Fix: dùng số `tong_nckh` (giống badge CSTDCS).
+- **[eligibility] HCBVTQ Excel tính tháng tới HÔM NAY** (`contributionMedal/import.ts`): lệch path proposal (dùng `buildCutoffDate(nam,thang)`). Fix: dùng `buildCutoffDate(nam, thang)` cả preview + confirm.
+- **[AP-9] Leak CUID vào message** (17/18 site): `|| item.personnel_id`/`|| item.don_vi_id` → `'một quân nhân'`/`'Một đơn vị'`.
+- **[security] MANAGER đọc/recalc cross-unit** (3 endpoint personnel-scope): thêm `assertCanViewPersonnel` vào `recalculateProfile`, `annualReward.getAnnualRewards(personnel_id)`, `checkEligibility` (item cá nhân) — mirror guard đã có ở `getAnnualProfile`.
+
+**Đã sửa nốt sau khi user duyệt (16/16 lỗi xong, build BE+FE pass, 1017 test):**
+- **[AP-9 site 18] `personnelDuplicateCheck.ts:63`**: sửa code + update assertion test `personnel-duplicate-check.test.ts:59` (`startsWith('p1:')` → `startsWith('một quân nhân:')` + `not.toContain('p1')`) — user OK sửa test.
+- **[security unit-scope]**: viết `assertUnitInScope` trong `unitAnnualAward/crud.ts` (mirror đúng scope MANAGER = co_quan_don_vi + DVTT con, giữ nguyên message), refactor `getUnitAnnualAwards` dùng chung. Guard `getUnitAnnualProfile` + `checkEligibility` item DON_VI. `getAllAwards`/`exportAllAwardsExcel`: đẩy filter `don_vi_id` vào Prisma `where` (qua quan hệ QuanNhan) → count + pagination đúng + scope đúng, bỏ `.filter()` sau fetch.
+- **[eligibility/domain] HCBVTQ day-precision**: `recalcPositionMonths` (eligibility) chuyển từ month-diff sang `calculateTenureMonthsWithDayPrecision` (khớp tháng hiển thị); xoá `calculateCoveredMonthsByMonth` chết. 1017 test vẫn pass (không fixture nào chạm mốc day-boundary).
+- **[robustness] Bulk award FK**: `bulkCreateAwards` upsert `FileQuyetDinh` cho mọi `so_quyet_dinh` trong titleData trước khi insert (no-op nếu đã có).
+
+### Lỗi #17 — SA thêm HCCSVV cũ (user phát hiện, ngoài bug-hunt)
+
+Flow `super-admin/add-awards` (chỉ HCCSVV, qua `/bulk-bypass`):
+- **FE không gửi `thang`** (chỉ `nam`) dù có picker tháng (`onThangChange`) → route `/bulk-bypass` validate `bulkCreateAwards` **bắt buộc `thang`** cho HCCSVV → request **fail "thang là bắt buộc"** (feature hỏng). Fix: `formData.append('thang', String(thang))`.
+- **`calculateThoiGian` đếm service tới HÔM NAY** (`new Date()`) → khen thưởng CŨ lưu thời gian phục vụ hiện tại thay vì tại thời điểm trao (cùng class lỗi [4]). Fix: thêm tham số `cutoffDate`, cap tại `buildCutoffDate(nam, thang)`; `bulkUpsertMedalAward` truyền vào. Áp dụng chung cho HCQKQT/KNC cũ qua cùng helper.
+
+> **Lưu ý quan trọng cho lần sau**: verdict "không có test che" của bug-hunt **không** đáng tin — `personnel-duplicate-check.test.ts` thực ra assert chính cái leak CUID. Luôn `grep` tên symbol/text trong `tests/` trước khi đổi behavior. Phần authz MANAGER mới (`assertUnitInScope` ở 3 endpoint) typecheck + 1017 test pass nhưng **chưa test luồng MANAGER thật trên browser** — nên verify khi chạy được FE dev.
+
+### Bài học độ-tin-cậy của audit (quan trọng cho lần sau)
+
+Danh sách "dead/duplicate" từ agent **không** đáng tin tuyệt đối — phải tự verify lại từng item:
+- "41 repo method chết" → thực ra `findManyRaw` dùng ở 58 file. Nhiều "duplicate" thực ra đã phân nhánh (account create/update validate khác nhau; medal `getStatistics` có/không `byRank`).
+- **Cross-package gotcha**: FE-sweep báo `DANH_HIEU_HCCSVV` (FE) "0 usage" → nhưng BE `danh-hieu-sync.test.ts:68` đọc source FE qua `extractObjectLiteral`. **Đã từ chối** xóa item này (agent FE không nhìn thấy test BE). → khi xóa hằng số FE, luôn grep cả `BE-QLKT/tests` cho tên đó.
+
+### Kết luận NOT viable (đã cân nhắc, không làm)
+
+- **Full medal factory (#23)**: 4 medal service đã phân nhánh đủ nhiều (filter where, statistics, recalc) → factory đầy đủ làm code khó đọc hơn. Đã rút phần chung ra helper (trên) thay vì factory.
+- **Tách core.ts/import.ts (#26 phần BE)**: god-method phức tạp + test bao phủ mỏng → tách blind không "chắc chắn đúng".
+- **account.service create/update gộp**: 2 path phân nhánh thật, không gộp.
+
+### Còn lại — chặn bởi điều kiện ngoài tầm (cần user)
+
+- **#25/#26/#27/#28 phần FE**: tách god-component (review/[id] 1343 LOC, manager [id], CreateAdhocAwardModal...), hợp nhất role-page, gộp Step2/3 — **cần dev server + browser test** để verify visual/behavior (CLAUDE.md: không refactor JSX blind). Phần an toàn (extract types/pure helpers) đã làm; phần JSX/hook chờ browser.
+- **Prettier baseline**: `prettier --check` báo nhiều file lệch format **kể cả file không đụng tới** (dashboard/position controller, multer, repositories) → drift toàn repo (version/config), không phải do đợt sửa này. Không mass-reformat để tránh diff rác; để user chạy `npm run format` 1 lượt nếu muốn.

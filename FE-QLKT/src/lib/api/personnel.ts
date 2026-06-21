@@ -3,12 +3,12 @@ import { getApiErrorMessage } from '@/lib/http/apiError';
 import type { ApiResponse } from '@/lib/types/common';
 
 /** Position-history mutation response with optional backend warning metadata. */
-export type PositionHistoryWarning = {
+type PositionHistoryWarning = {
   message: string;
   suggestedEndDate?: string | null;
 };
 
-export type PositionHistoryMutationResponse = ApiResponse & {
+type PositionHistoryMutationResponse = ApiResponse & {
   warning?: PositionHistoryWarning;
 };
 

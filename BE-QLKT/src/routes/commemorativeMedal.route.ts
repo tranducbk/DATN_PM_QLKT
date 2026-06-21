@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import commemorativeMedalController from '../controllers/commemorativeMedal.controller';
-import { verifyToken, checkRole, requireManager, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, checkRole, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { ROLES } from '../constants/roles.constants';
@@ -50,7 +50,7 @@ router.post(
  * @desc    List commemorative medals (Admin: all units, Manager: own unit)
  * @access  ADMIN, MANAGER
  */
-router.get('/', verifyToken, requireManager, commemorativeMedalController.getAll);
+router.get('/', verifyToken, requireAdminOrManager, commemorativeMedalController.getAll);
 
 /**
  * @route   GET /api/commemorative-medals/export
@@ -64,7 +64,7 @@ router.get('/export', verifyToken, requireAdminOnly, commemorativeMedalControlle
  * @desc    Get commemorative medal statistics
  * @access  ADMIN, MANAGER
  */
-router.get('/statistics', verifyToken, requireManager, commemorativeMedalController.getStatistics);
+router.get('/statistics', verifyToken, requireAdminOrManager, commemorativeMedalController.getStatistics);
 
 /**
  * @route   GET /api/commemorative-medals/personnel/:personnel_id
@@ -86,7 +86,7 @@ router.get(
 router.get(
   '/check-received/:personnel_id',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   commemorativeMedalController.checkReceived
 );
 

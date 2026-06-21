@@ -185,7 +185,7 @@ class CaNhanHangNamStrategy implements ProposalStrategy {
           item.danh_hieu
         );
         if (eligibility.eligible) return null;
-        const hoTen = personnelMap.get(item.personnel_id)?.ho_ten || item.personnel_id;
+        const hoTen = personnelMap.get(item.personnel_id)?.ho_ten || 'một quân nhân';
         return `${hoTen}: ${eligibility.reason}`;
       })
     );
@@ -195,13 +195,6 @@ class CaNhanHangNamStrategy implements ProposalStrategy {
     }
 
     return { errors, payload: { data_danh_hieu: dataDanhHieu } };
-  }
-
-  async validateApprove(
-    _editedData: EditedProposalData,
-    _ctx: ProposalApproveContext
-  ): Promise<string[]> {
-    return [];
   }
 
   async importInTransaction(
@@ -335,9 +328,6 @@ class CaNhanHangNamStrategy implements ProposalStrategy {
     }
   }
 
-  buildSuccessMessage(acc: ImportAccumulator): string {
-    return `Đã phê duyệt danh hiệu cá nhân hằng năm cho ${acc.affectedPersonnelIds.size} quân nhân`;
-  }
 }
 
 export const caNhanHangNamStrategy = new CaNhanHangNamStrategy();

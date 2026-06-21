@@ -47,7 +47,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       status: PROPOSAL_STATUS.PENDING,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -115,7 +115,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       id: 'prop-2',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: dvtt,
       data_danh_hieu: [item],
     });
@@ -160,7 +160,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       id: 'prop-dvtt-1',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: dvtt,
       data_danh_hieu: [item],
     });
@@ -203,7 +203,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       id: 'prop-full-qd',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 
@@ -254,7 +254,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       id: 'prop-combo-ok',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 
@@ -305,7 +305,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       id: 'prop-iso-bk',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 
@@ -354,7 +354,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       status: PROPOSAL_STATUS.PENDING,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -391,7 +391,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       id: 'prop-empty',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [],
     });
 
@@ -414,7 +414,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       id: 'prop-msg-ca-nhan',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [
         makeProposalItemCaNhan({
           personnel_id: personnel.id,

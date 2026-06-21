@@ -329,7 +329,7 @@ describe('Bypass FE — approve attacks', () => {
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       status: PROPOSAL_STATUS.APPROVED,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
 
@@ -347,7 +347,7 @@ describe('Bypass FE — approve attacks', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: null,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [
         { personnel_id: 'qn-1', danh_hieu: PROPOSAL_TYPES.HC_QKQT, ho_ten: 'X' },
       ],
@@ -364,7 +364,6 @@ describe('Bypass FE — approve attacks', () => {
   it('editedData mixed-group khi data_danh_hieu lưu sạch → vẫn block', async () => {
     // Given: data lưu sạch nhưng editedData trộn CSTDCS với BKBQP
     const personnelA = makePersonnel({ id: 'qn-edit-A' });
-    const personnelB = makePersonnel({ id: 'qn-edit-B' });
     const cleanItem = makeProposalItemCaNhan({
       personnel_id: personnelA.id,
       danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS,
@@ -373,16 +372,15 @@ describe('Bypass FE — approve attacks', () => {
       id: 'p-edit-mixed',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [cleanItem],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([
       { id: personnelA.id, ho_ten: personnelA.ho_ten },
-      { id: personnelB.id, ho_ten: personnelB.ho_ten },
     ]);
 
-    // editedData chèn BKBQP cạnh CSTDCS đã có — phải bị block
+    // editedData chèn BKBQP cạnh CSTDCS đã có (cùng QN trong đề xuất gốc) — phải bị block
     await expectError(
       proposalService.approveProposal(
         proposal.id,
@@ -390,7 +388,7 @@ describe('Bypass FE — approve attacks', () => {
           data_danh_hieu: [
             cleanItem,
             makeProposalItemCaNhan({
-              personnel_id: personnelB.id,
+              personnel_id: personnelA.id,
               danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP,
             }),
           ],
@@ -409,12 +407,11 @@ describe('Bypass FE — approve attacks', () => {
   it('editedData mixed-group ĐVQT + BKBQP đơn vị → reject MIXED_DON_VI_HANG_NAM_ERROR', async () => {
     // Given: proposal DON_VI_HANG_NAM có editedData trộn ĐVQT + BKBQP
     const cqdvA = makeUnit({ kind: 'CQDV', id: 'cqdv-edit-A' });
-    const cqdvB = makeUnit({ kind: 'CQDV', id: 'cqdv-edit-B' });
     const proposal = makeProposal({
       id: 'p-edit-unit-mixed',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdvA,
       data_danh_hieu: [
         {
@@ -440,9 +437,9 @@ describe('Bypass FE — approve attacks', () => {
               danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.DVQT,
             },
             {
-              don_vi_id: cqdvB.id,
+              don_vi_id: cqdvA.id,
               don_vi_type: 'CO_QUAN_DON_VI',
-              ten_don_vi: cqdvB.ten_don_vi,
+              ten_don_vi: cqdvA.ten_don_vi,
               danh_hieu: DANH_HIEU_DON_VI_HANG_NAM.BKBQP,
             },
           ],

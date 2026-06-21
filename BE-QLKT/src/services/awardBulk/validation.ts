@@ -77,7 +77,7 @@ export async function checkDuplicateAwards(
   const strategy = DUPLICATE_STRATEGY[type as ProposalType];
 
   for (const item of items) {
-    const hoTen = personnelMap.get(item.personnel_id) || item.personnel_id;
+    const hoTen = personnelMap.get(item.personnel_id) || 'một quân nhân';
     const key = `${item.personnel_id}_${item.danh_hieu}`;
 
     if (strategy) {

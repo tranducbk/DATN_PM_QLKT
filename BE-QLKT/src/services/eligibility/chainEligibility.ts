@@ -6,7 +6,7 @@ export interface EligibilityResult {
   reason: string;
 }
 
-export interface ChainStreaks {
+interface ChainStreaks {
   streakLength: number;
   nckhStreak: number;
 }
@@ -39,7 +39,7 @@ export function countFlagInWindow(
  * @param flagsInWindow - Prerequisite flags found in streak window
  * @returns Human-readable reason text
  */
-export function buildInsufficientReason(
+function buildInsufficientReason(
   award: ChainAwardConfig,
   streaks: ChainStreaks,
   flagsInWindow: FlagsInWindow

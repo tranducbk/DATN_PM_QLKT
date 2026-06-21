@@ -3,6 +3,7 @@ import personnelService from '../../src/services/personnel.service';
 import { ROLES } from '../../src/constants/roles.constants';
 import { GENDER } from '../../src/constants/gender.constants';
 import { makeUnit, makePersonnel } from '../helpers/fixtures';
+import { mockPersonnelCascadeDeletes } from '../helpers/prismaArrange';
 
 const ADMIN_USERNAME = 'admin';
 const ADMIN_QN_ID = 'qn-admin-1';
@@ -20,17 +21,7 @@ describe('personnelService — Rule A: ưu tiên DVTT khi xác định đơn v�
     personnel.don_vi_truc_thuoc_id = dvtt.id;
 
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce({ ...personnel, TaiKhoan: null } as any);
-    prismaMock.lichSuChucVu.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.thanhTichKhoaHoc.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.danhHieuHangNam.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.khenThuongHCBVTQ.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.huanChuongQuanKyQuyetThang.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.kyNiemChuongVSNXDQDNDVN.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.khenThuongHCCSVV.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.khenThuongDotXuat.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.hoSoNienHan.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.hoSoCongHien.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.hoSoHangNam.deleteMany.mockResolvedValue({ count: 0 } as any);
+    mockPersonnelCascadeDeletes();
     prismaMock.quanNhan.delete.mockResolvedValueOnce(personnel as any);
     prismaMock.donViTrucThuoc.update.mockResolvedValueOnce({} as any);
 
@@ -49,17 +40,7 @@ describe('personnelService — Rule A: ưu tiên DVTT khi xác định đơn v�
     const personnel = makePersonnel({ id: 'qn-2', unit: cqdv });
 
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce({ ...personnel, TaiKhoan: null } as any);
-    prismaMock.lichSuChucVu.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.thanhTichKhoaHoc.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.danhHieuHangNam.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.khenThuongHCBVTQ.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.huanChuongQuanKyQuyetThang.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.kyNiemChuongVSNXDQDNDVN.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.khenThuongHCCSVV.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.khenThuongDotXuat.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.hoSoNienHan.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.hoSoCongHien.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.hoSoHangNam.deleteMany.mockResolvedValue({ count: 0 } as any);
+    mockPersonnelCascadeDeletes();
     prismaMock.quanNhan.delete.mockResolvedValueOnce(personnel as any);
     prismaMock.coQuanDonVi.update.mockResolvedValueOnce({} as any);
 
@@ -78,17 +59,7 @@ describe('personnelService — Rule A: ưu tiên DVTT khi xác định đơn v�
     const personnel = makePersonnel({ id: 'qn-3', unit: dvtt });
 
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce({ ...personnel, TaiKhoan: null } as any);
-    prismaMock.lichSuChucVu.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.thanhTichKhoaHoc.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.danhHieuHangNam.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.khenThuongHCBVTQ.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.huanChuongQuanKyQuyetThang.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.kyNiemChuongVSNXDQDNDVN.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.khenThuongHCCSVV.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.khenThuongDotXuat.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.hoSoNienHan.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.hoSoCongHien.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.hoSoHangNam.deleteMany.mockResolvedValue({ count: 0 } as any);
+    mockPersonnelCascadeDeletes();
     prismaMock.quanNhan.delete.mockResolvedValueOnce(personnel as any);
     prismaMock.donViTrucThuoc.update.mockResolvedValueOnce({} as any);
 
@@ -264,17 +235,7 @@ describe('personnelService — Rule B: so_luong chỉ tăng/giảm 1 đơn vị 
     const personnel = makePersonnel({ id: 'qn-del-1', unit: cqdv });
 
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce({ ...personnel, TaiKhoan: null } as any);
-    prismaMock.lichSuChucVu.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.thanhTichKhoaHoc.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.danhHieuHangNam.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.khenThuongHCBVTQ.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.huanChuongQuanKyQuyetThang.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.kyNiemChuongVSNXDQDNDVN.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.khenThuongHCCSVV.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.khenThuongDotXuat.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.hoSoNienHan.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.hoSoCongHien.deleteMany.mockResolvedValue({ count: 0 } as any);
-    prismaMock.hoSoHangNam.deleteMany.mockResolvedValue({ count: 0 } as any);
+    mockPersonnelCascadeDeletes();
     prismaMock.quanNhan.delete.mockResolvedValueOnce(personnel as any);
     prismaMock.coQuanDonVi.update.mockResolvedValueOnce({} as any);
 

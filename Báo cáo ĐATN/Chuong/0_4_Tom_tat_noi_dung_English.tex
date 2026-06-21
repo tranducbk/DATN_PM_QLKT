@@ -12,12 +12,12 @@ Each tier has its own sliding-window cycle (2, 3 and 7 years) and several flag c
 
 This thesis develops a web information system supporting the Political Department of the Academy throughout the lifecycle of seven commendation groups: personal annual, unit annual, length-of-service medals, contribution medals, commemorative medals, military flag medals and scientific achievements.
 The platform covers proposal creation, automatic chain-eligibility checking, approval with the signed decision attached, audit logging and management of decision documents.
-It cuts per-soldier eligibility check time from tens of minutes on spreadsheets to under one second, while preserving a complete audit trail for post-hoc verification.
+It replaces the slow, manual spreadsheet cross-checking of each soldier's eligibility with a near-instant automated check, while preserving a complete audit trail for post-hoc verification.
 
 The system is deployed as a web application on the Academy's internal network.
 Chain-award rules sit in a central configuration table so that new awards can be added without rewriting the eligibility logic.
 The deliverable supports four authorisation levels matching the military organisational structure: SuperAdmin, Admin, Manager and User.
-It has been validated against the main business scenarios by combining manual black-box testing through the interface with an automated Jest suite covering the core eligibility rules.
+It has been validated against the main business scenarios through manual black-box testing via the interface, across multiple sample datasets covering the core eligibility rules.
 The system is ready for pilot deployment at the Political Department.
 
 \end{document}

@@ -85,7 +85,7 @@ async function collectCaNhanHangNamDuplicates(
   const validItems = danhHieuData.filter(item => item.personnel_id && item.danh_hieu);
   const promises = await Promise.all(
     validItems.flatMap(item => {
-      const hoTen = personnelHoTenMap.get(item.personnel_id) || item.personnel_id;
+      const hoTen = personnelHoTenMap.get(item.personnel_id) || 'một quân nhân';
       const isMutuallyExclusive =
         item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT ||
         item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS;
@@ -187,7 +187,7 @@ async function collectNckhDuplicates(
   for (const item of validItems) {
     const key = `${item.personnel_id}_${item.nam}_${item.mo_ta}`;
     if (existingKeys.has(key)) {
-      const hoTen = ctx.personnelHoTenMap.get(item.personnel_id) || item.personnel_id;
+      const hoTen = ctx.personnelHoTenMap.get(item.personnel_id) || 'một quân nhân';
       errors.push(`${hoTen}: Thành tích "${item.mo_ta}" năm ${item.nam} đã tồn tại`);
     }
   }
@@ -297,7 +297,7 @@ async function collectCongHienEligibilityErrors(
 
   for (const item of congHienData) {
     if (!item.danh_hieu || !item.personnel_id) continue;
-    const hoTen = evalCtx.hoTenByPersonnel.get(item.personnel_id) || item.personnel_id;
+    const hoTen = evalCtx.hoTenByPersonnel.get(item.personnel_id) || 'một quân nhân';
     const gioiTinh = evalCtx.genderByPersonnel.get(item.personnel_id) ?? null;
     const requiredMonths = requiredContributionMonths(gioiTinh);
     const months: PositionMonthsByGroup = {
@@ -354,7 +354,7 @@ async function collectCaNhanChainEligibilityErrors(
         item.danh_hieu
       );
       if (eligibility.eligible) return null;
-      const hoTen = ctx.personnelHoTenMap.get(item.personnel_id) || item.personnel_id;
+      const hoTen = ctx.personnelHoTenMap.get(item.personnel_id) || 'một quân nhân';
       return `${hoTen}: ${eligibility.reason}`;
     })
   );
@@ -376,7 +376,7 @@ async function collectDonViChainEligibilityErrors(
         item.danh_hieu
       );
       if (eligibility.eligible) return null;
-      const tenDonVi = item.ten_don_vi || item.don_vi_id;
+      const tenDonVi = item.ten_don_vi || 'Một đơn vị';
       return `${tenDonVi}: ${eligibility.reason}`;
     })
   );
@@ -455,7 +455,7 @@ export function runDecisionNumberChecks(
         item.so_quyet_dinh_cstdtq || decisions.so_quyet_dinh_cstdtq || item.so_quyet_dinh;
       const sqdBkttcp =
         item.so_quyet_dinh_bkttcp || decisions.so_quyet_dinh_bkttcp || item.so_quyet_dinh;
-      const hoTen = personnelHoTenMap.get(item.personnel_id) || item.ho_ten || item.personnel_id;
+      const hoTen = personnelHoTenMap.get(item.personnel_id) || item.ho_ten || 'một quân nhân';
 
       const errs = validateDecisionNumbers(
         {
@@ -487,7 +487,7 @@ export function runDecisionNumberChecks(
         item.so_quyet_dinh_bkbqp || decisions.so_quyet_dinh_bkbqp || item.so_quyet_dinh;
       const sqdBkttcp =
         item.so_quyet_dinh_bkttcp || decisions.so_quyet_dinh_bkttcp || item.so_quyet_dinh;
-      const tenDonVi = item.ten_don_vi || item.don_vi_id;
+      const tenDonVi = item.ten_don_vi || 'Một đơn vị';
 
       const errs = validateDecisionNumbers(
         {

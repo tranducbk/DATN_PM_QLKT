@@ -1,7 +1,7 @@
 import { theme as antdTheme } from 'antd';
 import type { ThemeConfig } from 'antd';
 
-export const ANTD_FONT_FAMILY = 'var(--font-roboto), system-ui, sans-serif';
+const ANTD_FONT_FAMILY = 'var(--font-roboto), system-ui, sans-serif';
 
 const PALETTE = {
   dark: {

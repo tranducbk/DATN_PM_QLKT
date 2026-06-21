@@ -28,12 +28,3 @@ export const AWARD_ICONS: Record<string, string> = {
   SKKH: '/Icon/NCKH.png',
 };
 
-/**
- * Resolves the PNG icon path for an award code.
- * @param code - Award/title code (a DANH_HIEU_MAP key)
- * @returns Icon path under public/Icon, or undefined when the code has no icon
- */
-export function getAwardIcon(code: string | null | undefined): string | undefined {
-  if (!code) return undefined;
-  return AWARD_ICONS[code];
-}

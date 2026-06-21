@@ -11,7 +11,7 @@ export interface PositionMonthsByGroup {
   [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10]: number;
 }
 
-export interface PositionHistoryEntry {
+interface PositionHistoryEntry {
   he_so_chuc_vu: number | string | null | undefined;
   so_thang: number | null | undefined;
   ngay_bat_dau?: Date | string | null;

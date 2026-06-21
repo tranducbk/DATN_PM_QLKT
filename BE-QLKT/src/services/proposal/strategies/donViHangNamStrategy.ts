@@ -151,7 +151,7 @@ class DonViHangNamStrategy implements ProposalStrategy {
         this.type
       );
       if (result.exists) {
-        const tenDonVi = item.ten_don_vi || item.don_vi_id;
+        const tenDonVi = item.ten_don_vi || 'Một đơn vị';
         duplicateUnitErrors.push(`${tenDonVi}: ${result.message}`);
       }
     }
@@ -172,7 +172,7 @@ class DonViHangNamStrategy implements ProposalStrategy {
         item.danh_hieu
       );
       if (!eligibility.eligible) {
-        const tenDonVi = item.ten_don_vi || item.don_vi_id;
+        const tenDonVi = item.ten_don_vi || 'Một đơn vị';
         unitEligibilityErrors.push(`${tenDonVi}: ${eligibility.reason}`);
       }
     }
@@ -184,13 +184,6 @@ class DonViHangNamStrategy implements ProposalStrategy {
   }
 
   /** Approve flow still owned by legacy approve.ts pipeline. */
-  async validateApprove(
-    _editedData: EditedProposalData,
-    _ctx: ProposalApproveContext
-  ): Promise<string[]> {
-    return [];
-  }
-
   async importInTransaction(
     editedData: EditedProposalData,
     ctx: ProposalApproveContext,
@@ -309,9 +302,6 @@ class DonViHangNamStrategy implements ProposalStrategy {
     }
   }
 
-  buildSuccessMessage(acc: ImportAccumulator): string {
-    return `Đã phê duyệt danh hiệu đơn vị hằng năm cho ${acc.affectedUnitIds.size} đơn vị`;
-  }
 }
 
 export const donViHangNamStrategy = new DonViHangNamStrategy();

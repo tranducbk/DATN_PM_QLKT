@@ -92,6 +92,11 @@ class ProfileController {
     const query = req.query as YearQuery;
     const { personnel_id } = params;
     const { year } = query;
+    await personnelService.assertCanViewPersonnel(
+      personnel_id,
+      req.user?.role,
+      req.user?.quan_nhan_id
+    );
     const yearNumber = year ? parseInt(year, 10) : null;
     const result = await profileService.recalculateAnnualProfile(personnel_id, yearNumber);
     return ResponseHelper.success(res, { message: result.message });
@@ -114,6 +119,11 @@ class ProfileController {
     const results = await Promise.all(
       items.map(async item => {
         if (item.type === 'DON_VI' && item.don_vi_id) {
+          await unitAnnualAwardService.assertUnitInScope(
+            item.don_vi_id,
+            req.user?.role,
+            req.user?.quan_nhan_id
+          );
           const result = await unitAnnualAwardService.checkUnitAwardEligibility(
             item.don_vi_id,
             item.nam,
@@ -127,6 +137,11 @@ class ProfileController {
             ...result,
           };
         }
+        await personnelService.assertCanViewPersonnel(
+          item.personnel_id,
+          req.user?.role,
+          req.user?.quan_nhan_id
+        );
         const result = await profileService.checkAwardEligibility(
           item.personnel_id,
           item.nam,

@@ -185,7 +185,8 @@ describe('Proposal race conditions — parallel approvals across proposals', () 
 
     for (const failure of rejected) {
       if (failure.status === 'rejected') {
-        expect(failure.reason).toBeTruthy();
+        expect(failure.reason).toBeInstanceOf(Error);
+        expect((failure.reason as Error).message.length).toBeGreaterThan(0);
       }
     }
   });

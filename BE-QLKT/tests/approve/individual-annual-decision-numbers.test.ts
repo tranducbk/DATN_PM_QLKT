@@ -44,7 +44,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (decision number requirements)', 
       id: 'prop-no-qd',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 
@@ -85,7 +85,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (decision number requirements)', 
       id: 'prop-mix-qd',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [itemOk, itemMissing],
     });
 
@@ -122,7 +122,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (decision number requirements)', 
       id: 'prop-bkbqp-no-qd',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 
@@ -153,7 +153,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (decision number requirements)', 
       id: 'prop-cstdtq-no-qd',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 
@@ -187,7 +187,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (decision number requirements)', 
       id: 'prop-bkttcp-no-qd-decision',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 
@@ -225,7 +225,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (decision number requirements)', 
       id: 'prop-swap-bk',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 
@@ -263,7 +263,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (decision number requirements)', 
       id: 'prop-swap-cs',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 

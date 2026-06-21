@@ -108,36 +108,6 @@ class NckhStrategy implements ProposalStrategy {
     return { errors: [], payload: { data_thanh_tich: dataThanhTich } };
   }
 
-  async validateApprove(
-    editedData: EditedProposalData,
-    ctx: ProposalApproveContext
-  ): Promise<string[]> {
-    const thanhTichData = (editedData.data_thanh_tich ?? []) as Array<{
-      personnel_id?: string;
-      nam?: number;
-      mo_ta?: string;
-    }>;
-    const validItems = thanhTichData.filter(i => i.personnel_id && i.nam && i.mo_ta);
-    if (validItems.length === 0) return [];
-
-    const personnelIds = [...new Set(validItems.map(i => i.personnel_id as string))];
-    const existing = await scientificAchievementRepository.findManyRaw({
-      where: { quan_nhan_id: { in: personnelIds } },
-      select: { quan_nhan_id: true, nam: true, mo_ta: true },
-    });
-    const existingKeys = new Set(existing.map(r => `${r.quan_nhan_id}_${r.nam}_${r.mo_ta}`));
-
-    const errors: string[] = [];
-    for (const item of validItems) {
-      const key = `${item.personnel_id}_${item.nam}_${item.mo_ta}`;
-      if (existingKeys.has(key)) {
-        const hoTen = ctx.personnelHoTenMap.get(item.personnel_id as string) || item.personnel_id;
-        errors.push(`${hoTen}: Thành tích "${item.mo_ta}" năm ${item.nam} đã tồn tại`);
-      }
-    }
-    return errors;
-  }
-
   async importInTransaction(
     editedData: EditedProposalData,
     _ctx: ProposalApproveContext,
@@ -213,11 +183,6 @@ class NckhStrategy implements ProposalStrategy {
     }
   }
 
-  buildSuccessMessage(acc: ImportAccumulator): string {
-    return `Đã nhập ${acc.importedThanhTich} thành tích khoa học${
-      acc.errors.length > 0 ? ` (${acc.errors.length} lỗi)` : ''
-    }`;
-  }
 }
 
 export const nckhStrategy = new NckhStrategy();

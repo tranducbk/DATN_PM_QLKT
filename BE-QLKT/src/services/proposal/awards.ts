@@ -54,8 +54,14 @@ async function getAllAwards(
   const where: Prisma.DanhHieuHangNamWhereInput = {};
   if (nam) where.nam = parseInt(String(nam), 10);
   if (danh_hieu) where.danh_hieu = danh_hieu;
+  // Scope in-query so count + pagination match (post-fetch filter breaks the total)
+  if (don_vi_id) {
+    where.QuanNhan = {
+      OR: [{ don_vi_truc_thuoc_id: don_vi_id }, { co_quan_don_vi_id: don_vi_id }],
+    };
+  }
 
-  const [awards, total] = await Promise.all([
+  const [filteredAwards, total] = await Promise.all([
     danhHieuHangNamRepository.findMany({
       where,
       include: danhHieuWithPersonnelInclude,
@@ -65,14 +71,6 @@ async function getAllAwards(
     }) as Promise<DanhHieuHangNamWithPersonnel[]>,
     danhHieuHangNamRepository.count({ where }),
   ]);
-
-  let filteredAwards = awards;
-  if (don_vi_id) {
-    filteredAwards = awards.filter(
-      a =>
-        a.QuanNhan.don_vi_truc_thuoc_id === don_vi_id || a.QuanNhan.co_quan_don_vi_id === don_vi_id
-    );
-  }
 
   const nckhPersonnelIds = filteredAwards.map(a => a.QuanNhan.id);
   const nckhYears = filteredAwards.map(a => a.nam);
@@ -131,20 +129,17 @@ async function exportAllAwardsExcel(filters: Record<string, unknown> = {}) {
   const where: Prisma.DanhHieuHangNamWhereInput = {};
   if (nam) where.nam = parseInt(String(nam), 10);
   if (danh_hieu) where.danh_hieu = danh_hieu;
+  if (don_vi_id) {
+    where.QuanNhan = {
+      OR: [{ don_vi_truc_thuoc_id: don_vi_id }, { co_quan_don_vi_id: don_vi_id }],
+    };
+  }
 
-  const awards = (await danhHieuHangNamRepository.findMany({
+  const filteredAwards = (await danhHieuHangNamRepository.findMany({
     where,
     include: danhHieuWithPersonnelInclude,
     orderBy: [{ nam: 'desc' }, { QuanNhan: { ho_ten: 'asc' } }],
   })) as DanhHieuHangNamWithPersonnel[];
-
-  let filteredAwards = awards;
-  if (don_vi_id) {
-    filteredAwards = awards.filter(
-      a =>
-        a.QuanNhan.don_vi_truc_thuoc_id === don_vi_id || a.QuanNhan.co_quan_don_vi_id === don_vi_id
-    );
-  }
 
   const workbook = new ExcelJS.Workbook();
   const sheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.PROPOSAL_AWARDS);

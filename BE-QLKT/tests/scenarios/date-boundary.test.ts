@@ -185,7 +185,7 @@ describe('Date boundary — submit time and proposal year edges', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2025,
       thang: 3,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [
         { personnel_id: target.id, ho_ten: target.ho_ten, danh_hieu: PROPOSAL_TYPES.HC_QKQT },
       ],

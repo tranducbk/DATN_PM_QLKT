@@ -90,7 +90,7 @@ describe('One-time race — HC_QKQT parallel approve', () => {
         status: PROPOSAL_STATUS.PENDING,
         nam,
         thang,
-        nguoi_de_xuat_id: ADMIN_ID_1,
+        nguoi_de_xuat_id: 'acc-submitter',
         data_nien_han: [
           {
             ...ONETIME_RACE_buildHcqkqtItem(personnel.id, personnel.ho_ten),
@@ -169,7 +169,7 @@ describe('One-time race — HC_QKQT parallel approve', () => {
       status: PROPOSAL_STATUS.PENDING,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID_1,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [
         { ...ONETIME_RACE_buildHcqkqtItem(personnel.id, personnel.ho_ten), nam_nhan: 2024, thang_nhan: 6 },
       ],
@@ -211,7 +211,7 @@ describe('One-time race — CONG_HIEN upgrade vs duplicate', () => {
       status: PROPOSAL_STATUS.PENDING,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID_1,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_cong_hien: [
         {
           personnel_id: personnel.id,
@@ -287,7 +287,7 @@ describe('One-time race — CONG_HIEN upgrade vs duplicate', () => {
       status: PROPOSAL_STATUS.PENDING,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID_1,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_cong_hien: [
         {
           personnel_id: personnel.id,

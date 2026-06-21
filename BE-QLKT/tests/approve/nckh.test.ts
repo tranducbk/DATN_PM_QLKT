@@ -32,7 +32,7 @@ describe('approveProposal — NCKH', () => {
       id: 'p-nckh-1',
       loai: PROPOSAL_TYPES.NCKH,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_thanh_tich: [buildItem(personnel.id)],
     });
@@ -62,7 +62,7 @@ describe('approveProposal — NCKH', () => {
       id: 'p-nckh-dvtt',
       loai: PROPOSAL_TYPES.NCKH,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: dvtt,
       data_thanh_tich: [buildItem(personnel.id, { loai: 'SKKH', mo_ta: 'SKKH-1' })],
     });
@@ -88,7 +88,7 @@ describe('approveProposal — NCKH', () => {
       id: 'p-nckh-dup',
       loai: PROPOSAL_TYPES.NCKH,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_thanh_tich: [buildItem(personnel.id, { mo_ta: 'Đề tài cũ' })],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -111,7 +111,7 @@ describe('approveProposal — NCKH', () => {
       id: 'p-nckh-multi',
       loai: PROPOSAL_TYPES.NCKH,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_thanh_tich: [buildItem(personnel.id, { mo_ta: 'Đề tài MỚI' })],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -148,7 +148,7 @@ describe('approveProposal — NCKH', () => {
       id: 'p-nckh-msg',
       loai: PROPOSAL_TYPES.NCKH,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_thanh_tich: [
         buildItem(personnel.id, { mo_ta: 'Đề tài hợp lệ' }),
         buildItem('qn-missing-nckh', { mo_ta: 'Đề tài lỗi' }),

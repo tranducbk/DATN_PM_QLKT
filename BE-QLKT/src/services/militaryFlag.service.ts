@@ -1,17 +1,13 @@
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
-import { donViTrucThuocRepository } from '../repositories/unit.repository';
+import { buildMedalListWhere } from '../helpers/unitHelper';
 import { militaryFlagRepository } from '../repositories/militaryFlag.repository';
 import { proposalRepository } from '../repositories/proposal.repository';
-import { accountRepository } from '../repositories/account.repository';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
-import * as notificationHelper from '../helpers/notification';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import { NotFoundError } from '../middlewares/errorHandler';
-import { writeSystemLog } from '../helpers/systemLogHelper';
-import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
-import { logMessages } from '../constants/logMessages.constants';
 import { buildTemplate, buildAwardExportBuffer } from '../helpers/excel/excelTemplateHelper';
 import { fetchTemplateData } from './excel/templateData.service';
+import { finalizeMedalAwardDeletion, getAccountUnitScope } from './medalAwardHelpers';
 import {
   AWARD_EXCEL_SHEETS,
   HCQKQT_TEMPLATE_COLUMNS,
@@ -61,42 +57,7 @@ class MilitaryFlagService {
   }
 
   async getAll(filters: MilitaryFlagFilters = {}, page: number = 1, limit: number = 50) {
-    const where: Record<string, unknown> = {};
-
-    const quanNhanFilter: Record<string, unknown> = {};
-    if (filters.ho_ten) {
-      quanNhanFilter.ho_ten = { contains: filters.ho_ten, mode: 'insensitive' };
-    }
-
-    if (filters.don_vi_id) {
-      if (filters.include_sub_units) {
-        const donViTrucThuocIds = await donViTrucThuocRepository.findIdsByCoQuanDonViId(
-          String(filters.don_vi_id)
-        );
-        const donViTrucThuocIdList = donViTrucThuocIds.map(d => d.id);
-        where.QuanNhan = {
-          ...quanNhanFilter,
-          OR: [
-            { co_quan_don_vi_id: filters.don_vi_id },
-            { don_vi_truc_thuoc_id: { in: donViTrucThuocIdList } },
-          ],
-        };
-      } else {
-        where.QuanNhan = {
-          ...quanNhanFilter,
-          OR: [
-            { co_quan_don_vi_id: filters.don_vi_id },
-            { don_vi_truc_thuoc_id: filters.don_vi_id },
-          ],
-        };
-      }
-    } else if (Object.keys(quanNhanFilter).length > 0) {
-      where.QuanNhan = quanNhanFilter;
-    }
-
-    if (filters.nam) {
-      where.nam = parseInt(String(filters.nam), 10);
-    }
+    const where = await buildMedalListWhere(filters as Record<string, unknown>);
 
     const [data, total] = await Promise.all([
       militaryFlagRepository.findManyRaw({
@@ -167,17 +128,7 @@ class MilitaryFlagService {
   }
 
   async getUserWithUnit(userId: string) {
-    return await accountRepository.findUniqueRaw({
-      where: { id: userId },
-      include: {
-        QuanNhan: {
-          select: {
-            co_quan_don_vi_id: true,
-            don_vi_truc_thuoc_id: true,
-          },
-        },
-      },
-    });
+    return getAccountUnitScope(userId);
   }
 
   async getByPersonnelId(personnelId: string) {
@@ -222,32 +173,17 @@ class MilitaryFlagService {
       throw new NotFoundError('Bản ghi khen thưởng');
     }
 
-    const personnelId = award.quan_nhan_id;
-    const personnel = award.QuanNhan;
-
-    await militaryFlagRepository.delete(id);
-
-    try {
-      await notificationHelper.notifyOnAwardDeleted(
-        award,
-        personnel,
-        PROPOSAL_TYPES.HC_QKQT,
-        adminUsername
-      );
-    } catch (error) {
-      void writeSystemLog({
-        action: AUDIT_ACTIONS.ERROR,
-        resource: AWARD_SLUGS.MILITARY_FLAG,
-        resourceId: id,
-        description: logMessages.notifyError('xóa', AWARD_LABEL, error),
-      });
-    }
-
-    return {
-      message: `Xóa khen thưởng ${AWARD_LABEL} thành công`,
-      personnelId,
+    return finalizeMedalAwardDeletion({
+      id,
       award,
-    };
+      personnel: award.QuanNhan,
+      personnelId: award.quan_nhan_id,
+      adminUsername,
+      awardLabel: AWARD_LABEL,
+      resourceSlug: AWARD_SLUGS.MILITARY_FLAG,
+      proposalType: PROPOSAL_TYPES.HC_QKQT,
+      deleteFn: () => militaryFlagRepository.delete(id),
+    });
   }
 
   /**

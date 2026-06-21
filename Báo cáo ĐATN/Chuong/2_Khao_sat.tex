@@ -20,7 +20,7 @@ Cấp ký quyết định là Giám đốc Học viện với các danh hiệu t
 Quân nhân nhận thông tin khen thưởng chủ yếu theo một chiều qua văn bản hoặc bảng tin đơn vị, chưa có kênh tra cứu chủ động.
 
 Mỗi quân nhân thường có nhiều quyết định khen thưởng từ các loại danh hiệu khác nhau: chuỗi danh hiệu hằng năm tích luỹ toàn thời gian phục vụ, Huy chương Chiến sĩ vẻ vang (HCCSVV) ở các mốc 10, 15, 20 năm, Huân chương Bảo vệ Tổ quốc (HCBVTQ), Kỷ niệm chương, Huy chương Quân kỳ quyết thắng và khen thưởng đột xuất.
-Cán bộ phục vụ trên 25 năm có thể có từ 30 đến 40 quyết định khen thưởng.
+Cán bộ phục vụ trên 25 năm có thể tích luỹ nhiều quyết định khen thưởng.
 Ở quy mô vài nghìn cán bộ, học viên và sĩ quan, tổng dữ liệu lịch sử lên tới vài trăm nghìn bản ghi.
 
 Từ kết quả khảo sát, rút ra bốn nhóm vấn đề chính:
@@ -113,7 +113,7 @@ Hệ thống hỗ trợ bảy loại đề xuất riêng biệt, mỗi loại c�
     \item \textbf{Đơn vị hằng năm}: danh hiệu Đơn vị quyết thắng (ĐVQT) và Đơn vị tiên tiến cộng các cờ BKBQP / BKTTCP cấp đơn vị.
     \item \textbf{HCCSVV}: Huy chương Chiến sĩ vẻ vang theo các mốc 10 / 15 / 20 năm phục vụ tích luỹ tới năm xét.
     \item \textbf{HCBVTQ}: Huân chương Bảo vệ Tổ quốc dựa trên thời gian giữ chức vụ thuộc các nhóm hệ số khác nhau.
-    \item \textbf{Kỷ niệm chương}: Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN, một lần duy nhất theo giới tính (nam 25 năm phục vụ, nữ 20 năm).
+    \item \textbf{Kỷ niệm chương}: hiện có Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN, trao một lần theo giới tính (nam 25 năm phục vụ, nữ 20 năm).
     \item \textbf{Quân kỳ quyết thắng}: Huy chương Quân kỳ quyết thắng cho cán bộ phục vụ đủ 25 năm.
     \item \textbf{Thành tích khoa học}: Khen thưởng đề tài khoa học hoặc sáng kiến kinh nghiệm.
 \end{enumerate}
@@ -663,7 +663,7 @@ Các tiêu chí định lượng đặt ra như sau.
 
 Thời gian phản hồi của các trang chính như trang chủ, danh sách quân nhân và danh sách đề xuất phải dưới hai giây trên kết nối LAN bình thường.
 Tính lại hồ sơ khen thưởng hằng năm cho một quân nhân phải dưới một giây.
-Tính lại tổng thể cho 3.000 quân nhân được phép kéo dài đến vài phút; tiến độ bắt đầu và hoàn tất được ghi vào nhật ký hệ thống.
+Tính lại tổng thể cho toàn bộ quân nhân được phép kéo dài đến vài phút; tiến độ bắt đầu và hoàn tất được ghi vào nhật ký hệ thống.
 
 Các bảng dữ liệu lớn như toàn bộ quân nhân hay danh sách khen thưởng theo năm được phân trang phía máy chủ, mặc định 20 dòng/trang và tối đa 100 dòng/trang.
 Thông báo mới được đẩy theo thời gian thực qua Socket.IO và chèn ngay vào đầu danh sách để người dùng thấy mà không cần tải lại trang; khi cán bộ tích chọn quân nhân vào đề xuất, danh sách được cập nhật ngay trên trình duyệt mà không chờ máy chủ phản hồi.
@@ -682,15 +682,15 @@ Hệ thống áp dụng bảy nhóm biện pháp, trải từ xác thực ngư�
 Chi tiết cài đặt được trình bày tại Chương~\ref{chapter:Methodology}.
 
 \paragraph{Băm mật khẩu bằng bcrypt với hệ số chi phí 10.} Mật khẩu không lưu ở dạng văn bản thô.
-Hệ số 10 cân bằng giữa thời gian xác thực (khoảng 80\,ms trên máy chủ phát triển) và độ khó tấn công vét cạn nếu cơ sở dữ liệu bị rò rỉ \cite{bcrypt}.
+Hệ số 10 cân bằng giữa thời gian xác thực và độ khó tấn công vét cạn nếu cơ sở dữ liệu bị rò rỉ \cite{bcrypt}.
 
 \paragraph{Phân quyền bốn cấp.} Mỗi route nhạy cảm đều phải qua một bước kiểm tra vai trò: chỉ những vai trò nằm trong danh sách cho phép mới được đi tiếp.
 Ngoài ra, với Chỉ huy đơn vị, hệ thống còn tự động thu hẹp phạm vi truy vấn về đúng cây đơn vị họ phụ trách, thay vì phải kiểm tra thủ công ở từng route.
 
-\paragraph{Xác thực dữ liệu hai phía bằng Zod.} Hệ thống yêu cầu mọi dữ liệu người dùng nhập phải được xác thực ở cả frontend lẫn backend bằng Zod \cite{zoddocs}; nhờ đó, ngay cả khi một yêu cầu gửi thẳng tới API mà không qua giao diện, dữ liệu không hợp lệ vẫn bị từ chối.
+\paragraph{Xác thực dữ liệu hai phía bằng Zod.} Hệ thống yêu cầu mọi dữ liệu người dùng nhập phải được xác thực ở cả frontend lẫn backend bằng Zod; nhờ đó, ngay cả khi một yêu cầu gửi thẳng tới API mà không qua giao diện, dữ liệu không hợp lệ vẫn bị từ chối.
 Chi tiết cài đặt được trình bày tại Chương~\ref{chapter:Methodology}.
 
-\paragraph{Bảo vệ tầng vận chuyển và tầng ứng dụng.} Khi triển khai sản xuất, khuyến nghị bảo vệ toàn bộ kết nối bằng HTTPS (TLS 1.2 trở lên).
+\paragraph{Bảo vệ tầng vận chuyển và tầng ứng dụng.} Khi triển khai sản xuất, khuyến nghị bảo vệ toàn bộ kết nối bằng HTTPS.
 Header bảo mật do middleware Helmet áp đặt (Content-Security-Policy, X-Frame-Options, X-Content-Type-Options).
 CORS được cấu hình chỉ chấp nhận tên miền frontend chính.
 Cơ chế giới hạn tốc độ chia hai cấp.
@@ -721,7 +721,7 @@ Việc ghi nhật ký và tính lại hồ sơ điều kiện được thực hi
 
 \textbf{Kiểm tra điều kiện chuỗi nhất quán ở hai luồng.} Cùng một bộ quy tắc xét điều kiện chuỗi được dùng cho cả luồng tính lại hồ sơ điều kiện lẫn luồng kiểm tra khi phê duyệt.
 Hai luồng buộc phải cho cùng kết quả, bởi nếu lệch nhau, một phía có thể chấp nhận đề xuất trong khi phía kia lại báo không đủ điều kiện, làm giảm tính nhất quán của dữ liệu và độ tin cậy của hệ thống.
-Để tránh điều đó, cả hai luồng cùng được kiểm chứng trên một bộ kịch bản kiểm thử tự động chung.
+Để tránh điều đó, cả hai luồng cùng được kiểm chứng trên một bộ kịch bản chung.
 
 \textbf{Tính lại hồ sơ điều kiện sau mỗi thay đổi nguồn.} Các bảng \texttt{HoSoHangNam}, \texttt{HoSoNienHan}, \texttt{HoSoCongHien} lưu kết quả tính toán (cờ đủ điều kiện, nội dung gợi ý).
 Mọi thao tác tạo, sửa hoặc xoá bản ghi nguồn đều kích hoạt hàm tính lại tương ứng ngay sau khi ghi dữ liệu nguồn, đảm bảo dữ liệu suy diễn luôn được cập nhật theo dữ liệu nguồn.

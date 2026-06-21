@@ -17,25 +17,6 @@ export function calculateServiceMonths(
 }
 
 /**
- * Calculates covered months by month difference (without inclusive +1).
- * @param startDate - Interval start
- * @param endDate - Interval end
- * @returns Number of covered calendar months
- */
-function calculateCoveredMonthsByMonth(
-  startDate: Date,
-  endDate: Date
-): number {
-  const start = new Date(startDate);
-  const end = new Date(endDate);
-  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return 0;
-
-  const months =
-    (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-  return Math.max(0, months);
-}
-
-/**
  * Calculates complete months between two dates with day precision.
  * Subtracts one month when end day is earlier than start day.
  * @param startDate - Tenure start date (e.g. position start)
@@ -48,6 +29,7 @@ export function calculateTenureMonthsWithDayPrecision(
 ): number {
   const start = new Date(startDate);
   const end = endDate ? new Date(endDate) : new Date();
+  if (isNaN(start.getTime()) || isNaN(end.getTime()) || end < start) return 0;
 
   let months = (end.getFullYear() - start.getFullYear()) * 12;
   months += end.getMonth() - start.getMonth();
@@ -85,7 +67,7 @@ export function recalcPositionMonths<T extends PositionHistory>(
     const effectiveEnd = end > cutoffDate ? cutoffDate : end;
     return {
       ...item,
-      so_thang: calculateCoveredMonthsByMonth(start, effectiveEnd),
+      so_thang: calculateTenureMonthsWithDayPrecision(start, effectiveEnd),
     };
   });
 }

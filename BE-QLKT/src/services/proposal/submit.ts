@@ -11,6 +11,8 @@ import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import type { Prisma } from '../../generated/prisma';
 import { getProposalStrategy } from './strategies';
 import { persistProposalAttachments } from './attachedFiles';
+import { ROLES } from '../../constants/roles.constants';
+import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 
 /**
  * Creates a reward proposal with optional attachments.
@@ -40,6 +42,48 @@ export interface SubmitAttachedFile {
   originalname: string;
   buffer: Buffer;
   size: number;
+}
+
+// MANAGER may only propose for personnel inside their own unit subtree; ADMIN is unscoped.
+// Uses each personnel's CURRENT unit, so a transfer out of scope before submit is rejected.
+// Deleted personnel are absent from the lookup and fall through to the strategy's not-found path.
+async function assertPersonnelInScope(
+  role: string,
+  cqdvId: string | null,
+  dvttId: string | null,
+  titleData: SubmitTitleDataItem[]
+): Promise<void> {
+  if (role !== ROLES.MANAGER) return;
+  const personnelIds = [...new Set(titleData.map(t => t.personnel_id).filter(Boolean))];
+  if (personnelIds.length === 0) return;
+
+  const existing = await quanNhanRepository.findManyRaw({
+    where: { id: { in: personnelIds } },
+    select: {
+      id: true,
+      co_quan_don_vi_id: true,
+      don_vi_truc_thuoc_id: true,
+      DonViTrucThuoc: { select: { co_quan_don_vi_id: true } },
+    },
+  });
+  if (existing.length === 0) return;
+
+  // CQDV manager: personnel directly under the CQDV, or under any DVTT whose parent is that CQDV.
+  // DVTT manager: personnel directly under that DVTT.
+  const inScope = (p: {
+    co_quan_don_vi_id: string | null;
+    don_vi_truc_thuoc_id: string | null;
+    DonViTrucThuoc?: { co_quan_don_vi_id: string | null } | null;
+  }) =>
+    cqdvId
+      ? p.co_quan_don_vi_id === cqdvId || p.DonViTrucThuoc?.co_quan_don_vi_id === cqdvId
+      : p.don_vi_truc_thuoc_id === dvttId;
+
+  if (existing.some(p => !inScope(p))) {
+    throw new ValidationError(
+      'Không thể đề xuất khen thưởng cho quân nhân ngoài đơn vị quản lý của bạn.'
+    );
+  }
 }
 
 async function submitProposal(
@@ -89,6 +133,13 @@ async function submitProposal(
   if (monthRequired && (parsedMonth == null || parsedMonth < 1 || parsedMonth > 12)) {
     throw new ValidationError('Thiếu tháng đề xuất. Loại đề xuất này bắt buộc nhập tháng (1-12).');
   }
+
+  await assertPersonnelInScope(
+    user.role,
+    user.QuanNhan.co_quan_don_vi_id,
+    user.QuanNhan.don_vi_truc_thuoc_id,
+    titleData
+  );
 
   const filesInfo = await persistProposalAttachments(attachedFiles);
 

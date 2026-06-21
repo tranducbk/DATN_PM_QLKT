@@ -4,7 +4,6 @@ import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories/unit.repository';
 import { accountRepository } from '../repositories/account.repository';
 import { proposalRepository } from '../repositories/proposal.repository';
-import { positionRepository } from '../repositories/position.repository';
 import { positionHistoryRepository } from '../repositories/positionHistory.repository';
 import { DEFAULT_PASSWORD } from '../configs';
 import { ROLES, canManageRole } from '../constants/roles.constants';
@@ -19,6 +18,10 @@ import type { Prisma } from '../generated/prisma';
 import profileService from './profile.service';
 import { adjustUnitCount } from './personnel/unitCount';
 import { rotatePositionHistory } from './personnel/positionHistory';
+import {
+  resolvePersonnelDataForCreate,
+  resolveUnitReassignment,
+} from './account/unitAssignment';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { logMessages } from '../constants/logMessages.constants';
@@ -125,7 +128,7 @@ class AccountService {
     };
   }
 
-  async getAccountById(id: string): Promise<Record<string, unknown>> {
+  async getAccountById(id: string, callerRole?: string): Promise<Record<string, unknown>> {
     const account = await accountRepository.findUniqueRaw({
       where: { id },
       include: ACCOUNT_QUAN_NHAN_INCLUDE,
@@ -133,6 +136,11 @@ class AccountService {
 
     if (!account) {
       throw new NotFoundError('Tài khoản');
+    }
+
+    // Non-SUPER_ADMIN callers must not read a SUPER_ADMIN account (mirrors the list exclusion).
+    if (callerRole && callerRole !== ROLES.SUPER_ADMIN && account.role === ROLES.SUPER_ADMIN) {
+      throw new ForbiddenError('Không có quyền xem tài khoản này');
     }
 
     return {
@@ -232,75 +240,17 @@ class AccountService {
       }
     }
 
-    if ((role === ROLES.MANAGER || role === ROLES.USER) && !personnel_id) {
-      if (role === ROLES.MANAGER) {
-        if (!co_quan_don_vi_id) {
-          throw new ValidationError(
-            'Tài khoản MANAGER phải có thông tin Cơ quan đơn vị. Vui lòng chọn Cơ quan đơn vị.'
-          );
-        }
-        if (don_vi_truc_thuoc_id) {
-          throw new ValidationError(
-            'Tài khoản MANAGER chỉ được chọn Cơ quan đơn vị, không được chọn Đơn vị trực thuộc.'
-          );
-        }
-      } else if (role === ROLES.USER) {
-        if (!co_quan_don_vi_id || !don_vi_truc_thuoc_id) {
-          throw new ValidationError(
-            'Tài khoản USER phải có đầy đủ thông tin Cơ quan đơn vị và Đơn vị trực thuộc. Vui lòng chọn cả hai.'
-          );
-        }
-      }
-
-      if (!chuc_vu_id) {
-        throw new ValidationError('Vui lòng chọn chức vụ');
-      }
-
-      const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-        co_quan_don_vi_id ? coQuanDonViRepository.findIdById(co_quan_don_vi_id) : null,
-        don_vi_truc_thuoc_id
-          ? donViTrucThuocRepository.findIdAndParentById(don_vi_truc_thuoc_id)
-          : null,
-      ]);
-
-      if (co_quan_don_vi_id && !coQuanDonVi) {
-        throw new NotFoundError('Cơ quan đơn vị');
-      }
-      if (don_vi_truc_thuoc_id) {
-        if (!donViTrucThuoc) {
-          throw new NotFoundError('Đơn vị trực thuộc');
-        }
-        if (co_quan_don_vi_id && donViTrucThuoc.co_quan_don_vi_id !== co_quan_don_vi_id) {
-          throw new ValidationError('Đơn vị trực thuộc không thuộc cơ quan đơn vị đã chọn');
-        }
-      }
-
-      const chucVu = await positionRepository.findUniqueRaw({
-        where: { id: chuc_vu_id },
-        select: { he_so_chuc_vu: true, is_manager: true },
-      });
-      if (!chucVu) {
-        throw new NotFoundError('Chức vụ');
-      }
-
-      if (role === ROLES.MANAGER && !chucVu.is_manager) {
-        throw new ValidationError(
-          'Tài khoản MANAGER phải có chức vụ là Chỉ huy. Vui lòng chọn chức vụ có quyền chỉ huy.'
-        );
-      }
-
-      personnelDataForCreate = {
-        cccd: null,
-        ho_ten: username,
-        ChucVu: { connect: { id: chuc_vu_id } },
-        ngay_sinh: null,
-        ngay_nhap_ngu: null,
-        ...(co_quan_don_vi_id ? { CoQuanDonVi: { connect: { id: co_quan_don_vi_id } } } : {}),
-        ...(don_vi_truc_thuoc_id
-          ? { DonViTrucThuoc: { connect: { id: don_vi_truc_thuoc_id } } }
-          : {}),
-      } as Prisma.QuanNhanCreateInput;
-      heSoChucVu = Number(chucVu?.he_so_chuc_vu) || 0;
+    const unitData = await resolvePersonnelDataForCreate({
+      role,
+      username,
+      personnel_id,
+      co_quan_don_vi_id,
+      don_vi_truc_thuoc_id,
+      chuc_vu_id,
+    });
+    if (unitData) {
+      personnelDataForCreate = unitData.personnelDataForCreate;
+      heSoChucVu = unitData.heSoChucVu;
     }
 
     const finalPassword = password || DEFAULT_PASSWORD;
@@ -430,64 +380,12 @@ class AccountService {
     } | null = null;
 
     if (reassignUnit) {
-      if (effectiveRole === ROLES.MANAGER) {
-        if (!co_quan_don_vi_id) {
-          throw new ValidationError(
-            'Tài khoản chỉ huy phải có Cơ quan đơn vị. Vui lòng chọn Cơ quan đơn vị.'
-          );
-        }
-        if (don_vi_truc_thuoc_id) {
-          throw new ValidationError(
-            'Tài khoản chỉ huy chỉ được chọn Cơ quan đơn vị, không được chọn Đơn vị trực thuộc.'
-          );
-        }
-      } else if (!co_quan_don_vi_id || !don_vi_truc_thuoc_id) {
-        throw new ValidationError(
-          'Tài khoản người dùng phải có đầy đủ Cơ quan đơn vị và Đơn vị trực thuộc. Vui lòng chọn cả hai.'
-        );
-      }
-
-      if (!chuc_vu_id) {
-        throw new ValidationError('Vui lòng chọn chức vụ');
-      }
-
-      const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-        coQuanDonViRepository.findIdById(co_quan_don_vi_id),
-        don_vi_truc_thuoc_id
-          ? donViTrucThuocRepository.findIdAndParentById(don_vi_truc_thuoc_id)
-          : null,
-      ]);
-
-      if (!coQuanDonVi) {
-        throw new NotFoundError('Cơ quan đơn vị');
-      }
-      if (don_vi_truc_thuoc_id) {
-        if (!donViTrucThuoc) {
-          throw new NotFoundError('Đơn vị trực thuộc');
-        }
-        if (donViTrucThuoc.co_quan_don_vi_id !== co_quan_don_vi_id) {
-          throw new ValidationError('Đơn vị trực thuộc không thuộc cơ quan đơn vị đã chọn');
-        }
-      }
-
-      const chucVu = await positionRepository.findUniqueRaw({
-        where: { id: chuc_vu_id },
-        select: { is_manager: true },
-      });
-      if (!chucVu) {
-        throw new NotFoundError('Chức vụ');
-      }
-      if (effectiveRole === ROLES.MANAGER && !chucVu.is_manager) {
-        throw new ValidationError(
-          'Tài khoản chỉ huy phải có chức vụ là Chỉ huy. Vui lòng chọn chức vụ có quyền chỉ huy.'
-        );
-      }
-
-      resolvedUnit = {
-        chuc_vu_id,
+      resolvedUnit = await resolveUnitReassignment({
+        effectiveRole,
         co_quan_don_vi_id,
-        don_vi_truc_thuoc_id: effectiveRole === ROLES.MANAGER ? null : don_vi_truc_thuoc_id,
-      };
+        don_vi_truc_thuoc_id,
+        chuc_vu_id,
+      });
     }
 
     const updateData: Prisma.TaiKhoanUncheckedUpdateInput = {};

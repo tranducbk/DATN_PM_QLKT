@@ -8,7 +8,7 @@ import { RESOURCE_SLUGS } from '../../constants/resourceSlugs.constants';
 import { isFeatureEnabled } from '../../helpers/settingsHelper';
 
 /** Roles visible at each level (SYSTEM events visible to ADMIN and above) */
-export const VISIBLE_ROLES: Record<string, string[]> = {
+const VISIBLE_ROLES: Record<string, string[]> = {
   [ROLES.MANAGER]: [ROLES.USER, ROLES.MANAGER],
   [ROLES.ADMIN]: [ROLES.USER, ROLES.MANAGER, ROLES.ADMIN, SYSTEM_ACTOR],
   [ROLES.SUPER_ADMIN]: [ROLES.USER, ROLES.MANAGER, ROLES.ADMIN, ROLES.SUPER_ADMIN, SYSTEM_ACTOR],
@@ -51,7 +51,7 @@ async function getManagerAccountIds(quanNhanId: string): Promise<string[]> {
   ).map(a => a.id);
 }
 
-export interface LogVisibilityScope {
+interface LogVisibilityScope {
   where: Prisma.SystemLogWhereInput;
   visibleRoles: string[];
   canViewErrors: boolean;

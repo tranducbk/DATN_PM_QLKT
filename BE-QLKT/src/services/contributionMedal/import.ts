@@ -31,6 +31,7 @@ import { IMPORT_TRANSACTION_TIMEOUT } from '../../constants/excel.constants';
 import { validateHCBVTQHighestRank } from '../../helpers/awardValidation/contributionMedalHighestRank';
 import { evaluateHCBVTQRank } from '../eligibility/hcbvtqEligibility';
 import { aggregatePositionMonthsByGroup } from '../eligibility/contributionMonthsAggregator';
+import { buildCutoffDate } from '../../helpers/serviceYearsHelper';
 import type { ContributionAwardValidItem } from './types';
 
 /**
@@ -314,7 +315,10 @@ export async function previewImport(buffer: Buffer) {
     }
 
     const positionHistories = positionHistoriesMap.get(personnelId) ?? [];
-    const monthsByGroup = aggregatePositionMonthsByGroup(positionHistories, new Date());
+    const monthsByGroup = aggregatePositionMonthsByGroup(
+      positionHistories,
+      buildCutoffDate(nam, thang)
+    );
     const months0_7 = monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07];
     const months0_8 = monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08];
     const months0_9_1_0 = monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10];
@@ -449,7 +453,7 @@ export async function confirmImport(validItems: ContributionAwardValidItem[]) {
   const downgradeErrors: string[] = [];
   for (const item of validItems) {
     const histories = positionsMap.get(item.personnel_id) ?? [];
-    const months = aggregatePositionMonthsByGroup(histories, new Date());
+    const months = aggregatePositionMonthsByGroup(histories, buildCutoffDate(item.nam, item.thang));
     const isFemale = genderMap.get(item.personnel_id) === GENDER.FEMALE;
     const requiredMonths = isFemale
       ? CONTRIBUTION_FEMALE_REQUIRED_MONTHS

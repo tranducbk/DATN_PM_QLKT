@@ -76,13 +76,6 @@ class KncStrategy implements ProposalStrategy {
   }
 
   /** See HcQkqtStrategy — approve flow lives in approve.ts pipeline. */
-  async validateApprove(
-    _editedData: EditedProposalData,
-    _ctx: ProposalApproveContext
-  ): Promise<string[]> {
-    return [];
-  }
-
   async importInTransaction(
     editedData: EditedProposalData,
     ctx: ProposalApproveContext,
@@ -117,9 +110,6 @@ class KncStrategy implements ProposalStrategy {
     });
   }
 
-  buildSuccessMessage(acc: ImportAccumulator): string {
-    return `Đã phê duyệt ${KNC_LABEL} cho ${acc.affectedPersonnelIds.size} quân nhân`;
-  }
 }
 
 export const kncStrategy = new KncStrategy();

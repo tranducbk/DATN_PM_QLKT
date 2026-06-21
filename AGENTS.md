@@ -80,7 +80,7 @@ PM QLKT/
 ## Key Patterns
 
 ### Backend
-- **Layered**: Route → Middleware → Controller → Service → Prisma
+- **Layered**: Route → Middleware → Controller → Service → Repository → Prisma
 - **Middleware chain**: `verifyToken → requireAdmin (or other checkRole guard) → validate(schema) → auditLog(options) → controller.method`
 - **Async errors**: Wrap controllers with `catchAsync()` helper
 - **Responses**: Always use `ResponseHelper.success()`, `.created()`, `.paginated()`, `.badRequest()`, `.notFound()`, etc.

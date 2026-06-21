@@ -8,7 +8,7 @@ Bảng tổng hợp thư viện và công cụ sử dụng được trình bày 
 \label{section:3.1}
 
 PM QLKT cần một khung giao diện vừa khai thác được hệ sinh thái React, vừa cung cấp sẵn cơ chế định tuyến và tổ chức trang theo vai trò người dùng, nên Next.js phiên bản 14.2 chạy trên React 18 được chọn làm nền giao diện.
-Phiên bản 14 ra mắt tháng 11 năm 2023 đưa App Router lên thành mô hình định tuyến mặc định thay cho Pages Router của các phiên bản trước \cite{nextjsdocs}.
+Phiên bản 14 ra mắt tháng 11 năm 2023 đưa App Router lên thành mô hình định tuyến mặc định thay cho Pages Router của các phiên bản trước.
 App Router tổ chức ứng dụng dưới dạng cây thư mục: mỗi thư mục con ánh xạ thành một đoạn URL và có thể chứa các tệp trang, bố cục, trạng thái tải và trạng thái lỗi tương ứng.
 
 Khác biệt kỹ thuật chính của App Router so với Pages Router là khả năng kết hợp Server Components (thành phần React render phía máy chủ) với Client Components trong cùng một cây thư mục, kèm cơ chế tách mã theo từng route.
@@ -23,12 +23,12 @@ Trang Bảng điều khiển của mỗi vai trò chỉ nạp đúng phần dữ
 Đồ án đã cân nhắc hai phương án thay thế.
 Remix có mô hình data loader đơn giản hơn nhưng cộng đồng và hệ sinh thái plugin nhỏ hơn rõ rệt, đồng thời thiếu công cụ tách bundle theo route trưởng thành như Next.js.
 SvelteKit có hiệu năng runtime tốt nhưng buộc đội ngũ học thêm framework view mới ngoài React, trong khi Ant Design, thư viện UI chủ lực của hệ thống, mặc định phục vụ React.
-Vì vậy Next.js được chọn để tận dụng hệ sinh thái React sẵn có và mô hình Server Components mà không phải đánh đổi thư viện UI.
+Vì vậy Next.js được chọn để tận dụng hệ sinh thái React sẵn có và cơ chế định tuyến, tách mã theo route mà không phải đánh đổi thư viện UI.
 
 \section{TypeScript và Express, nền tảng phía máy chủ}
 \label{section:3.2}
 
-Backend của PM QLKT cần một khung HTTP gọn, không áp đặt cấu trúc thư mục cứng nhắc, để tự do bố trí kiến trúc bốn tầng và chèn các bước xác thực, kiểm tra dữ liệu, ghi nhật ký theo đúng nhu cầu nghiệp vụ; Express 4.18 trên nền Node.js 20 LTS đáp ứng tốt yêu cầu đó \cite{expressdocs}.
+Backend của PM QLKT cần một khung HTTP gọn, không áp đặt cấu trúc thư mục cứng nhắc, để tự do bố trí kiến trúc bốn tầng và chèn các bước xác thực, kiểm tra dữ liệu, ghi nhật ký theo đúng nhu cầu nghiệp vụ; Express 4.18 trên nền Node.js 20 LTS đáp ứng tốt yêu cầu đó.
 Tư tưởng chủ đạo là chuỗi middleware: mỗi yêu cầu đi qua một dãy hàm trung gian, mỗi hàm hoặc thay đổi đối tượng yêu cầu hoặc kết thúc luồng xử lý.
 Mô hình này phù hợp với nhu cầu xác thực, ghi nhật ký và kiểm tra dữ liệu của PM QLKT.
 
@@ -53,48 +53,28 @@ Express được chọn vì ba lý do bám sát nhu cầu dự án: chuỗi midd
 \section{PostgreSQL và Prisma ORM}
 \label{section:3.3}
 
-Dữ liệu khen thưởng vừa có cấu trúc quan hệ chặt chẽ, vừa cần lưu phần chi tiết biến thiên theo từng loại đề xuất, nên hệ quản trị cơ sở dữ liệu phải mạnh cả về ràng buộc quan hệ lẫn kiểu dữ liệu bán cấu trúc; PostgreSQL 15 đáp ứng đồng thời hai yêu cầu này \cite{pgdocs}.
+Dữ liệu khen thưởng vừa có cấu trúc quan hệ chặt chẽ, vừa cần lưu phần chi tiết biến thiên theo từng loại đề xuất, nên hệ quản trị cơ sở dữ liệu phải mạnh cả về ràng buộc quan hệ lẫn kiểu dữ liệu bán cấu trúc; PostgreSQL 15 đáp ứng đồng thời hai yêu cầu này.
 Hệ này được chọn nhờ độ ổn định cao, tuân thủ chuẩn SQL chặt chẽ và hỗ trợ tốt các kiểu dữ liệu nâng cao mà PM QLKT sử dụng.
 Nổi bật là kiểu JSON/JSONB dùng lưu dữ liệu chi tiết của từng loại đề xuất, cùng kiểu \texttt{timestamp} cho các mốc \texttt{createdAt} và \texttt{updatedAt}.
 
-Để tận dụng tối đa kiểu tĩnh của TypeScript ở tầng truy cập dữ liệu, đồ án chọn Prisma 6.17 làm ORM; thay vì sinh mã kiểu Active Record, Prisma sinh ra một Client an toàn về kiểu từ một tệp khai báo schema duy nhất \cite{prismadocs}.
+Để tận dụng tối đa kiểu tĩnh của TypeScript ở tầng truy cập dữ liệu, đồ án chọn Prisma 6.17 làm ORM; thay vì sinh mã kiểu Active Record, Prisma sinh ra một Client an toàn về kiểu từ một tệp khai báo schema duy nhất.
 Mỗi thay đổi schema được áp dụng qua công cụ migration của Prisma, sinh ra các tệp SQL được quản lý phiên bản để theo vết lịch sử thay đổi.
 Mọi truy vấn đều trả về kiểu suy luận trực tiếp từ schema, có gợi ý đầy đủ tại trình soạn thảo.
 
 Schema của PM QLKT gồm 23 model.
-Quy ước đặt tên giữ nguyên tên thực thể tiếng Việt ở cả tầng mã lẫn tầng cơ sở dữ liệu: tên bảng vật lý và tên model dùng \texttt{PascalCase} tiếng Việt (\texttt{QuanNhan}, \texttt{DanhHieuHangNam}, \texttt{HoSoCongHien}, \texttt{BangDeXuat}); tên cột và field dùng \texttt{snake\_case} tiếng Việt (\texttt{ho\_ten}, \texttt{ngay\_sinh}, \texttt{so\_quyet\_dinh}, \texttt{quan\_nhan\_id}).
+Quy ước đặt tên giữ nguyên tên thực thể tiếng Việt ở cả tầng mã lẫn tầng cơ sở dữ liệu: tên bảng vật lý và tên model dùng \texttt{PascalCase} tiếng Việt (ví dụ \texttt{QuanNhan}, \texttt{DanhHieuHangNam}); tên cột và field dùng \texttt{snake\_case} tiếng Việt (ví dụ \texttt{ho\_ten}, \texttt{ngay\_sinh}).
 Khi đọc một lệnh truy vấn tới bảng \texttt{quanNhan}, lập trình viên xác định ngay bảng được truy vấn mà không phải tra cứu mapping.
-Cột giữ \texttt{snake\_case} đồng nhất với truyền thống đặt tên dữ liệu hành chính tiếng Việt và tương thích với các báo cáo SQL viết tay.
-Bảng \ref{tab:so-sanh-orm} so sánh ngắn gọn ba ORM phổ biến để làm rõ lý do chọn Prisma.
-
-\begin{table}[H]
-\centering
-\caption{So sánh ba ORM phổ biến trên Node.js}
-\label{tab:so-sanh-orm}
-\begin{tabular}{|R{3.5cm}|R{2.7cm}|R{2.7cm}|R{3.7cm}|}
-\hline
-\textbf{Tiêu chí} & \textbf{Sequelize} & \textbf{TypeORM} & \textbf{Prisma} \\ \hline
-Năm ra mắt & 2010 & 2016 & 2019 \\ \hline
-Kiểu định nghĩa schema & JavaScript / mô hình lớp & Decorator + lớp & DSL trong một tệp schema riêng \\ \hline
-Hỗ trợ TypeScript & Có nhưng cần khai báo bổ sung & Tốt & Sinh kiểu hoàn toàn tự động \\ \hline
-Migration & Có (kém trực quan) & Có & Sinh tự động và có thể đảo ngược \\ \hline
-Hiệu suất truy vấn & Trung bình & Trung bình & Tối ưu nhờ engine Rust \\ \hline
-Cộng đồng & Lớn nhưng đang chậm phát triển & Trung bình & Đang tăng nhanh \\ \hline
-Phù hợp cho dự án có nhiều quan hệ & Cần cấu hình thủ công & Cần decorator nhiều & Khai báo gọn, sinh truy vấn join hiệu quả \\ \hline
-\end{tabular}
-\end{table}
-
-Với 23 model và nhiều quan hệ phức tạp, chẳng hạn \texttt{DanhHieuHangNam} liên kết tới \texttt{QuanNhan} và các quyết định khen thưởng tương ứng, khả năng tự sinh truy vấn quan hệ của Prisma giảm rõ rệt khối lượng mã ở tầng Repository so với SQL viết tay.
-Đây là lý do trọng yếu để PM QLKT chọn Prisma.
+Cột giữ \texttt{snake\_case} đồng nhất với truyền thống đặt tên dữ liệu hành chính tiếng Việt và thuận tiện khi tra cứu trực tiếp trên cơ sở dữ liệu.
+Đồ án cũng cân nhắc hai ORM phổ biến khác trên Node.js. Sequelize ra đời sớm và có cộng đồng lớn nhưng hỗ trợ TypeScript chưa tự nhiên, thường phải khai báo kiểu bổ sung. TypeORM dựa nhiều vào decorator trên các lớp thực thể, làm tăng khối lượng khai báo khi mô hình có nhiều quan hệ. Prisma được chọn vì sinh kiểu hoàn toàn tự động từ một tệp schema duy nhất và sinh sẵn truy vấn quan hệ; nhờ đó, với 23 model nhiều quan hệ của PM QLKT, khối lượng mã ở tầng Repository giảm rõ rệt so với truy vấn SQL viết tay. Công cụ migration tích hợp của Prisma cũng giúp theo vết thay đổi schema thuận tiện.
 
 \section{Ant Design và Tailwind CSS, bộ giao diện}
 \label{section:3.4}
 
 Giao diện nghiệp vụ của PM QLKT cần nhiều thành phần bảng và biểu mẫu phức tạp, nên frontend kết hợp hai thư viện giao diện ở hai vai trò khác nhau.
-Ant Design 5.27 cung cấp sẵn nhiều thành phần React đã hoàn thiện như \texttt{Table} có lọc và phân trang, \texttt{Form} tích hợp xác thực, \texttt{Cascader} chọn nhiều cấp, \texttt{DatePicker}, \texttt{Modal} lồng nhau và \texttt{Notification} \cite{antdesigndocs}.
+Ant Design 5.27 cung cấp sẵn nhiều thành phần React đã hoàn thiện như bảng dữ liệu có lọc và phân trang, biểu mẫu tích hợp xác thực, bộ chọn nhiều cấp và các hộp thoại.
 Đây là thư viện chủ lực của hệ thống: các biểu mẫu đề xuất nhiều bước, bảng danh sách quân nhân có cột động và các hộp thoại xác nhận phê duyệt đều dùng Ant Design.
 
-Tailwind CSS 3 là khung CSS utility-first \cite{tailwinddocs} cho phép áp các lớp đơn lẻ trực tiếp trong JSX để mô tả bố cục, khoảng cách, màu sắc và đáp ứng nhiều kích cỡ màn hình.
+Tailwind CSS 3 là khung CSS utility-first cho phép áp các lớp đơn lẻ trực tiếp trong JSX để mô tả bố cục, khoảng cách, màu sắc và đáp ứng nhiều kích cỡ màn hình.
 Tailwind không thay thế Ant Design mà bổ sung tại những điểm cần tinh chỉnh bố cục ngoài phạm vi của các thành phần dựng sẵn, ví dụ căn lề giữa các thẻ thống kê trên Bảng điều khiển, hay xếp lưới hai cột trên màn hình lớn và một cột trên thiết bị di động.
 
 Để quản lý các lớp Tailwind theo điều kiện, hệ thống dùng một tiện ích gộp lớp kết hợp \texttt{clsx} và \texttt{tailwind-merge}, giúp gộp và loại bỏ lớp CSS trùng lặp khi dựng thành phần.
@@ -103,7 +83,7 @@ Quy ước nội bộ là Ant Design cho biểu mẫu và bảng nghiệp vụ, 
 \section{Socket.IO, kênh thông báo thời gian thực}
 \label{section:3.5}
 
-Nhu cầu cập nhật tiến độ nhập liệu và đẩy thông báo phê duyệt theo thời gian thực dẫn đến việc dùng Socket.IO 4.8, vốn đóng gói giao thức WebSocket và tự động chuyển sang HTTP long polling khi mạng giữa máy khách và máy chủ không cho phép kết nối WebSocket trực tiếp \cite{socketiodocs}.
+Nhu cầu cập nhật tiến độ nhập liệu và đẩy thông báo phê duyệt theo thời gian thực dẫn đến việc dùng Socket.IO 4.8, vốn đóng gói giao thức WebSocket và tự động chuyển sang HTTP long polling khi mạng giữa máy khách và máy chủ không cho phép kết nối WebSocket trực tiếp.
 Thư viện cung cấp khái niệm ``phòng'' (room) cho phép phát thông điệp tới một nhóm kết nối được gán nhãn, phù hợp với mô hình thông báo theo người dùng hoặc theo đơn vị.
 
 PM QLKT dùng Socket.IO cho hai trường hợp.
@@ -125,12 +105,12 @@ Khi Refresh Token bị đánh cắp, chỉ bên làm mới đầu tiên (trong k
 Đồng thời Quản trị viên có thể buộc đăng xuất bằng cách xoá cột \texttt{refreshToken}.
 Hai khoá bí mật riêng biệt cho hai loại token theo nguyên tắc phòng thủ nhiều lớp: nếu một khoá bị lộ, chỉ một loại token bị ảnh hưởng.
 Mật khẩu trước khi lưu vào \texttt{TaiKhoan} được băm bằng bcrypt 5 với hệ số chi phí 10 \cite{bcrypt}.
-Hệ số này cân bằng giữa thời gian băm một mật khẩu, đo trên máy phát triển vào khoảng vài chục mili giây cho mỗi lần xác thực, và độ khó vét cạn nếu cơ sở dữ liệu bị rò rỉ.
+Hệ số này cân bằng giữa tốc độ băm mật khẩu và độ khó tấn công vét cạn nếu cơ sở dữ liệu bị rò rỉ.
 
 \section{Zod, kiểm tra hợp lệ dữ liệu hai phía}
 \label{section:3.7}
 
-Để tránh duy trì hai cú pháp ràng buộc khác nhau ở hai phía, PM QLKT thống nhất dùng Zod \cite{zoddocs} làm thư viện xác thực dữ liệu cho cả backend lẫn frontend, thay vì tách Joi cho backend và Zod cho frontend như nhiều dự án Express truyền thống.
+Để tránh duy trì hai cú pháp ràng buộc khác nhau ở hai phía, PM QLKT thống nhất dùng Zod làm thư viện xác thực dữ liệu cho cả backend lẫn frontend, thay vì tách Joi cho backend và Zod cho frontend như nhiều dự án Express truyền thống.
 Cả hai phía dùng chung Zod 4 nên cú pháp khai báo schema tương thích, cho phép tái sử dụng cùng một dạng ràng buộc ở backend và frontend.
 Tại backend, mọi route nhận dữ liệu từ client đều đi qua một middleware kiểm tra dữ liệu dựa trên Zod, áp cho phần thân, tham số truy vấn và tham số đường dẫn của yêu cầu; các schema được gom tập trung trong một thư mục riêng, mỗi miền nghiệp vụ một tệp.
 Chế độ kiểm tra nghiêm ngặt của Zod từ chối những trường không khai báo trong schema, ngăn người dùng đẩy lên các thuộc tính ngoài ý muốn.
@@ -143,7 +123,7 @@ Logic xác thực không tin tưởng tầng frontend: backend luôn kiểm tra 
 \section{ExcelJS, công cụ nhập và xuất Excel}
 \label{section:3.8}
 
-Quy trình nhập và xuất danh sách khen thưởng theo tệp Excel đòi hỏi sinh được tệp mẫu có ràng buộc và đọc lại tệp người dùng tải lên, nên đồ án dùng ExcelJS 4.4, thư viện JavaScript cho phép đọc, ghi và thao tác workbook \texttt{.xlsx} phía máy chủ Node.js \cite{exceljsdocs}.
+Quy trình nhập và xuất danh sách khen thưởng theo tệp Excel đòi hỏi sinh được tệp mẫu có ràng buộc và đọc lại tệp người dùng tải lên, nên đồ án dùng ExcelJS 4.4, thư viện JavaScript cho phép đọc, ghi và thao tác workbook \texttt{.xlsx} phía máy chủ Node.js.
 Khác với các thư viện chỉ sinh CSV hay HTML giả lập Excel, ExcelJS hỗ trợ định dạng ô (font, màu nền, viền), khoá ô để chặn chỉnh sửa cột hệ thống, công thức, và quan trọng nhất là Data Validation cho phép tạo danh sách thả xuống ngay trong tệp mẫu xuất ra.
 
 ExcelJS hỗ trợ hai quy trình trao đổi dữ liệu trong PM QLKT.

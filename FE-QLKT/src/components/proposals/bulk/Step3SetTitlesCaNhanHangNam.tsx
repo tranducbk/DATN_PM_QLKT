@@ -706,11 +706,7 @@ export function Step3SetTitlesCaNhanHangNam({
               },
               {
                 key: 'nckh',
-                label: `NCKH (${
-                  Array.isArray(selectedAnnualProfile.tong_nckh)
-                    ? selectedAnnualProfile.tong_nckh.length
-                    : 0
-                })`,
+                label: `NCKH (${selectedAnnualProfile.tong_nckh})`,
                 children: (
                   <div>
                     {selectedAnnualProfile.tong_nckh > 0 ? (

@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
+    "test:coverage": "jest --coverage",
     "test:integration": "jest --config jest.integration.config.ts",
     "build": "tsc && cp -r src/generated dist/generated",
     "typecheck": "tsc --noEmit",

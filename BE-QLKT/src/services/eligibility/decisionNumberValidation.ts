@@ -3,7 +3,7 @@ import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
 } from '../../constants/danhHieu.constants';
 
-export interface DecisionNumberPayload {
+interface DecisionNumberPayload {
   danh_hieu?: string | null;
   so_quyet_dinh?: string | null;
   nhan_bkbqp?: boolean;
@@ -14,7 +14,7 @@ export interface DecisionNumberPayload {
   so_quyet_dinh_bkttcp?: string | null;
 }
 
-export interface DecisionNumberContext {
+interface DecisionNumberContext {
   entityType: 'personal' | 'unit';
   entityName: string;
 }

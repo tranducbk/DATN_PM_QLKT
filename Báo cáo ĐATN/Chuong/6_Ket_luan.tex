@@ -6,7 +6,7 @@
 
 Sau quá trình nghiên cứu, phân tích và phát triển, đồ án đã xây dựng được phần mềm quản lý khen thưởng tại Học viện Khoa học Quân sự (PM QLKT) với các kết quả sau.
 
-Đối chiếu với các mục tiêu đặt ra ở Chương~\ref{chapter:Introduction}, đồ án đã đạt được phần lớn yêu cầu. Mục tiêu số hóa quy trình khen thưởng đã đạt khi toàn bộ vòng đời đề xuất và phê duyệt được đưa lên phần mềm. Mục tiêu tự động xét chuỗi điều kiện danh hiệu đã đạt với cơ chế xét điều kiện dùng chung cho cả cá nhân và đơn vị. Mục tiêu phân quyền theo tổ chức đã đạt với bốn vai trò và phạm vi dữ liệu theo cây đơn vị. Mục tiêu nhật ký và kiểm chứng đã đạt với hệ thống ghi nhật ký đầy đủ cùng bộ kiểm thử tự động. Mục tiêu triển khai nội bộ mới đạt một phần khi hệ thống đã chạy ổn định trên mạng nội bộ Học viện nhưng chưa qua giai đoạn thử nghiệm với người dùng thật.
+Đối chiếu với các mục tiêu đặt ra ở Chương~\ref{chapter:Introduction}, đồ án đã đạt được phần lớn yêu cầu. Mục tiêu số hóa quy trình khen thưởng đã đạt khi toàn bộ vòng đời đề xuất và phê duyệt được đưa lên phần mềm. Mục tiêu tự động xét chuỗi điều kiện danh hiệu đã đạt với cơ chế xét điều kiện dùng chung cho cả cá nhân và đơn vị. Mục tiêu phân quyền theo tổ chức đã đạt với bốn vai trò và phạm vi dữ liệu theo cây đơn vị. Mục tiêu nhật ký và kiểm chứng đã đạt với hệ thống ghi nhật ký đầy đủ cùng việc kiểm chứng qua nhiều kịch bản dữ liệu mẫu. Mục tiêu triển khai nội bộ mới đạt một phần khi hệ thống đã chạy ổn định trên mạng nội bộ Học viện nhưng chưa qua giai đoạn thử nghiệm với người dùng thật.
 
 Về mặt nghiệp vụ, hệ thống bao quát bảy nhóm khen thưởng đặc thù.
 Đó là khen thưởng cá nhân hằng năm theo chuỗi CSTĐCS, BKBQP, CSTĐTQ và BKTTCP; khen thưởng đơn vị hằng năm theo chuỗi ĐVQT, BKBQP và BKTTCP; Huy chương Chiến sĩ vẻ vang (HCCSVV) theo các mốc 10/15/20 năm; Huân chương Bảo vệ Tổ quốc (HCBVTQ) dựa trên thời gian giữ chức vụ theo nhóm hệ số; Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN; Huy chương Quân kỳ quyết thắng (HCQKQT, 25 năm phục vụ); và thành tích nghiên cứu khoa học.
@@ -14,7 +14,7 @@ Mỗi nhóm có tiêu chuẩn xét riêng nhưng cùng dùng chung quy trình đ
 
 Về mặt kỹ thuật, hệ thống được tổ chức theo kiến trúc phân tầng, trải từ tầng định tuyến tới tầng truy cập dữ liệu.
 Hệ thống dùng cơ sở dữ liệu quan hệ chuẩn hoá, xác thực bằng JWT có cơ chế làm mới luân phiên và ghi nhật ký hệ thống đầy đủ.
-Các quy tắc xét chuỗi cho cá nhân và đơn vị, tình huống lỡ đợt đề nghị, điều kiện tính trên cửa sổ thời gian gần nhất và quy tắc chặn nhận lại danh hiệu chỉ trao một lần đều đã được kiểm chứng bằng bộ kiểm thử tự động với nhiều bộ dữ liệu mẫu.
+Các quy tắc xét chuỗi cho cá nhân và đơn vị, tình huống lỡ đợt đề nghị, điều kiện tính trên cửa sổ thời gian gần nhất và quy tắc chặn nhận lại danh hiệu chỉ trao một lần đều đã được kiểm chứng với nhiều bộ dữ liệu mẫu.
 
 Đóng góp nổi bật của đồ án là đưa quy tắc chuỗi danh hiệu vào một bảng cấu hình tập trung.
 Bảng này mô tả số năm chu kỳ, danh hiệu tiền điều kiện kèm số lượng yêu cầu, có yêu cầu nghiên cứu khoa học hay không, và danh hiệu nhận một lần duy nhất hay có thể lặp lại.
@@ -39,7 +39,7 @@ Phiên bản tiếp theo có thể bổ sung Anh hùng Lực lượng vũ trang 
 Hướng này khả thi nhờ thiết kế cấu hình chuỗi danh hiệu đã có, khi chỉ cần thêm một dòng cấu hình mới và bổ sung quy tắc xét điều kiện tương ứng.
 
 \textbf{(ii) Bổ sung các loại khen thưởng ngoài bảy nhóm hiện tại.} Ngoài bảy nhóm đã hỗ trợ, công tác thi đua tại Học viện và các đơn vị quân đội còn nhiều loại khen thưởng khác.
-Theo Điều 8 Luật Thi đua, Khen thưởng, có thể kể đến khen thưởng phong trào thi đua theo chuyên đề như an toàn giao thông hay học tập và làm theo tư tưởng Hồ Chí Minh, và khen thưởng đối ngoại với các hình thức như Huân chương Hữu nghị dành cho cá nhân, tập thể người nước ngoài.
+Theo Luật Thi đua, Khen thưởng, có thể kể đến khen thưởng phong trào thi đua theo chuyên đề như an toàn giao thông hay học tập và làm theo tư tưởng, đạo đức, phong cách Hồ Chí Minh, và khen thưởng đối ngoại với các hình thức như Huân chương Hữu nghị dành cho cá nhân, tập thể người nước ngoài.
 Kiến trúc Strategy đã chuẩn hoá cho bảy loại hiện tại cho phép mở rộng bằng cách bổ sung một Strategy mới và đăng ký vào registry trung tâm, mà không phải sửa tầng phê duyệt chung.
 
 \textbf{(iii) Triển khai cho nhiều đơn vị trong toàn quân.} Phiên bản hiện tại thiết kế cho riêng Học viện Khoa học Quân sự với cơ cấu tổ chức hai cấp gồm cơ quan đơn vị và đơn vị trực thuộc.
@@ -47,12 +47,12 @@ Hướng tiếp theo là mở rộng mô hình tổ chức thành nhiều cấp 
 Cùng với đó là cho phép nhiều đơn vị trong toàn quân dùng chung một hệ thống mà vẫn cách ly dữ liệu nghiệp vụ của từng đơn vị.
 Khi đó, hệ thống có thể trở thành nền tảng dùng chung cấp Bộ Quốc phòng thay vì giải pháp riêng của một học viện.
 
-\textbf{(iv) Tích hợp ký số quân đội.} Bổ sung mô-đun ký số cho tệp PDF quyết định khen thưởng theo chuẩn PKCS\#7, với chữ ký số do hệ thống PKI của Bộ Quốc phòng cấp.
+\textbf{(iv) Tích hợp ký số quân đội.} Bổ sung mô-đun ký số cho tệp PDF quyết định khen thưởng với chữ ký số do hệ thống của Bộ Quốc phòng cấp.
 Khi đó, PDF tải lên mang chữ ký số hợp lệ và có thể xác thực ngược về cơ quan ký.
 Điều này góp phần giảm nhu cầu xử lý và lưu kho bản giấy trong quy trình ký duyệt.
 
-\textbf{(v) Hộp thoại trao đổi (chat) trong hệ thống.} Bổ sung kênh nhắn tin trực tiếp giữa các vai trò Chỉ huy đơn vị, Cán bộ Phòng Chính trị và quân nhân ngay trong ứng dụng.
-Kênh này cho phép gửi kèm tệp đính kèm trong quá trình lập, trao đổi và phê duyệt đề xuất, thay cho việc liên hệ qua điện thoại hay giấy tờ.
+\textbf{(v) Kênh trao đổi nội bộ (chat) trong hệ thống.} Bổ sung kênh nhắn tin trực tiếp giữa các vai trò Chỉ huy đơn vị, Cán bộ Phòng Chính trị và quân nhân ngay trong ứng dụng.
+Kênh này cho phép đính kèm tệp trong quá trình lập, trao đổi và phê duyệt đề xuất, thay cho việc liên hệ qua điện thoại hay giấy tờ.
 Hướng này tận dụng được hạ tầng Socket.IO thời gian thực đã dùng cho thông báo và cơ chế tải tệp đính kèm sẵn có.
 Nhờ đó, mọi trao đổi được gom về một nơi và lưu vết gắn với từng đề xuất, giúp quá trình sử dụng thuận tiện và minh bạch hơn.
 

@@ -44,7 +44,7 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 12,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [
         { personnel_id: target.id, ho_ten: target.ho_ten, danh_hieu: PROPOSAL_TYPES.HC_QKQT },
       ],
@@ -80,7 +80,7 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [
         { personnel_id: 'qn-ghost', ho_ten: 'Ghost', danh_hieu: PROPOSAL_TYPES.HC_QKQT },
       ],
@@ -106,7 +106,7 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [
         { personnel_id: target.id, ho_ten: target.ho_ten, danh_hieu: PROPOSAL_TYPES.HC_QKQT },
       ],
@@ -136,7 +136,7 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [
         { personnel_id: target.id, ho_ten: target.ho_ten, danh_hieu: PROPOSAL_TYPES.HC_QKQT },
       ],
@@ -174,7 +174,7 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
       id: 'p-transfer',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: oldUnit,
       data_danh_hieu: [
         {

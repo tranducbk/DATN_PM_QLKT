@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 
 /** Standard debounce delay (ms) for search inputs across the app. */
-export const SEARCH_DEBOUNCE_MS = 400;
+const SEARCH_DEBOUNCE_MS = 400;
 
 /**
  * Debounce a changing value — returns the latest value only after it stops changing for `delay` ms.

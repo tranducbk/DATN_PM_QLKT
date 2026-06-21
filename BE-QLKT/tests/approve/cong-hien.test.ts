@@ -97,7 +97,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
       loai: PROPOSAL_TYPES.CONG_HIEN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_cong_hien: [
         buildCongHienItem(personnel.id, DANH_HIEU_HCBVTQ.HANG_NHI, { ho_ten: personnel.ho_ten }),
@@ -144,7 +144,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
       loai: PROPOSAL_TYPES.CONG_HIEN,
       nam: 2024,
       thang: null,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_cong_hien: [],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -164,7 +164,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
       loai: PROPOSAL_TYPES.CONG_HIEN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_cong_hien: [buildCongHienItem(personnel.id, DANH_HIEU_HCBVTQ.HANG_NHI)],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -200,7 +200,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
       loai: PROPOSAL_TYPES.CONG_HIEN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_cong_hien: [buildCongHienItem(personnel.id, DANH_HIEU_HCBVTQ.HANG_NHI)],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -232,7 +232,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
       loai: PROPOSAL_TYPES.CONG_HIEN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_cong_hien: [buildCongHienItem(personnel.id, DANH_HIEU_HCBVTQ.HANG_BA)],
     });
 
@@ -274,7 +274,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
       loai: PROPOSAL_TYPES.CONG_HIEN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_cong_hien: [buildCongHienItem(personnel.id, DANH_HIEU_HCBVTQ.HANG_NHI)],
     });
 
@@ -314,7 +314,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
       loai: PROPOSAL_TYPES.CONG_HIEN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_cong_hien: [buildCongHienItem(personnel.id, DANH_HIEU_HCBVTQ.HANG_BA)],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -353,7 +353,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
       loai: PROPOSAL_TYPES.CONG_HIEN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_cong_hien: [buildCongHienItem(personnel.id, DANH_HIEU_HCBVTQ.HANG_NHI)],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -392,7 +392,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
       loai: PROPOSAL_TYPES.CONG_HIEN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_cong_hien: [buildCongHienItem(personnel.id, DANH_HIEU_HCBVTQ.HANG_NHAT)],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -433,7 +433,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
       status: PROPOSAL_STATUS.APPROVED,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
 

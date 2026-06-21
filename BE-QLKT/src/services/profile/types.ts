@@ -10,23 +10,6 @@ export interface HCCSVVCalcResult {
   goiY: string;
 }
 
-export interface HCBVTQCalcResult {
-  status: string;
-  ngay: Date | null;
-  goiY: string;
-}
-
-export interface SpecialCaseResult {
-  isSpecialCase: boolean;
-  goiY: string;
-  resetChain: boolean;
-}
-
-export interface NCKHYearsResult {
-  hasNCKH: boolean;
-  years: number[];
-}
-
 export interface AnnualStreakResult {
   personnel: QuanNhan & {
     DanhHieuHangNam: DanhHieuHangNam[];

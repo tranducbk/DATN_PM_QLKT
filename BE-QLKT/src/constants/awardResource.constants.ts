@@ -9,7 +9,7 @@ import { PROPOSAL_TYPES, type ProposalType } from './proposalTypes.constants';
  * proposal type. `proposalType` is `null` when the award has no proposal flow
  * (e.g. ad-hoc rewards which are entered directly).
  */
-export interface AwardResourceMeta {
+interface AwardResourceMeta {
   vi: string;
   proposalType: ProposalType | null;
 }

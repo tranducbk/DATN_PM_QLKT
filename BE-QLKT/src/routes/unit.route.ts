@@ -20,16 +20,16 @@ router.get('/my-units', verifyToken, requireManager, unitController.getMyUnits);
 /**
  * @route   GET /api/units
  * @desc    List all units and sub-units (?hierarchy=true for tree structure)
- * @access  Private - MANAGER and above
+ * @access  Private - ADMIN and above (MANAGER uses /my-units, scoped)
  */
-router.get('/', verifyToken, requireManager, unitController.getAllUnits);
+router.get('/', verifyToken, requireAdmin, unitController.getAllUnits);
 
 /**
  * @route   GET /api/units/:id
  * @desc    Get unit or sub-unit details with tree structure
- * @access  Private - MANAGER and above
+ * @access  Private - ADMIN and above (MANAGER uses /my-units, scoped)
  */
-router.get('/:id', verifyToken, requireManager, unitController.getUnitById);
+router.get('/:id', verifyToken, requireAdmin, unitController.getUnitById);
 
 /**
  * @route   POST /api/units

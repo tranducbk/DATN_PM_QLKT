@@ -16,7 +16,6 @@ import {
 } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { GENDER } from '../../constants/gender.constants';
-import type { HCBVTQCalcResult } from './types';
 
 const CONTRIBUTION_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
 
@@ -175,49 +174,3 @@ export async function recalculateContributionProfile(
   return { message: `Tính toán lại hồ sơ ${CONTRIBUTION_LABEL} thành công` };
 }
 
-/**
- * HCBVTQ tier helper: compares total months served against the coefficient-specific threshold.
- * @param totalMonths - Cumulative qualifying months
- * @param requiredMonths - Threshold from position group rules
- * @param currentStatus - Existing `ELIGIBILITY_STATUS` (preserves `DA_NHAN`)
- * @param rank - Medal tier label used in `goiY` text
- * @returns Status, optional milestone date, and Vietnamese guidance string
- */
-export function calculateHCBVTQ(
-  totalMonths: number,
-  requiredMonths: number,
-  currentStatus: string,
-  rank: string
-): HCBVTQCalcResult {
-  // Already received — preserve status
-  if (currentStatus === ELIGIBILITY_STATUS.DA_NHAN) {
-    return {
-      status: ELIGIBILITY_STATUS.DA_NHAN,
-      ngay: null,
-      goiY: '',
-    };
-  }
-
-  if (totalMonths >= requiredMonths) {
-    const years = Math.floor(totalMonths / 12);
-    return {
-      status: ELIGIBILITY_STATUS.DU_DIEU_KIEN,
-      ngay: new Date(),
-      goiY: `Đủ điều kiện xét ${CONTRIBUTION_LABEL} Hạng ${rank} (đã công tác ${years} năm).`,
-    };
-  }
-
-  // Not yet eligible
-  const remainingMonths = requiredMonths - totalMonths;
-  const remainingYears = Math.floor(remainingMonths / 12);
-  const remainingMonthsOnly = remainingMonths % 12;
-
-  return {
-    status: ELIGIBILITY_STATUS.CHUA_DU,
-    ngay: null,
-    goiY:
-      remainingYears > 0
-        ? `Còn ${remainingYears} năm ${remainingMonthsOnly} tháng nữa mới đủ điều kiện xét ${CONTRIBUTION_LABEL} Hạng ${rank}.`
-        : `Còn ${remainingMonthsOnly} tháng nữa mới đủ điều kiện xét ${CONTRIBUTION_LABEL} Hạng ${rank}.`,
-  };
-}

@@ -41,7 +41,7 @@ describe('collectPersonnelDuplicateErrors', () => {
     expect(result[0]).toMatch(/Nguyễn Văn A:/);
   });
 
-  it('falls back to id when ho_ten map missing entry', async () => {
+  it('falls back to a generic name (not the raw id) when ho_ten map missing entry', async () => {
     prismaMock.huanChuongQuanKyQuyetThang.findFirst.mockResolvedValueOnce({
       id: 'a1',
       quan_nhan_id: 'p1',
@@ -56,7 +56,8 @@ describe('collectPersonnelDuplicateErrors', () => {
       PROPOSAL_TYPES.HC_QKQT
     );
 
-    expect(result[0].startsWith('p1:')).toBe(true);
+    expect(result[0].startsWith('một quân nhân:')).toBe(true);
+    expect(result[0]).not.toContain('p1');
   });
 
   it('returns empty array when no duplicates detected', async () => {

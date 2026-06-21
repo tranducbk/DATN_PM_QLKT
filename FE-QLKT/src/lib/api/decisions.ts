@@ -2,7 +2,7 @@ import axiosInstance from '@/lib/http/axiosInstance';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import type { ApiResponse } from '@/lib/types/common';
 
-export type DecisionsPagination = {
+type DecisionsPagination = {
   total?: number;
   page?: number;
   limit?: number;

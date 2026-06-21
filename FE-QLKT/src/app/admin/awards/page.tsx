@@ -17,7 +17,6 @@ import { getApiErrorMessage } from '@/lib/http/apiError';
 import type { TableColumnsType } from 'antd';
 import { DownloadOutlined, DeleteOutlined } from '@ant-design/icons';
 import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
-import { apiClient } from '@/lib/http/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import {
   DANH_HIEU_MAP,
@@ -44,107 +43,15 @@ import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagi
 import { useDebounce } from '@/hooks/useDebounce';
 import { AwardsFilterBar } from '@/components/awards/AwardsFilterBar';
 import { formatDate } from '@/lib/utils';
+import type {
+  AwardTableRow,
+  AwardFilters,
+  PersonnelDisplay,
+  AwardTypeFetchParams,
+} from './types';
+import { INITIAL_FILTERS, AWARD_TYPE_CONFIG } from './helpers';
 
 const { Title, Paragraph, Text } = Typography;
-
-/** An award table row — may be a nested structure (adhoc, scientific, …). */
-interface AwardCore {
-  id: string;
-  cccd: string;
-  ho_ten: string;
-  ngay_sinh?: string;
-  don_vi: string;
-  co_quan_don_vi?: string;
-  don_vi_truc_thuoc?: string;
-  cap_bac?: string;
-  chuc_vu: string;
-  nam: number;
-  thang?: number | null;
-  danh_hieu: string | null;
-  so_quyet_dinh?: string | null;
-  ghi_chu?: string | null;
-  nhan_bkbqp?: boolean;
-  so_quyet_dinh_bkbqp?: string | null;
-  nhan_cstdtq?: boolean;
-  so_quyet_dinh_cstdtq?: string | null;
-  nhan_bkttcp?: boolean;
-  so_quyet_dinh_bkttcp?: string | null;
-  mo_ta?: string | null;
-  ten_de_tai?: string | null;
-}
-
-/** Display/filter row — includes nested adhoc/scientific records. */
-type AwardTableRow = AwardCore & {
-  loai?: string;
-  QuanNhan?: {
-    ho_ten?: string;
-    ngay_sinh?: string;
-    CoQuanDonVi?: { ten_don_vi?: string };
-    DonViTrucThuoc?: { ten_don_vi?: string; CoQuanDonVi?: { ten_don_vi?: string } };
-  };
-  CoQuanDonVi?: { ten_don_vi?: string };
-  DonViTrucThuoc?: { ten_don_vi?: string; CoQuanDonVi?: { ten_don_vi?: string } };
-};
-
-interface AwardFilters {
-  nam: string;
-  ho_ten: string;
-  danh_hieu: string;
-  de_tai: string;
-}
-
-interface PersonnelDisplay {
-  displayName: string;
-  unitInfoText: string;
-  parentUnit: string | null;
-  ngaySinh?: string;
-}
-
-const INITIAL_FILTERS: AwardFilters = {
-  nam: '',
-  ho_ten: '',
-  danh_hieu: '',
-  de_tai: '',
-};
-
-interface AwardTypeFetchParams {
-  limit?: number;
-  page?: number;
-  [key: string]: unknown;
-}
-
-interface AwardTypeApiResult {
-  success: boolean;
-  message?: string;
-  data?: AwardTableRow[];
-}
-
-interface AwardTypeDeleteResult {
-  success: boolean;
-  message?: string;
-}
-
-const AWARD_TYPE_CONFIG: Record<
-  string,
-  {
-    fetch: (params: AwardTypeFetchParams) => Promise<AwardTypeApiResult>;
-    delete: (id: string, awardType?: string) => Promise<AwardTypeDeleteResult>;
-  }
-> = {
-  CNHN: { fetch: apiClient.getAnnualRewards, delete: apiClient.deleteAnnualReward },
-  DVHN: { fetch: apiClient.getUnitAnnualAwards, delete: apiClient.deleteUnitAnnualAward },
-  HCCSVV: { fetch: apiClient.getTenureMedals, delete: apiClient.deleteTenureMedal },
-  HCBVTQ: { fetch: apiClient.getContributionMedals, delete: apiClient.deleteContributionMedal },
-  KNC_VSNXD_QDNDVN: {
-    fetch: apiClient.getCommemorationMedals,
-    delete: apiClient.deleteCommemorationMedal,
-  },
-  HCQKQT: { fetch: apiClient.getMilitaryFlag, delete: apiClient.deleteMilitaryFlag },
-  NCKH: {
-    fetch: apiClient.getScientificAchievements,
-    delete: apiClient.deleteScientificAchievement,
-  },
-};
 
 export default function AdminAwardsPage() {
   const [activeTab, setActiveTab] = useState<AwardType>('CNHN');

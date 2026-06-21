@@ -1,15 +1,12 @@
 import { buildMedalListWhere } from '../helpers/unitHelper';
 import { contributionMedalRepository } from '../repositories/contributionMedal.repository';
 import profileService from './profile.service';
-import * as notificationHelper from '../helpers/notification';
 import { getDanhHieuName } from '../constants/danhHieu.constants';
 import { NotFoundError } from '../middlewares/errorHandler';
-import { writeSystemLog } from '../helpers/systemLogHelper';
-import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
-import { logMessages } from '../constants/logMessages.constants';
 import { buildTemplate, buildAwardExportBuffer } from '../helpers/excel/excelTemplateHelper';
 import { durationToMonths } from '../helpers/serviceYearsHelper';
 import { fetchTemplateData } from './excel/templateData.service';
+import { finalizeMedalAwardDeletion } from './medalAwardHelpers';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
@@ -192,44 +189,18 @@ class ContributionMedalService {
       throw new NotFoundError('Bản ghi khen thưởng');
     }
 
-    const personnelId = award.quan_nhan_id;
-    const personnel = award.QuanNhan;
-
-    // Delete award only, proposals are kept for audit trail
-    await contributionMedalRepository.delete(id);
-
-    try {
-      await profileService.recalculateContributionProfile(personnelId);
-    } catch (recalcError) {
-      void writeSystemLog({
-        action: AUDIT_ACTIONS.ERROR,
-        resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,
-        resourceId: id,
-        description: logMessages.recalcError('xóa', AWARD_LABEL, recalcError),
-      });
-    }
-
-    try {
-      await notificationHelper.notifyOnAwardDeleted(
-        award,
-        personnel,
-        PROPOSAL_TYPES.CONG_HIEN,
-        adminUsername
-      );
-    } catch (notifyError) {
-      void writeSystemLog({
-        action: AUDIT_ACTIONS.ERROR,
-        resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,
-        resourceId: id,
-        description: logMessages.notifyError('xóa', AWARD_LABEL, notifyError),
-      });
-    }
-
-    return {
-      message: `Xóa khen thưởng ${AWARD_LABEL} thành công`,
-      personnelId,
+    return finalizeMedalAwardDeletion({
+      id,
       award,
-    };
+      personnel: award.QuanNhan,
+      personnelId: award.quan_nhan_id,
+      adminUsername,
+      awardLabel: AWARD_LABEL,
+      resourceSlug: AWARD_SLUGS.CONTRIBUTION_MEDALS,
+      proposalType: PROPOSAL_TYPES.CONG_HIEN,
+      deleteFn: () => contributionMedalRepository.delete(id),
+      recalcProfile: pid => profileService.recalculateContributionProfile(pid),
+    });
   }
 }
 

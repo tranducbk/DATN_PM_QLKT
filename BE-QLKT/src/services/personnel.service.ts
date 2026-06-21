@@ -359,8 +359,9 @@ class PersonnelService {
         try {
           await adjustUnitCount(prismaTx, unitId, isCoQuanDonVi, 'decrement');
         } catch (error) {
+          console.error('[deletePersonnel] adjustUnitCount failed', { unitId, error });
           throw new AppError(
-            `Không thể cập nhật số lượng quân nhân của đơn vị: ${error.message}`,
+            'Không thể cập nhật số lượng quân nhân của đơn vị, vui lòng thử lại.',
             500
           );
         }

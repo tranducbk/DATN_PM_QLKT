@@ -177,12 +177,14 @@ class UnitAnnualAwardController {
   getUnitAnnualProfile = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as GetUnitAnnualProfileParams;
     const query = req.query as GetUnitAnnualProfileQuery;
+    const user = req.user;
     const { don_vi_id } = params;
     const { year } = query;
     const yearNumber = year != null && year !== '' ? Number(year) : null;
     if (!don_vi_id) {
       return ResponseHelper.badRequest(res, 'Thiếu thông tin đơn vị');
     }
+    await service.assertUnitInScope(don_vi_id, user?.role, user?.quan_nhan_id);
     if (yearNumber && !Number.isNaN(yearNumber)) {
       await service.recalculateAnnualUnit(don_vi_id, yearNumber);
     }

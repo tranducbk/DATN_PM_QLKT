@@ -38,7 +38,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       status: PROPOSAL_STATUS.APPROVED,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
 
@@ -72,7 +72,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
       id: 'prop-mixed-1',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [
         makeProposalItemCaNhan({ personnel_id: personnelA.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS }),
         makeProposalItemCaNhan({ personnel_id: personnelB.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP }),
@@ -103,7 +103,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
       id: 'prop-mixed-2',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [
         makeProposalItemCaNhan({ personnel_id: personnelA.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTT }),
         makeProposalItemCaNhan({ personnel_id: personnelB.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ }),
@@ -132,7 +132,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
       id: 'prop-mixed-3',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [
         makeProposalItemCaNhan({ personnel_id: personnelA.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTT }),
         makeProposalItemCaNhan({ personnel_id: personnelB.id, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP }),
@@ -165,7 +165,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
       id: 'prop-dup-1',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 
@@ -208,7 +208,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
       id: 'prop-mx-1',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -249,7 +249,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
       id: 'prop-bk-not-elig',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -286,7 +286,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
       id: 'prop-cs-not-elig',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -321,7 +321,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
       id: 'prop-bkttcp-not-elig',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -357,7 +357,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
       id: 'prop-nckh-bkbqp',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 
@@ -395,7 +395,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
       id: 'prop-nckh-cstdtq',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 
@@ -433,7 +433,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
       id: 'prop-nckh-bkttcp',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 
@@ -465,7 +465,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
       id: 'p-approve-invalid-dh',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [
         makeProposalItemCaNhan({
           personnel_id: personnel.id,

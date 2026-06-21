@@ -355,6 +355,7 @@ export async function confirmImport(validItems: UnitAnnualAwardValidItem[], admi
     const { unit_id: donViId, nam, danh_hieu: danhHieu } = item;
 
     const existingProposal = existingProposals.find(p => {
+      if (p.nam !== nam) return false;
       const dataDanhHieu = (p.data_danh_hieu as Prisma.JsonArray) || [];
       return (dataDanhHieu as Array<Record<string, unknown>>).some(
         d => d.don_vi_id === donViId && d.danh_hieu === danhHieu

@@ -1,4 +1,5 @@
 import { Router, Request, Response, NextFunction } from 'express';
+import { timingSafeEqual } from 'crypto';
 import profileService from '../services/profile.service';
 import unitAnnualAwardService from '../services/unitAnnualAward.service';
 import unitService from '../services/unit.service';
@@ -139,11 +140,20 @@ seedDefaults()
     console.error('[DevZone] Failed to seed defaults or initialize cron:', error);
   });
 
-/** Middleware that authenticates DevZone requests via X-Dev-Password header or body.password. */
-const verifyDevPassword = (req: Request, res: Response, next: NextFunction) => {
+/** Length-revealing constant-time string compare (avoids early-exit timing oracle). */
+function constantTimeEqual(input: string, secret: string): boolean {
+  const a = Buffer.from(input);
+  const b = Buffer.from(secret);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
+
+const verifyDevPasswordCore = (req: Request, res: Response, next: NextFunction) => {
   if (!DEV_PASSWORD) {
     return res.status(503).json({ success: false, message: 'DevZone không khả dụng' });
   }
+  const header = req.headers['x-dev-password'];
+  const headerPwd = Array.isArray(header) ? header[0] : header;
   const bodyPwd =
     req.body &&
     typeof req.body === 'object' &&
@@ -151,12 +161,16 @@ const verifyDevPassword = (req: Request, res: Response, next: NextFunction) => {
     typeof (req.body as { password?: unknown }).password === 'string'
       ? (req.body as { password: string }).password
       : undefined;
-  const password = req.headers['x-dev-password'] || bodyPwd;
-  if (password !== DEV_PASSWORD) {
+  const password = headerPwd ?? bodyPwd;
+  if (typeof password !== 'string' || !constantTimeEqual(password, DEV_PASSWORD)) {
     return res.status(401).json({ success: false, message: 'Mật khẩu không đúng' });
   }
   next();
 };
+
+// Rate-limit every privileged DevZone route so the shared password can't be brute-forced.
+// Express flattens this array wherever `verifyDevPassword` is used as a route handler.
+const verifyDevPassword = [authLimiter, verifyDevPasswordCore];
 
 /** Returns all feature flags as a key → boolean map from DB settings. */
 async function getFeatures() {
@@ -187,7 +201,7 @@ router.post('/auth', authLimiter, (req: Request, res: Response) => {
     return res.status(503).json({ success: false, message: 'DevZone không khả dụng' });
   }
   const { password } = req.body;
-  if (password === DEV_PASSWORD) {
+  if (typeof password === 'string' && constantTimeEqual(password, DEV_PASSWORD)) {
     return res.json({ success: true });
   }
   return res.status(401).json({ success: false, message: 'Mật khẩu không đúng' });

@@ -64,17 +64,54 @@ function eligibleHistory(personnelId: string, totalMonths = 130): PositionHistor
   ];
 }
 
+interface PreviewPersonnel {
+  id: string;
+  ho_ten: string;
+  gioi_tinh?: string;
+  cap_bac?: string;
+  chuc_vu?: string;
+}
+
+/**
+ * Arranges the DB lookups previewImport fans out to for CONG_HIEN.
+ * Defaults: eligible position history per personnel, no existing medal, no pending proposal.
+ * @param opts.personnel - One personnel or many (mix tests)
+ * @param opts.existingMedals - Rows returned by khenThuongHCBVTQ.findMany (default none)
+ * @param opts.history - Override position history (default eligibleHistory per personnel)
+ * @param opts.decisionNumbers - Decision numbers present on the system (default none)
+ */
+function arrangeCongHienPreview(opts: {
+  personnel: PreviewPersonnel | PreviewPersonnel[];
+  existingMedals?: unknown[];
+  history?: PositionHistoryWithChucVu[];
+  decisionNumbers?: string[];
+}): void {
+  const people = Array.isArray(opts.personnel) ? opts.personnel : [opts.personnel];
+  prismaMock.quanNhan.findMany.mockResolvedValueOnce(
+    people.map(p => ({
+      id: p.id,
+      ho_ten: p.ho_ten,
+      gioi_tinh: p.gioi_tinh ?? 'NAM',
+      cap_bac: p.cap_bac ?? 'Đại uý',
+      ChucVu: { ten_chuc_vu: p.chuc_vu ?? 'Trợ lý' },
+    }))
+  );
+  prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce(opts.existingMedals ?? []);
+  prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(
+    opts.history ?? people.flatMap(p => eligibleHistory(p.id))
+  );
+  prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce(
+    (opts.decisionNumbers ?? []).map(so_quyet_dinh => ({ so_quyet_dinh }))
+  );
+  prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+}
+
 describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
   it('Row đủ dữ liệu (đủ tháng phục vụ) → vào valid', async () => {
-    // Given: existing personnel + sufficient position history + decision number on system
-    const p1 = makePersonnel({ id: 'qn-ch-1', ho_ten: 'Nguyễn Văn A', gioi_tinh: 'NAM' });
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
-      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
-    ]);
-    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
-    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
-    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-CH-001' }]);
-    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+    arrangeCongHienPreview({
+      personnel: { id: 'qn-ch-1', ho_ten: 'Nguyễn Văn A' },
+      decisionNumbers: ['QD-CH-001'],
+    });
 
     const buffer = await makeCongHienExcelBuffer([
       {
@@ -106,14 +143,7 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
   });
 
   it('Row thiếu so_quyet_dinh → vào errors "Thiếu số quyết định"', async () => {
-    const p1 = makePersonnel({ id: 'qn-no-qd', ho_ten: 'No QD', gioi_tinh: 'NAM' });
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
-      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
-    ]);
-    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
-    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
-    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([]);
-    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+    arrangeCongHienPreview({ personnel: { id: 'qn-no-qd', ho_ten: 'No QD' } });
 
     const buffer = await makeCongHienExcelBuffer([
       {
@@ -133,14 +163,10 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
   });
 
   it('Tên trong file không khớp tên trong DB → errors mismatch', async () => {
-    const p1 = makePersonnel({ id: 'qn-name', ho_ten: 'Nguyễn Văn Đúng', gioi_tinh: 'NAM' });
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
-      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
-    ]);
-    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
-    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
-    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-CH-001' }]);
-    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+    arrangeCongHienPreview({
+      personnel: { id: 'qn-name', ho_ten: 'Nguyễn Văn Đúng' },
+      decisionNumbers: ['QD-CH-001'],
+    });
 
     const buffer = await makeCongHienExcelBuffer([
       {
@@ -160,16 +186,11 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
   });
 
   it('Quân nhân đã có HCBVTQ trên hệ thống → errors "Đã có"', async () => {
-    const p1 = makePersonnel({ id: 'qn-existed', ho_ten: 'Đã Có', gioi_tinh: 'NAM' });
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
-      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
-    ]);
-    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([
-      { quan_nhan_id: p1.id, danh_hieu: DANH_HIEU_HCBVTQ.HANG_BA, nam: 2022 },
-    ]);
-    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
-    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-CH-001' }]);
-    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+    arrangeCongHienPreview({
+      personnel: { id: 'qn-existed', ho_ten: 'Đã Có' },
+      existingMedals: [{ quan_nhan_id: 'qn-existed', danh_hieu: DANH_HIEU_HCBVTQ.HANG_BA, nam: 2022 }],
+      decisionNumbers: ['QD-CH-001'],
+    });
 
     const buffer = await makeCongHienExcelBuffer([
       {
@@ -189,14 +210,10 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
   });
 
   it('Empty row → bị skip silently, không vào valid hay errors', async () => {
-    const p1 = makePersonnel({ id: 'qn-empty-ch', ho_ten: 'Có Data', gioi_tinh: 'NAM' });
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
-      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
-    ]);
-    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
-    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
-    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-EMPTY' }]);
-    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+    arrangeCongHienPreview({
+      personnel: { id: 'qn-empty-ch', ho_ten: 'Có Data' },
+      decisionNumbers: ['QD-EMPTY'],
+    });
 
     const buffer = await makeCongHienExcelBuffer([
       {},
@@ -219,14 +236,10 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
   });
 
   it('Duplicate trong cùng file (cùng personnel_id) → row thứ 2 vào errors', async () => {
-    const p1 = makePersonnel({ id: 'qn-dup-ch', ho_ten: 'Trùng', gioi_tinh: 'NAM' });
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
-      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
-    ]);
-    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
-    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
-    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-DUP' }]);
-    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+    arrangeCongHienPreview({
+      personnel: { id: 'qn-dup-ch', ho_ten: 'Trùng' },
+      decisionNumbers: ['QD-DUP'],
+    });
 
     const row = {
       id: 'qn-dup-ch',
@@ -247,14 +260,10 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
   });
 
   it('Tháng = 13 → errors "không hợp lệ"', async () => {
-    const p1 = makePersonnel({ id: 'qn-th13-ch', ho_ten: 'OOR', gioi_tinh: 'NAM' });
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
-      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
-    ]);
-    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
-    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
-    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-T13' }]);
-    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+    arrangeCongHienPreview({
+      personnel: { id: 'qn-th13-ch', ho_ten: 'OOR' },
+      decisionNumbers: ['QD-T13'],
+    });
 
     const buffer = await makeCongHienExcelBuffer([
       {
@@ -275,14 +284,10 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
   });
 
   it('Năm < 1900 → errors "không hợp lệ"', async () => {
-    const p1 = makePersonnel({ id: 'qn-y-ch', ho_ten: 'Năm Cũ', gioi_tinh: 'NAM' });
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
-      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
-    ]);
-    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
-    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
-    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-Y' }]);
-    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+    arrangeCongHienPreview({
+      personnel: { id: 'qn-y-ch', ho_ten: 'Năm Cũ' },
+      decisionNumbers: ['QD-Y'],
+    });
 
     const buffer = await makeCongHienExcelBuffer([
       {
@@ -303,14 +308,10 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
   });
 
   it('Danh hiệu enum không hợp lệ → errors "không hợp lệ"', async () => {
-    const p1 = makePersonnel({ id: 'qn-dh-ch', ho_ten: 'Sai DH', gioi_tinh: 'NAM' });
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
-      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
-    ]);
-    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
-    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
-    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-DH' }]);
-    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+    arrangeCongHienPreview({
+      personnel: { id: 'qn-dh-ch', ho_ten: 'Sai DH' },
+      decisionNumbers: ['QD-DH'],
+    });
 
     const buffer = await makeCongHienExcelBuffer([
       {
@@ -346,15 +347,11 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
   });
 
   it('Số quyết định không tồn tại trên hệ thống → errors "không tồn tại trên hệ thống"', async () => {
-    const p1 = makePersonnel({ id: 'qn-qd-bad', ho_ten: 'QD Sai', gioi_tinh: 'NAM' });
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
-      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
-    ]);
-    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
-    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(eligibleHistory(p1.id));
-    // Hệ thống chỉ có QD-OTHER
-    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-OTHER' }]);
-    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+    // Hệ thống chỉ có QD-OTHER, file khai QD-NOT-EXISTS
+    arrangeCongHienPreview({
+      personnel: { id: 'qn-qd-bad', ho_ten: 'QD Sai' },
+      decisionNumbers: ['QD-OTHER'],
+    });
 
     const buffer = await makeCongHienExcelBuffer([
       {
@@ -375,24 +372,21 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
   });
 
   it('Đúng 120 tháng nhóm 0.7 cho HANG_BA → vào valid (boundary)', async () => {
-    const p1 = makePersonnel({ id: 'qn-bd-ch', ho_ten: 'Boundary', gioi_tinh: 'NAM' });
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
-      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
-    ]);
-    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
     // Đúng 120 tháng nhóm 0.7 — đạt HANG_BA, không bị downgrade từ nhóm cao hơn
-    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce([
-      {
-        quan_nhan_id: p1.id,
-        he_so_chuc_vu: 0.7,
-        so_thang: 120,
-        ngay_bat_dau: new Date('2014-01-01'),
-        ngay_ket_thuc: new Date('2024-01-01'),
-        ChucVu: { he_so_chuc_vu: 0.7 },
-      },
-    ]);
-    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-BD' }]);
-    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+    arrangeCongHienPreview({
+      personnel: { id: 'qn-bd-ch', ho_ten: 'Boundary' },
+      history: [
+        {
+          quan_nhan_id: 'qn-bd-ch',
+          he_so_chuc_vu: 0.7,
+          so_thang: 120,
+          ngay_bat_dau: new Date('2014-01-01'),
+          ngay_ket_thuc: new Date('2024-01-01'),
+          ChucVu: { he_so_chuc_vu: 0.7 },
+        },
+      ],
+      decisionNumbers: ['QD-BD'],
+    });
 
     const buffer = await makeCongHienExcelBuffer([
       {
@@ -413,19 +407,13 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
   });
 
   it('Mix valid + invalid → trả cả 2 phần đúng', async () => {
-    const p1 = makePersonnel({ id: 'qn-mix-1', ho_ten: 'Hợp Lệ', gioi_tinh: 'NAM' });
-    const p2 = makePersonnel({ id: 'qn-mix-2', ho_ten: 'Thiếu Tháng', gioi_tinh: 'NAM' });
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
-      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
-      { id: p2.id, ho_ten: p2.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
-    ]);
-    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
-    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce([
-      ...eligibleHistory(p1.id),
-      ...eligibleHistory(p2.id),
-    ]);
-    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-CH-001' }]);
-    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+    arrangeCongHienPreview({
+      personnel: [
+        { id: 'qn-mix-1', ho_ten: 'Hợp Lệ' },
+        { id: 'qn-mix-2', ho_ten: 'Thiếu Tháng' },
+      ],
+      decisionNumbers: ['QD-CH-001'],
+    });
 
     const buffer = await makeCongHienExcelBuffer([
       {
@@ -591,13 +579,11 @@ describe('contributionMedal.service - HCBVTQ highest qualifying rank guard', () 
 
   it('Preview HANG_BA cho QN đủ HANG_NHAT → push vào errors với message "thấp hơn"', async () => {
     const p1 = makePersonnel({ id: 'qn-highest-prev-1', ho_ten: 'Highest Preview', gioi_tinh: 'NAM' });
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
-      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
-    ]);
-    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
-    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(HCBVTQ_IMPORT_HIGHEST_eligibleHigh(p1.id));
-    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-HIGHEST-1' }]);
-    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+    arrangeCongHienPreview({
+      personnel: { id: p1.id, ho_ten: p1.ho_ten },
+      history: HCBVTQ_IMPORT_HIGHEST_eligibleHigh(p1.id),
+      decisionNumbers: ['QD-HIGHEST-1'],
+    });
 
     const buffer = await makeCongHienExcelBuffer([
       {
@@ -621,13 +607,11 @@ describe('contributionMedal.service - HCBVTQ highest qualifying rank guard', () 
 
   it('Preview HANG_NHAT cho QN đủ HANG_NHAT → vào valid', async () => {
     const p1 = makePersonnel({ id: 'qn-highest-prev-2', ho_ten: 'Highest OK', gioi_tinh: 'NAM' });
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
-      { id: p1.id, ho_ten: p1.ho_ten, gioi_tinh: 'NAM', cap_bac: 'Đại uý', ChucVu: { ten_chuc_vu: 'Trợ lý' } },
-    ]);
-    prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
-    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(HCBVTQ_IMPORT_HIGHEST_eligibleHigh(p1.id));
-    prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-HIGHEST-2' }]);
-    prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
+    arrangeCongHienPreview({
+      personnel: { id: p1.id, ho_ten: p1.ho_ten },
+      history: HCBVTQ_IMPORT_HIGHEST_eligibleHigh(p1.id),
+      decisionNumbers: ['QD-HIGHEST-2'],
+    });
 
     const buffer = await makeCongHienExcelBuffer([
       {

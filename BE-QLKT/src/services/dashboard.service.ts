@@ -22,6 +22,8 @@ function getLastNDays(n: number): string[] {
 function getLastNMonths(n: number): string[] {
   return Array.from({ length: n }, (_, i) => {
     const date = new Date();
+    // day-1 first: setMonth overflows the day on the 29th-31st
+    date.setDate(1);
     date.setMonth(date.getMonth() - (n - 1 - i));
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
   });
@@ -65,8 +67,8 @@ function daysAgo(n: number): Date {
 
 function monthsAgo(n: number): Date {
   const date = new Date();
-  date.setMonth(date.getMonth() - n);
   date.setDate(1);
+  date.setMonth(date.getMonth() - n);
   date.setHours(0, 0, 0, 0);
   return date;
 }

@@ -73,13 +73,6 @@ class HcqkqtStrategy implements ProposalStrategy {
     return { errors, payload: { data_nien_han: dataNienHan } };
   }
 
-  async validateApprove(
-    _editedData: EditedProposalData,
-    _ctx: ProposalApproveContext
-  ): Promise<string[]> {
-    return [];
-  }
-
   async importInTransaction(
     editedData: EditedProposalData,
     ctx: ProposalApproveContext,
@@ -114,9 +107,6 @@ class HcqkqtStrategy implements ProposalStrategy {
     });
   }
 
-  buildSuccessMessage(acc: ImportAccumulator): string {
-    return `Đã phê duyệt Huy chương Quân kỳ quyết thắng cho ${acc.affectedPersonnelIds.size} quân nhân`;
-  }
 }
 
 export const hcqkqtStrategy = new HcqkqtStrategy();

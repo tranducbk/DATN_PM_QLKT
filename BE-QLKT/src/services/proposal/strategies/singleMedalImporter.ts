@@ -22,7 +22,7 @@ interface SingleMedalConfig {
   ) => Promise<void>;
 }
 
-export interface SingleMedalWriteData {
+interface SingleMedalWriteData {
   nam: number;
   thang: number;
   cap_bac: string | null;

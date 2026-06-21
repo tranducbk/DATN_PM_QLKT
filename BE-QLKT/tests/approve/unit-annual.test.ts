@@ -56,7 +56,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-1',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -112,7 +112,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-2',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: dvtt,
       data_danh_hieu: [item],
     });
@@ -156,7 +156,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       status: PROPOSAL_STATUS.APPROVED,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
 
@@ -187,7 +187,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-mixed-1',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [
         makeProposalItemDonVi({
@@ -223,7 +223,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-mixed-2',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [
         makeProposalItemDonVi({
@@ -257,7 +257,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-mixed-3',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [
         makeProposalItemDonVi({
@@ -297,7 +297,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-existing',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -340,7 +340,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-pending',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -391,7 +391,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-self-match',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2026,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -451,7 +451,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-not-elig-bk',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -488,7 +488,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-no-qd',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -521,7 +521,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-bkbqp-no-qd',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -553,7 +553,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-ok-qd',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -591,7 +591,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-bkttcp-no-qd',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -630,7 +630,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-iso-bk',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -680,7 +680,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-swap-bk',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -714,7 +714,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-not-elig-bkttcp',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -744,7 +744,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-partial-msg',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [
         makeProposalItemDonVi({

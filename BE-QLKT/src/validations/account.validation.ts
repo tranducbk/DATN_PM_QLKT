@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { ROLES } from '../constants/roles.constants';
+import { MAX_LIMIT } from '../helpers/paginationHelper';
 
 export const createAccount = z.object({
   username: z
@@ -35,7 +36,7 @@ export const idParam = z.object({
 
 export const listQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).default(20),
+  limit: z.coerce.number().int().min(1).max(MAX_LIMIT).default(20),
   search: z.string().trim().optional(),
   role: z.enum([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER, ROLES.USER]).optional(),
 });

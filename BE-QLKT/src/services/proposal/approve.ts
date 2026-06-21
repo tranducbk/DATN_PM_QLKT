@@ -49,7 +49,7 @@ function asJsonObjectArray<T = Record<string, unknown>>(value: unknown): T[] {
  * Edited payload mapped to BangDeXuat JSON columns.
  * Elements are business JSON objects and are not strictly typed at DB level.
  */
-export type EditedProposalPayload = {
+type EditedProposalPayload = {
   data_danh_hieu?: ProposalDanhHieuItem[] | null;
   data_thanh_tich?: ProposalThanhTichItem[] | null;
   data_nien_han?: ProposalNienHanItem[] | null;
@@ -90,6 +90,14 @@ function validateApproveStatus(proposal: LoadedProposal): void {
   }
 }
 
+// Separation of duties: the proposer must not approve their own proposal. A null
+// nguoi_de_xuat_id (submitter account deleted) is not a self-approval.
+function validateNotSelfApproval(proposal: LoadedProposal, adminId: AdminAccountId): void {
+  if (proposal.nguoi_de_xuat_id && proposal.nguoi_de_xuat_id === adminId) {
+    throw new ValidationError('Không thể tự phê duyệt đề xuất do chính mình tạo.');
+  }
+}
+
 /** Throws if proposal type requires a month and the stored month is missing/invalid. */
 function validateApproveMonth(proposal: LoadedProposal): void {
   if (
@@ -99,6 +107,49 @@ function validateApproveMonth(proposal: LoadedProposal): void {
     throw new ValidationError(
       'Đề xuất thiếu tháng. HCCSVV/HCQKQT/KNC bắt buộc có tháng (1-12) trước khi phê duyệt.'
     );
+  }
+}
+
+function collectTargetIds(...arrays: unknown[]): Set<string> {
+  const ids = new Set<string>();
+  for (const arr of arrays) {
+    for (const item of asJsonObjectArray<{ personnel_id?: string; don_vi_id?: string }>(arr)) {
+      const id = item.personnel_id ?? item.don_vi_id;
+      if (id) ids.add(id);
+    }
+  }
+  return ids;
+}
+
+// editedData may only edit fields of targets already in the submission — it must not
+// introduce a personnel/unit that wasn't proposed (swap or injection). ID-based, so a
+// rename does not trip it; a transfer/delete is caught later by the existence check.
+function assertEditedDataMatchesOriginal(
+  proposal: LoadedProposal,
+  editedData: EditedProposalPayload
+): void {
+  const originalIds = collectTargetIds(
+    proposal.data_danh_hieu,
+    proposal.data_thanh_tich,
+    proposal.data_nien_han,
+    proposal.data_cong_hien
+  );
+  const editedArrays = [
+    editedData.data_danh_hieu,
+    editedData.data_thanh_tich,
+    editedData.data_nien_han,
+    editedData.data_cong_hien,
+  ];
+  for (const arr of editedArrays) {
+    if (arr == null) continue;
+    for (const item of asJsonObjectArray<{ personnel_id?: string; don_vi_id?: string }>(arr)) {
+      const id = item.personnel_id ?? item.don_vi_id;
+      if (id && !originalIds.has(id)) {
+        throw new ValidationError(
+          'Không thể phê duyệt: dữ liệu chỉnh sửa chứa quân nhân hoặc đơn vị không có trong đề xuất gốc.'
+        );
+      }
+    }
   }
 }
 
@@ -274,6 +325,8 @@ async function approveProposal(
   const proposal = await loadApproveProposal(proposalId);
   if (!proposal) throw new NotFoundError('Đề xuất');
   validateApproveStatus(proposal);
+  validateNotSelfApproval(proposal, adminId);
+  assertEditedDataMatchesOriginal(proposal as LoadedProposal, editedData);
   validateApproveMonth(proposal);
 
   const danhHieuData = asJsonObjectArray<ProposalDanhHieuItem>(

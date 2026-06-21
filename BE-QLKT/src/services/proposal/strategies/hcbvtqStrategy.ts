@@ -249,13 +249,6 @@ class HcbvtqStrategy implements ProposalStrategy {
     return { errors, payload: { data_cong_hien: dataCongHien } };
   }
 
-  async validateApprove(
-    _editedData: EditedProposalData,
-    _ctx: ProposalApproveContext
-  ): Promise<string[]> {
-    return [];
-  }
-
   async importInTransaction(
     editedData: EditedProposalData,
     ctx: ProposalApproveContext,
@@ -426,9 +419,6 @@ class HcbvtqStrategy implements ProposalStrategy {
     }
   }
 
-  buildSuccessMessage(acc: ImportAccumulator): string {
-    return `Đã phê duyệt ${CONTRIBUTION_LABEL} cho ${acc.affectedPersonnelIds.size} quân nhân`;
-  }
 }
 
 export const hcbvtqStrategy = new HcbvtqStrategy();

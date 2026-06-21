@@ -8,7 +8,7 @@ import { GENDER } from '../../constants/gender.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { calculateServiceMonths, formatServiceDuration } from '../../helpers/serviceYearsHelper';
 
-export type ServiceYearsProposalType = 'HC_QKQT' | 'KNC_VSNXD_QDNDVN';
+type ServiceYearsProposalType = 'HC_QKQT' | 'KNC_VSNXD_QDNDVN';
 
 /** Vietnamese display label per proposal type — used in unified error messages. */
 const SERVICE_YEARS_AWARD_LABEL: Record<ServiceYearsProposalType, string> = {
@@ -21,7 +21,7 @@ const SERVICE_YEARS_AWARD_LABEL: Record<ServiceYearsProposalType, string> = {
 export const SERVICE_YEARS_PERSONNEL_NOT_FOUND =
   'Không tìm thấy thông tin một quân nhân (có thể đã bị xoá khỏi hệ thống) — vui lòng tải lại và thử lại.';
 
-export interface ServiceYearsPersonnel {
+interface ServiceYearsPersonnel {
   id: string;
   ho_ten: string;
   gioi_tinh?: string | null;
@@ -29,7 +29,7 @@ export interface ServiceYearsPersonnel {
   ngay_xuat_ngu: Date | null;
 }
 
-export type ServiceYearsFailureReason =
+type ServiceYearsFailureReason =
   | 'NOT_FOUND'
   | 'MISSING_GENDER'
   | 'MISSING_NHAP_NGU'
