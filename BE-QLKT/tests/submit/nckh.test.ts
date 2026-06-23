@@ -46,8 +46,8 @@ function callSubmit(items: NckhItem[], userId = 'acc-mgr-1', nam = 2024) {
   );
 }
 
-describe('proposal.submit - NCKH', () => {
-  it('gửi thành công 1 item DTKH (CQDV)', async () => {
+describe('Gửi đề xuất thành tích nghiên cứu khoa học (NCKH)', () => {
+  it('Gửi đề xuất: 1 đề tài khoa học (manager thuộc cơ quan đơn vị) → tạo đề xuất NCKH', async () => {
     arrangeManager('CQDV');
     const target = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn A' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -77,7 +77,7 @@ describe('proposal.submit - NCKH', () => {
     });
   });
 
-  it('gửi thành công nhiều items khác mo_ta cùng quân nhân (cho phép trùng)', async () => {
+  it('Gửi đề xuất: nhiều thành tích khác mô tả cho cùng quân nhân → cho phép, tạo đề xuất NCKH', async () => {
     arrangeManager('CQDV');
     const target = makePersonnel({ id: 'qn-multi', ho_ten: 'B' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -100,7 +100,7 @@ describe('proposal.submit - NCKH', () => {
     expect(data.data_thanh_tich).toHaveLength(2);
   });
 
-  it('gửi thành công với DVTT — proposal lưu don_vi_truc_thuoc_id', async () => {
+  it('Gửi đề xuất: manager thuộc đơn vị trực thuộc (ĐVTT) → đề xuất gắn đúng đơn vị trực thuộc', async () => {
     arrangeManager('DVTT');
     const target = makePersonnel({ id: 'qn-dvtt' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -121,7 +121,7 @@ describe('proposal.submit - NCKH', () => {
     expect(data.co_quan_don_vi_id).toBe(null);
   });
 
-  it('throw NotFoundError khi tài khoản không có QuanNhan', async () => {
+  it('Gửi đề xuất bị chặn: tài khoản người đề xuất chưa gắn quân nhân → báo không tìm thấy thông tin quân nhân', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-no-qn',
       username: 'orphan',

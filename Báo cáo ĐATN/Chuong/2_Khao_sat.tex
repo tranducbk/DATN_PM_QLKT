@@ -21,7 +21,7 @@ Quân nhân nhận thông tin khen thưởng chủ yếu theo một chiều qua 
 
 Mỗi quân nhân thường có nhiều quyết định khen thưởng từ các loại danh hiệu khác nhau: chuỗi danh hiệu hằng năm tích luỹ toàn thời gian phục vụ, Huy chương Chiến sĩ vẻ vang (HCCSVV) ở các mốc 10, 15, 20 năm, Huân chương Bảo vệ Tổ quốc (HCBVTQ), Kỷ niệm chương, Huy chương Quân kỳ quyết thắng và khen thưởng đột xuất.
 Cán bộ phục vụ trên 25 năm có thể tích luỹ nhiều quyết định khen thưởng.
-Ở quy mô vài nghìn cán bộ, học viên và sĩ quan, tổng dữ liệu lịch sử lên tới vài trăm nghìn bản ghi.
+Ở quy mô vài nghìn cán bộ, học viên và sĩ quan, mỗi người lại tích lũy nhiều bản ghi khen thưởng qua các năm, nên tổng dữ liệu lịch sử là một khối lượng lớn.
 
 Từ kết quả khảo sát, rút ra bốn nhóm vấn đề chính:
 
@@ -51,7 +51,7 @@ Hệ thống có bốn nhóm tác nhân tương ứng với bốn cấp phân qu
     \item \textbf{Người dùng (User)} là cán bộ, học viên hoặc sĩ quan sử dụng hệ thống để tra cứu hồ sơ khen thưởng cá nhân, xem các mốc danh hiệu hằng năm đủ điều kiện đề nghị theo định kỳ và nhận thông báo về kết quả phê duyệt.
 \end{itemize}
 
-Hệ thống cung cấp 15 nhóm chức năng chính: Đăng nhập, Quản lý tài khoản, Quản lý quân nhân, Quản lý đơn vị, Khen thưởng hằng năm, Khen thưởng HCCSVV, Khen thưởng HCBVTQ, Khen thưởng thành tích khoa học, Khen thưởng đột xuất, Đề xuất khen thưởng, Kiểm tra điều kiện và gợi ý, Thông báo thời gian thực, Xem nhật ký hệ thống, Sao lưu và khôi phục, Báo cáo và thống kê.
+Hệ thống cung cấp 15 nhóm chức năng chính: Đăng nhập, Quản lý tài khoản, Quản lý quân nhân, Quản lý đơn vị, Khen thưởng hằng năm, Khen thưởng HCCSVV, Khen thưởng HCBVTQ, Khen thưởng thành tích khoa học, Khen thưởng đột xuất, Đề xuất khen thưởng, Kiểm tra điều kiện và gợi ý, Thông báo thời gian thực, Xem nhật ký hệ thống, Sao lưu và khôi phục, Báo cáo và thống kê. Trong đó, các nhóm khen thưởng và đề xuất bao gồm nhiều loại danh hiệu con; bảy loại đề xuất được trình bày chi tiết ở Mục~\ref{subsection:2.2.4}.
 Mối quan hệ giữa từng tác nhân và các nhóm chức năng được thể hiện ở Hình \ref{fig:usecase-tongquat}.
 
 \begin{figure}[H]
@@ -218,7 +218,7 @@ Bao gồm:
     \item \textbf{Quản lý tài khoản}: Quản trị viên tạo được tài khoản ở mọi vai trò, còn Cán bộ Phòng Chính trị chỉ tạo tài khoản Chỉ huy đơn vị và Người dùng; mỗi tài khoản gắn với một quân nhân duy nhất qua khoá ngoại \texttt{quan\_nhan\_id}.
     \item \textbf{Đặt lại mật khẩu}: Cán bộ Phòng Chính trị có thể đặt lại mật khẩu cho Chỉ huy đơn vị / Người dùng về giá trị mặc định.
     \item \textbf{Nhật ký hệ thống} (\texttt{SystemLog}): ghi lại mọi thao tác thay đổi dữ liệu kèm thông tin gồm thời điểm, người thực hiện, loại tài nguyên, mã định danh tài nguyên và mô tả thao tác.
-    \item \textbf{Sao lưu và khôi phục}: Quản trị viên cấu hình lịch sao lưu định kỳ qua khu vực DevZone; hệ thống tự đọc toàn bộ bảng dữ liệu, sinh chuỗi câu lệnh \texttt{INSERT INTO} và lưu thành tệp \texttt{.sql} trong thư mục sao lưu. Thao tác khôi phục thực hiện thủ công bằng lệnh \texttt{psql}.
+    \item \textbf{Sao lưu và khôi phục}: Quản trị viên cấu hình lịch sao lưu định kỳ qua DevZone, khu vực công cụ quản trị kỹ thuật dành riêng cho Quản trị viên; hệ thống tự đọc toàn bộ bảng dữ liệu, kết xuất dữ liệu thành câu lệnh SQL và lưu thành tệp sao lưu trong thư mục sao lưu. Thao tác khôi phục thực hiện thủ công khi cần.
     \item \textbf{Cấu hình hệ thống} (\texttt{SystemSetting}): bật/tắt các cờ tính năng, ví dụ cờ cho phép gửi thông báo khi nhập Excel hàng loạt.
 \end{itemize}
 
@@ -290,20 +290,20 @@ Bốn use case quản trị gồm Quản lý đơn vị, Sao lưu dữ liệu, Q
 \hline
 \textbf{Tên use case} & \multicolumn{3}{l|}{Đăng nhập hệ thống} \\ \hline
 \textbf{Tác nhân} & \multicolumn{3}{l|}{SuperAdmin, Admin, Manager, User} \\ \hline
-\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Người dùng đã có tài khoản hợp lệ; trình duyệt cho phép \texttt{localStorage} và cookie.} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Người dùng đã có tài khoản hợp lệ.} \\ \hline
 \multirow{7}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
- & 1. & Người dùng đăng nhập & Truy cập trang \texttt{/login} \\ \cline{2-4}
+ & 1. & Người dùng đăng nhập & Truy cập trang đăng nhập \\ \cline{2-4}
  & 2. & Người dùng đăng nhập & Nhập tên đăng nhập và mật khẩu \\ \cline{2-4}
  & 3. & Người dùng đăng nhập & Bấm nút ``Đăng nhập'' \\ \cline{2-4}
- & 4. & Hệ thống & Đối chiếu mật khẩu băm bằng bcrypt \\ \cline{2-4}
- & 5. & Hệ thống & Phát hành Access Token và Refresh Token \\ \cline{2-4}
+ & 4. & Hệ thống & Kiểm tra tên đăng nhập và mật khẩu \\ \cline{2-4}
+ & 5. & Hệ thống & Tạo phiên đăng nhập cho người dùng \\ \cline{2-4}
  & 6. & Hệ thống & Chuyển hướng tới trang chủ tương ứng vai trò \\ \hline
 \multirow{3}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 4a. & Hệ thống & Báo ``Tên đăng nhập hoặc mật khẩu không đúng'' \\ \cline{2-4}
- & 5a. & Hệ thống & Vượt ngưỡng 30 yêu cầu thất bại / IP / 5 phút (giới hạn dùng chung cho đăng nhập, làm mới token và đổi mật khẩu), tạm khoá với mã 429 \\ \hline
-\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Phiên đăng nhập được thiết lập; access token lưu trong \texttt{localStorage}, refresh token lưu trong cookie httpOnly do máy chủ quản lý.} \\ \hline
+ & 5a. & Hệ thống & Quá số lần đăng nhập sai cho phép, hệ thống tạm khoá đăng nhập trong một khoảng thời gian \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Phiên đăng nhập được thiết lập; người dùng vào trang chủ tương ứng vai trò.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -346,7 +346,7 @@ Bốn use case quản trị gồm Quản lý đơn vị, Sao lưu dữ liệu, Q
  & 2a. & Hệ thống & Tên đăng nhập đã tồn tại, trả lỗi ``Tên đăng nhập đã tồn tại'' \\ \cline{2-4}
  & 2b. & Hệ thống & Mật khẩu để trống, hệ thống dùng mật khẩu mặc định \\ \cline{2-4}
  & 3a. & Hệ thống & Thiếu đơn vị hoặc chức vụ bắt buộc theo vai trò, chặn và yêu cầu nhập đủ \\ \hline
-\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Bản ghi quân nhân và tài khoản được tạo; số lượng quân nhân của đơn vị tăng 1; lịch sử chức vụ được khởi tạo; nhật ký \texttt{action = CREATE, resource = accounts} được ghi; hồ sơ chi tiết được hoàn thiện sau qua chức năng cập nhật.} \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Bản ghi quân nhân và tài khoản được tạo; số lượng quân nhân của đơn vị tăng 1; lịch sử chức vụ được khởi tạo; nhật ký hệ thống ghi lại thao tác tạo tài khoản; hồ sơ chi tiết được hoàn thiện sau qua chức năng cập nhật.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -390,12 +390,11 @@ Bốn use case quản trị gồm Quản lý đơn vị, Sao lưu dữ liệu, Q
  & 8. & Người dùng đăng nhập & Bước 5: xem lại toàn bộ thông tin và bấm ``Gửi đề xuất'' \\ \cline{2-4}
  & 9. & Hệ thống & Xác thực dữ liệu, tạo bản ghi đề xuất ở trạng thái chờ duyệt \\ \cline{2-4}
  & 10. & Hệ thống & Phát thông báo thời gian thực tới các Cán bộ Phòng Chính trị liên quan \\ \hline
-\multirow{4}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
+\multirow{3}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
- & 2a. & Hệ thống & Chỉ huy đơn vị chọn loại Đột xuất (ngoài quyền hạn), từ chối với lỗi 403; giao diện cũng ẩn loại này với Chỉ huy đơn vị \\ \cline{2-4}
  & 5a. & Hệ thống & Có đối tượng chưa đủ điều kiện, hệ thống từ chối và báo lỗi, không cho thêm \\ \cline{2-4}
- & 8a. & Hệ thống & Bản nháp được lưu liên tục ở \texttt{sessionStorage}; khi rời trang hoặc gửi lỗi, dữ liệu không bị mất \\ \hline
-\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Bản ghi đề xuất được tạo ở trạng thái chờ duyệt; thông báo đã gửi tới Cán bộ Phòng Chính trị; nhật ký \texttt{action = CREATE, resource = proposals} được ghi cùng tóm tắt loại và số lượng đối tượng.} \\ \hline
+ & 8a. & Hệ thống & Bản nháp được lưu tạm trên trình duyệt; khi rời trang hoặc gửi lỗi, dữ liệu không bị mất \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Bản ghi đề xuất được tạo ở trạng thái chờ duyệt; thông báo đã gửi tới Cán bộ Phòng Chính trị; nhật ký hệ thống ghi lại thao tác tạo đề xuất cùng tóm tắt loại và số lượng đối tượng.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -431,7 +430,7 @@ Bốn use case quản trị gồm Quản lý đơn vị, Sao lưu dữ liệu, Q
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 1. & Admin & Mở chi tiết đề xuất từ danh sách ``Chờ duyệt'' \\ \cline{2-4}
  & 2. & Admin & Đối chiếu danh sách đối tượng và danh hiệu \\ \cline{2-4}
- & 3. & Admin & Nhập số quyết định, tháng và năm nhận; có thể đính kèm tệp PDF quyết định \\ \cline{2-4}
+ & 3. & Admin & Nhập số quyết định và đính kèm tệp PDF quyết định nếu có; với loại xét theo mốc thời gian phục vụ thì nhập thêm tháng, năm nhận \\ \cline{2-4}
  & 4. & Admin & Bấm ``Phê duyệt'' \\ \cline{2-4}
  & 5. & Hệ thống & Mở giao dịch ghi danh hiệu, chuyển trạng thái, gắn quyết định; sau khi ghi xong, tính lại hồ sơ điều kiện \\ \cline{2-4}
  & 6. & Hệ thống & Phát thông báo thời gian thực tới Chỉ huy đơn vị đã đề xuất và các quân nhân được khen \\ \cline{2-4}
@@ -502,7 +501,7 @@ Bốn use case quản trị gồm Quản lý đơn vị, Sao lưu dữ liệu, Q
 \multirow{9}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 1. & Admin & Truy cập chức năng nhập tệp Excel và chọn loại khen thưởng \\ \cline{2-4}
- & 2. & Admin & Tải lên tệp \texttt{.xlsx} qua biểu mẫu \\ \cline{2-4}
+ & 2. & Admin & Tải lên tệp Excel qua biểu mẫu \\ \cline{2-4}
  & 3. & Hệ thống & Đọc tệp, kiểm tra cấu trúc cột và đọc tuần tự từng dòng \\ \cline{2-4}
  & 4. & Hệ thống & Kiểm tra quy tắc nghiệp vụ và tìm quân nhân tương ứng cho mỗi dòng \\ \cline{2-4}
  & 5. & Hệ thống & Trả về bảng xem trước với các dòng hợp lệ và dòng lỗi kèm mô tả \\ \cline{2-4}
@@ -526,7 +525,7 @@ Bốn use case quản trị gồm Quản lý đơn vị, Sao lưu dữ liệu, Q
 \hline
 \textbf{STT} & \textbf{Trường dữ liệu} & \textbf{Mô tả} & \textbf{Bắt buộc} & \textbf{Ví dụ hợp lệ} \\ \hline
 1 & Loại khen thưởng & Một trong các loại: danh hiệu hằng năm, khen thưởng đơn vị hằng năm, HCCSVV, HCBVTQ, KNC, HC Quân kỳ quyết thắng, thành tích khoa học & Có & Danh hiệu hằng năm \\ \hline
-2 & Tệp Excel & Tệp \texttt{.xlsx} điền theo mẫu & Có & \texttt{cstdcs-\allowbreak{}2025.xlsx} \\ \hline
+2 & Tệp Excel & Tệp Excel điền theo mẫu & Có & \texttt{cstdcs-\allowbreak{}2025.xlsx} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -545,19 +544,19 @@ Bốn use case quản trị gồm Quản lý đơn vị, Sao lưu dữ liệu, Q
 \multirow{9}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 1. & Admin & Thêm cơ quan đơn vị cấp trên: nhập mã đơn vị và tên đơn vị \\ \cline{2-4}
- & 2. & Hệ thống & Kiểm tra mã đơn vị duy nhất rồi lưu vào bảng \texttt{CoQuanDonVi} \\ \cline{2-4}
+ & 2. & Hệ thống & Kiểm tra mã đơn vị không trùng rồi lưu cơ quan đơn vị \\ \cline{2-4}
  & 3. & Admin & Thêm đơn vị trực thuộc: chọn cơ quan đơn vị cha và nhập thông tin đơn vị \\ \cline{2-4}
- & 4. & Hệ thống & Lưu vào \texttt{DonViTrucThuoc} với khoá ngoại \texttt{co\_quan\_don\_vi\_id} \\ \cline{2-4}
+ & 4. & Hệ thống & Lưu đơn vị trực thuộc gắn với cơ quan đơn vị cha \\ \cline{2-4}
  & 5. & Admin & Thêm chức vụ cho đơn vị: nhập tên chức vụ, cờ quản lý, hệ số chức vụ \\ \cline{2-4}
  & 6. & Hệ thống & Lưu chức vụ kèm ràng buộc duy nhất theo cặp đơn vị và tên chức vụ \\ \cline{2-4}
- & 7. & Admin & Xem cây đơn vị kèm bộ đếm số quân nhân \\ \cline{2-4}
- & 8. & Hệ thống & Trả về cấu trúc cây với \texttt{so\_luong} đã tự động cập nhật \\ \hline
+ & 7. & Admin & Xem cơ cấu tổ chức kèm số quân nhân từng đơn vị \\ \cline{2-4}
+ & 8. & Hệ thống & Trả về cơ cấu tổ chức với số quân nhân đã tự động cập nhật \\ \hline
 \multirow{4}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 2a. & Hệ thống & Mã đơn vị đã tồn tại, trả lỗi ``Mã đơn vị đã tồn tại'' \\ \cline{2-4}
- & 4a. & Hệ thống & Cơ quan đơn vị cha không tồn tại, trả lỗi 404 \\ \cline{2-4}
+ & 4a. & Hệ thống & Cơ quan đơn vị cha không tồn tại, hệ thống báo lỗi \\ \cline{2-4}
  & 8a. & Hệ thống & Cơ quan đơn vị còn đơn vị trực thuộc, chức vụ hoặc quân nhân, hệ thống chặn xoá để bảo toàn dữ liệu \\ \hline
-\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Cấu trúc cây đơn vị được cập nhật; bộ đếm \texttt{so\_luong} chính xác; quân nhân và chức vụ liên kết đúng đơn vị.} \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Cơ cấu tổ chức được cập nhật; số quân nhân từng đơn vị chính xác; quân nhân và chức vụ liên kết đúng đơn vị.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -571,23 +570,23 @@ Bốn use case quản trị gồm Quản lý đơn vị, Sao lưu dữ liệu, Q
 \begin{tabular}{|>{\centering\arraybackslash}p{3.2cm}|>{\centering\arraybackslash}p{0.8cm}|p{2.8cm}|p{6.2cm}|}
 \hline
 \textbf{Tên use case} & \multicolumn{3}{l|}{Sao lưu dữ liệu định kỳ và thủ công} \\ \hline
-\textbf{Tác nhân} & \multicolumn{3}{p{10.4cm}|}{SuperAdmin (qua DevZone), tác vụ cron tự động} \\ \hline
-\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Tính năng sao lưu được bật (\texttt{backup\_enabled = true}); SuperAdmin đã xác thực mật khẩu DevZone.} \\ \hline
+\textbf{Tác nhân} & \multicolumn{3}{p{10.4cm}|}{SuperAdmin (qua DevZone), tác vụ tự động theo lịch} \\ \hline
+\textbf{Tiền điều kiện} & \multicolumn{3}{p{10.4cm}|}{Tính năng sao lưu đã được bật; SuperAdmin đã xác thực mật khẩu DevZone.} \\ \hline
 \multirow{8}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
- & 1. & Cron / SuperAdmin & Kích hoạt theo lịch (mặc định 02:00 hằng ngày) hoặc bấm ``Sao lưu ngay'' \\ \cline{2-4}
- & 2. & Hệ thống & Đọc 21 bảng dữ liệu (không gồm nhật ký hệ thống và thông báo) qua \texttt{Promise.all} \\ \cline{2-4}
- & 3. & Hệ thống & Ghép chuỗi câu lệnh \texttt{INSERT INTO} đã escape cho từng dòng \\ \cline{2-4}
- & 4. & Hệ thống & Ghi tệp \texttt{.sql} vào \texttt{backups/} theo tên \texttt{backup\_YYYYMMDD\_\allowbreak{}HHmmss\_\allowbreak{}loai.sql} \\ \cline{2-4}
- & 5. & Hệ thống & Cập nhật mốc sao lưu gần nhất và ghi nhật ký (\texttt{resource = backup}) \\ \cline{2-4}
+ & 1. & Tự động / SuperAdmin & Kích hoạt theo lịch (mặc định 02:00 hằng ngày) hoặc bấm ``Sao lưu ngay'' \\ \cline{2-4}
+ & 2. & Hệ thống & Đọc đồng thời 21 bảng dữ liệu nghiệp vụ (không gồm nhật ký hệ thống và thông báo) \\ \cline{2-4}
+ & 3. & Hệ thống & Kết xuất dữ liệu từng bảng thành câu lệnh SQL đã làm sạch \\ \cline{2-4}
+ & 4. & Hệ thống & Ghi tệp sao lưu vào thư mục sao lưu, đặt tên theo thời điểm và loại dữ liệu \\ \cline{2-4}
+ & 5. & Hệ thống & Cập nhật mốc sao lưu gần nhất và ghi nhật ký \\ \cline{2-4}
  & 6. & Hệ thống & Xoá các tệp cũ vượt số ngày lưu trữ (mặc định 15) \\ \cline{2-4}
  & 7. & SuperAdmin & Xem trạng thái, đổi lịch hoặc bật/tắt sao lưu trong DevZone \\ \hline
 \multirow{4}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
- & 1a. & Hệ thống & \texttt{backup\_enabled = false}, cron bỏ qua và không sinh tệp \\ \cline{2-4}
- & 4a. & Hệ thống & Lỗi ghi tệp (đầy ổ đĩa, thiếu quyền), ghi nhật ký \texttt{BACKUP\_FAILED} \\ \cline{2-4}
- & 7a. & Hệ thống & Cú pháp lịch cron không hợp lệ, trả lỗi và giữ lịch cũ \\ \hline
-\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Tệp \texttt{.sql} mới được lưu trong \texttt{backups/}; việc khôi phục thực hiện thủ công bằng lệnh \texttt{psql}.} \\ \hline
+ & 1a. & Hệ thống & Tính năng sao lưu đang tắt, hệ thống bỏ qua và không sinh tệp \\ \cline{2-4}
+ & 4a. & Hệ thống & Lỗi ghi tệp (đầy ổ đĩa, thiếu quyền), hệ thống ghi nhật ký lỗi sao lưu \\ \cline{2-4}
+ & 7a. & Hệ thống & Lịch chạy định kỳ không hợp lệ, hệ thống báo lỗi và giữ lịch cũ \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{p{10.4cm}|}{Tệp sao lưu mới được lưu trong thư mục sao lưu; việc khôi phục thực hiện thủ công khi cần.} \\ \hline
 \end{tabular}
 \end{table}
 
@@ -606,13 +605,13 @@ Bốn use case quản trị gồm Quản lý đơn vị, Sao lưu dữ liệu, Q
 \multirow{9}{*}{\parbox{3.2cm}{\centering\textbf{Luồng sự kiện chính}\\\textbf{(Thành công)}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 1. & Admin & Tạo tài khoản: nhập tên đăng nhập, chọn vai trò, đơn vị và chức vụ \\ \cline{2-4}
- & 2. & Hệ thống & Băm mật khẩu bằng bcrypt (dùng mật khẩu mặc định nếu để trống); tạo quân nhân nếu chưa có và lưu \texttt{TaiKhoan} với khoá ngoại \texttt{quan\_nhan\_id} \\ \cline{2-4}
+ & 2. & Hệ thống & Băm mật khẩu (dùng mật khẩu mặc định nếu để trống); tạo quân nhân nếu chưa có và lưu tài khoản gắn với quân nhân đó \\ \cline{2-4}
  & 3. & Hệ thống & Thông báo tạo thành công; người dùng đăng nhập lần đầu bằng mật khẩu mặc định \\ \cline{2-4}
  & 4. & Admin & Cập nhật vai trò hoặc khoá/mở tài khoản \\ \cline{2-4}
  & 5. & Admin & Đặt lại mật khẩu cho tài khoản \\ \cline{2-4}
  & 6. & Hệ thống & Đặt lại mật khẩu về giá trị mặc định, băm và lưu \\ \cline{2-4}
  & 7. & Admin & Xoá tài khoản (có xác nhận) \\ \cline{2-4}
- & 8. & Hệ thống & Xoá \texttt{TaiKhoan}; nhật ký liên quan giữ lại theo chính sách \texttt{SetNull} \\ \hline
+ & 8. & Hệ thống & Xoá tài khoản; các bản ghi nhật ký liên quan vẫn được giữ lại \\ \hline
 \multirow{3}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
  & 1a. & Hệ thống & Trùng tên đăng nhập, trả lỗi ``Tên đăng nhập đã tồn tại'' \\ \cline{2-4}
@@ -682,16 +681,16 @@ Hệ thống áp dụng bảy nhóm biện pháp, trải từ xác thực ngư�
 Chi tiết cài đặt được trình bày tại Chương~\ref{chapter:Methodology}.
 
 \paragraph{Băm mật khẩu bằng bcrypt với hệ số chi phí 10.} Mật khẩu không lưu ở dạng văn bản thô.
-Hệ số 10 cân bằng giữa thời gian xác thực và độ khó tấn công vét cạn nếu cơ sở dữ liệu bị rò rỉ \cite{bcrypt}.
+Hệ số 10 cân bằng giữa thời gian xác thực và độ khó tấn công vét cạn nếu cơ sở dữ liệu bị rò rỉ.
 
 \paragraph{Phân quyền bốn cấp.} Mỗi route nhạy cảm đều phải qua một bước kiểm tra vai trò: chỉ những vai trò nằm trong danh sách cho phép mới được đi tiếp.
-Ngoài ra, với Chỉ huy đơn vị, hệ thống còn tự động thu hẹp phạm vi truy vấn về đúng cây đơn vị họ phụ trách, thay vì phải kiểm tra thủ công ở từng route.
+Ngoài ra, với Chỉ huy đơn vị, hệ thống còn tự động thu hẹp phạm vi về đúng các đơn vị họ phụ trách, thay vì phải kiểm tra thủ công ở từng route.
 
 \paragraph{Xác thực dữ liệu hai phía bằng Zod.} Hệ thống yêu cầu mọi dữ liệu người dùng nhập phải được xác thực ở cả frontend lẫn backend bằng Zod; nhờ đó, ngay cả khi một yêu cầu gửi thẳng tới API mà không qua giao diện, dữ liệu không hợp lệ vẫn bị từ chối.
 Chi tiết cài đặt được trình bày tại Chương~\ref{chapter:Methodology}.
 
-\paragraph{Bảo vệ tầng vận chuyển và tầng ứng dụng.} Khi triển khai sản xuất, khuyến nghị bảo vệ toàn bộ kết nối bằng HTTPS.
-Header bảo mật do middleware Helmet áp đặt (Content-Security-Policy, X-Frame-Options, X-Content-Type-Options).
+\paragraph{Bảo vệ tầng vận chuyển và tầng ứng dụng.} Khi triển khai thực tế, khuyến nghị bảo vệ toàn bộ kết nối bằng HTTPS.
+Các header bảo mật mặc định do middleware Helmet bổ sung giúp hạn chế một số dạng tấn công phổ biến phía trình duyệt.
 CORS được cấu hình chỉ chấp nhận tên miền frontend chính.
 Cơ chế giới hạn tốc độ chia hai cấp.
 Cấp thứ nhất áp cho các điểm cuối xác thực như đăng nhập, làm mới token và đổi mật khẩu, giới hạn 30 yêu cầu mỗi IP trong 5 phút và chỉ đếm các lần thất bại để không chặn nhầm người dùng hợp lệ.
@@ -714,7 +713,7 @@ Chi tiết cài đặt được trình bày tại Chương~\ref{chapter:Experime
 Một sai lệch nhỏ giữa các bản ghi có thể dẫn tới quyết định sai, chẳng hạn bỏ sót quân nhân đủ điều kiện hoặc đề xuất nhầm chu kỳ.
 Vì vậy, tính nhất quán dữ liệu được đặt ngang hàng với bảo mật.
 
-\textbf{Giao dịch ACID cho nghiệp vụ trên nhiều thực thể.} Các nghiệp vụ có thao tác ghi/đọc trên nhiều thực thể (bảng) cùng lúc được đóng gói trong một giao dịch theo các nguyên tắc kiểm soát đồng thời tiêu chuẩn \cite{bernstein1981concurrency}.
+\textbf{Giao dịch ACID cho nghiệp vụ trên nhiều thực thể.} Các nghiệp vụ có thao tác ghi/đọc trên nhiều thực thể (bảng) cùng lúc được đóng gói trong một giao dịch theo các nguyên tắc kiểm soát đồng thời.
 Khi phê duyệt một đề xuất gồm 50 quân nhân, hệ thống thực hiện trong một giao dịch: 50 lần ghi \texttt{DanhHieuHangNam}, cập nhật trạng thái đề xuất và gắn số quyết định.
 Hoặc tất cả thành công, hoặc cơ sở dữ liệu trở về trạng thái trước phê duyệt nếu một bước gặp lỗi.
 Việc ghi nhật ký và tính lại hồ sơ điều kiện được thực hiện ngay sau khi giao dịch hoàn tất.
@@ -742,8 +741,6 @@ Lược đồ cơ sở dữ liệu được khai báo tập trung tại một n�
 Mọi thao tác làm thay đổi dữ liệu nghiệp vụ đều có nhật ký truy vết, hỗ trợ rà soát và chẩn đoán khi vận hành.
 
 Về độ sẵn sàng, hệ thống chạy nội bộ trong mạng Học viện, khởi động lại nhanh sau khi cập nhật hoặc gặp sự cố và được sao lưu hằng ngày để giới hạn lượng dữ liệu có thể mất ở mức không quá 24 giờ.
-
-\section*{Kết chương}
 
 Chương này đã khảo sát hiện trạng công tác khen thưởng tại Học viện, mô hình hoá yêu cầu qua biểu đồ use case tổng quát và các biểu đồ phân rã chức năng, đặc tả chi tiết các use case tiêu biểu và tổng hợp những yêu cầu phi chức năng về hiệu năng, bảo mật và tính nhất quán dữ liệu.
 Đây là đầu vào trực tiếp cho việc lựa chọn công nghệ ở chương tiếp theo và thiết kế hệ thống ở các chương sau.

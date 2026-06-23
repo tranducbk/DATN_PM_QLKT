@@ -38,8 +38,8 @@ function makeDecision(overrides: Partial<DecisionRowFixture> = {}): DecisionRowF
   };
 }
 
-describe('decision.service - createDecision', () => {
-  it('Cho số quyết định mới Khi tạo Thì lưu thành công', async () => {
+describe('Số quyết định: tạo mới quyết định', () => {
+  it('Số quyết định: tạo quyết định với số chưa dùng → lưu thành công', async () => {
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(null);
     const created = makeDecision({ id: 'qd-new', so_quyet_dinh: '999/QĐ-BQP' });
     prismaMock.fileQuyetDinh.create.mockResolvedValueOnce(created as never);
@@ -59,7 +59,7 @@ describe('decision.service - createDecision', () => {
     expect(result.id).toBe('qd-new');
   });
 
-  it('Cho số quyết định đã tồn tại Khi tạo Thì throw AppError 409', async () => {
+  it('Số quyết định: tạo quyết định với số đã tồn tại → chặn trùng số quyết định', async () => {
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(makeDecision() as never);
 
     await expect(
@@ -75,7 +75,7 @@ describe('decision.service - createDecision', () => {
     expect(prismaMock.fileQuyetDinh.create).not.toHaveBeenCalled();
   });
 
-  it('Cho số quyết định trùng năm khác Khi tạo Thì vẫn reject (unique global, không scope theo năm)', async () => {
+  it('Số quyết định: số trùng nhưng năm khác → vẫn chặn trùng số quyết định (số là duy nhất toàn hệ thống, không theo năm)', async () => {
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(
       makeDecision({ nam: 2024 }) as never
     );
@@ -92,8 +92,8 @@ describe('decision.service - createDecision', () => {
   });
 });
 
-describe('decision.service - updateDecision', () => {
-  it('Cho id tồn tại + số mới chưa dùng Khi update Thì lưu thành công', async () => {
+describe('Số quyết định: cập nhật quyết định', () => {
+  it('Số quyết định: đổi sang số mới chưa dùng → lưu thành công', async () => {
     const existing = makeDecision({ id: 'qd-1', so_quyet_dinh: '123/QĐ-BQP' });
     prismaMock.fileQuyetDinh.findUnique
       .mockResolvedValueOnce(existing as never)
@@ -112,7 +112,7 @@ describe('decision.service - updateDecision', () => {
     expect(result.so_quyet_dinh).toBe('456/QĐ-BQP');
   });
 
-  it('Cho id tồn tại + giữ nguyên số Khi update Thì không check duplicate', async () => {
+  it('Số quyết định: cập nhật mà giữ nguyên số → không kiểm tra trùng', async () => {
     const existing = makeDecision({ id: 'qd-1', so_quyet_dinh: '123/QĐ-BQP' });
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(existing as never);
     prismaMock.fileQuyetDinh.update.mockResolvedValueOnce(
@@ -128,7 +128,7 @@ describe('decision.service - updateDecision', () => {
     expect(prismaMock.fileQuyetDinh.update).toHaveBeenCalledTimes(1);
   });
 
-  it('Cho số mới đã thuộc row khác Khi update Thì throw AppError 409', async () => {
+  it('Số quyết định: đổi sang số đã thuộc quyết định khác → chặn trùng số quyết định', async () => {
     const existing = makeDecision({ id: 'qd-1', so_quyet_dinh: '123/QĐ-BQP' });
     const conflict = makeDecision({ id: 'qd-2', so_quyet_dinh: '456/QĐ-BQP' });
     prismaMock.fileQuyetDinh.findUnique
@@ -142,7 +142,7 @@ describe('decision.service - updateDecision', () => {
     expect(prismaMock.fileQuyetDinh.update).not.toHaveBeenCalled();
   });
 
-  it('Cho id không tồn tại Khi update Thì throw NotFoundError', async () => {
+  it('Số quyết định: cập nhật quyết định không tồn tại → báo không tìm thấy', async () => {
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(null);
 
     await expect(
@@ -151,8 +151,8 @@ describe('decision.service - updateDecision', () => {
   });
 });
 
-describe('decision.service - getDecisionBySoQuyetDinh', () => {
-  it('Cho số tồn tại Khi tra cứu Thì trả về row', async () => {
+describe('Số quyết định: tra cứu theo số quyết định', () => {
+  it('Số quyết định: số tồn tại → tra cứu trả về quyết định', async () => {
     const row = makeDecision({ so_quyet_dinh: '123/QĐ-BQP' });
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(row as never);
 
@@ -162,7 +162,7 @@ describe('decision.service - getDecisionBySoQuyetDinh', () => {
     expect(result?.so_quyet_dinh).toBe('123/QĐ-BQP');
   });
 
-  it('Cho số không tồn tại Khi tra cứu Thì trả về null (không throw)', async () => {
+  it('Số quyết định: số không tồn tại → tra cứu trả về rỗng, không báo lỗi', async () => {
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(null);
 
     const result = await decisionService.getDecisionBySoQuyetDinh('999/QĐ-BQP');
@@ -171,7 +171,7 @@ describe('decision.service - getDecisionBySoQuyetDinh', () => {
   });
 });
 
-describe('decision.service - deleteDecision', () => {
+describe('Số quyết định: xóa quyết định', () => {
   function mockNoAwardLinks(): void {
     const zero = 0;
     prismaMock.thanhTichKhoaHoc.count.mockResolvedValueOnce(zero as never);
@@ -192,7 +192,7 @@ describe('decision.service - deleteDecision', () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([] as never);
   }
 
-  it('Cho decision không liên kết award nào Khi xoá Thì gọi delete', async () => {
+  it('Số quyết định: quyết định không gắn với khen thưởng nào → xóa thành công', async () => {
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(makeDecision() as never);
     mockNoAwardLinks();
     prismaMock.fileQuyetDinh.delete.mockResolvedValueOnce(makeDecision() as never);
@@ -203,7 +203,7 @@ describe('decision.service - deleteDecision', () => {
     expect(result.message).toMatch(/thành công/i);
   });
 
-  it('Cho decision đang được dùng trong DanhHieuHangNam Khi xoá Thì throw ValidationError', async () => {
+  it('Số quyết định: quyết định đang gắn với danh hiệu hằng năm → chặn xóa', async () => {
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(makeDecision() as never);
     prismaMock.thanhTichKhoaHoc.count.mockResolvedValueOnce(0 as never);
     prismaMock.danhHieuHangNam.count
@@ -227,7 +227,7 @@ describe('decision.service - deleteDecision', () => {
     expect(prismaMock.fileQuyetDinh.delete).not.toHaveBeenCalled();
   });
 
-  it('Cho decision đang được dùng ở chain BKBQP cá nhân Khi xoá Thì throw ValidationError', async () => {
+  it('Số quyết định: quyết định đang gắn với BKBQP cá nhân → chặn xóa, nêu rõ số bản ghi liên quan', async () => {
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(makeDecision() as never);
     prismaMock.thanhTichKhoaHoc.count.mockResolvedValueOnce(0 as never);
     prismaMock.danhHieuHangNam.count
@@ -251,7 +251,7 @@ describe('decision.service - deleteDecision', () => {
     });
   });
 
-  it('Cho decision đang được tham chiếu trong proposal PENDING Khi xoá Thì throw ValidationError + liệt kê đề xuất', async () => {
+  it('Số quyết định: quyết định đang được dùng trong đề xuất chờ duyệt → chặn xóa và liệt kê đề xuất', async () => {
     const decision = makeDecision({ so_quyet_dinh: '123/QĐ-BQP' });
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(decision as never);
     prismaMock.thanhTichKhoaHoc.count.mockResolvedValueOnce(0 as never);
@@ -287,7 +287,7 @@ describe('decision.service - deleteDecision', () => {
     expect(prismaMock.fileQuyetDinh.delete).not.toHaveBeenCalled();
   });
 
-  it('Cho decision đang được tham chiếu trong proposal APPROVED + REJECTED Khi xoá Thì throw + liệt kê đủ 2 status', async () => {
+  it('Số quyết định: quyết định đang được dùng trong đề xuất đã duyệt và bị từ chối → chặn xóa và liệt kê đủ cả hai trạng thái', async () => {
     const decision = makeDecision({ so_quyet_dinh: '123/QĐ-BQP' });
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(decision as never);
     prismaMock.thanhTichKhoaHoc.count.mockResolvedValueOnce(0 as never);
@@ -336,7 +336,7 @@ describe('decision.service - deleteDecision', () => {
     expect(prismaMock.fileQuyetDinh.delete).not.toHaveBeenCalled();
   });
 
-  it('Cho id không tồn tại Khi xoá Thì throw NotFoundError', async () => {
+  it('Số quyết định: xóa quyết định không tồn tại → báo không tìm thấy', async () => {
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(null);
 
     await expect(decisionService.deleteDecision('qd-missing')).rejects.toBeInstanceOf(

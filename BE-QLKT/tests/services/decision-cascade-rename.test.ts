@@ -38,8 +38,8 @@ function makeDecision(overrides: Partial<DecisionRowFixture> = {}): DecisionRowF
   };
 }
 
-describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat (mọi status)', () => {
-  it('Cho data_danh_hieu chứa số cũ Khi cascade Thì update đúng row + replace tất cả cột chain', async () => {
+describe('Đổi quyết định: cập nhật lan tỏa số quyết định trong các đề xuất (mọi trạng thái)', () => {
+  it('Đổi quyết định: đề xuất chứa số cũ ở các danh hiệu chuỗi → cập nhật lan tỏa sang số mới ở tất cả ô số quyết định trùng', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       {
         id: 'bdx-1',
@@ -86,7 +86,7 @@ describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat (mọi stat
     expect(summary.proposalsUpdated).toBe(1);
   });
 
-  it('Cho data_thanh_tich + data_nien_han + data_cong_hien chứa số cũ Khi cascade Thì update đủ 3 cột', async () => {
+  it('Đổi quyết định: số cũ nằm ở dữ liệu NCKH, niên hạn và cống hiến → cập nhật lan tỏa đủ cả 3 nhóm', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       {
         id: 'bdx-2',
@@ -120,7 +120,7 @@ describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat (mọi stat
     expect(updateArg.data.data_danh_hieu).toBeUndefined();
   });
 
-  it('Cho proposal không chứa số cũ Khi cascade Thì không gọi update', async () => {
+  it('Đổi quyết định: đề xuất không chứa số cũ → không cập nhật gì', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       {
         id: 'bdx-3',
@@ -138,7 +138,7 @@ describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat (mọi stat
     expect(summary.proposalsUpdated).toBe(0);
   });
 
-  it('Cho data_danh_hieu là null Khi cascade Thì không crash + không update', async () => {
+  it('Đổi quyết định: đề xuất không có dữ liệu danh hiệu → không lỗi và không cập nhật', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       {
         id: 'bdx-4',
@@ -155,7 +155,7 @@ describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat (mọi stat
     expect(summary.proposalsUpdated).toBe(0);
   });
 
-  it('Cho data_danh_hieu là object thay vì array Khi cascade Thì skip an toàn (không crash)', async () => {
+  it('Đổi quyết định: dữ liệu danh hiệu sai định dạng (không phải danh sách) → bỏ qua an toàn, không lỗi', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       {
         id: 'bdx-5',
@@ -172,7 +172,7 @@ describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat (mọi stat
     expect(summary.proposalsUpdated).toBe(0);
   });
 
-  it('Cho 3 proposals (1 trúng + 2 trượt) Khi cascade Thì chỉ update 1 + đếm scanned=3, updated=1', async () => {
+  it('Đổi quyết định: trong 3 đề xuất chỉ 1 chứa số cũ → chỉ cập nhật 1, đã quét 3, đã cập nhật 1', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       {
         id: 'bdx-hit',
@@ -208,7 +208,7 @@ describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat (mọi stat
     expect(summary.proposalsUpdated).toBe(1);
   });
 
-  it('Cho cascade Khi query proposals Thì quét mọi status (không filter PENDING)', async () => {
+  it('Đổi quyết định: khi quét đề xuất → quét mọi trạng thái, không chỉ riêng đề xuất chờ duyệt', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([] as never);
 
     await cascadeRenameSoQuyetDinh(prismaMock as never, OLD_SQD, NEW_SQD);
@@ -227,7 +227,7 @@ describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat (mọi stat
     });
   });
 
-  it('Cho cascade quét proposals APPROVED + REJECTED Khi có số cũ Thì cũng rewrite JSON', async () => {
+  it('Đổi quyết định: cả đề xuất đã duyệt và bị từ chối nếu chứa số cũ → đều được cập nhật lan tỏa', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       {
         id: 'bdx-approved',
@@ -253,7 +253,7 @@ describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat (mọi stat
     expect(summary.proposalsUpdated).toBe(2);
   });
 
-  it('Cho cascade Khi không tìm thấy proposal nào Thì proposalsScanned=0, proposalsUpdated=0', async () => {
+  it('Đổi quyết định: không có đề xuất nào → đã quét 0, đã cập nhật 0', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([] as never);
 
     const summary = await cascadeRenameSoQuyetDinh(prismaMock as never, OLD_SQD, NEW_SQD);
@@ -264,8 +264,8 @@ describe('cascadeRenameSoQuyetDinh — JSON columns trên BangDeXuat (mọi stat
   });
 });
 
-describe('decisionService.updateDecision — tích hợp cascade rename', () => {
-  it('Cho rename thành công Khi update Thì wrap trong $transaction + cascade JSON', async () => {
+describe('Đổi quyết định: cập nhật số quyết định kèm lan tỏa sang đề xuất', () => {
+  it('Đổi quyết định: đổi số thành công → chạy trong cùng một giao dịch và cập nhật lan tỏa sang đề xuất', async () => {
     prismaMock.fileQuyetDinh.findUnique
       .mockResolvedValueOnce(makeDecision({ id: 'qd-1', so_quyet_dinh: OLD_SQD }) as never)
       .mockResolvedValueOnce(null);
@@ -283,7 +283,7 @@ describe('decisionService.updateDecision — tích hợp cascade rename', () => 
     expect(result.cascade?.proposalsUpdated).toBe(0);
   });
 
-  it('Cho update không đổi số quyết định Khi update Thì cascade=null + KHÔNG quét proposals', async () => {
+  it('Đổi quyết định: cập nhật mà giữ nguyên số quyết định → không lan tỏa và không quét đề xuất', async () => {
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(
       makeDecision({ id: 'qd-1', so_quyet_dinh: OLD_SQD }) as never
     );
@@ -300,7 +300,7 @@ describe('decisionService.updateDecision — tích hợp cascade rename', () => 
     expect(prismaMock.bangDeXuat.findMany).not.toHaveBeenCalled();
   });
 
-  it('Cho update nguyên ngày ký + người ký, không đụng số Khi update Thì cascade=null', async () => {
+  it('Đổi quyết định: chỉ sửa người ký, không đụng số quyết định → không lan tỏa', async () => {
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(
       makeDecision({ id: 'qd-1', so_quyet_dinh: OLD_SQD }) as never
     );
@@ -313,7 +313,7 @@ describe('decisionService.updateDecision — tích hợp cascade rename', () => 
     expect(result.cascade).toBeNull();
   });
 
-  it('Cho số mới đã tồn tại ở row khác Khi update Thì throw 409 + KHÔNG mở transaction', async () => {
+  it('Đổi quyết định: số mới đã thuộc quyết định khác → báo trùng và không mở giao dịch', async () => {
     prismaMock.fileQuyetDinh.findUnique
       .mockResolvedValueOnce(makeDecision({ id: 'qd-1', so_quyet_dinh: OLD_SQD }) as never)
       .mockResolvedValueOnce(makeDecision({ id: 'qd-2', so_quyet_dinh: NEW_SQD }) as never);
@@ -326,7 +326,7 @@ describe('decisionService.updateDecision — tích hợp cascade rename', () => 
     expect(prismaMock.fileQuyetDinh.update).not.toHaveBeenCalled();
   });
 
-  it('Cho id không tồn tại Khi update Thì throw NotFoundError', async () => {
+  it('Đổi quyết định: cập nhật quyết định không tồn tại → báo không tìm thấy', async () => {
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(null);
 
     await expect(
@@ -334,7 +334,7 @@ describe('decisionService.updateDecision — tích hợp cascade rename', () => 
     ).rejects.toBeInstanceOf(NotFoundError);
   });
 
-  it('Cho số quyết định mới là chuỗi rỗng Khi update Thì throw ValidationError', async () => {
+  it('Đổi quyết định: số quyết định mới để trống → từ chối', async () => {
     prismaMock.fileQuyetDinh.findUnique.mockResolvedValueOnce(
       makeDecision({ id: 'qd-1' }) as never
     );
@@ -346,7 +346,7 @@ describe('decisionService.updateDecision — tích hợp cascade rename', () => 
     expect(prismaMock.$transaction).not.toHaveBeenCalled();
   });
 
-  it('Cho rename Khi service trim số mới Thì duplicate check + cascade dùng đúng giá trị đã trim', async () => {
+  it('Đổi quyết định: số mới có khoảng trắng thừa → cắt khoảng trắng rồi mới kiểm tra trùng và lan tỏa theo giá trị đã cắt', async () => {
     const newWithSpace = `  ${NEW_SQD}  `;
     prismaMock.fileQuyetDinh.findUnique
       .mockResolvedValueOnce(makeDecision({ id: 'qd-1', so_quyet_dinh: OLD_SQD }) as never)
@@ -363,7 +363,7 @@ describe('decisionService.updateDecision — tích hợp cascade rename', () => 
     });
   });
 
-  it('Cho rename + cascade JSON fail giữa chừng Khi update Thì lỗi nổi lên (transaction rollback)', async () => {
+  it('Đổi quyết định: lan tỏa sang đề xuất gặp lỗi giữa chừng → cả thao tác bị hủy theo giao dịch', async () => {
     prismaMock.fileQuyetDinh.findUnique
       .mockResolvedValueOnce(makeDecision({ id: 'qd-1', so_quyet_dinh: OLD_SQD }) as never)
       .mockResolvedValueOnce(null);
@@ -380,8 +380,8 @@ describe('decisionService.updateDecision — tích hợp cascade rename', () => 
   });
 });
 
-describe('CascadeRenameSummary shape', () => {
-  it('Cho cascade chạy Khi đọc summary Thì có đúng các field proposalsScanned + proposalsUpdated', async () => {
+describe('Đổi quyết định: bản tóm tắt kết quả lan tỏa', () => {
+  it('Đổi quyết định: bản tóm tắt sau lan tỏa chỉ gồm số đề xuất đã quét và số đề xuất đã cập nhật', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([] as never);
 
     const summary: CascadeRenameSummary = await cascadeRenameSoQuyetDinh(

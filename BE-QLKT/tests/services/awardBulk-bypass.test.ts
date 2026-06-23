@@ -40,8 +40,8 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-describe('bulkCreateAwards — bypassEligibility flag', () => {
-  it('bypassEligibility=true → skips validatePersonnelConditions', async () => {
+describe('Trao hàng loạt — lách kiểm tra giao diện: cờ bỏ qua xét điều kiện quân nhân', () => {
+  it('Trao hàng loạt — lách kiểm tra giao diện: bật cờ bỏ qua xét điều kiện → không gọi bước kiểm tra điều kiện quân nhân', async () => {
     const spy = jest
       .spyOn(awardBulkService, 'validatePersonnelConditions')
       .mockResolvedValue([]);
@@ -63,7 +63,7 @@ describe('bulkCreateAwards — bypassEligibility flag', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 
-  it('bypassEligibility=false → calls validatePersonnelConditions', async () => {
+  it('Trao hàng loạt — lách kiểm tra giao diện: tắt cờ bỏ qua xét điều kiện → vẫn kiểm tra điều kiện quân nhân với đúng tham số', async () => {
     const spy = jest
       .spyOn(awardBulkService, 'validatePersonnelConditions')
       .mockResolvedValue([]);
@@ -86,7 +86,7 @@ describe('bulkCreateAwards — bypassEligibility flag', () => {
     expect(spy).toHaveBeenCalledWith(PROPOSAL_TYPES.NIEN_HAN, ['qn-1']);
   });
 
-  it('omitted bypassEligibility (default) → calls validatePersonnelConditions', async () => {
+  it('Trao hàng loạt — lách kiểm tra giao diện: không truyền cờ (mặc định) → vẫn kiểm tra điều kiện quân nhân', async () => {
     const spy = jest
       .spyOn(awardBulkService, 'validatePersonnelConditions')
       .mockResolvedValue([]);
@@ -107,7 +107,7 @@ describe('bulkCreateAwards — bypassEligibility flag', () => {
     expect(spy).toHaveBeenCalledTimes(1);
   });
 
-  it('bypassEligibility=true → duplicate check still runs (data integrity)', async () => {
+  it('Trao hàng loạt — lách kiểm tra giao diện: dù bỏ qua xét điều kiện, vẫn kiểm tra trùng khen thưởng (giữ toàn vẹn dữ liệu)', async () => {
     // beforeEach already spied on checkDuplicateAwards
     const dupSpy = awardBulkService.checkDuplicateAwards as unknown as jest.Mock;
     dupSpy.mockClear();
@@ -129,7 +129,7 @@ describe('bulkCreateAwards — bypassEligibility flag', () => {
     expect(dupSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('bypassEligibility=true → notify ADMINs about SA correction (forensic transparency)', async () => {
+  it('Trao hàng loạt — lách kiểm tra giao diện: SUPER_ADMIN bỏ qua xét điều kiện → gửi thông báo cho các ADMIN để minh bạch', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValue({ id: 'sa-1', username: 'sa_admin' });
     const notifyMock = notificationHelper.notifyAdminsOnBulkBypass as jest.Mock;
     notifyMock.mockClear();
@@ -153,7 +153,7 @@ describe('bulkCreateAwards — bypassEligibility flag', () => {
     expect(notifyMock).toHaveBeenCalledTimes(1);
   });
 
-  it('bypassEligibility=false → DO NOT notify ADMINs (normal admin path)', async () => {
+  it('Trao hàng loạt — lách kiểm tra giao diện: admin trao bình thường (không bỏ qua xét điều kiện) → không gửi thông báo cho ADMIN', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValue({ id: 'admin-1', username: 'admin' });
     const notifyMock = notificationHelper.notifyAdminsOnBulkBypass as jest.Mock;
     notifyMock.mockClear();

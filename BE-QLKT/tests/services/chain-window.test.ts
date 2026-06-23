@@ -3,38 +3,38 @@ import { countFlagInWindow } from '../../src/services/eligibility/chainEligibili
 const FLAG = 'nhan_bkbqp';
 const row = (nam: number, flag: unknown = true) => ({ nam, [FLAG]: flag });
 
-describe('countFlagInWindow — cửa sổ trượt [year-rangeYears, year-1]', () => {
-  it('đếm số cờ true trong cửa sổ 3 năm (CSTDTQ): anchor 2026 → [2023, 2025]', () => {
+describe('Xét điều kiện chuỗi danh hiệu: đếm cờ trong cửa sổ N năm gần nhất (từ năm-N tới năm-1)', () => {
+  it('Xét điều kiện chuỗi danh hiệu: đếm số cờ trong cửa sổ 3 năm gần nhất (CSTDTQ), mốc năm 2026 → tính các năm 2023-2025', () => {
     expect(countFlagInWindow([row(2023), row(2024), row(2025)], 2026, 3, FLAG)).toBe(3);
   });
 
-  it('biên mới nhất: năm year-1 được tính, năm year (hiện tại) bị loại', () => {
+  it('Xét điều kiện chuỗi danh hiệu: biên gần nhất — tính năm liền trước (năm-1), loại năm hiện tại', () => {
     expect(countFlagInWindow([row(2025)], 2026, 3, FLAG)).toBe(1);
     expect(countFlagInWindow([row(2026)], 2026, 3, FLAG)).toBe(0);
   });
 
-  it('biên cũ nhất: năm year-rangeYears được tính, year-rangeYears-1 bị loại (off-by-one)', () => {
+  it('Xét điều kiện chuỗi danh hiệu: biên xa nhất — tính đúng năm đầu cửa sổ, loại năm trước đó (không lệch 1 năm)', () => {
     expect(countFlagInWindow([row(2023)], 2026, 3, FLAG)).toBe(1);
     expect(countFlagInWindow([row(2022)], 2026, 3, FLAG)).toBe(0);
   });
 
-  it('cờ năm tương lai (> year) không được tính', () => {
+  it('Xét điều kiện chuỗi danh hiệu: cờ của các năm tương lai (sau mốc năm) không được tính', () => {
     expect(countFlagInWindow([row(2027), row(2030)], 2026, 3, FLAG)).toBe(0);
   });
 
-  it('chỉ đếm cờ === true — false/thiếu/giá trị truthy khác đều bỏ', () => {
+  it('Xét điều kiện chuỗi danh hiệu: chỉ đếm cờ bật đúng nghĩa, bỏ qua cờ tắt/thiếu/giá trị không hợp lệ', () => {
     expect(countFlagInWindow([row(2024, false), { nam: 2024 }], 2026, 3, FLAG)).toBe(0);
     expect(countFlagInWindow([row(2024, 1)], 2026, 3, FLAG)).toBe(0);
     expect(countFlagInWindow([row(2024, 'true')], 2026, 3, FLAG)).toBe(0);
   });
 
-  it('cửa sổ 7 năm (BKTTCP): anchor 2026 → [2019, 2025], year-7 in, year-8 out', () => {
+  it('Xét điều kiện chuỗi danh hiệu: cửa sổ 7 năm gần nhất (BKTTCP), mốc năm 2026 → tính các năm 2019-2025 (loại 2018)', () => {
     expect(countFlagInWindow([row(2019)], 2026, 7, FLAG)).toBe(1);
     expect(countFlagInWindow([row(2018)], 2026, 7, FLAG)).toBe(0);
     expect(countFlagInWindow([row(2025)], 2026, 7, FLAG)).toBe(1);
   });
 
-  it('BKBQP của chu kỳ trước tự rơi khỏi cửa sổ trượt', () => {
+  it('Xét điều kiện chuỗi danh hiệu: BKBQP của chu kỳ trước tự rơi khỏi cửa sổ gần nhất, chỉ còn cái trong cửa sổ', () => {
     // [2023,2025] tại 2026: BKBQP năm 2022 (chu kỳ trước) rớt ra, chỉ còn 2024
     expect(countFlagInWindow([row(2022), row(2024)], 2026, 3, FLAG)).toBe(1);
   });

@@ -134,15 +134,7 @@ export default function ManagerProposalsPage() {
       key: 'createdAt',
       width: 140,
       align: 'center' as const,
-      render: (date: string) => {
-        const d = new Date(date);
-        const hours = String(d.getHours()).padStart(2, '0');
-        const minutes = String(d.getMinutes()).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        return `${hours}:${minutes} ${day}/${month}/${year}`;
-      },
+      render: (date: string) => formatDateTime(date),
     },
     {
       title: 'Loại đề xuất',

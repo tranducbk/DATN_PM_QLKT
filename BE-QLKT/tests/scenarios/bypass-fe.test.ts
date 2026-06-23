@@ -80,8 +80,8 @@ function callSubmitCaNhan(
   return proposalService.submitProposal(items, null, ADMIN_ID, type, nam, null, thang);
 }
 
-describe('Bypass FE — payload shape attacks', () => {
-  it('titleData = null → ValidationError "Dữ liệu đề xuất không hợp lệ"', async () => {
+describe('Lách kiểm tra giao diện (gửi thẳng API): tấn công vào hình dạng dữ liệu gửi lên', () => {
+  it('Lách kiểm tra giao diện (gửi thẳng API): danh sách danh hiệu = null → từ chối "Dữ liệu đề xuất không hợp lệ"', async () => {
     // Given: attacker submit JSON body với titleData = null tường minh
     arrangeManager();
 
@@ -101,7 +101,7 @@ describe('Bypass FE — payload shape attacks', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('titleData = "string" → ValidationError vì không phải mảng', async () => {
+  it('Lách kiểm tra giao diện (gửi thẳng API): danh sách danh hiệu là chuỗi thay vì mảng → từ chối "Dữ liệu đề xuất không hợp lệ"', async () => {
     // Given: titleData là string nguyên thủy thay vì mảng
     arrangeManager();
 
@@ -120,7 +120,7 @@ describe('Bypass FE — payload shape attacks', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('userId không có QuanNhan → NotFoundError exact', async () => {
+  it('Lách kiểm tra giao diện (gửi thẳng API): tài khoản người gửi không gắn quân nhân → báo "Không tìm thấy thông tin quân nhân"', async () => {
     // Given: tài khoản tồn tại nhưng không gắn QuanNhan
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-orphan',
@@ -145,8 +145,8 @@ describe('Bypass FE — payload shape attacks', () => {
   });
 });
 
-describe('Bypass FE — year and month boundary attacks', () => {
-  it('nam = -1 → service vẫn tạo proposal (KHÔNG validate phía service)', async () => {
+describe('Lách kiểm tra giao diện (gửi thẳng API): tấn công vào mốc biên năm và tháng', () => {
+  it('Lách kiểm tra giao diện (gửi thẳng API): năm = -1 → tầng nghiệp vụ vẫn tạo đề xuất (chỉ chặn ở tầng giao diện)', async () => {
     // Note: Zod validation ở route layer; service không guard range `nam`.
     // Test này pin behavior hiện tại — xem "Rule mơ hồ phát hiện" trong audit report.
     arrangeManager();
@@ -172,7 +172,7 @@ describe('Bypass FE — year and month boundary attacks', () => {
     expect(prismaMock.bangDeXuat.create.mock.calls[0][0].data.nam).toBe(-1);
   });
 
-  it('nam = 9999 (tương lai) → service vẫn tạo proposal — pins behavior', async () => {
+  it('Lách kiểm tra giao diện (gửi thẳng API): năm = 9999 (tương lai xa) → tầng nghiệp vụ vẫn tạo đề xuất (chỉ chặn ở tầng giao diện)', async () => {
     // Pinned: service không guard năm tương lai xa.
     arrangeManager();
     const target = makePersonnel({ id: 'qn-9999' });
@@ -195,7 +195,7 @@ describe('Bypass FE — year and month boundary attacks', () => {
     expect(prismaMock.bangDeXuat.create.mock.calls[0][0].data.nam).toBe(9999);
   });
 
-  it('thang = 0 cho HC_QKQT → reject với SUBMIT_MISSING_MONTH_ERROR', async () => {
+  it('Lách kiểm tra giao diện (gửi thẳng API): HC QKQT với tháng = 0 → từ chối "Thiếu tháng đề xuất"', async () => {
     // HC_QKQT yêu cầu tháng [1, 12]; service reject 0
     arrangeManager();
     const target = makePersonnel({
@@ -222,7 +222,7 @@ describe('Bypass FE — year and month boundary attacks', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('thang = 13 cho HC_QKQT → reject', async () => {
+  it('Lách kiểm tra giao diện (gửi thẳng API): HC QKQT với tháng = 13 (ngoài 1-12) → từ chối "Thiếu tháng đề xuất"', async () => {
     arrangeManager();
     const target = makePersonnel({
       id: 'qn-hc-thang13',
@@ -248,8 +248,8 @@ describe('Bypass FE — year and month boundary attacks', () => {
   });
 });
 
-describe('Bypass FE — invalid references', () => {
-  it('personnel_id không tồn tại → service tạo proposal nhưng map.ho_ten = ""', async () => {
+describe('Lách kiểm tra giao diện (gửi thẳng API): tham chiếu quân nhân/danh hiệu không hợp lệ', () => {
+  it('Lách kiểm tra giao diện (gửi thẳng API): quân nhân không tồn tại → tầng nghiệp vụ vẫn tạo đề xuất nhưng họ tên để rỗng', async () => {
     // Service KHÔNG abort khi không tìm thấy QN; lưu ho_ten rỗng.
     // Guard ở route layer thường reject, nhưng service permissive.
     arrangeManager();
@@ -274,7 +274,7 @@ describe('Bypass FE — invalid references', () => {
     expect(data.data_danh_hieu[0].ho_ten).toBe('');
   });
 
-  it('danh_hieu = "INVALID_AWARD" trong CA_NHAN_HANG_NAM → reject', async () => {
+  it('Lách kiểm tra giao diện (gửi thẳng API): đề xuất cá nhân hằng năm với danh hiệu không có thật → từ chối "danh hiệu không hợp lệ"', async () => {
     arrangeManager();
     const target = makePersonnel({ id: 'qn-invalid-dh' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -288,8 +288,8 @@ describe('Bypass FE — invalid references', () => {
 
 });
 
-describe('Bypass FE — mixed group attacks (CA_NHAN_HANG_NAM)', () => {
-  it('Cùng QN nhận CSTDCS và BKBQP → reject mixed-group exact', async () => {
+describe('Lách kiểm tra giao diện (gửi thẳng API): trộn nhóm danh hiệu xung khắc trong đề xuất cá nhân hằng năm', () => {
+  it('Lách kiểm tra giao diện (gửi thẳng API): cùng quân nhân vừa CSTDCS vừa BKBQP (hai nhóm xung khắc) → từ chối', async () => {
     // Tự conflict: cùng QN xuất hiện 2 lần với 2 nhóm danh hiệu xung khắc
     arrangeManager();
     const target = makePersonnel({ id: 'qn-self-conflict' });
@@ -310,8 +310,8 @@ describe('Bypass FE — mixed group attacks (CA_NHAN_HANG_NAM)', () => {
   });
 });
 
-describe('Bypass FE — approve attacks', () => {
-  it('approve proposalId không tồn tại → NotFoundError exact', async () => {
+describe('Lách kiểm tra giao diện (gửi thẳng API): tấn công khi phê duyệt', () => {
+  it('Phê duyệt bị chặn: duyệt một đề xuất không tồn tại → báo "Không tìm thấy đề xuất"', async () => {
     // Given: lookup trả null
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(null);
 
@@ -322,7 +322,7 @@ describe('Bypass FE — approve attacks', () => {
     );
   });
 
-  it('approve proposal đã APPROVED → ValidationError exact', async () => {
+  it('Phê duyệt bị chặn: duyệt lại một đề xuất đã được phê duyệt trước đó → từ chối', async () => {
     // Given: proposal đã approved
     const proposal = makeProposal({
       id: 'p-already',
@@ -340,7 +340,7 @@ describe('Bypass FE — approve attacks', () => {
     );
   });
 
-  it('approve HC_QKQT proposal thiếu thang → ValidationError "Đề xuất thiếu tháng…"', async () => {
+  it('Phê duyệt bị chặn: duyệt đề xuất HC QKQT bị thiếu tháng → từ chối "Đề xuất thiếu tháng"', async () => {
     // Given: proposal lưu thiếu thang — guard re-check trước transaction
     const proposal = makeProposal({
       id: 'p-no-thang',
@@ -361,7 +361,7 @@ describe('Bypass FE — approve attacks', () => {
     );
   });
 
-  it('editedData mixed-group khi data_danh_hieu lưu sạch → vẫn block', async () => {
+  it('Sửa dữ liệu sau khi gửi: đề xuất gốc sạch nhưng admin chèn thêm BKBQP cạnh CSTDCS lúc duyệt → vẫn bị chặn trộn nhóm', async () => {
     // Given: data lưu sạch nhưng editedData trộn CSTDCS với BKBQP
     const personnelA = makePersonnel({ id: 'qn-edit-A' });
     const cleanItem = makeProposalItemCaNhan({
@@ -404,7 +404,7 @@ describe('Bypass FE — approve attacks', () => {
     expect(prismaMock.danhHieuHangNam.upsert).not.toHaveBeenCalled();
   });
 
-  it('editedData mixed-group ĐVQT + BKBQP đơn vị → reject MIXED_DON_VI_HANG_NAM_ERROR', async () => {
+  it('Sửa dữ liệu sau khi gửi: admin trộn ĐVQT + BKBQP đơn vị lúc duyệt đề xuất đơn vị hằng năm → từ chối trộn nhóm', async () => {
     // Given: proposal DON_VI_HANG_NAM có editedData trộn ĐVQT + BKBQP
     const cqdvA = makeUnit({ kind: 'CQDV', id: 'cqdv-edit-A' });
     const proposal = makeProposal({

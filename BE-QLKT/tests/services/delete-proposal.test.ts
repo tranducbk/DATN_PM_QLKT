@@ -17,8 +17,8 @@ const MANAGER_ID = 'acc-manager-del-1';
 const OTHER_MANAGER_ID = 'acc-manager-del-2';
 const ADMIN_ID = 'acc-admin-del-1';
 
-describe('deleteProposal', () => {
-  it('Manager xóa đề xuất PENDING của mình → success', async () => {
+describe('Xóa đề xuất khen thưởng', () => {
+  it('Xóa đề xuất: Manager xóa đề xuất đang chờ duyệt của chính mình → xóa thành công', async () => {
     // Cho: đề xuất pending thuộc manager
     const proposal = makeProposal({
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
@@ -39,7 +39,7 @@ describe('deleteProposal', () => {
     expect(result.message).toBe('Đã xóa đề xuất thành công');
   });
 
-  it('Manager xóa đề xuất APPROVED của mình → ValidationError (chỉ pending mới xóa)', async () => {
+  it('Xóa đề xuất: Manager xóa đề xuất đã duyệt của chính mình → từ chối, chỉ được xóa đề xuất đang chờ duyệt', async () => {
     // Cho: đề xuất approved thuộc manager
     const proposal = makeProposal({
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
@@ -58,7 +58,7 @@ describe('deleteProposal', () => {
     expect(prismaMock.bangDeXuat.deleteMany).not.toHaveBeenCalled();
   });
 
-  it('Manager xóa đề xuất của người khác → ForbiddenError', async () => {
+  it('Xóa đề xuất: Manager xóa đề xuất của người khác → từ chối vì không phải đề xuất của mình', async () => {
     // Cho: đề xuất thuộc manager khác
     const proposal = makeProposal({
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
@@ -77,7 +77,7 @@ describe('deleteProposal', () => {
     expect(prismaMock.bangDeXuat.deleteMany).not.toHaveBeenCalled();
   });
 
-  it('Admin xóa đề xuất bất kỳ (kể cả APPROVED của manager khác) → success', async () => {
+  it('Xóa đề xuất: Admin xóa được đề xuất của Manager khác → xóa thành công dù không phải đề xuất của mình', async () => {
     // Cho: admin xóa đề xuất thuộc manager
     // Service code: chỉ MANAGER bị giới hạn PENDING & ownership;
     // ADMIN bypass cả 2 check nhưng delete atomic vẫn yêu cầu PENDING.
@@ -98,7 +98,7 @@ describe('deleteProposal', () => {
     expect(result.message).toBe('Đã xóa đề xuất thành công');
   });
 
-  it('Xóa đề xuất không tồn tại → NotFoundError', async () => {
+  it('Xóa đề xuất: xóa đề xuất không tồn tại → báo không tìm thấy', async () => {
     // Cho: không có đề xuất
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(null);
 

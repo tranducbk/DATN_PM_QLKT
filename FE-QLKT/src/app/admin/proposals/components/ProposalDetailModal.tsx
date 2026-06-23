@@ -13,6 +13,7 @@ import { formatDateTime } from '@/lib/utils';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
   DANH_HIEU_DON_VI_HANG_NAM,
+  THANH_TICH_KHOA_HOC,
 } from '@/constants/danhHieu.constants';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 
@@ -184,7 +185,9 @@ export function ProposalDetailModal({
         key: 'loai',
         width: 120,
         render: (loai: string) => (
-          <Tag color={loai === 'DTKH' ? 'blue' : 'green'}>{loai === 'DTKH' ? 'ĐTKH' : 'SKKH'}</Tag>
+          <Tag color={loai === THANH_TICH_KHOA_HOC.DTKH ? 'blue' : 'green'}>
+            {loai === THANH_TICH_KHOA_HOC.DTKH ? 'ĐTKH' : 'SKKH'}
+          </Tag>
         ),
       },
       {

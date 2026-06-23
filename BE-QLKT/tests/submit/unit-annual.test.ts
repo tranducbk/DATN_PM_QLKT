@@ -74,8 +74,8 @@ function callSubmitDonVi(items: DonViItem[], userId = 'acc-mgr-1', nam = 2024) {
   );
 }
 
-describe('proposal.submit - DON_VI_HANG_NAM', () => {
-  it('gửi thành công với ĐVQT (CQDV)', async () => {
+describe('Gửi đề xuất khen thưởng đơn vị hằng năm', () => {
+  it('Gửi đề xuất: danh hiệu ĐVQT cho cơ quan đơn vị (CQDV) → tạo đề xuất, không đánh dấu chuỗi danh hiệu', async () => {
     // Cho trước: manager submit đề xuất ĐVQT cho target CQDV
     arrangeManagerWithUnit('CQDV');
     const targetUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-target' });
@@ -111,7 +111,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     expect(data.data_danh_hieu[0].co_quan_don_vi_cha).toBeNull();
   });
 
-  it('gửi thành công với ĐVTT (CQDV)', async () => {
+  it('Gửi đề xuất: danh hiệu ĐVTT cho cơ quan đơn vị (CQDV) → tạo đề xuất, không đánh dấu chuỗi danh hiệu', async () => {
     arrangeManagerWithUnit('CQDV');
     const targetUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-dvtt-target' });
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({
@@ -137,7 +137,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     });
   });
 
-  it('gửi thành công BKBQP đơn vị → auto-set `nhan_bkbqp: true`', async () => {
+  it('Gửi đề xuất: đề nghị BKBQP đơn vị → tự đánh dấu nhận BKBQP', async () => {
     arrangeManagerWithUnit('CQDV');
     const targetUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-bk' });
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({
@@ -163,7 +163,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     });
   });
 
-  it('gửi thành công BKTTCP đơn vị → auto-set `nhan_bkttcp: true`', async () => {
+  it('Gửi đề xuất: đề nghị BKTTCP đơn vị → tự đánh dấu nhận BKTTCP', async () => {
     arrangeManagerWithUnit('CQDV');
     const targetUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp' });
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({
@@ -189,7 +189,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     });
   });
 
-  it('bypass FE — reject mixed ĐVQT + BKBQP đơn vị trong cùng đề xuất', async () => {
+  it('Gửi đề xuất bị chặn (lách kiểm tra giao diện, gửi thẳng API): trộn ĐVQT với BKBQP đơn vị trong cùng đề xuất → buộc tách riêng', async () => {
     // Cho trước: manager + 2 lượt lookup CQDV target (1 lượt mỗi item)
     arrangeManagerWithUnit('CQDV');
     const targetA = makeUnit({ kind: 'CQDV', id: 'cqdv-A' });
@@ -210,7 +210,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject mixed ĐVTT + BKTTCP đơn vị', async () => {
+  it('Gửi đề xuất bị chặn (lách kiểm tra giao diện, gửi thẳng API): trộn ĐVTT với BKTTCP đơn vị trong cùng đề xuất → buộc tách riêng', async () => {
     arrangeManagerWithUnit('CQDV');
     const targetA = makeUnit({ kind: 'CQDV', id: 'cqdv-X' });
     const targetB = makeUnit({ kind: 'CQDV', id: 'cqdv-Y' });
@@ -229,7 +229,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — duplicate cùng don_vi + cùng danh_hieu trong payload DON_VI_HANG_NAM → reject', async () => {
+  it('Gửi đề xuất bị chặn (lách kiểm tra giao diện, gửi thẳng API): cùng đơn vị và cùng danh hiệu lặp ngay trong đề xuất → báo dữ liệu bị lặp', async () => {
     arrangeManagerWithUnit('CQDV');
     const targetUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-dup-in-payload' });
     prismaMock.coQuanDonVi.findUnique
@@ -262,7 +262,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('CQDV variant — proposal lưu `co_quan_don_vi_id` của manager', async () => {
+  it('Gửi đề xuất: manager thuộc cơ quan đơn vị (CQDV) → đề xuất gắn cơ quan đơn vị của manager, không gắn đơn vị trực thuộc', async () => {
     // Cho trước: manager gắn với đơn vị CQDV
     const mgrUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-MGR-77' });
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
@@ -296,7 +296,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     expect(data.don_vi_truc_thuoc_id).toBeNull();
   });
 
-  it('DVTT variant — co_quan_don_vi_cha set đúng từ DonViTrucThuoc target', async () => {
+  it('Gửi đề xuất: đề nghị cho đơn vị trực thuộc (ĐVTT) → lưu đúng cơ quan đơn vị cha của đơn vị đó', async () => {
     // Cho trước: target là DVTT; service phải set co_quan_don_vi_cha từ CQDV cha
     const mgrUnit = makeUnit({ kind: 'DVTT', id: 'dvtt-mgr-99', parentId: 'cqdv-parent-99' });
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
@@ -343,7 +343,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     expect(data.data_danh_hieu[0].co_quan_don_vi_cha).toEqual(parentCqdv);
   });
 
-  it('bypass FE — reject duplicate khi đơn vị đã có record cùng năm trong DB', async () => {
+  it('Gửi đề xuất bị chặn (lách kiểm tra giao diện, gửi thẳng API): đơn vị đã có danh hiệu cùng năm trên hệ thống → báo trùng đề xuất', async () => {
     // Cho trước: đã có danh hiệu đơn vị (ĐVQT) cho cùng năm/đơn vị
     arrangeManagerWithUnit('CQDV');
     const targetUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-dup' });
@@ -381,7 +381,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject pending conflict cùng đơn vị/danh hiệu/năm', async () => {
+  it('Gửi đề xuất bị chặn (lách kiểm tra giao diện, gửi thẳng API): đơn vị đang có đề xuất chờ duyệt cùng danh hiệu và năm → báo trùng đề xuất', async () => {
     // Cho trước: đã có proposal PENDING cho cùng đơn vị/năm/danh_hieu
     arrangeManagerWithUnit('CQDV');
     const targetUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-pending' });
@@ -424,7 +424,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject khi đơn vị chưa đủ ĐK BKBQP đơn vị', async () => {
+  it('Gửi đề xuất bị chặn (lách kiểm tra giao diện, gửi thẳng API): đơn vị chưa đủ điều kiện BKBQP → từ chối kèm lý do', async () => {
     arrangeManagerWithUnit('CQDV');
     const targetUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-not-elig' });
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({
@@ -455,7 +455,7 @@ describe('proposal.submit - DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject khi đơn vị chưa đủ ĐK BKTTCP đơn vị', async () => {
+  it('Gửi đề xuất bị chặn (lách kiểm tra giao diện, gửi thẳng API): đơn vị chưa đủ điều kiện BKTTCP → từ chối kèm lý do', async () => {
     arrangeManagerWithUnit('CQDV');
     const targetUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-not-elig-bkttcp' });
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({

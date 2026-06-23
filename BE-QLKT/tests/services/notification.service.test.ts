@@ -60,8 +60,8 @@ function NOTIFICATION_makeStoredRecord(overrides: Record<string, unknown> = {}) 
   };
 }
 
-describe('notification.service - createNotification', () => {
-  it('Tạo record DB với recipient + emit socket cho recipient', async () => {
+describe('Thông báo: tạo thông báo', () => {
+  it('Thông báo: có người nhận → lưu thông báo vào CSDL và đẩy real-time cho người nhận', async () => {
     // Cho
     prismaMock.thongBao.create.mockResolvedValueOnce(NOTIFICATION_makeStoredRecord());
 
@@ -81,7 +81,7 @@ describe('notification.service - createNotification', () => {
     expect(result.id).toBe('noti-1');
   });
 
-  it('Recipient_id null → tạo record nhưng không emit socket', async () => {
+  it('Thông báo: không có người nhận cụ thể → vẫn lưu thông báo nhưng không đẩy real-time', async () => {
     // Cho
     prismaMock.thongBao.create.mockResolvedValueOnce(
       NOTIFICATION_makeStoredRecord({ nguoi_nhan_id: null })
@@ -98,7 +98,7 @@ describe('notification.service - createNotification', () => {
     expect(emitNotificationToUser).not.toHaveBeenCalled();
   });
 
-  it('Socket emit thực thi sau khi DB create thành công (thứ tự call)', async () => {
+  it('Thông báo: chỉ đẩy real-time sau khi đã lưu thông báo vào CSDL thành công', async () => {
     // Cho
     const callOrder: string[] = [];
     prismaMock.thongBao.create.mockImplementationOnce(async () => {
@@ -117,8 +117,8 @@ describe('notification.service - createNotification', () => {
   });
 });
 
-describe('notification.service - getNotificationsByUserId', () => {
-  it('Filter theo recipient userId + trả pagination', async () => {
+describe('Thông báo: lấy thông báo của người dùng', () => {
+  it('Thông báo: lấy theo người nhận → chỉ trả thông báo của người đó kèm phân trang', async () => {
     // Cho
     const records = [NOTIFICATION_makeStoredRecord()];
     prismaMock.thongBao.findMany.mockResolvedValueOnce(records);
@@ -140,7 +140,7 @@ describe('notification.service - getNotificationsByUserId', () => {
     expect(result.totalPages).toBe(1);
   });
 
-  it('Filter isRead=false → chỉ lấy unread', async () => {
+  it('Thông báo: lọc chưa đọc → chỉ trả thông báo chưa đọc', async () => {
     // Cho
     prismaMock.thongBao.findMany.mockResolvedValueOnce([]);
     prismaMock.thongBao.count.mockResolvedValueOnce(0);
@@ -159,8 +159,8 @@ describe('notification.service - getNotificationsByUserId', () => {
   });
 });
 
-describe('notification dispatch - adhoc award create', () => {
-  it('Tạo adhoc cá nhân → notify managers của CQDV + tài khoản personnel với resource AWARDS', async () => {
+describe('Thông báo: phát thông báo khi tạo khen thưởng đột xuất', () => {
+  it('Thông báo: khen thưởng đột xuất cho cá nhân → gửi cho Chỉ huy CQDV và tài khoản của quân nhân đó', async () => {
     // Cho: admin valid; personnel có CQDV; 1 manager + 1 account của personnel
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-admin',
@@ -219,7 +219,7 @@ describe('notification dispatch - adhoc award create', () => {
     expect(emitNotificationToUser).toHaveBeenCalledTimes(2);
   });
 
-  it('Adhoc tập thể (CQDV) → notify managers của CQDV với type AWARD_ADDED', async () => {
+  it('Thông báo: khen thưởng đột xuất cho tập thể (Cơ quan đơn vị) → gửi cho tất cả Chỉ huy của CQDV đó', async () => {
     // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-admin',

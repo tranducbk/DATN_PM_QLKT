@@ -15,8 +15,8 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-describe('commemorativeMedal.service - getAll', () => {
-  it('Cho không có filter, Khi gọi getAll, Thì where rỗng và orderBy nam desc', async () => {
+describe('Kỷ niệm chương (KNC): danh sách', () => {
+  it('Kỷ niệm chương (KNC): lấy danh sách không lọc → trả về toàn bộ, sắp xếp năm giảm dần', async () => {
     prismaMock.kyNiemChuongVSNXDQDNDVN.findMany.mockResolvedValueOnce([
       { id: 'knc-1', quan_nhan_id: 'qn-1', nam: 2024 },
     ]);
@@ -31,7 +31,7 @@ describe('commemorativeMedal.service - getAll', () => {
     expect(findArgs.orderBy).toEqual({ nam: 'desc' });
   });
 
-  it('Cho filter don_vi_id (CQDV) không include sub units, Khi getAll, Thì where dùng OR cho CQDV và DVTT trực tiếp', async () => {
+  it('Kỷ niệm chương (KNC): lọc theo đơn vị (CQDV) không gồm đơn vị con → lấy quân nhân thuộc CQDV hoặc DVTT trực tiếp', async () => {
     prismaMock.kyNiemChuongVSNXDQDNDVN.findMany.mockResolvedValueOnce([]);
     prismaMock.kyNiemChuongVSNXDQDNDVN.count.mockResolvedValueOnce(0);
 
@@ -45,7 +45,7 @@ describe('commemorativeMedal.service - getAll', () => {
     expect(prismaMock.donViTrucThuoc.findMany).not.toHaveBeenCalled();
   });
 
-  it('Cho filter ho_ten + pagination, Khi getAll, Thì where có contains insensitive và skip/take đúng', async () => {
+  it('Kỷ niệm chương (KNC): lọc theo họ tên kèm phân trang → tìm tên không phân biệt hoa thường, lấy đúng trang', async () => {
     prismaMock.kyNiemChuongVSNXDQDNDVN.findMany.mockResolvedValueOnce([]);
     prismaMock.kyNiemChuongVSNXDQDNDVN.count.mockResolvedValueOnce(0);
 
@@ -58,8 +58,8 @@ describe('commemorativeMedal.service - getAll', () => {
   });
 });
 
-describe('commemorativeMedal.service - getByPersonnelId', () => {
-  it('Cho personnel có KNC, Khi getByPersonnelId, Thì trả về mảng 1 phần tử', async () => {
+describe('Kỷ niệm chương (KNC): tra theo quân nhân', () => {
+  it('Kỷ niệm chương (KNC): quân nhân đã có KNC → trả về danh sách 1 phần tử', async () => {
     prismaMock.kyNiemChuongVSNXDQDNDVN.findUnique.mockResolvedValueOnce({
       id: 'knc-1',
       quan_nhan_id: 'qn-1',
@@ -74,7 +74,7 @@ describe('commemorativeMedal.service - getByPersonnelId', () => {
     expect(findArgs.where).toEqual({ quan_nhan_id: 'qn-1' });
   });
 
-  it('Cho personnel chưa có KNC, Khi getByPersonnelId, Thì trả về mảng rỗng', async () => {
+  it('Kỷ niệm chương (KNC): quân nhân chưa có KNC → trả về danh sách rỗng', async () => {
     prismaMock.kyNiemChuongVSNXDQDNDVN.findUnique.mockResolvedValueOnce(null);
 
     const result = await commemorativeMedalService.getByPersonnelId('qn-2');
@@ -83,8 +83,8 @@ describe('commemorativeMedal.service - getByPersonnelId', () => {
   });
 });
 
-describe('commemorativeMedal.service - getStatistics', () => {
-  it('Cho có data, Khi getStatistics, Thì trả về total và byYear groupBy nam desc', async () => {
+describe('Kỷ niệm chương (KNC): thống kê', () => {
+  it('Kỷ niệm chương (KNC): có dữ liệu → trả về tổng số và thống kê theo năm (giảm dần)', async () => {
     prismaMock.kyNiemChuongVSNXDQDNDVN.groupBy.mockResolvedValueOnce([
       { nam: 2024, _count: { id: 4 } },
       { nam: 2023, _count: { id: 1 } },
@@ -101,8 +101,8 @@ describe('commemorativeMedal.service - getStatistics', () => {
   });
 });
 
-describe('commemorativeMedal.service - getUserWithUnit / getPersonnelById', () => {
-  it('Cho personnelId, Khi getPersonnelById, Thì trả về unit ids của quân nhân', async () => {
+describe('Kỷ niệm chương (KNC): lấy đơn vị của quân nhân', () => {
+  it('Kỷ niệm chương (KNC): tra quân nhân theo id → trả về các mã đơn vị của quân nhân', async () => {
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce({
       co_quan_don_vi_id: null,
       don_vi_truc_thuoc_id: 'dvtt-1',
@@ -114,8 +114,8 @@ describe('commemorativeMedal.service - getUserWithUnit / getPersonnelById', () =
   });
 });
 
-describe('commemorativeMedal.service - confirmImport (lifetime conflict)', () => {
-  it('Cho personnel chưa có KNC và không pending, Khi confirmImport, Thì upsert thành công', async () => {
+describe('Kỷ niệm chương (KNC): nhập Excel (khen thưởng chỉ trao một lần)', () => {
+  it('Nhập Excel KNC: quân nhân chưa có KNC và không có đề xuất chờ duyệt → tạo (hoặc cập nhật) bản ghi thành công', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.kyNiemChuongVSNXDQDNDVN.findMany.mockResolvedValueOnce([]);
     prismaMock.kyNiemChuongVSNXDQDNDVN.upsert.mockResolvedValueOnce({
@@ -150,7 +150,7 @@ describe('commemorativeMedal.service - confirmImport (lifetime conflict)', () =>
     expect(upsertArgs.where).toEqual({ quan_nhan_id: 'qn-1' });
   });
 
-  it('Cho personnel đã có KNC, Khi confirmImport, Thì throw ValidationError "đã có Kỷ niệm chương..."', async () => {
+  it('Nhập Excel KNC bị chặn: quân nhân đã có KNC (chỉ trao một lần) → báo "đã có Kỷ niệm chương..." và không lưu', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.kyNiemChuongVSNXDQDNDVN.findMany.mockResolvedValueOnce([
       { quan_nhan_id: 'qn-1', nam: 2020 },
@@ -182,7 +182,7 @@ describe('commemorativeMedal.service - confirmImport (lifetime conflict)', () =>
     expect(prismaMock.kyNiemChuongVSNXDQDNDVN.upsert).not.toHaveBeenCalled();
   });
 
-  it('Cho personnel đang có đề xuất KNC pending, Khi confirmImport, Thì throw ValidationError "đang có đề xuất ... chờ duyệt"', async () => {
+  it('Nhập Excel KNC bị chặn: quân nhân đang có đề xuất KNC chờ duyệt → báo "đang có đề xuất ... chờ duyệt" và không lưu', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       { id: 'prop-1', data_nien_han: [{ personnel_id: 'qn-1' }] },
     ]);
@@ -215,8 +215,8 @@ describe('commemorativeMedal.service - confirmImport (lifetime conflict)', () =>
   });
 });
 
-describe('commemorativeMedal.service - deleteAward', () => {
-  it('Cho id hợp lệ, Khi deleteAward, Thì xoá record và trả về personnelId', async () => {
+describe('Kỷ niệm chương (KNC): xóa khen thưởng', () => {
+  it('Kỷ niệm chương (KNC): xóa bản ghi theo id hợp lệ → xóa thành công và trả về mã quân nhân', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1' });
     const personnel = makePersonnel({ unit: cqdv, id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     prismaMock.kyNiemChuongVSNXDQDNDVN.findUnique.mockResolvedValueOnce({
@@ -236,7 +236,7 @@ describe('commemorativeMedal.service - deleteAward', () => {
     });
   });
 
-  it('Cho id không tồn tại, Khi deleteAward, Thì throw NotFoundError', async () => {
+  it('Kỷ niệm chương (KNC) bị chặn: xóa bản ghi không tồn tại → báo không tìm thấy và không xóa', async () => {
     prismaMock.kyNiemChuongVSNXDQDNDVN.findUnique.mockResolvedValueOnce(null);
 
     await expectError(

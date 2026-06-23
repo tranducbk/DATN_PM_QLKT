@@ -67,8 +67,8 @@ function countBKBQPInWindow(
   return records.filter(r => r.nhan_bkbqp === true && r.nam >= startYear && r.nam <= endYear).length;
 }
 
-describe('unitAnnualAward.service - BKTTCP eligibility (lặp lại sau 7 năm)', () => {
-  it('CQDV: 7y ĐVQT + 3 BKBQP trong streak → eligible', async () => {
+describe('Xét điều kiện BKTTCP đơn vị: chu kỳ lặp lại sau mỗi 7 năm', () => {
+  it('Xét điều kiện BKTTCP đơn vị (CQDV): 7 năm ĐVQT + 3 BKBQP trong chuỗi → đủ điều kiện', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-A1' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -89,7 +89,7 @@ describe('unitAnnualAward.service - BKTTCP eligibility (lặp lại sau 7 năm)'
     expect(result.reason).toBe(unitEligibilityReasons.bkttcpEligible);
   });
 
-  it('7y ĐVQT + 2 BKBQP → fail (thiếu 1 BKBQP)', async () => {
+  it('Xét điều kiện BKTTCP đơn vị: 7 năm ĐVQT + chỉ 2 BKBQP (thiếu 1 BKBQP) → chưa đủ điều kiện', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-A3' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -109,7 +109,7 @@ describe('unitAnnualAward.service - BKTTCP eligibility (lặp lại sau 7 năm)'
     expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(7, 2));
   });
 
-  it('7y ĐVQT + 4 BKBQP → eligible (>=3 BKBQP đủ rồi)', async () => {
+  it('Xét điều kiện BKTTCP đơn vị: 7 năm ĐVQT + 4 BKBQP → đủ điều kiện (từ 3 BKBQP trở lên là đạt, đơn vị không giới hạn một lần)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-A5' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2017, 2023, {
       2017: { nhan_bkbqp: true },
@@ -131,8 +131,8 @@ describe('unitAnnualAward.service - BKTTCP eligibility (lặp lại sau 7 năm)'
   });
 });
 
-describe('unitAnnualAward.service - BKTTCP streak length boundary (chấp nhận bội số 7)', () => {
-  it('6y ĐVQT + 3 BKBQP → fail (streak < 7)', async () => {
+describe('Xét điều kiện BKTTCP đơn vị: mốc số năm liên tục (chỉ đạt tại mốc chu kỳ 7 năm)', () => {
+  it('Xét điều kiện BKTTCP đơn vị: chỉ 6 năm ĐVQT + 3 BKBQP → chưa đủ điều kiện (chưa đủ 7 năm liên tục)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-B1' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2018, 2023, {
       2018: { nhan_bkbqp: true },
@@ -153,7 +153,7 @@ describe('unitAnnualAward.service - BKTTCP streak length boundary (chấp nhận
     expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(6, 3));
   });
 
-  it('8y ĐVQT (không bội 7) + 3 BKBQP → fail "Chưa đủ điều kiện..."', async () => {
+  it('Xét điều kiện BKTTCP đơn vị: 8 năm ĐVQT (chưa tới mốc chu kỳ 7 năm) + 3 BKBQP → chưa đủ điều kiện', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-B3' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2016, 2023, {
       2018: { nhan_bkbqp: true },
@@ -175,7 +175,7 @@ describe('unitAnnualAward.service - BKTTCP streak length boundary (chấp nhận
     expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(8, bkbqpCount));
   });
 
-  it('13y ĐVQT (không bội 7) → fail insufficient', async () => {
+  it('Xét điều kiện BKTTCP đơn vị: 13 năm ĐVQT (chưa tới mốc chu kỳ 7 năm) → chưa đủ điều kiện', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-B4-13' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2011, 2023, {
       2018: { nhan_bkbqp: true },
@@ -197,7 +197,7 @@ describe('unitAnnualAward.service - BKTTCP streak length boundary (chấp nhận
     expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(13, bkbqpCount));
   });
 
-  it('14y ĐVQT (bội 7) + 3 BKBQP trong 7y cuối → eligible (chu kỳ 2)', async () => {
+  it('Xét điều kiện BKTTCP đơn vị: 14 năm ĐVQT (đúng mốc chu kỳ 7 năm) + 3 BKBQP trong cửa sổ 7 năm gần nhất → đủ điều kiện (mốc chu kỳ thứ 2)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-B5' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2010, 2023, {
       2018: { nhan_bkbqp: true },
@@ -218,7 +218,7 @@ describe('unitAnnualAward.service - BKTTCP streak length boundary (chấp nhận
     expect(result.reason).toBe(unitEligibilityReasons.bkttcpEligible);
   });
 
-  it('21y ĐVQT (bội 7) + 0 BKBQP trong 7y cuối → fail insufficient', async () => {
+  it('Xét điều kiện BKTTCP đơn vị: 21 năm ĐVQT (đúng mốc chu kỳ 7 năm) nhưng 0 BKBQP trong cửa sổ 7 năm gần nhất → chưa đủ điều kiện', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-B6' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2003, 2023);
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
@@ -235,7 +235,7 @@ describe('unitAnnualAward.service - BKTTCP streak length boundary (chấp nhận
     expect(result.reason).toBe(unitEligibilityReasons.bkttcpReason(21, 0));
   });
 
-  it('15y ĐVQT (không bội 7) → fail insufficient', async () => {
+  it('Xét điều kiện BKTTCP đơn vị: 15 năm ĐVQT (chưa tới mốc chu kỳ 7 năm) → chưa đủ điều kiện', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-B8-15' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2009, 2023);
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
@@ -253,8 +253,8 @@ describe('unitAnnualAward.service - BKTTCP streak length boundary (chấp nhận
   });
 });
 
-describe('unitAnnualAward.service - BKTTCP đã nhận trước (cho phép nhận lại)', () => {
-  it('Đã nhận BKTTCP cũ + chuỗi 7y mới + 3 BKBQP → eligible (không lifetime block)', async () => {
+describe('Xét điều kiện BKTTCP đơn vị: đã nhận trước đó vẫn được nhận lại (không giới hạn một lần)', () => {
+  it('Xét điều kiện BKTTCP đơn vị: đã nhận BKTTCP cũ + chuỗi 7 năm mới + 3 BKBQP → đủ điều kiện (không khóa một lần)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-C1' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -274,7 +274,7 @@ describe('unitAnnualAward.service - BKTTCP đã nhận trước (cho phép nhậ
     expect(result.eligible).toBe(true);
   });
 
-  it('Đã nhận BKTTCP năm 2016 + 14y ĐVQT (chu kỳ 2) + 3 BKBQP trong 7y cuối → eligible', async () => {
+  it('Xét điều kiện BKTTCP đơn vị: đã nhận năm 2016 + 14 năm ĐVQT (mốc chu kỳ thứ 2) + 3 BKBQP trong cửa sổ 7 năm gần nhất → đủ điều kiện', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-C2' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2010, 2023, {
       2016: { nhan_bkttcp: true },
@@ -296,8 +296,8 @@ describe('unitAnnualAward.service - BKTTCP đã nhận trước (cho phép nhậ
   });
 });
 
-describe('unitAnnualAward.service - BKTTCP DVTT variants', () => {
-  it('DVTT: 7y ĐVQT + 3 BKBQP → eligible BKTTCP (streak riêng với CQDV cha)', async () => {
+describe('Xét điều kiện BKTTCP đơn vị: trường hợp đơn vị trực thuộc (DVTT)', () => {
+  it('Xét điều kiện BKTTCP đơn vị (DVTT): 7 năm ĐVQT + 3 BKBQP → đủ điều kiện (chuỗi tính riêng, độc lập với CQDV cha)', async () => {
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-bkttcp-A1', parentId: 'cqdv-parent' });
     const records = buildContiguousDVQT(dvtt.id, 'DVTT', 2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -317,7 +317,7 @@ describe('unitAnnualAward.service - BKTTCP DVTT variants', () => {
     expect(result.eligible).toBe(true);
   });
 
-  it('DVTT: 14y ĐVQT (bội 7) + 0 BKBQP trong 7y cuối → fail insufficient', async () => {
+  it('Xét điều kiện BKTTCP đơn vị (DVTT): 14 năm ĐVQT (đúng mốc chu kỳ 7 năm) nhưng 0 BKBQP trong cửa sổ 7 năm gần nhất → chưa đủ điều kiện', async () => {
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-bkttcp-B5', parentId: 'cqdv-parent' });
     const records = buildContiguousDVQT(dvtt.id, 'DVTT', 2010, 2023);
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(dvqtRecordsDesc(records));
@@ -335,8 +335,8 @@ describe('unitAnnualAward.service - BKTTCP DVTT variants', () => {
   });
 });
 
-describe('unitAnnualAward.service - BKTTCP break-then-fresh streak', () => {
-  it('5y ĐVQT → 1y ĐVTT (break) → 7y ĐVQT + 3 BKBQP trong 7y mới → eligible', async () => {
+describe('Xét điều kiện BKTTCP đơn vị: chuỗi mới sau khi chuỗi ĐVQT bị đứt', () => {
+  it('Xét điều kiện BKTTCP đơn vị: 5 năm ĐVQT → 1 năm không đạt ĐVQT làm đứt chuỗi → 7 năm ĐVQT mới + 3 BKBQP trong chuỗi mới → đủ điều kiện', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-E1' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -358,8 +358,8 @@ describe('unitAnnualAward.service - BKTTCP break-then-fresh streak', () => {
   });
 });
 
-describe('unitAnnualAward.service - BKTTCP BKBQP window edges', () => {
-  it('13y ĐVQT + 6 BKBQP cụm đầu (không có cái nào trong 7y cuối) → fail (insufficient streak chu kỳ)', async () => {
+describe('Xét điều kiện BKTTCP đơn vị: biên của cửa sổ đếm BKBQP', () => {
+  it('Xét điều kiện BKTTCP đơn vị: 13 năm ĐVQT + 6 BKBQP dồn cụm đầu (không có cái nào trong cửa sổ 7 năm gần nhất) → chưa đủ điều kiện', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-D2' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2011, 2023, {
       2011: { nhan_bkbqp: true },
@@ -385,8 +385,8 @@ describe('unitAnnualAward.service - BKTTCP BKBQP window edges', () => {
   });
 });
 
-describe('unitAnnualAward.service - recalculateAnnualUnit (chain flags)', () => {
-  it('14y ĐVQT + đã nhận BKTTCP 2016 + 3 BKBQP trong cycle 2 (2017-2023) → eligible BKTTCP', async () => {
+describe('Xét điều kiện chuỗi danh hiệu đơn vị: tính lại hồ sơ và cập nhật các cờ điều kiện', () => {
+  it('Xét điều kiện BKTTCP đơn vị (tính lại hồ sơ): 14 năm ĐVQT + đã nhận BKTTCP 2016 + 3 BKBQP trong chu kỳ 2 (2017-2023) → đủ điều kiện', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-recalc-1' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2010, 2023, {
       2011: { nhan_bkbqp: true },
@@ -411,7 +411,7 @@ describe('unitAnnualAward.service - recalculateAnnualUnit (chain flags)', () => 
     expect(upsertArgs.update.goi_y).toBe(suggestionMessages.unitEligibleBkttcp);
   });
 
-  it('7y ĐVQT + BKBQP lệch mốc chu kỳ (2022) → du_dieu_kien_bkbqp = false (streak thô, không reset theo lần nhận)', async () => {
+  it('Xét điều kiện BKBQP đơn vị (tính lại hồ sơ): 7 năm ĐVQT nhưng BKBQP lệch mốc chu kỳ (2022) → chưa đủ điều kiện BKBQP (đếm số năm liên tục thô, không reset theo lần nhận)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-recalc-bkbqp-offcycle' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2018, 2024, {
       2022: { nhan_bkbqp: true },
@@ -429,7 +429,7 @@ describe('unitAnnualAward.service - recalculateAnnualUnit (chain flags)', () => 
     expect(upsertArgs.update.du_dieu_kien_bkbqp).toBe(false);
   });
 
-  it('Cùng input → recalc.du_dieu_kien_bkbqp khớp checkUnitAwardEligibility(BKBQP) (hai đường không được lệch)', async () => {
+  it('Xét điều kiện BKBQP đơn vị: cùng dữ liệu thì kết quả tính lại hồ sơ phải khớp kết quả kiểm tra qua API (hai đường không được lệch)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-recalc-api-consistency' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2018, 2024, {
       2022: { nhan_bkbqp: true },
@@ -456,7 +456,7 @@ describe('unitAnnualAward.service - recalculateAnnualUnit (chain flags)', () => 
     expect(recalcEligible).toBe(false);
   });
 
-  it('21y ĐVQT + đã nhận BKTTCP 2009 + 0 BKBQP trong cycle hiện tại → not eligible BKTTCP', async () => {
+  it('Xét điều kiện BKTTCP đơn vị (tính lại hồ sơ): 21 năm ĐVQT + đã nhận BKTTCP 2009 + 0 BKBQP trong chu kỳ hiện tại → chưa đủ điều kiện', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-C3' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2003, 2023, {
       2009: { nhan_bkttcp: true },
@@ -475,7 +475,7 @@ describe('unitAnnualAward.service - recalculateAnnualUnit (chain flags)', () => 
     expect(upsertArgs.update.goi_y).toBe(suggestionMessages.unitNotEligible);
   });
 
-  it('7y ĐVQT + 3 BKBQP → recalc set du_dieu_kien_bkttcp = true', async () => {
+  it('Xét điều kiện BKTTCP đơn vị (tính lại hồ sơ): 7 năm ĐVQT + 3 BKBQP → cập nhật đủ điều kiện BKTTCP', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-recalc-2' });
     const records = buildContiguousDVQT(cqdv.id, 'CQDV', 2017, 2023, {
       2018: { nhan_bkbqp: true },

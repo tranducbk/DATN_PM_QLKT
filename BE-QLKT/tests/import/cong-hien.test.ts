@@ -106,8 +106,8 @@ function arrangeCongHienPreview(opts: {
   prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
 }
 
-describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
-  it('Row đủ dữ liệu (đủ tháng phục vụ) → vào valid', async () => {
+describe('Nhập Excel HCBVTQ: xem trước (preview)', () => {
+  it('Nhập Excel HCBVTQ: dòng đủ dữ liệu và đủ tháng phục vụ → ghi nhận vào danh sách hợp lệ', async () => {
     arrangeCongHienPreview({
       personnel: { id: 'qn-ch-1', ho_ten: 'Nguyễn Văn A' },
       decisionNumbers: ['QD-CH-001'],
@@ -142,7 +142,7 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
     });
   });
 
-  it('Row thiếu so_quyet_dinh → vào errors "Thiếu số quyết định"', async () => {
+  it('Nhập Excel HCBVTQ: dòng thiếu số quyết định → báo lỗi "Thiếu số quyết định" tại dòng đó', async () => {
     arrangeCongHienPreview({ personnel: { id: 'qn-no-qd', ho_ten: 'No QD' } });
 
     const buffer = await makeCongHienExcelBuffer([
@@ -162,7 +162,7 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
     expect(result.errors[0].message).toBe('Thiếu số quyết định');
   });
 
-  it('Tên trong file không khớp tên trong DB → errors mismatch', async () => {
+  it('Nhập Excel HCBVTQ: tên trong file khác tên trong hệ thống → báo lỗi không khớp', async () => {
     arrangeCongHienPreview({
       personnel: { id: 'qn-name', ho_ten: 'Nguyễn Văn Đúng' },
       decisionNumbers: ['QD-CH-001'],
@@ -185,7 +185,7 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
     expect(result.errors[0].message).toContain('không khớp với tên trong hệ thống');
   });
 
-  it('Quân nhân đã có HCBVTQ trên hệ thống → errors "Đã có"', async () => {
+  it('Nhập Excel HCBVTQ: quân nhân đã có HCBVTQ trên hệ thống → báo lỗi "Đã có"', async () => {
     arrangeCongHienPreview({
       personnel: { id: 'qn-existed', ho_ten: 'Đã Có' },
       existingMedals: [{ quan_nhan_id: 'qn-existed', danh_hieu: DANH_HIEU_HCBVTQ.HANG_BA, nam: 2022 }],
@@ -209,7 +209,7 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
     expect(result.errors[0].message).toContain('Đã có');
   });
 
-  it('Empty row → bị skip silently, không vào valid hay errors', async () => {
+  it('Nhập Excel HCBVTQ: dòng trống → bỏ qua, không tính vào hợp lệ lẫn lỗi', async () => {
     arrangeCongHienPreview({
       personnel: { id: 'qn-empty-ch', ho_ten: 'Có Data' },
       decisionNumbers: ['QD-EMPTY'],
@@ -235,7 +235,7 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it('Duplicate trong cùng file (cùng personnel_id) → row thứ 2 vào errors', async () => {
+  it('Nhập Excel HCBVTQ: cùng một quân nhân lặp lại trong file → dòng thứ 2 báo "Trùng lặp trong file"', async () => {
     arrangeCongHienPreview({
       personnel: { id: 'qn-dup-ch', ho_ten: 'Trùng' },
       decisionNumbers: ['QD-DUP'],
@@ -259,7 +259,7 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
     expect(result.errors[0].message).toContain('Trùng lặp trong file');
   });
 
-  it('Tháng = 13 → errors "không hợp lệ"', async () => {
+  it('Nhập Excel HCBVTQ: tháng nhận = 13 (ngoài 1-12) → báo lỗi không hợp lệ', async () => {
     arrangeCongHienPreview({
       personnel: { id: 'qn-th13-ch', ho_ten: 'OOR' },
       decisionNumbers: ['QD-T13'],
@@ -283,7 +283,7 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
     expect(result.errors[0].message).toContain('Tháng nhận không hợp lệ');
   });
 
-  it('Năm < 1900 → errors "không hợp lệ"', async () => {
+  it('Nhập Excel HCBVTQ: năm nhận trước 1900 → báo lỗi không hợp lệ', async () => {
     arrangeCongHienPreview({
       personnel: { id: 'qn-y-ch', ho_ten: 'Năm Cũ' },
       decisionNumbers: ['QD-Y'],
@@ -307,7 +307,7 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
     expect(result.errors[0].message).toContain('không hợp lệ');
   });
 
-  it('Danh hiệu enum không hợp lệ → errors "không hợp lệ"', async () => {
+  it('Nhập Excel HCBVTQ: danh hiệu không thuộc danh mục → báo lỗi không hợp lệ', async () => {
     arrangeCongHienPreview({
       personnel: { id: 'qn-dh-ch', ho_ten: 'Sai DH' },
       decisionNumbers: ['QD-DH'],
@@ -331,7 +331,7 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
     expect(result.errors[0].message).toContain('không hợp lệ');
   });
 
-  it('Sheet name sai → throw ValidationError "Không tìm thấy sheet"', async () => {
+  it('Nhập Excel HCBVTQ: sai tên trang tính → từ chối với "Không tìm thấy sheet"', async () => {
     // contributionMedal khai báo sheetName: 'HCBVTQ' nên tên sai sẽ fail ngay
     const workbook = new ExcelJS.Workbook();
     const ws = workbook.addWorksheet('WrongSheet');
@@ -346,7 +346,7 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
     );
   });
 
-  it('Số quyết định không tồn tại trên hệ thống → errors "không tồn tại trên hệ thống"', async () => {
+  it('Nhập Excel HCBVTQ: số quyết định chưa có trên hệ thống → báo lỗi "không tồn tại trên hệ thống"', async () => {
     // Hệ thống chỉ có QD-OTHER, file khai QD-NOT-EXISTS
     arrangeCongHienPreview({
       personnel: { id: 'qn-qd-bad', ho_ten: 'QD Sai' },
@@ -371,7 +371,7 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
     expect(result.errors[0].message).toContain('không tồn tại trên hệ thống');
   });
 
-  it('Đúng 120 tháng nhóm 0.7 cho HANG_BA → vào valid (boundary)', async () => {
+  it('Nhập Excel HCBVTQ: đúng 120 tháng phục vụ nhóm hệ số 0.7 cho HANG_BA (mốc biên) → ghi nhận hợp lệ', async () => {
     // Đúng 120 tháng nhóm 0.7 — đạt HANG_BA, không bị downgrade từ nhóm cao hơn
     arrangeCongHienPreview({
       personnel: { id: 'qn-bd-ch', ho_ten: 'Boundary' },
@@ -406,7 +406,7 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
     expect(result.valid).toHaveLength(1);
   });
 
-  it('Mix valid + invalid → trả cả 2 phần đúng', async () => {
+  it('Nhập Excel HCBVTQ: file vừa có dòng hợp lệ vừa có dòng lỗi → tách đúng dòng hợp lệ và dòng lỗi', async () => {
     arrangeCongHienPreview({
       personnel: [
         { id: 'qn-mix-1', ho_ten: 'Hợp Lệ' },
@@ -447,8 +447,8 @@ describe('contributionMedal.service - previewImport (CONG_HIEN)', () => {
   });
 });
 
-describe('contributionMedal.service - confirmImport (CONG_HIEN)', () => {
-  it('Confirm với 1 valid item → tạo HCBVTQ', async () => {
+describe('Nhập Excel HCBVTQ: xác nhận (confirm)', () => {
+  it('Nhập Excel HCBVTQ: xác nhận 1 dòng hợp lệ → tạo bản ghi HCBVTQ', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([
@@ -496,7 +496,7 @@ describe('contributionMedal.service - confirmImport (CONG_HIEN)', () => {
     });
   });
 
-  it('Confirm bị block bởi pending proposal → throw ValidationError', async () => {
+  it('Nhập Excel HCBVTQ: xác nhận khi đang có đề xuất HCBVTQ chờ duyệt → chặn và báo lỗi', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       {
         id: 'prop-pending',
@@ -531,7 +531,7 @@ describe('contributionMedal.service - confirmImport (CONG_HIEN)', () => {
     expect(prismaMock.khenThuongHCBVTQ.create).not.toHaveBeenCalled();
   });
 
-  it('Confirm bị block bởi existing HCBVTQ → throw ValidationError "đã có ... trên hệ thống"', async () => {
+  it('Nhập Excel HCBVTQ: xác nhận khi quân nhân đã có HCBVTQ trên hệ thống → chặn và báo "đã có"', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([
       { quan_nhan_id: 'qn-ch-existed', danh_hieu: DANH_HIEU_HCBVTQ.HANG_BA },
@@ -563,7 +563,7 @@ describe('contributionMedal.service - confirmImport (CONG_HIEN)', () => {
   });
 });
 
-describe('contributionMedal.service - HCBVTQ highest qualifying rank guard', () => {
+describe('Nhập Excel HCBVTQ: chặn nhận hạng thấp hơn hạng cao nhất đủ điều kiện', () => {
   function HCBVTQ_IMPORT_HIGHEST_eligibleHigh(personnelId: string): PositionHistoryWithChucVu[] {
     return [
       {
@@ -577,7 +577,7 @@ describe('contributionMedal.service - HCBVTQ highest qualifying rank guard', () 
     ];
   }
 
-  it('Preview HANG_BA cho QN đủ HANG_NHAT → push vào errors với message "thấp hơn"', async () => {
+  it('Nhập Excel HCBVTQ (xem trước): xin HANG_BA trong khi đủ điều kiện HANG_NHAT → báo lỗi "thấp hơn"', async () => {
     const p1 = makePersonnel({ id: 'qn-highest-prev-1', ho_ten: 'Highest Preview', gioi_tinh: 'NAM' });
     arrangeCongHienPreview({
       personnel: { id: p1.id, ho_ten: p1.ho_ten },
@@ -605,7 +605,7 @@ describe('contributionMedal.service - HCBVTQ highest qualifying rank guard', () 
     expect(result.errors[0].message).toContain(HCBVTQ_HIGHEST_DOWNGRADE_FRAGMENT);
   });
 
-  it('Preview HANG_NHAT cho QN đủ HANG_NHAT → vào valid', async () => {
+  it('Nhập Excel HCBVTQ (xem trước): xin đúng HANG_NHAT khi đủ điều kiện HANG_NHAT → ghi nhận hợp lệ', async () => {
     const p1 = makePersonnel({ id: 'qn-highest-prev-2', ho_ten: 'Highest OK', gioi_tinh: 'NAM' });
     arrangeCongHienPreview({
       personnel: { id: p1.id, ho_ten: p1.ho_ten },
@@ -633,7 +633,7 @@ describe('contributionMedal.service - HCBVTQ highest qualifying rank guard', () 
     expect(result.valid[0].danh_hieu).toBe(DANH_HIEU_HCBVTQ.HANG_NHAT);
   });
 
-  it('Confirm HANG_BA cho QN đủ HANG_NHAT → ValidationError thrown', async () => {
+  it('Nhập Excel HCBVTQ (xác nhận): xin HANG_BA trong khi đủ điều kiện HANG_NHAT → chặn và báo lỗi', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([

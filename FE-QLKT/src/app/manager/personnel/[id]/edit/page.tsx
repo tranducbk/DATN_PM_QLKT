@@ -122,12 +122,8 @@ export default function ManagerPersonnelEditPage() {
     undefined
   );
   const [currentPositionId, setCurrentPositionId] = useState<string | undefined>(undefined);
-  const [, setManagerUnitId] = useState<string | null>(null);
 
   useEffect(() => {
-    const unitId = localStorage.getItem('unit_id');
-    setManagerUnitId(unitId);
-
     const fetchData = async () => {
       try {
         setLoadingData(true);

@@ -62,8 +62,8 @@ function AUTH_SNEAKY_arrangeManagerCqdvA(): SneakyManagerFixture {
   return { cqdvA, cqdvB };
 }
 
-describe('Authorization sneaky — submit cross-unit personnel', () => {
-  it('Manager CQDV-A submit cho QN thuộc CQDV-B → reject (guard scope đơn vị)', async () => {
+describe('Bảo mật: chặn lách quyền khi đề xuất cho quân nhân ngoài đơn vị', () => {
+  it('Bảo mật: chặn lách quyền — MANAGER thuộc CQDV-A đề xuất cho quân nhân của CQDV-B → bị chặn', async () => {
     // Cho trước: manager scope A, quân nhân target thực ra thuộc B
     const { cqdvA, cqdvB } = AUTH_SNEAKY_arrangeManagerCqdvA();
     const targetInOtherUnit = makePersonnel({
@@ -100,8 +100,8 @@ describe('Authorization sneaky — submit cross-unit personnel', () => {
   });
 });
 
-describe('Authorization sneaky — body field overrides', () => {
-  it('Token là MANAGER nhưng body có nguoi_de_xuat_id của ADMIN khác → service ignore body, dùng userId từ token', async () => {
+describe('Bảo mật: chặn lách quyền bằng cách giả mạo người đề xuất trong dữ liệu gửi lên', () => {
+  it('Bảo mật: chặn lách quyền — MANAGER nhét người đề xuất là ADMIN khác vào payload → hệ thống vẫn ghi nhận người đề xuất theo phiên đăng nhập', async () => {
     // Cho trước: manager xấu pass id account người khác qua body;
     // signature submitProposal không nhận body.nguoi_de_xuat_id nên giá trị
     // chắc chắn bị ignore. Test này pin chính xác contract đó.
@@ -138,8 +138,8 @@ describe('Authorization sneaky — body field overrides', () => {
   });
 });
 
-describe('Authorization sneaky — getProposalById cross-DVTT', () => {
-  it('Manager DVTT-A xem proposal của DVTT-B → ForbiddenError', async () => {
+describe('Bảo mật: chặn lách quyền xem đề xuất của DVTT khác', () => {
+  it('Bảo mật: chặn lách quyền — MANAGER thuộc DVTT-A mở chi tiết đề xuất của DVTT-B → bị chặn', async () => {
     // Cho trước: proposal scope dvtt-B, manager scope dvtt-A
     const dvttA = makeUnit({ kind: 'DVTT', id: 'dvtt-A-sneaky' });
     const dvttB = makeUnit({ kind: 'DVTT', id: 'dvtt-B-sneaky' });
@@ -185,8 +185,8 @@ describe('Authorization sneaky — getProposalById cross-DVTT', () => {
   });
 });
 
-describe('Authorization sneaky — delete by SUPER_ADMIN on another admin proposal', () => {
-  it('SUPER_ADMIN xóa proposal PENDING của ADMIN khác → cho phép (chỉ MANAGER bị giới hạn owner)', async () => {
+describe('Bảo mật: SUPER_ADMIN xóa đề xuất do người khác tạo', () => {
+  it('Phân quyền: SUPER_ADMIN xóa đề xuất chờ duyệt của ADMIN khác → cho phép (chỉ MANAGER mới bị giới hạn theo người tạo)', async () => {
     // Cho trước: proposal thuộc ADMIN_OTHER, người xóa là SUPER_ADMIN
     const proposal = makeProposal({
       id: 'p-super-delete',
@@ -213,8 +213,8 @@ describe('Authorization sneaky — delete by SUPER_ADMIN on another admin propos
   });
 });
 
-describe('Authorization sneaky — manager DVTT submitting personnel of parent CQDV', () => {
-  it('Manager DVTT-A submit cho QN thuộc CQDV cha → reject (guard scope đơn vị)', async () => {
+describe('Bảo mật: chặn lách quyền khi MANAGER cấp DVTT đề xuất cho quân nhân thuộc CQDV cha', () => {
+  it('Bảo mật: chặn lách quyền — MANAGER thuộc DVTT-A đề xuất cho quân nhân của CQDV cha → bị chặn (ngoài phạm vi DVTT)', async () => {
     // Cho trước: manager scope dvtt-A; quân nhân target thực ra thuộc cqdv-parent (CQDV cha)
     const dvttA = makeUnit({ kind: 'DVTT', id: 'dvtt-A-parent', parentId: 'cqdv-parent' });
     const parentCqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-parent' });

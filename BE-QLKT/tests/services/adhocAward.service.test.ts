@@ -70,8 +70,8 @@ function DOT_XUAT_makeAdhocRecord(overrides: Record<string, unknown> = {}) {
   };
 }
 
-describe('adhocAward.service - createAdhocAward', () => {
-  it('Tạo thành công cho cá nhân với đầy đủ thông tin', async () => {
+describe('Khen thưởng đột xuất: tạo khen thưởng', () => {
+  it('Khen thưởng đột xuất: tạo cho cá nhân với đầy đủ thông tin và số quyết định đã có sẵn → lưu đúng quân nhân, số quyết định, đối tượng cá nhân', async () => {
     // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(DOT_XUAT_makePersonnelRecord());
@@ -100,7 +100,7 @@ describe('adhocAward.service - createAdhocAward', () => {
     expect(createCall.data.doi_tuong).toBe(ADHOC_TYPE.CA_NHAN);
   });
 
-  it('Số quyết định mới + đầy đủ metadata → tạo FileQuyetDinh trước rồi tạo award', async () => {
+  it('Khen thưởng đột xuất: số quyết định mới kèm đủ năm, ngày ký, người ký → tạo bản ghi quyết định trước rồi mới tạo khen thưởng', async () => {
     // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(DOT_XUAT_makePersonnelRecord());
@@ -134,7 +134,7 @@ describe('adhocAward.service - createAdhocAward', () => {
     expect(prismaMock.fileQuyetDinh.create).toHaveBeenCalledTimes(1);
   });
 
-  it('Số quyết định mới nhưng thiếu metadata → ValidationError', async () => {
+  it('Khen thưởng đột xuất bị chặn: số quyết định mới nhưng thiếu năm, ngày ký, người ký → báo "Quyết định mới cần đầy đủ năm, ngày ký và người ký"', async () => {
     // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(DOT_XUAT_makePersonnelRecord());
@@ -153,7 +153,7 @@ describe('adhocAward.service - createAdhocAward', () => {
     ).rejects.toThrow('Quyết định mới cần đầy đủ năm, ngày ký và người ký');
   });
 
-  it('Non-admin role gọi create → ForbiddenError', async () => {
+  it('Khen thưởng đột xuất bị chặn: tài khoản không phải Admin (MANAGER) tạo khen thưởng → từ chối "Chỉ Admin mới có quyền tạo khen thưởng đột xuất"', async () => {
     // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-mgr',
@@ -173,7 +173,7 @@ describe('adhocAward.service - createAdhocAward', () => {
     ).rejects.toThrow('Chỉ Admin mới có quyền tạo khen thưởng đột xuất');
   });
 
-  it('Quân nhân không tồn tại → NotFoundError', async () => {
+  it('Khen thưởng đột xuất bị chặn: quân nhân được chọn không tồn tại → báo "Quân nhân không tồn tại"', async () => {
     // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(null);
@@ -190,7 +190,7 @@ describe('adhocAward.service - createAdhocAward', () => {
     ).rejects.toThrow('Quân nhân không tồn tại');
   });
 
-  it('Đơn vị (CQDV) không tồn tại → NotFoundError', async () => {
+  it('Khen thưởng đột xuất bị chặn: khen thưởng tập thể nhưng CQDV được chọn không tồn tại → báo "Cơ quan đơn vị không tồn tại"', async () => {
     // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce(null);
@@ -209,8 +209,8 @@ describe('adhocAward.service - createAdhocAward', () => {
   });
 });
 
-describe('adhocAward.service - getAdhocAwards (pagination)', () => {
-  it('Trả pagination + data', async () => {
+describe('Khen thưởng đột xuất: danh sách (phân trang)', () => {
+  it('Khen thưởng đột xuất: lấy danh sách trang 1, mỗi trang 20 dòng → trả về dữ liệu kèm tổng số bản ghi', async () => {
     // Cho
     const records = [DOT_XUAT_makeAdhocRecord()];
     prismaMock.khenThuongDotXuat.count.mockResolvedValueOnce(1);
@@ -230,8 +230,8 @@ describe('adhocAward.service - getAdhocAwards (pagination)', () => {
   });
 });
 
-describe('adhocAward.service - updateAdhocAward', () => {
-  it('Cập nhật thành công khi admin hợp lệ', async () => {
+describe('Khen thưởng đột xuất: cập nhật khen thưởng', () => {
+  it('Khen thưởng đột xuất: Admin sửa hình thức khen thưởng của bản ghi đang có → cập nhật thành công', async () => {
     // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.khenThuongDotXuat.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdhocRecord());
@@ -256,7 +256,7 @@ describe('adhocAward.service - updateAdhocAward', () => {
     expect(updateCall.data.hinh_thuc_khen_thuong).toBe('Khen thưởng đột xuất B');
   });
 
-  it('Update record không tồn tại → NotFoundError', async () => {
+  it('Khen thưởng đột xuất bị chặn: cập nhật bản ghi không tồn tại → báo "Khen thưởng đột xuất không tồn tại"', async () => {
     // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.khenThuongDotXuat.findUnique.mockResolvedValueOnce(null);
@@ -271,8 +271,8 @@ describe('adhocAward.service - updateAdhocAward', () => {
   });
 });
 
-describe('adhocAward.service - deleteAdhocAward', () => {
-  it('Xóa thành công và trả { success: true }', async () => {
+describe('Khen thưởng đột xuất: xóa khen thưởng', () => {
+  it('Khen thưởng đột xuất: Admin xóa bản ghi đang có → xóa thành công và báo thành công', async () => {
     // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.khenThuongDotXuat.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdhocRecord());
@@ -288,7 +288,7 @@ describe('adhocAward.service - deleteAdhocAward', () => {
     expect(prismaMock.khenThuongDotXuat.delete).toHaveBeenCalledWith({ where: { id: 'adh-1' } });
   });
 
-  it('Delete record không tồn tại → NotFoundError', async () => {
+  it('Khen thưởng đột xuất bị chặn: xóa bản ghi không tồn tại → báo "Khen thưởng đột xuất không tồn tại"', async () => {
     // Cho
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(DOT_XUAT_makeAdminAccount());
     prismaMock.khenThuongDotXuat.findUnique.mockResolvedValueOnce(null);

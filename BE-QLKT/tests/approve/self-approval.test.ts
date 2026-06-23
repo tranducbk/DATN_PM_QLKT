@@ -32,8 +32,8 @@ async function selfApprovalMessageFrom(approverId: string): Promise<string> {
   }
 }
 
-describe('approveProposal — tách quyền (chống tự phê duyệt)', () => {
-  it('người duyệt CHÍNH LÀ người đề xuất → reject ngay', async () => {
+describe('Chống tự phê duyệt đề xuất', () => {
+  it('Chống tự phê duyệt: người duyệt chính là người đề xuất → từ chối ngay', async () => {
     mockPendingProposal(APPROVER);
     await expectError(
       proposalService.approveProposal('p-sod-1', {}, APPROVER, {}, {}, null),
@@ -42,12 +42,12 @@ describe('approveProposal — tách quyền (chống tự phê duyệt)', () => 
     );
   });
 
-  it('người duyệt KHÁC người đề xuất → không bị guard SoD chặn', async () => {
+  it('Chống tự phê duyệt: người duyệt khác người đề xuất → không bị chặn', async () => {
     mockPendingProposal('acc-manager-khac');
     expect(await selfApprovalMessageFrom(APPROVER)).not.toBe(SELF_APPROVAL_MSG);
   });
 
-  it('người đề xuất đã bị xoá (nguoi_de_xuat_id null) → không coi là tự duyệt', async () => {
+  it('Chống tự phê duyệt: người đề xuất đã bị xoá (không còn thông tin người đề xuất) → không coi là tự duyệt', async () => {
     mockPendingProposal(null);
     expect(await selfApprovalMessageFrom(APPROVER)).not.toBe(SELF_APPROVAL_MSG);
   });

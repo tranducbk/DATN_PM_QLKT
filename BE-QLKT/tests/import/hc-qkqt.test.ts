@@ -41,8 +41,8 @@ async function makeHcqkqtExcelBuffer(rows: HcqkqtRow[]): Promise<Buffer> {
   return Buffer.from(arrayBuffer as ArrayBuffer);
 }
 
-describe('militaryFlag.service - previewImport', () => {
-  it('Row hợp lệ HC QKQT (>= 25 năm phục vụ) → vào valid', async () => {
+describe('Nhập Excel HC QKQT: xem trước (preview)', () => {
+  it('Nhập Excel HC QKQT: dòng hợp lệ, phục vụ >= 25 năm → ghi nhận vào danh sách hợp lệ', async () => {
     // Given: enlisted 1995-01-01, ref 2024-12 → ~30y >= 25y
     const p1 = makePersonnel({
       id: 'qn-1',
@@ -79,7 +79,7 @@ describe('militaryFlag.service - previewImport', () => {
     });
   });
 
-  it('QN < 25 năm phục vụ → errors "Chưa đủ 25 năm phục vụ"', async () => {
+  it('Nhập Excel HC QKQT: quân nhân chưa đủ 25 năm phục vụ → báo lỗi "Chưa đủ 25 năm phục vụ"', async () => {
     const p1 = makePersonnel({
       id: 'qn-1',
       ho_ten: 'Nguyễn Văn A',
@@ -109,7 +109,7 @@ describe('militaryFlag.service - previewImport', () => {
     expect(result.errors[0].message).toContain(IMPORT_HCQKQT_NOT_ENOUGH_YEARS_PREFIX);
   });
 
-  it('QN đã có HC QKQT trên hệ thống → errors "đã có HC QKQT"', async () => {
+  it('Nhập Excel HC QKQT: quân nhân đã có HC QKQT trên hệ thống → báo lỗi "đã có HC QKQT"', async () => {
     const p1 = makePersonnel({
       id: 'qn-1',
       ho_ten: 'Nguyễn Văn A',
@@ -141,7 +141,7 @@ describe('militaryFlag.service - previewImport', () => {
     expect(result.errors[0].message).toBe(IMPORT_HCQKQT_ALREADY_AWARDED(2020));
   });
 
-  it('Đúng 25 năm phục vụ (boundary) → vào valid', async () => {
+  it('Nhập Excel HC QKQT: đúng 25 năm phục vụ (mốc biên) → ghi nhận hợp lệ', async () => {
     // enlist Dec 1999 + ref Dec 2024 → exactly 300 months — boundary inclusive
     const p1 = makePersonnel({
       id: 'qn-bdy',
@@ -161,7 +161,7 @@ describe('militaryFlag.service - previewImport', () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it('Empty rows → skip, không tính vào total', async () => {
+  it('Nhập Excel HC QKQT: dòng trống → bỏ qua, không tính vào tổng số dòng', async () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
     prismaMock.huanChuongQuanKyQuyetThang.findMany.mockResolvedValueOnce([]);
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([]);
@@ -176,7 +176,7 @@ describe('militaryFlag.service - previewImport', () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it('Duplicate cùng personnel_id trong file → row sau errors "Trùng lặp trong file"', async () => {
+  it('Nhập Excel HC QKQT: cùng một quân nhân lặp lại trong file → dòng sau báo "Trùng lặp trong file"', async () => {
     const p1 = makePersonnel({
       id: 'qn-dup',
       ho_ten: 'Nguyễn Văn Dup',
@@ -197,7 +197,7 @@ describe('militaryFlag.service - previewImport', () => {
     expect(result.errors[0].message).toContain('Trùng lặp trong file');
   });
 
-  it('Thiếu Tháng → errors "Thiếu Tháng"', async () => {
+  it('Nhập Excel HC QKQT: dòng thiếu tháng nhận → báo lỗi "Thiếu Tháng"', async () => {
     const p1 = makePersonnel({
       id: 'qn-mt',
       ho_ten: 'Nguyễn Văn Mt',
@@ -215,7 +215,7 @@ describe('militaryFlag.service - previewImport', () => {
     expect(result.errors[0].message).toContain('Thiếu Tháng');
   });
 
-  it('Sai sheet name → throw ValidationError', async () => {
+  it('Nhập Excel HC QKQT: sai tên trang tính → từ chối với "Không tìm thấy sheet"', async () => {
     const workbook = new ExcelJS.Workbook();
     workbook.addWorksheet('WrongSheet').addRow([...HEADERS]);
     const arrayBuffer = await workbook.xlsx.writeBuffer();
@@ -223,7 +223,7 @@ describe('militaryFlag.service - previewImport', () => {
     await expect(militaryFlagService.previewImport(buffer)).rejects.toThrow(/Không tìm thấy sheet/);
   });
 
-  it('Số quyết định không có trên hệ thống → errors "Số quyết định ... không tồn tại"', async () => {
+  it('Nhập Excel HC QKQT: số quyết định chưa có trên hệ thống → báo lỗi "không tồn tại trên hệ thống"', async () => {
     const p1 = makePersonnel({
       id: 'qn-qd',
       ho_ten: 'Nguyễn Văn Qd',
@@ -241,7 +241,7 @@ describe('militaryFlag.service - previewImport', () => {
     expect(result.errors[0].message).toContain('không tồn tại trên hệ thống');
   });
 
-  it('QN không tồn tại → errors "Không tìm thấy quân nhân"', async () => {
+  it('Nhập Excel HC QKQT: mã quân nhân không có trong hệ thống → báo lỗi "Không tìm thấy quân nhân"', async () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
     prismaMock.huanChuongQuanKyQuyetThang.findMany.mockResolvedValueOnce([]);
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
@@ -264,8 +264,8 @@ describe('militaryFlag.service - previewImport', () => {
   });
 });
 
-describe('militaryFlag.service - confirmImport', () => {
-  it('Confirm valid → upsert tạo HC QKQT', async () => {
+describe('Nhập Excel HC QKQT: xác nhận (confirm)', () => {
+  it('Nhập Excel HC QKQT: xác nhận dòng hợp lệ → tạo bản ghi HC QKQT', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.huanChuongQuanKyQuyetThang.findMany.mockResolvedValueOnce([]);
     prismaMock.huanChuongQuanKyQuyetThang.upsert.mockResolvedValueOnce({ id: 'hcqkqt-1' });

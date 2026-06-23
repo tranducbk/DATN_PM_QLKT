@@ -40,8 +40,8 @@ function arrangeNienHanBulk({ personnel, existingHCCSVV = [] }: ArrangeOptions) 
   );
 }
 
-describe('bulkCreateAwards — HCCSVV rank order', () => {
-  it('reject HANG_NHI khi quân nhân chưa có HANG_BA', async () => {
+describe('Trao thưởng hàng loạt HCCSVV: kiểm tra thứ tự hạng', () => {
+  it('Phê duyệt bị chặn: trao HCCSVV hạng Nhì khi quân nhân chưa có hạng Ba → từ chối "Phải nhận hạng Ba"', async () => {
     const p = makePersonnel({
       id: 'qn-1',
       ho_ten: 'Nguyễn A',
@@ -64,7 +64,7 @@ describe('bulkCreateAwards — HCCSVV rank order', () => {
     expect(prismaMock.khenThuongHCCSVV.upsert).not.toHaveBeenCalled();
   });
 
-  it('reject HANG_NHI khi HANG_BA năm sau (cùng năm) — phải sau năm', async () => {
+  it('Phê duyệt bị chặn: trao HCCSVV hạng Nhì cùng năm với hạng Ba → từ chối vì hạng Nhì phải sau năm nhận hạng Ba', async () => {
     const p = makePersonnel({
       id: 'qn-1',
       ho_ten: 'Nguyễn B',
@@ -90,7 +90,7 @@ describe('bulkCreateAwards — HCCSVV rank order', () => {
     expect(prismaMock.khenThuongHCCSVV.upsert).not.toHaveBeenCalled();
   });
 
-  it('success HANG_NHI khi HANG_BA năm trước', async () => {
+  it('Phê duyệt thông thường: trao HCCSVV hạng Nhì khi đã có hạng Ba từ năm trước → thành công', async () => {
     const p = makePersonnel({
       id: 'qn-1',
       ho_ten: 'Nguyễn C',
@@ -116,7 +116,7 @@ describe('bulkCreateAwards — HCCSVV rank order', () => {
     expect(prismaMock.khenThuongHCCSVV.upsert).toHaveBeenCalledTimes(1);
   });
 
-  it('mix 2 quân nhân — 1 valid + 1 invalid → reject với errors gom', async () => {
+  it('Phê duyệt bị chặn: trao HCCSVV hàng loạt cho 2 quân nhân, 1 hợp lệ + 1 sai thứ tự hạng → một dòng lỗi thì hủy toàn bộ và gộp lý do', async () => {
     const a = makePersonnel({
       id: 'qn-A',
       ho_ten: 'Người A',
@@ -150,7 +150,7 @@ describe('bulkCreateAwards — HCCSVV rank order', () => {
     expect(prismaMock.khenThuongHCCSVV.upsert).not.toHaveBeenCalled();
   });
 
-  it('reject HANG_NHAT khi thiếu HANG_NHI', async () => {
+  it('Phê duyệt bị chặn: trao HCCSVV hạng Nhất khi mới có hạng Ba, thiếu hạng Nhì → từ chối "Phải nhận hạng Nhì"', async () => {
     const p = makePersonnel({
       id: 'qn-1',
       ho_ten: 'Nguyễn D',
@@ -176,7 +176,7 @@ describe('bulkCreateAwards — HCCSVV rank order', () => {
     expect(prismaMock.khenThuongHCCSVV.upsert).not.toHaveBeenCalled();
   });
 
-  it('success HANG_NHAT đầy đủ tuần tự', async () => {
+  it('Phê duyệt thông thường: trao HCCSVV hạng Nhất khi đã có đủ hạng Ba rồi hạng Nhì theo đúng thứ tự → thành công', async () => {
     const p = makePersonnel({
       id: 'qn-1',
       ho_ten: 'Nguyễn E',

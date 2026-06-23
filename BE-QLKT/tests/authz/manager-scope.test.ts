@@ -36,8 +36,8 @@ function AUTHZ_makeRequest(role: string, quanNhanId: string | null = 'qn-mgr-1')
   } as unknown as Request;
 }
 
-describe('authz/manager-scope - getProposals filter theo role', () => {
-  it('MANAGER thuộc CQDV → where chỉ chứa co_quan_don_vi_id', async () => {
+describe('Phân quyền: danh sách đề xuất chỉ trong phạm vi đơn vị của người xem', () => {
+  it('Phân quyền: MANAGER cấp CQDV → chỉ thấy đề xuất của CQDV mình quản lý', async () => {
     // Cho trước
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-mgr' });
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
@@ -63,7 +63,7 @@ describe('authz/manager-scope - getProposals filter theo role', () => {
     expect(findManyCall.where).toEqual({ co_quan_don_vi_id: cqdv.id });
   });
 
-  it('MANAGER thuộc DVTT (không có CQDV) → where chỉ chứa don_vi_truc_thuoc_id', async () => {
+  it('Phân quyền: MANAGER cấp DVTT (không thuộc CQDV) → chỉ thấy đề xuất của DVTT mình', async () => {
     // Cho trước
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-mgr' });
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
@@ -90,7 +90,7 @@ describe('authz/manager-scope - getProposals filter theo role', () => {
     expect(findManyCall.where.co_quan_don_vi_id).toBeUndefined();
   });
 
-  it('MANAGER thuộc DVTT — getProposals KHÔNG include CQDV cha (filter chỉ DVTT trực tiếp)', async () => {
+  it('Phân quyền: MANAGER cấp DVTT → danh sách KHÔNG lan sang CQDV cha, chỉ giới hạn đúng DVTT', async () => {
     // Cho trước: Manager DVTT — core service không mở rộng filter sang CQDV cha
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-mgr-2' });
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
@@ -117,7 +117,7 @@ describe('authz/manager-scope - getProposals filter theo role', () => {
     expect(findManyCall.where).not.toHaveProperty('co_quan_don_vi_id');
   });
 
-  it('ADMIN → where rỗng (xem tất cả)', async () => {
+  it('Phân quyền: ADMIN → xem được đề xuất của mọi đơn vị (không giới hạn phạm vi)', async () => {
     // Cho trước
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.bangDeXuat.count.mockResolvedValueOnce(0);
@@ -133,7 +133,7 @@ describe('authz/manager-scope - getProposals filter theo role', () => {
     expect(prismaMock.taiKhoan.findUnique).not.toHaveBeenCalled();
   });
 
-  it('SUPER_ADMIN → where rỗng (xem tất cả)', async () => {
+  it('Phân quyền: SUPER_ADMIN → xem được đề xuất của mọi đơn vị (không giới hạn phạm vi)', async () => {
     // Cho trước
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.bangDeXuat.count.mockResolvedValueOnce(0);
@@ -149,8 +149,8 @@ describe('authz/manager-scope - getProposals filter theo role', () => {
   });
 });
 
-describe('authz/manager-scope - getProposalById visibility', () => {
-  it('MANAGER xem proposal đơn vị khác → ForbiddenError "Bạn không có quyền xem đề xuất này"', async () => {
+describe('Phân quyền: xem chi tiết một đề xuất theo phạm vi đơn vị', () => {
+  it('Phân quyền: MANAGER mở chi tiết đề xuất của đơn vị khác → bị chặn ("Bạn không có quyền xem đề xuất này")', async () => {
     // Cho trước: proposal thuộc CQDV-A, manager thuộc CQDV-B
     const cqdvA = 'cqdv-A';
     const cqdvB = 'cqdv-B';
@@ -194,7 +194,7 @@ describe('authz/manager-scope - getProposalById visibility', () => {
     );
   });
 
-  it('MANAGER xem proposal cùng đơn vị → trả về detail', async () => {
+  it('Phân quyền: MANAGER mở chi tiết đề xuất cùng đơn vị mình → cho phép xem chi tiết', async () => {
     // Cho trước
     const cqdv = 'cqdv-shared';
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce({
@@ -239,7 +239,7 @@ describe('authz/manager-scope - getProposalById visibility', () => {
     expect(result.don_vi.id).toBe(cqdv);
   });
 
-  it('Proposal không tồn tại → NotFoundError', async () => {
+  it('Phân quyền: mở chi tiết đề xuất không tồn tại → báo không tìm thấy', async () => {
     // Cho trước
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(null);
 
@@ -250,8 +250,8 @@ describe('authz/manager-scope - getProposalById visibility', () => {
   });
 });
 
-describe('authz/manager-scope - buildManagerQuanNhanFilter', () => {
-  it('Manager CQDV với DVTT con → trả filter OR (CQDV + danh sách DVTT)', async () => {
+describe('Phân quyền: phạm vi quân nhân mà MANAGER được thao tác', () => {
+  it('Phân quyền: MANAGER cấp CQDV → phạm vi gồm cả CQDV và các DVTT con trực thuộc', async () => {
     // Cho trước
     const cqdvId = 'cqdv-A';
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce({
@@ -275,7 +275,7 @@ describe('authz/manager-scope - buildManagerQuanNhanFilter', () => {
     });
   });
 
-  it('Non-manager (ADMIN) → null (không áp filter)', async () => {
+  it('Phân quyền: ADMIN (không phải MANAGER) → không áp giới hạn phạm vi quân nhân', async () => {
     // Khi
     const filter = await buildManagerQuanNhanFilter(AUTHZ_makeRequest(ROLES.ADMIN, null));
 
@@ -284,7 +284,7 @@ describe('authz/manager-scope - buildManagerQuanNhanFilter', () => {
     expect(prismaMock.quanNhan.findUnique).not.toHaveBeenCalled();
   });
 
-  it('Manager nhưng QuanNhan không có cả CQDV lẫn DVTT → null (no scope)', async () => {
+  it('Phân quyền: MANAGER chưa gắn CQDV lẫn DVTT → không có phạm vi quân nhân nào', async () => {
     // Cho trước
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce({
       co_quan_don_vi_id: null,
@@ -299,8 +299,8 @@ describe('authz/manager-scope - buildManagerQuanNhanFilter', () => {
   });
 });
 
-describe('authz/manager-scope - touchpoint sanity', () => {
-  it('AUTHZ_makeManagerAccount builder default values', () => {
+describe('Kiểm tra dữ liệu dựng sẵn cho tài khoản MANAGER', () => {
+  it('Tài khoản MANAGER dựng sẵn nhận đúng giá trị mặc định và giá trị ghi đè', () => {
     // Cho trước / Khi
     const acc = AUTHZ_makeManagerAccount({ coQuanDonViId: 'cqdv-x' });
     // Kết quả

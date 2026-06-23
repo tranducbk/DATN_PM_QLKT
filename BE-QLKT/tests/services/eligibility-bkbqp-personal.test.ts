@@ -9,8 +9,8 @@ import profileService from '../../src/services/profile.service';
 import { DANH_HIEU_CA_NHAN_HANG_NAM } from '../../src/constants/danhHieu.constants';
 import { eligibilityReasons } from '../helpers/errorMessages';
 
-describe('profile.service - BKBQP exhaustive boundaries', () => {
-  it('2y CSTDCS + 2 NCKH → eligible (boundary tối thiểu)', async () => {
+describe('Xét điều kiện BKBQP cá nhân: rà soát các mốc số năm liên tục', () => {
+  it('Xét điều kiện BKBQP: đúng 2 năm CSTDCS + 2 năm NCKH (mốc biên tối thiểu) → đủ điều kiện', async () => {
     const personnelId = 'qn-bkbqp-ex-1';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2022, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -27,7 +27,7 @@ describe('profile.service - BKBQP exhaustive boundaries', () => {
     expect(result.reason).toBe(eligibilityReasons.bkbqpEligible);
   });
 
-  it('4y CSTDCS + 4 NCKH → eligible (chia 2)', async () => {
+  it('Xét điều kiện BKBQP: 4 năm CSTDCS + 4 năm NCKH (đúng mốc chu kỳ 2 năm) → đủ điều kiện', async () => {
     const personnelId = 'qn-bkbqp-ex-2';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2020, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -43,7 +43,7 @@ describe('profile.service - BKBQP exhaustive boundaries', () => {
     expect(result.eligible).toBe(true);
   });
 
-  it('6y CSTDCS + 6 NCKH → eligible (chia 2)', async () => {
+  it('Xét điều kiện BKBQP: 6 năm CSTDCS + 6 năm NCKH (đúng mốc chu kỳ 2 năm) → đủ điều kiện', async () => {
     const personnelId = 'qn-bkbqp-ex-3';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2018, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -59,7 +59,7 @@ describe('profile.service - BKBQP exhaustive boundaries', () => {
     expect(result.eligible).toBe(true);
   });
 
-  it('3y CSTDCS + NCKH đủ → fail (NOT mod 2)', async () => {
+  it('Xét điều kiện BKBQP: 3 năm CSTDCS liên tục + đủ NCKH (lẻ năm, chưa tới mốc chu kỳ 2 năm) → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-bkbqp-ex-4';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2021, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -76,7 +76,7 @@ describe('profile.service - BKBQP exhaustive boundaries', () => {
     expect(result.reason).toBe(eligibilityReasons.bkbqpReason(3, 3));
   });
 
-  it('5y CSTDCS + NCKH đủ → fail (NOT mod 2)', async () => {
+  it('Xét điều kiện BKBQP: 5 năm CSTDCS liên tục + đủ NCKH (lẻ năm, chưa tới mốc chu kỳ 2 năm) → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-bkbqp-ex-5';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2019, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -93,7 +93,7 @@ describe('profile.service - BKBQP exhaustive boundaries', () => {
     expect(result.reason).toBe(eligibilityReasons.bkbqpReason(5, 5));
   });
 
-  it('7y CSTDCS + NCKH đủ → fail BKBQP (NOT mod 2)', async () => {
+  it('Xét điều kiện BKBQP: 7 năm CSTDCS liên tục + đủ NCKH (lẻ năm, chưa tới mốc chu kỳ 2 năm) → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-bkbqp-ex-6';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2017, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -110,7 +110,7 @@ describe('profile.service - BKBQP exhaustive boundaries', () => {
     expect(result.reason).toBe(eligibilityReasons.bkbqpReason(7, 7));
   });
 
-  it('1y CSTDCS + 1 NCKH → fail (streak < 2)', async () => {
+  it('Xét điều kiện BKBQP: chỉ 1 năm CSTDCS + 1 năm NCKH (chưa đủ 2 năm liên tục) → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-bkbqp-ex-7';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2023, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -127,7 +127,7 @@ describe('profile.service - BKBQP exhaustive boundaries', () => {
     expect(result.reason).toBe(eligibilityReasons.bkbqpReason(1, 1));
   });
 
-  it('2y CSTDCS + chỉ 1 NCKH → fail (NCKH thiếu)', async () => {
+  it('Xét điều kiện BKBQP: 2 năm CSTDCS nhưng chỉ 1 năm NCKH (thiếu NCKH) → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-bkbqp-ex-8';
     const { danhHieu } = buildContiguousCSTDCS(2022, 2023);
     const nckh: ScienceRow[] = [{ nam: 2023 }];
@@ -145,7 +145,7 @@ describe('profile.service - BKBQP exhaustive boundaries', () => {
     expect(result.reason).toBe(eligibilityReasons.bkbqpReason(2, 1));
   });
 
-  it('Đã nhận BKBQP năm trước (trong streak) + 4y CSTDCS mới → eligible (chain cho phép nhiều BKBQP)', async () => {
+  it('Xét điều kiện BKBQP: đã nhận BKBQP một năm trong chuỗi + 4 năm CSTDCS liên tục → vẫn đủ điều kiện (chuỗi danh hiệu cho nhận lại)', async () => {
     // Cho: 4y CSTDCS liên tục, BKBQP tại năm 2 trong streak
     const personnelId = 'qn-bkbqp-ex-9';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2020, 2023, {
@@ -166,8 +166,8 @@ describe('profile.service - BKBQP exhaustive boundaries', () => {
   });
 });
 
-describe('profile.service - BKBQP edge cases', () => {
-  it('streak gián đoạn rồi tiếp tục: 5y CSTDCS → 1y CSTT → 3y CSTDCS, recalc 2027 → streak = 3', async () => {
+describe('Xét điều kiện BKBQP cá nhân: các tình huống biên của chuỗi danh hiệu', () => {
+  it('Xét điều kiện BKBQP: chuỗi đứt giữa chừng (5 năm CSTDCS → 1 năm CSTT → 3 năm CSTDCS), tính lại năm 2027 → số năm liên tục đếm lại còn 3', async () => {
     const personnelId = 'qn-edge-bkbqp-1';
     const danhHieu: AnnualRow[] = [];
     const nckh: ScienceRow[] = [];
@@ -205,7 +205,7 @@ describe('profile.service - BKBQP edge cases', () => {
     expect(args.update.du_dieu_kien_bkbqp).toBe(false);
   });
 
-  it('gap year giữa chuỗi (thiếu record năm 2022) → streak chỉ tính 2y mới nhất', async () => {
+  it('Xét điều kiện BKBQP: thiếu dữ liệu năm 2022 giữa chuỗi → chỉ đếm 2 năm liên tục gần nhất → đủ điều kiện', async () => {
     const personnelId = 'qn-edge-bkbqp-2';
     const danhHieu: AnnualRow[] = [
       { nam: 2020, danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, so_quyet_dinh: 'QD-CSTDCS-2020' },
@@ -227,7 +227,7 @@ describe('profile.service - BKBQP edge cases', () => {
     expect(result.eligible).toBe(true);
   });
 
-  it('thiếu NCKH năm GIỮA streak (CSTDCS 2020-2025, thiếu NCKH 2022) → BKBQP fail', async () => {
+  it('Xét điều kiện BKBQP: 6 năm CSTDCS liên tục nhưng thiếu NCKH năm 2022 giữa chuỗi → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-edge-bkbqp-3';
     const danhHieu: AnnualRow[] = [];
     for (let y = 2020; y <= 2025; y++) {
@@ -258,7 +258,7 @@ describe('profile.service - BKBQP edge cases', () => {
     expect(result.reason).toBe(eligibilityReasons.bkbqpReason(6, 3));
   });
 
-  it('NCKH 2 loại mix DTKH + SKKH trong 2y CSTDCS → vẫn eligible BKBQP', async () => {
+  it('Xét điều kiện BKBQP: 2 năm CSTDCS có đủ NCKH mỗi năm → đủ điều kiện', async () => {
     const personnelId = 'qn-edge-bkbqp-4';
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
       buildPersonnelWithHistory(
@@ -288,7 +288,7 @@ describe('profile.service - BKBQP edge cases', () => {
     expect(result.eligible).toBe(true);
   });
 
-  it('đã có BKBQP cũ năm xa (2015) + 2y CSTDCS mới (2024-2025) → vẫn eligible BKBQP lần nữa', async () => {
+  it('Xét điều kiện BKBQP: đã có BKBQP cũ từ năm 2015 + 2 năm CSTDCS mới (2024-2025) → vẫn đủ điều kiện nhận lại', async () => {
     const personnelId = 'qn-edge-bkbqp-5';
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
       buildPersonnelWithHistory(
@@ -325,7 +325,7 @@ describe('profile.service - BKBQP edge cases', () => {
     expect(result.eligible).toBe(true);
   });
 
-  it('boundary streak = exactly 2 → eligible (không off-by-one)', async () => {
+  it('Xét điều kiện BKBQP: đúng tại mốc biên 2 năm liên tục → đủ điều kiện (không lệch 1 năm)', async () => {
     const personnelId = 'qn-edge-bkbqp-6';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2022, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(

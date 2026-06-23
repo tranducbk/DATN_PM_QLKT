@@ -66,8 +66,8 @@ function callSubmitCaNhan(items: CaNhanItem[], userId = 'acc-mgr-1', nam = 2024)
   );
 }
 
-describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
-  it('gửi thành công với 1 item CSTDCS', async () => {
+describe('Gửi đề xuất khen thưởng cá nhân hằng năm', () => {
+  it('Gửi đề xuất: 1 quân nhân đề nghị CSTDCS → tạo đề xuất chờ duyệt', async () => {
     // Cho trước: manager thuộc CQDV và 1 quân nhân target cho CSTDCS
     const { account } = arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({ id: 'qn-T1', ho_ten: 'Nguyễn Văn A' });
@@ -104,7 +104,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     });
   });
 
-  it('gửi thành công BKBQP → auto-set `nhan_bkbqp: true`', async () => {
+  it('Gửi đề xuất: đề nghị BKBQP → tự đánh dấu nhận BKBQP', async () => {
     // Cho trước
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({ id: 'qn-BK' });
@@ -134,7 +134,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     });
   });
 
-  it('gửi thành công CSTDTQ → auto-set `nhan_cstdtq: true`', async () => {
+  it('Gửi đề xuất: đề nghị CSTDTQ → tự đánh dấu nhận CSTDTQ', async () => {
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({ id: 'qn-CSTDTQ' });
     arrangePersonnelLookup([target]);
@@ -161,7 +161,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     });
   });
 
-  it('gửi thành công BKTTCP → auto-set `nhan_bkttcp: true`', async () => {
+  it('Gửi đề xuất: đề nghị BKTTCP → tự đánh dấu nhận BKTTCP', async () => {
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({ id: 'qn-BKTTCP' });
     arrangePersonnelLookup([target]);
@@ -188,7 +188,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     });
   });
 
-  it('bypass FE — reject mixed CSTDCS + BKBQP trong cùng đề xuất', async () => {
+  it('Gửi đề xuất bị chặn (lách kiểm tra giao diện, gửi thẳng API): trộn CSTDCS với BKBQP trong cùng đề xuất → buộc tách riêng', async () => {
     // Cho trước: 2 item, 1 base CSTDCS và 1 chain BKBQP
     arrangeManagerWithUnit('CQDV');
     const a = makePersonnel({ id: 'qn-A' });
@@ -207,7 +207,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject mixed CSTT + CSTDTQ trong cùng đề xuất', async () => {
+  it('Gửi đề xuất bị chặn (lách kiểm tra giao diện, gửi thẳng API): trộn CSTT với CSTDTQ trong cùng đề xuất → buộc tách riêng', async () => {
     arrangeManagerWithUnit('CQDV');
     const a = makePersonnel({ id: 'qn-X' });
     const b = makePersonnel({ id: 'qn-Y' });
@@ -224,7 +224,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — duplicate cùng personnel + cùng danh_hieu ngay trong payload → reject', async () => {
+  it('Gửi đề xuất bị chặn (lách kiểm tra giao diện, gửi thẳng API): cùng quân nhân và cùng danh hiệu lặp ngay trong đề xuất → báo dữ liệu bị lặp', async () => {
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({ id: 'qn-dup-in-payload' });
     arrangePersonnelLookup([target]);
@@ -243,7 +243,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('throw NotFoundError khi tài khoản không có QuanNhan', async () => {
+  it('Gửi đề xuất bị chặn: tài khoản người đề xuất chưa gắn quân nhân → báo không tìm thấy thông tin quân nhân', async () => {
     // Cho trước: tài khoản tồn tại nhưng thiếu relation QuanNhan
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-no-qn',
@@ -264,7 +264,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('reject khi `titleData` không phải mảng', async () => {
+  it('Gửi đề xuất bị chặn: danh sách quân nhân không phải mảng hợp lệ → báo dữ liệu đề xuất không hợp lệ', async () => {
     arrangeManagerWithUnit('CQDV');
 
     await expectError(
@@ -283,7 +283,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('CQDV variant — proposal lưu `co_quan_don_vi_id`, `don_vi_truc_thuoc_id: null`', async () => {
+  it('Gửi đề xuất: manager thuộc cơ quan đơn vị (CQDV) → đề xuất gắn cơ quan đơn vị, không gắn đơn vị trực thuộc', async () => {
     // Cho trước: manager thuộc đơn vị CQDV
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-77' });
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
@@ -323,7 +323,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     expect(data.don_vi_truc_thuoc_id).toBeNull();
   });
 
-  it('DVTT variant — proposal lưu `don_vi_truc_thuoc_id`, `co_quan_don_vi_id: null`', async () => {
+  it('Gửi đề xuất: manager thuộc đơn vị trực thuộc (ĐVTT) → đề xuất gắn đơn vị trực thuộc, không gắn cơ quan đơn vị', async () => {
     // Cho trước: manager thuộc đơn vị DVTT
     const unit = makeUnit({ kind: 'DVTT', id: 'dvtt-99', parentId: 'cqdv-parent-99' });
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
@@ -361,7 +361,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     expect(data.co_quan_don_vi_id).toBeNull();
   });
 
-  it('titleData rỗng → vẫn tạo proposal với `data_danh_hieu: []`', async () => {
+  it('Gửi đề xuất: danh sách quân nhân rỗng → vẫn tạo đề xuất với danh sách danh hiệu rỗng', async () => {
     // Mảng rỗng pass `Array.isArray` guard và skip nhánh lookup quân nhân
     arrangeManagerWithUnit('CQDV');
     prismaMock.bangDeXuat.create.mockResolvedValueOnce({
@@ -386,7 +386,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
   // CA_NHAN_HANG_NAM không thuộc PROPOSAL_TYPES_REQUIRING_MONTH (NIEN_HAN, HC_QKQT,
   // KNC_VSNXD_QDNDVN, CONG_HIEN) → nhánh missing-month không bao giờ fire cho type này.
 
-  it('bypass FE — reject duplicate khi đã có danh hiệu cùng năm trong DB', async () => {
+  it('Gửi đề xuất bị chặn (lách kiểm tra giao diện, gửi thẳng API): quân nhân đã có danh hiệu cùng năm trên hệ thống → báo trùng đề xuất', async () => {
     // Cho trước: đã có danh hiệu CSTDCS cho quân nhân/năm này trong DB
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({ id: 'qn-dup', ho_ten: 'Trần Văn Dup' });
@@ -413,7 +413,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject khi quân nhân chưa đủ ĐK BKBQP', async () => {
+  it('Gửi đề xuất bị chặn (lách kiểm tra giao diện, gửi thẳng API): quân nhân chưa đủ điều kiện BKBQP → từ chối kèm lý do', async () => {
     // Cho trước: eligibility check trả về không đủ điều kiện chain BKBQP
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({ id: 'qn-not-elig-bk', ho_ten: 'Nguyễn Chưa Đủ' });
@@ -438,7 +438,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject khi quân nhân chưa đủ ĐK CSTDTQ', async () => {
+  it('Gửi đề xuất bị chặn (lách kiểm tra giao diện, gửi thẳng API): quân nhân chưa đủ điều kiện CSTDTQ → từ chối kèm lý do', async () => {
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({ id: 'qn-not-elig-cs', ho_ten: 'Lê Chưa Đủ' });
     arrangePersonnelLookup([target]);
@@ -461,7 +461,7 @@ describe('proposal.submit - CA_NHAN_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject khi quân nhân chưa đủ ĐK BKTTCP', async () => {
+  it('Gửi đề xuất bị chặn (lách kiểm tra giao diện, gửi thẳng API): quân nhân chưa đủ điều kiện BKTTCP → từ chối kèm lý do', async () => {
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({ id: 'qn-not-elig-bkttcp', ho_ten: 'Phạm Chưa Đủ' });
     arrangePersonnelLookup([target]);

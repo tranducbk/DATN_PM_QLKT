@@ -24,8 +24,8 @@ function buildItem(personnelId: string, override: Record<string, unknown> = {}) 
   };
 }
 
-describe('approveProposal — NCKH', () => {
-  it('duyệt thành công 1 item DTKH (CQDV)', async () => {
+describe('Phê duyệt đề xuất NCKH', () => {
+  it('Phê duyệt thông thường: một đề tài khoa học (DTKH) từ cơ quan đơn vị (CQDV) → ghi nhận thành tích, đề xuất chuyển APPROVED', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1' });
     const personnel = makePersonnel({ unit: cqdv, id: 'qn-1', ho_ten: 'Nguyễn A' });
     const proposal = makeProposal({
@@ -55,7 +55,7 @@ describe('approveProposal — NCKH', () => {
     expect(prismaMock.bangDeXuat.updateMany.mock.calls[0][0].data.status).toBe(PROPOSAL_STATUS.APPROVED);
   });
 
-  it('duyệt thành công với DVTT', async () => {
+  it('Phê duyệt thông thường: đề xuất NCKH từ đơn vị trực thuộc (DVTT) → ghi nhận thành tích', async () => {
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-1', parentId: 'cqdv-parent' });
     const personnel = makePersonnel({ unit: dvtt, id: 'qn-dvtt' });
     const proposal = makeProposal({
@@ -82,7 +82,7 @@ describe('approveProposal — NCKH', () => {
     expect(prismaMock.thanhTichKhoaHoc.create).toHaveBeenCalledTimes(1);
   });
 
-  it('reject duplicate — cùng personnel + cùng nam + cùng mo_ta', async () => {
+  it('Phê duyệt bị chặn: cùng quân nhân, cùng năm, cùng mô tả đề tài → báo trùng', async () => {
     const personnel = makePersonnel({ id: 'qn-dup', ho_ten: 'Trần B' });
     const proposal = makeProposal({
       id: 'p-nckh-dup',
@@ -105,7 +105,7 @@ describe('approveProposal — NCKH', () => {
     expect(err.message).toContain(nckhDuplicateMessage(personnel.ho_ten, 'Đề tài cũ', 2024));
   });
 
-  it('cho phép cùng personnel + cùng năm nhưng mo_ta khác → không trùng', async () => {
+  it('Phê duyệt thông thường: cùng quân nhân, cùng năm nhưng mô tả đề tài khác → không coi là trùng, vẫn ghi nhận', async () => {
     const personnel = makePersonnel({ id: 'qn-multi', ho_ten: 'C' });
     const proposal = makeProposal({
       id: 'p-nckh-multi',
@@ -132,7 +132,7 @@ describe('approveProposal — NCKH', () => {
     expect(prismaMock.thanhTichKhoaHoc.create).toHaveBeenCalledTimes(1);
   });
 
-  it('throw NotFoundError khi proposalId không tồn tại', async () => {
+  it('Phê duyệt bị chặn: đề xuất NCKH không tồn tại → báo "Đề xuất không tồn tại"', async () => {
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -142,7 +142,7 @@ describe('approveProposal — NCKH', () => {
     );
   });
 
-  it('approve transaction rollback: any per-row error throws ValidationError aggregating reasons', async () => {
+  it('Phê duyệt bị chặn: một dòng không tìm thấy quân nhân → hủy toàn bộ và gộp lý do lỗi', async () => {
     const personnel = makePersonnel({ id: 'qn-msg-nckh', ho_ten: 'QN MSG NCKH' });
     const proposal = makeProposal({
       id: 'p-nckh-msg',

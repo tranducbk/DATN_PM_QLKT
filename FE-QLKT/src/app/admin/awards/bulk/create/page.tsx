@@ -30,7 +30,7 @@ import {
 import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/http/apiClient';
-import { getDanhHieuName } from '@/constants/danhHieu.constants';
+import { getDanhHieuName, THANH_TICH_KHOA_HOC } from '@/constants/danhHieu.constants';
 import { PROPOSAL_TYPES, requiresProposalMonth, type ProposalType } from '@/constants/proposal.constants';
 import { PROPOSAL_TYPE_ICON_COMPONENTS } from '@/constants/proposalUi.constants';
 import { AWARD_TYPE_REGISTRY } from '@/constants/awardTypeRegistry.constants';
@@ -829,7 +829,7 @@ export default function BulkAddAwardsPage() {
                 const titleInfo = titleData.find(t => String(t.personnel_id) === String(record.id));
                 const loai = titleInfo?.loai;
                 return (
-                  <Tag color={loai === 'DTKH' ? 'blue' : 'green'}>
+                  <Tag color={loai === THANH_TICH_KHOA_HOC.DTKH ? 'blue' : 'green'}>
                     {getDanhHieuName(loai)}
                   </Tag>
                 );

@@ -42,8 +42,8 @@ async function makeDonViExcelBuffer(rows: DonViRow[]): Promise<Buffer> {
   return Buffer.from(arrayBuffer as ArrayBuffer);
 }
 
-describe('unitAnnualAward.service - previewImport', () => {
-  it('Excel hợp lệ với 1 row ĐVQT (CQDV) → trả 1 valid item', async () => {
+describe('Nhập Excel danh hiệu đơn vị hằng năm: xem trước (preview)', () => {
+  it('Nhập Excel đơn vị hằng năm: dòng ĐVQT cho cơ quan đơn vị (CQDV) hợp lệ → ghi nhận vào danh sách hợp lệ', async () => {
     const cqdv = makeUnit({
       kind: 'CQDV',
       id: 'cqdv-1',
@@ -82,7 +82,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     });
   });
 
-  it('Excel hợp lệ với 1 row DVTT → set is_co_quan_don_vi=false', async () => {
+  it('Nhập Excel đơn vị hằng năm: dòng cho đơn vị trực thuộc (DVTT) → đánh dấu không phải cơ quan đơn vị', async () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-002' }]);
     prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([]);
     prismaMock.donViTrucThuoc.findMany.mockResolvedValueOnce([
@@ -116,7 +116,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     });
   });
 
-  it('Mã đơn vị không tồn tại → errors "Không tìm thấy đơn vị"', async () => {
+  it('Nhập Excel đơn vị hằng năm: mã đơn vị không có trong hệ thống → báo lỗi "Không tìm thấy đơn vị"', async () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
     prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([]);
     prismaMock.donViTrucThuoc.findMany.mockResolvedValueOnce([]);
@@ -138,7 +138,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('Không tìm thấy đơn vị');
   });
 
-  it('Thiếu năm → errors "Thiếu Năm"', async () => {
+  it('Nhập Excel đơn vị hằng năm: dòng thiếu năm → báo lỗi "Thiếu Năm"', async () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
     prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
       { id: 'cqdv-1', ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A' },
@@ -161,7 +161,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     expect(result.errors[0].message).toBe('Thiếu Năm');
   });
 
-  it('Trùng năm-danh hiệu trong DB → errors "Đã có danh hiệu"', async () => {
+  it('Nhập Excel đơn vị hằng năm: đơn vị đã có danh hiệu cùng năm trên hệ thống → báo lỗi "Đã có danh hiệu"', async () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
     prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
       { id: 'cqdv-1', ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A' },
@@ -197,7 +197,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     );
   });
 
-  it('Row trống hoàn toàn → bỏ qua, không tính total/errors', async () => {
+  it('Nhập Excel đơn vị hằng năm: dòng trống hoàn toàn → bỏ qua, không tính vào tổng lẫn lỗi', async () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
     prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
       { id: 'cqdv-1', ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A' },
@@ -223,7 +223,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it('Duplicate trong file (cùng đơn vị + năm) → row sau báo "Trùng lặp trong file"', async () => {
+  it('Nhập Excel đơn vị hằng năm: cùng đơn vị và năm lặp lại trong file → dòng sau báo "Trùng lặp trong file"', async () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([
       { so_quyet_dinh: 'QD-001' },
       { so_quyet_dinh: 'QD-002' },
@@ -258,7 +258,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('Trùng lặp trong file');
   });
 
-  it('Năm < 1900 → errors về boundary', async () => {
+  it('Nhập Excel đơn vị hằng năm: năm trước 1900 → báo lỗi không hợp lệ', async () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
     prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
       { id: 'cqdv-1', ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A' },
@@ -282,7 +282,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('không hợp lệ');
   });
 
-  it('Năm tương lai → errors về boundary', async () => {
+  it('Nhập Excel đơn vị hằng năm: năm tương lai → báo lỗi không hợp lệ', async () => {
     const futureYear = new Date().getFullYear() + 5;
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
     prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
@@ -307,7 +307,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('không hợp lệ');
   });
 
-  it('Danh hiệu enum không hợp lệ → errors "không hợp lệ"', async () => {
+  it('Nhập Excel đơn vị hằng năm: danh hiệu không thuộc danh mục → báo lỗi không hợp lệ', async () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
     prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
       { id: 'cqdv-1', ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A' },
@@ -331,7 +331,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('không hợp lệ');
   });
 
-  it('Số quyết định không tồn tại trên hệ thống → errors', async () => {
+  it('Nhập Excel đơn vị hằng năm: số quyết định chưa có trên hệ thống → báo lỗi "không tồn tại trên hệ thống"', async () => {
     // Empty decisions → submitted decision number is unknown
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([]);
     prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
@@ -356,7 +356,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('không tồn tại trên hệ thống');
   });
 
-  it('BKBQP trong Excel → reject "không được nhập qua Excel"', async () => {
+  it('Nhập Excel đơn vị hằng năm: khai cờ BKBQP trong file → từ chối "không được nhập qua Excel"', async () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
     prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
       { id: 'cqdv-1', ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A' },
@@ -383,7 +383,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     );
   });
 
-  it('danh_hieu = BKTTCP ở cột danh hiệu → reject "không hợp lệ" (chỉ ĐVQT/ĐVTT)', async () => {
+  it('Nhập Excel đơn vị hằng năm: cột danh hiệu ghi BKTTCP → từ chối không hợp lệ (chỉ chấp nhận ĐVQT/ĐVTT)', async () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
     prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
       { id: 'cqdv-1', ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A' },
@@ -407,7 +407,7 @@ describe('unitAnnualAward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('không hợp lệ');
   });
 
-  it('danh_hieu = BKBQP ở cột danh hiệu → reject "không hợp lệ" (chỉ ĐVQT/ĐVTT)', async () => {
+  it('Nhập Excel đơn vị hằng năm: cột danh hiệu ghi BKBQP → từ chối không hợp lệ (chỉ chấp nhận ĐVQT/ĐVTT)', async () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
     prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
       { id: 'cqdv-1', ma_don_vi: 'CQDV01', ten_don_vi: 'Cơ quan A' },
@@ -432,8 +432,8 @@ describe('unitAnnualAward.service - previewImport', () => {
   });
 });
 
-describe('unitAnnualAward.service - confirmImport', () => {
-  it('Confirm valid CQDV → upsert tạo record với co_quan_don_vi_id', async () => {
+describe('Nhập Excel danh hiệu đơn vị hằng năm: xác nhận (confirm)', () => {
+  it('Nhập Excel đơn vị hằng năm: xác nhận dòng cơ quan đơn vị → tạo bản ghi gắn vào cơ quan đơn vị', async () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.danhHieuDonViHangNam.upsert.mockResolvedValueOnce({ id: 'dhdv-1' });
@@ -472,7 +472,7 @@ describe('unitAnnualAward.service - confirmImport', () => {
     expect(call.create.don_vi_truc_thuoc_id).toBeUndefined();
   });
 
-  it('Confirm valid DVTT → upsert với don_vi_truc_thuoc_id, không co_quan_don_vi_id', async () => {
+  it('Nhập Excel đơn vị hằng năm: xác nhận dòng đơn vị trực thuộc → tạo bản ghi gắn vào đơn vị trực thuộc, không gắn cơ quan đơn vị', async () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.danhHieuDonViHangNam.upsert.mockResolvedValueOnce({ id: 'dhdv-2' });
@@ -503,7 +503,7 @@ describe('unitAnnualAward.service - confirmImport', () => {
     expect(call.create.co_quan_don_vi_id).toBeUndefined();
   });
 
-  it('Confirm với pending proposal conflict → throw ValidationError', async () => {
+  it('Nhập Excel đơn vị hằng năm: xác nhận khi đang có đề xuất chờ duyệt cùng năm → chặn và báo "đã có đề xuất"', async () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       {
@@ -537,7 +537,7 @@ describe('unitAnnualAward.service - confirmImport', () => {
     expect(prismaMock.danhHieuDonViHangNam.upsert).not.toHaveBeenCalled();
   });
 
-  it('Confirm với DB đã có danh hiệu khác → throw ValidationError "không thể thêm"', async () => {
+  it('Nhập Excel đơn vị hằng năm: xác nhận khi hệ thống đã có danh hiệu khác cùng năm → chặn và báo "không thể thêm"', async () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([
       {
         co_quan_don_vi_id: 'cqdv-1',
@@ -573,7 +573,7 @@ describe('unitAnnualAward.service - confirmImport', () => {
     );
   });
 
-  it('Confirm row ĐVQT thiếu so_quyet_dinh → throw ValidationError missing decision', async () => {
+  it('Nhập Excel đơn vị hằng năm: xác nhận dòng ĐVQT thiếu số quyết định → chặn và báo thiếu số quyết định', async () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
 
@@ -601,7 +601,7 @@ describe('unitAnnualAward.service - confirmImport', () => {
     expect(prismaMock.danhHieuDonViHangNam.upsert).not.toHaveBeenCalled();
   });
 
-  it('Confirm rỗng → imported: 0', async () => {
+  it('Nhập Excel đơn vị hằng năm: xác nhận danh sách rỗng → không tạo bản ghi nào', async () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
 

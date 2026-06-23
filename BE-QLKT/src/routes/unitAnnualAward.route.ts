@@ -1,11 +1,9 @@
-import { Router, Request, Response } from 'express';
-import path from 'path';
-import fs from 'fs';
+import { Router } from 'express';
 import unitAnnualAwardController from '../controllers/unitAnnualAward.controller';
 import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
-import { excelUpload as upload, decisionUploadDir as uploadDir } from '../configs/multer';
+import { excelUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { validate } from '../middlewares/validate';
@@ -184,36 +182,6 @@ router.post(
     getResourceId: () => null,
   }),
   unitAnnualAwardController.recalculate
-);
-
-/**
- * @route   POST /api/unit-annual-awards/decision-files/:id/upload
- * @desc    Serve the decision PDF file for a unit annual award
- * @access  ADMIN
- */
-router.get(
-  '/decision-files/:filename',
-  verifyToken,
-  requireAdminOnly,
-  (req: Request, res: Response) => {
-    try {
-      const filename = path.basename(String(req.params.filename ?? ''));
-      const filePath = path.join(uploadDir, filename);
-
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({
-          success: false,
-          message: 'File không tồn tại',
-        });
-      }
-
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-      res.sendFile(filePath);
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Không thể tải file' });
-    }
-  }
 );
 
 export default router;

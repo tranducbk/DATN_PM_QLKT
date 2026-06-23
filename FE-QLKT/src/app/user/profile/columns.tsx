@@ -1,6 +1,9 @@
 import { Tag } from 'antd';
 import { calculateDuration, formatDate, formatHeSoChucVu } from '@/lib/utils';
-import { THANH_TICH_KHOA_HOC_FULL_LABELS } from '@/constants/danhHieu.constants';
+import {
+  THANH_TICH_KHOA_HOC,
+  THANH_TICH_KHOA_HOC_FULL_LABELS,
+} from '@/constants/danhHieu.constants';
 import type { ScientificAchievementRow, PositionHistoryRow, AdhocAwardRow } from './types';
 
 function renderDecisionLink(
@@ -51,7 +54,7 @@ export function makeScientificColumns(onOpenDecision: (so: string) => void) {
       render: (text: string) => {
         if (!text) return '-';
         const label = THANH_TICH_KHOA_HOC_FULL_LABELS[text] || text;
-        const isSangKien = text === 'SKKH' || text === 'Sáng kiến khoa học';
+        const isSangKien = text === THANH_TICH_KHOA_HOC.SKKH || text === 'Sáng kiến khoa học';
         return <Tag color={isSangKien ? 'purple' : 'geekblue'}>{label}</Tag>;
       },
     },

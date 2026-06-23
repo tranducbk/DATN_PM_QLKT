@@ -1,6 +1,4 @@
-import { Router, Request, Response } from 'express';
-import path from 'path';
-import fs from 'fs';
+import { Router } from 'express';
 import annualRewardController from '../controllers/annualReward.controller';
 import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
@@ -8,12 +6,10 @@ import { getLogDescription } from '../helpers/auditLog';
 import {
   excelUpload as upload,
   pdfDecisionUpload as pdfUpload,
-  decisionUploadDir as uploadDir,
 } from '../configs/multer';
 import { validate } from '../middlewares/validate';
 import { excelImportValidation } from '../validations';
 import { annualRewardValidation } from '../validations';
-import { normalizeParam } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 
@@ -198,40 +194,5 @@ router.get(
   validate(annualRewardValidation.getAnnualRewardsStatisticsQuery, 'query'),
   annualRewardController.getStatistics
 );
-
-/**
- * @route   GET /api/annual-rewards/decision-files/:filename
- * @desc    Serve a decision PDF file for annual rewards
- * @access  Private - All authenticated users
- */
-router.get('/decision-files/:filename', verifyToken, (req: Request, res: Response) => {
-  try {
-    const raw = normalizeParam(req.params.filename);
-    if (!raw) {
-      return res.status(400).json({
-        success: false,
-        message: 'Thiếu tên file',
-      });
-    }
-    const filename = path.basename(raw);
-    const filePath = path.join(uploadDir, filename);
-
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        success: false,
-        message: 'File không tồn tại',
-      });
-    }
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    res.sendFile(filePath);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Không thể tải file',
-    });
-  }
-});
 
 export default router;

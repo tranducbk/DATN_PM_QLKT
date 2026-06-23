@@ -63,8 +63,8 @@ function arrangeProposalCreate(id: string) {
   });
 }
 
-describe('Date boundary — submit time and proposal year edges', () => {
-  it('Submit proposal nam=2025 trong tháng 12/2024 (backdated forward) → service accept, lưu nguyên', async () => {
+describe('Mốc biên ngày tháng: thời điểm gửi và năm đề xuất', () => {
+  it('Mốc biên ngày tháng: gửi đề xuất cho năm 2025 ngay trong tháng 12/2024 → tầng nghiệp vụ chấp nhận, lưu nguyên năm', async () => {
     // Pin: service không block proposal năm tương lai; route layer / Joi phải guard
     arrangeManager();
     const target = makePersonnel({ id: 'qn-fwd', ngay_nhap_ngu: new Date('2010-01-01') });
@@ -85,7 +85,7 @@ describe('Date boundary — submit time and proposal year edges', () => {
     expect(prismaMock.bangDeXuat.create.mock.calls[0][0].data.nam).toBe(2025);
   });
 
-  it('Submit nam=1990 (xa quá khứ) → service vẫn accept', async () => {
+  it('Mốc biên ngày tháng: gửi đề xuất cho năm 1990 (quá khứ xa) → tầng nghiệp vụ vẫn chấp nhận, lưu nguyên năm', async () => {
     // Pin: service lưu nam=1990 nguyên xi. TODO: reject nam < currentYear - 5 ở service level.
     arrangeManager();
     const target = makePersonnel({ id: 'qn-1990' });
@@ -106,7 +106,7 @@ describe('Date boundary — submit time and proposal year edges', () => {
     expect(prismaMock.bangDeXuat.create.mock.calls[0][0].data.nam).toBe(1990);
   });
 
-  it('HCQKQT enlistment 1999-07-01, proposal 2024-06 → reject: 24 năm 11 tháng < 25 năm', async () => {
+  it('Mốc biên ngày tháng: HC QKQT nhập ngũ 01/07/1999, đề xuất 06/2024 (24 năm 11 tháng, thiếu 1 tháng) → từ chối', async () => {
     // Edge: số tháng 1999-07 đến 2024-05 = 25*12 - 1 = 299 → 24n 11t
     arrangeManager();
     const target = makePersonnel({ id: 'qn-boundary' });
@@ -137,7 +137,7 @@ describe('Date boundary — submit time and proposal year edges', () => {
     );
   });
 
-  it('HCQKQT enlistment 1999-06-01, proposal 2024-06 → 25 năm chính xác → submit accept', async () => {
+  it('Mốc biên ngày tháng: HC QKQT nhập ngũ 01/06/1999, đề xuất 06/2024 (đúng tròn 25 năm) → gửi thành công', async () => {
     // Edge: số tháng 1999-06 đến 2024-05 = 300 → đúng 25 năm, đủ điều kiện
     arrangeManager();
     const target = makePersonnel({ id: 'qn-exact-25' });
@@ -175,7 +175,7 @@ describe('Date boundary — submit time and proposal year edges', () => {
     ).resolves.toMatchObject({ message: 'Đã gửi đề xuất khen thưởng thành công' });
   });
 
-  it('Leap-year enlistment 2000-02-29, end 2025-02-28 → calendar-month math không quan tâm ngày', async () => {
+  it('Mốc biên ngày tháng: nhập ngũ năm nhuận 29/02/2000 đến 28/02/2025 → cách tính theo tháng bỏ qua ngày trong tháng', async () => {
     // calculateServiceMonths chỉ dùng (year, month) — ngày trong tháng bị bỏ qua.
     // 2000-02 đến 2025-02 = 25*12 = 300 tháng. TODO: xác nhận khớp policy.
     arrangeManager();

@@ -12,7 +12,7 @@ export const AWARD_SLUGS = {
   TENURE_MEDALS: 'tenure-medals',
   CONTRIBUTION_MEDALS: 'contribution-medals',
   COMMEMORATIVE_MEDALS: 'commemorative-medals',
-  MILITARY_FLAG: 'military-flag',
+  MILITARY_FLAG: 'military-flags',
   SCIENTIFIC_ACHIEVEMENTS: 'scientific-achievements',
   ADHOC_AWARDS: 'adhoc-awards',
 } as const;

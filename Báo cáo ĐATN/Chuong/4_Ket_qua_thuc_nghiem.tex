@@ -10,7 +10,7 @@ Phần đầu đề cập đến lựa chọn kiến trúc và thiết kế chi 
 \subsection{Lựa chọn kiến trúc phần mềm}
 \label{subsection:4.1.1}
 
-Hệ thống áp dụng \textbf{kiến trúc phân tầng (Layered Architecture)} \cite{fowler2002poeaa,bass2021architecture} gồm bốn tầng từ trên xuống: tầng trình bày (Presentation) $\rightarrow$ tầng nghiệp vụ (Business) $\rightarrow$ tầng truy cập dữ liệu (Persistence) $\rightarrow$ tầng dữ liệu (Database).
+Hệ thống áp dụng \textbf{kiến trúc phân tầng (Layered Architecture)} \cite{layeredref} gồm bốn tầng từ trên xuống: tầng trình bày (Presentation) $\rightarrow$ tầng nghiệp vụ (Business) $\rightarrow$ tầng truy cập dữ liệu (Persistence) $\rightarrow$ tầng dữ liệu (Database).
 Trong cài đặt cụ thể, tầng trình bày được tổ chức nội bộ thành Route, Middleware, Validation và Controller; tầng nghiệp vụ là các Service; tầng truy cập dữ liệu là các Repository; tầng dữ liệu là PostgreSQL.
 Mỗi tầng chỉ tương tác với tầng liền kề, không truy cập vượt tầng: một yêu cầu đi từ tầng trình bày xuống dần tới tầng dữ liệu, còn kết quả trả ngược lên theo đúng đường đó (Hình~\ref{fig:kientruc-phantang}).
 Đây không phải mô hình MVC thuần.
@@ -20,14 +20,6 @@ Hệ thống bổ sung tầng Service cho logic nghiệp vụ và tầng Reposit
 Lớp Repository được tách khỏi Service để phân định rạch ròi logic nghiệp vụ với truy cập dữ liệu.
 Ban đầu, tầng Service gọi thẳng Prisma Client để truy vấn, khiến logic nghiệp vụ phụ thuộc trực tiếp vào ORM.
 Sau khi tách, Service chỉ làm việc qua các phương thức của Repository, nhờ đó có thể thay đổi hoặc thay thế ORM mà không ảnh hưởng tới logic nghiệp vụ.
-
-Các kiến trúc khác đã được cân nhắc nhưng không được chọn:
-
-\begin{itemize}
-    \item \textbf{MVC thuần} không quy định rõ tầng Service và Repository. Với một dự án có 23 model và nhiều quan hệ nghiệp vụ phức tạp như PM QLKT, nếu chỉ tổ chức theo MVC đơn giản thì logic nghiệp vụ và truy cập dữ liệu dễ bị trộn lẫn trong Controller hoặc Service, gây khó bảo trì và kiểm thử.
-    \item \textbf{Clean Architecture / Hexagonal} đầy đủ với Use Case Layer, Entity Layer, Adapter Layer quá nặng so với quy mô dự án, vì lớp Use Case sẽ gần như trùng với tầng Service sẵn có.
-    \item \textbf{Microservices} không phù hợp với môi trường mạng nội bộ một máy chủ; chia tách dịch vụ chỉ làm tăng độ phức tạp triển khai mà không mang lại lợi ích về khả năng chịu tải.
-\end{itemize}
 
 \begin{figure}[H]
     \centering
@@ -92,7 +84,7 @@ Cấu trúc gói phía backend được thể hiện ở Hình~\ref{fig:goi-back
     \label{fig:goi-backend}
 \end{figure}
 
-\subsection{Thiết kế chi tiết gói nghiệp vụ khen thưởng cá nhân hằng năm}
+\subsection{Thiết kế chi tiết module khen thưởng cá nhân hằng năm}
 \label{subsection:4.1.4}
 
 Để minh hoạ cách các tầng phối hợp trong một module nghiệp vụ cụ thể, phần này phân tích module chuỗi danh hiệu hằng năm cá nhân, module phức tạp nhất hệ thống.
@@ -101,7 +93,7 @@ Biểu đồ chi tiết các gói thành phần và quan hệ phụ thuộc củ
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{so-do-goi-cnhn}
-    \caption{Biểu đồ chi tiết gói nghiệp vụ khen thưởng cá nhân hằng năm}
+    \caption{Biểu đồ chi tiết module khen thưởng cá nhân hằng năm}
     \label{fig:goi-chi-tiet-hangnam}
 \end{figure}
 
@@ -119,32 +111,32 @@ Khi người dùng truy cập trang hồ sơ một quân nhân, dòng dữ liệ
 Việc tách tầng Service (điều phối nghiệp vụ) khỏi module xét điều kiện (quy tắc thuần) giải quyết tốt mối quan tâm về tính kiểm chứng và bảo trì.
 Phần quy tắc hoàn toàn thuần nên kiểm chứng được với mọi kịch bản đầu vào mà không cần cơ sở dữ liệu, trong khi tầng Service chỉ lo nạp dữ liệu, gọi quy tắc và ghi kết quả; ranh giới giữa hai phần vì thế rõ ràng và dễ bảo trì.
 
-\subsection{Thiết kế chi tiết gói nghiệp vụ khen thưởng đơn vị hằng năm}
+\subsection{Thiết kế chi tiết module khen thưởng đơn vị hằng năm}
 \label{subsection:goi-chi-tiet-donvi}
 
-Gói khen thưởng đơn vị hằng năm có cấu trúc tầng tương tự gói khen thưởng cá nhân, được trình bày ở Hình~\ref{fig:goi-chi-tiet-donvi}.
+Module khen thưởng đơn vị hằng năm có cấu trúc tầng tương tự module khen thưởng cá nhân, được trình bày ở Hình~\ref{fig:goi-chi-tiet-donvi}.
 Điểm khác biệt nằm ở phân quyền và dữ liệu nghiệp vụ, không nằm ở kiến trúc.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=\textwidth,height=0.9\textheight,keepaspectratio]{so-do-goi-dvhn}
-    \caption{Biểu đồ chi tiết gói nghiệp vụ khen thưởng đơn vị hằng năm}
+    \caption{Biểu đồ chi tiết module khen thưởng đơn vị hằng năm}
     \label{fig:goi-chi-tiet-donvi}
 \end{figure}
 
 Dòng dữ liệu khi tính lại điều kiện khen thưởng cho một đơn vị đi qua các tầng:
 
 \begin{enumerate}
-    \item \textbf{Route}: vì chỉ Cán bộ Phòng Chính trị và Chỉ huy đơn vị được thao tác trên khen thưởng đơn vị, khác với gói khen thưởng cá nhân, route này chặn vai trò ngay từ đầu (xác thực token rồi kiểm tra quyền).
+    \item \textbf{Route}: vì chỉ Cán bộ Phòng Chính trị và Chỉ huy đơn vị được thao tác trên khen thưởng đơn vị, khác với module khen thưởng cá nhân, route này chặn vai trò ngay từ đầu (xác thực token rồi kiểm tra quyền).
     \item \textbf{Controller}: chuyển yêu cầu xuống tầng nghiệp vụ.
     \item \textbf{Service}: đóng vai trò lớp điều phối, uỷ thác phần xét điều kiện cho một module riêng; nó nạp danh sách danh hiệu đơn vị qua repository, đếm số năm Đơn vị Quyết thắng liên tục, rồi gọi quy tắc chuỗi và ghi kết quả vào bảng hồ sơ điều kiện \texttt{HoSoDonViHangNam}.
     \item \textbf{Module xét điều kiện}: dùng lại đúng hàm xét chuỗi chung, chỉ thay bằng bộ cấu hình dành cho đơn vị.
     \item \textbf{Repository}: đóng gói truy cập Prisma tới hai bảng danh hiệu đơn vị và hồ sơ đơn vị.
 \end{enumerate}
 
-Điểm thiết kế đáng chú ý là cả hai gói (cá nhân và đơn vị) dùng chung một hàm xét chuỗi thuần, chỉ khác nhau ở bộ cấu hình.
+Điểm thiết kế đáng chú ý là cả hai module (cá nhân và đơn vị) dùng chung một hàm xét chuỗi thuần, chỉ khác nhau ở bộ cấu hình.
 Nhờ vậy, quy tắc xét chuỗi danh hiệu chỉ được mô tả ở một nơi duy nhất, hai luồng không thể lệch nhau, và việc bổ sung danh hiệu mới chỉ cần thêm cấu hình.
-Khác biệt nghiệp vụ thể hiện rõ trên biểu đồ: gói khen thưởng cá nhân có thêm dữ liệu thành tích khoa học, yêu cầu nghiên cứu khoa học mỗi năm và xét theo từng quân nhân, trong khi gói khen thưởng đơn vị không xét nghiên cứu khoa học.
+Khác biệt nghiệp vụ thể hiện rõ trên biểu đồ: module khen thưởng cá nhân có thêm dữ liệu thành tích khoa học, yêu cầu nghiên cứu khoa học mỗi năm và xét theo từng quân nhân, trong khi module khen thưởng đơn vị không xét nghiên cứu khoa học.
 
 \section{Thiết kế chi tiết}
 \label{section:4.2}
@@ -262,7 +254,7 @@ Bán kính bo góc được chọn 6 px cho mọi phần tử để tạo cảm 
 \label{subsection:4.2.3}
 
 Phần này trình bày biểu đồ lớp cho module đề xuất khen thưởng (Hình~\ref{fig:lop-dexuat}), module nghiệp vụ phức tạp và tiêu biểu nhất của hệ thống.
-Hệ thống có bảy loại khen thưởng, mỗi loại có cách dựng dữ liệu, xét điều kiện và ghi nhận riêng. Gộp tất cả vào một luồng rẽ nhánh theo loại sẽ khiến phần đề xuất và phê duyệt phình to và khó bảo trì, nên module áp dụng mẫu thiết kế Strategy \cite{gof1994patterns} để tách mỗi loại thành một đơn vị độc lập.
+Hệ thống có bảy loại khen thưởng, mỗi loại có cách dựng dữ liệu, xét điều kiện và ghi nhận riêng. Gộp tất cả vào một luồng rẽ nhánh theo loại sẽ khiến phần đề xuất và phê duyệt phình to và khó bảo trì, nên module áp dụng mẫu thiết kế Strategy để tách mỗi loại thành một đơn vị độc lập.
 
 Giao diện chung \texttt{ProposalStrategy} quy định những việc mọi loại đề xuất đều phải làm: dựng dữ liệu khi gửi, kiểm tra khi phê duyệt, ghi dữ liệu trong giao dịch và sinh thông điệp kết quả.
 Mỗi loại khen thưởng cài đặt giao diện này thành một lớp chiến lược riêng, còn một registry trung tâm đóng vai trò bảng tra cứu từ loại đề xuất sang chiến lược tương ứng.
@@ -332,7 +324,7 @@ Bảng \texttt{LichSuChucVu} ghi lại quá trình giữ chức vụ, phục v�
     \label{fig:erd-tochuc}
 \end{figure}
 
-\textbf{Nhóm dữ liệu đề xuất khen thưởng} (Hình~\ref{fig:erd-dexuat}) lấy bảng \texttt{BangDeXuat} làm trung tâm với bốn khoá ngoại trỏ tới đơn vị nộp đề xuất, tài khoản người đề xuất và tài khoản người duyệt.
+\textbf{Nhóm dữ liệu đề xuất khen thưởng} (Hình~\ref{fig:erd-dexuat}) lấy bảng \texttt{BangDeXuat} làm trung tâm với bốn khoá ngoại trỏ tới cơ quan đơn vị và đơn vị trực thuộc của bên nộp, tài khoản người đề xuất và tài khoản người duyệt.
 Dữ liệu chi tiết của từng loại đề xuất được lưu trong các cột JSON, giúp bảng giữ tính đồng nhất mà không phát sinh nhiều bảng trung gian.
 
 \begin{figure}[H]
@@ -383,7 +375,7 @@ Nhật ký hệ thống ghi lại mọi thao tác; thông báo gửi tới tài 
     \label{fig:erd-hethong}
 \end{figure}
 
-Toàn bộ 23 bảng đều dùng khoá chính \dbid{id} kiểu chuỗi sinh tự động theo chuẩn CUID.
+Toàn bộ 23 bảng đều dùng khoá chính \dbid{id} kiểu chuỗi sinh tự động bằng thuật toán CUID.
 Phần dưới tóm tắt vai trò, các thuộc tính chính và quan hệ khoá ngoại của từng bảng, sắp xếp theo sáu nhóm dữ liệu đã trình bày.
 
 \textbf{Nhóm dữ liệu Tổ chức, Quân nhân và Tài khoản.}
@@ -670,7 +662,7 @@ Màn hình đăng nhập (Hình~\ref{fig:ui-login}) là điểm vào duy nhất;
     \label{fig:ui-login}
 \end{figure}
 
-\subsubsection{Vai trò quản trị viên (\texttt{SuperAdmin})}
+\subsubsection{Vai trò Quản trị viên}
 
 Quản trị viên quản lý toàn hệ thống. Trang chủ tổng hợp số liệu toàn cục với các thẻ thống kê và biểu đồ phân bố (Hình~\ref{fig:ui-sa-dashboard}). Chức năng quản lý tài khoản gồm danh sách tài khoản và biểu mẫu tạo tài khoản mới (Hình~\ref{fig:ui-sa-account}, Hình~\ref{fig:ui-sa-account-create}). Quản lý cơ quan đơn vị thể hiện cơ cấu tổ chức hai cấp, mỗi đơn vị mở rộng được để xem quân nhân trực thuộc (Hình~\ref{fig:ui-sa-unit}). Nhật ký hệ thống ở vai trò này bao trùm toàn hệ thống và là nơi duy nhất hiển thị nhóm nhật ký sao lưu dữ liệu (Hình~\ref{fig:ui-sa-logs}).
 
@@ -709,7 +701,7 @@ Quản trị viên quản lý toàn hệ thống. Trang chủ tổng hợp số 
     \label{fig:ui-sa-logs}
 \end{figure}
 
-\subsubsection{Vai trò Cán bộ Phòng Chính trị (\texttt{Admin})}
+\subsubsection{Vai trò Cán bộ Phòng Chính trị}
 
 Cán bộ Phòng Chính trị phụ trách toàn bộ quân số. Trang chủ trình bày số liệu phạm vi toàn quân số quản lý (Hình~\ref{fig:ui-admin-dashboard}). Hồ sơ quân nhân chia thành thẻ thông tin cơ bản và thẻ hồ sơ khen thưởng kèm gợi ý điều kiện cho từng cấp danh hiệu (Hình~\ref{fig:ui-admin-personnel-info}, Hình~\ref{fig:ui-admin-personnel-award}). Việc duyệt đề xuất đi qua trang danh sách và cửa sổ chi tiết hiển thị tệp đính kèm cùng bảng danh hiệu kèm số quyết định (Hình~\ref{fig:ui-admin-proposal-list}, Hình~\ref{fig:ui-admin-proposal-detail}). Quản lý quyết định gồm danh sách quyết định và cửa sổ chi tiết kèm liên kết xem tệp PDF (Hình~\ref{fig:ui-admin-decision-list}, Hình~\ref{fig:ui-admin-decision-detail}). Quản lý khen thưởng sắp xếp theo loại danh hiệu và cho phép xuất Excel theo nhiều tiêu chí (Hình~\ref{fig:ui-admin-award-list}, Hình~\ref{fig:ui-admin-award-export}). Ngoài luồng đề xuất, cán bộ có thể thêm khen thưởng đồng loạt qua Excel và quản lý khen thưởng đột xuất (Hình~\ref{fig:ui-admin-bulk}, Hình~\ref{fig:ui-admin-adhoc}). Nhật ký hệ thống áp dụng bố cục ``bộ lọc trên, bảng dưới'' (Hình~\ref{fig:ui-admin-logs}).
 
@@ -797,7 +789,7 @@ Cán bộ Phòng Chính trị phụ trách toàn bộ quân số. Trang chủ tr
     \label{fig:ui-admin-logs}
 \end{figure}
 
-\subsubsection{Vai trò chỉ huy đơn vị (\texttt{Manager})}
+\subsubsection{Vai trò Chỉ huy đơn vị}
 
 Chỉ huy đơn vị thao tác trong phạm vi đơn vị phụ trách. Trang chủ giới hạn dữ liệu theo đơn vị quản lý (Hình~\ref{fig:ui-manager-dashboard}). Việc đề nghị khen thưởng đi qua danh sách đề xuất và biểu mẫu tạo đề xuất năm bước, minh hoạ ở bước chọn loại, bước chọn quân nhân và bước xem lại (Hình~\ref{fig:ui-manager-proposal}, Hình~\ref{fig:ui-manager-proposal-b1}, Hình~\ref{fig:ui-manager-proposal-b2}, Hình~\ref{fig:ui-manager-proposal-b5}). Từ danh sách quân nhân của đơn vị, mở một quân nhân sẽ vào thẻ quản lý chi tiết tập hợp các lối tắt tới lịch sử chức vụ, danh hiệu hằng năm và thành tích nghiên cứu khoa học (Hình~\ref{fig:ui-manager-personnel-list}, Hình~\ref{fig:ui-manager-personnel-manage}, Hình~\ref{fig:ui-manager-position}, Hình~\ref{fig:ui-manager-annual}, Hình~\ref{fig:ui-manager-nckh}). Khi xét một quân nhân đã đạt cấp danh hiệu cao nhất được hỗ trợ, hệ thống mở bảng tóm tắt hồ sơ kèm thông báo chưa hỗ trợ các danh hiệu cao hơn (Hình~\ref{fig:ui-chain-cap}).
 
@@ -878,7 +870,7 @@ Chỉ huy đơn vị thao tác trong phạm vi đơn vị phụ trách. Trang ch
     \label{fig:ui-chain-cap}
 \end{figure}
 
-\subsubsection{Vai trò người dùng (\texttt{User})}
+\subsubsection{Vai trò Người dùng}
 
 Người dùng chỉ xem hồ sơ của chính mình. Trang chủ cá nhân hiển thị các thẻ thống kê cá nhân, thông tin cá nhân và tóm tắt hồ sơ điều kiện kèm gợi ý (Hình~\ref{fig:ui-user-dashboard}); hồ sơ danh hiệu cá nhân hằng năm trình bày thanh tiến trình tổng hợp và dòng thời gian chuỗi danh hiệu theo năm (Hình~\ref{fig:ui-user-annual}).
 
@@ -974,7 +966,7 @@ Tám bảng kiểm thử dưới đây tóm tắt kết quả.
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{Kết quả} \\ \hline
 1 & Tạo đề xuất hợp lệ & Chọn 5 quân nhân đủ điều kiện & Đề xuất ở trạng thái chờ duyệt & Đạt \\ \hline
 2 & Giới hạn theo đơn vị phụ trách & Chỉ huy đơn vị mở danh sách chọn quân nhân & Danh sách chỉ hiển thị quân nhân thuộc đơn vị phụ trách, không có quân nhân đơn vị khác & Đạt \\ \hline
-3 & Quân nhân chưa đủ điều kiện & Đề nghị BKBQP cho quân nhân mới 1 năm CSTĐCS & Danh hiệu chưa đủ điều kiện bị loại khỏi danh sách chọn; nếu cố gửi qua API, backend từ chối kèm lý do & Đạt \\ \hline
+3 & Quân nhân chưa đủ điều kiện & Mở danh sách chọn danh hiệu cho quân nhân mới có 1 năm CSTĐCS & Danh hiệu BKBQP chưa đủ điều kiện không xuất hiện trong danh sách chọn, không thể đề nghị & Đạt \\ \hline
 4 & Lưu nháp khi tải lại trang & Tải lại trang giữa chừng & Dữ liệu nhập dở được giữ nguyên và tự xoá sau khi gửi hoặc đóng trang & Đạt \\ \hline
 \end{tabular}
 \end{table}
@@ -986,11 +978,11 @@ Tám bảng kiểm thử dưới đây tóm tắt kết quả.
 \setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.25}\begin{tabular}{|c|R{3.2cm}|R{3.3cm}|R{4.5cm}|c|}
 \hline
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{Kết quả} \\ \hline
-1 & Phê duyệt thông thường & Đề xuất hợp lệ & Đề xuất chuyển trạng thái đã duyệt và lưu vào hồ sơ khen thưởng & Đạt \\ \hline
-2 & Phê duyệt kèm gắn quyết định & Số quyết định, tháng và năm nhận & Đề xuất được gắn quyết định, hồ sơ quân nhân hiển thị đúng dữ liệu & Đạt \\ \hline
-3 & Từ chối đề xuất & Bấm ``Từ chối'' kèm lý do & Đề xuất chuyển trạng thái bị từ chối, gửi thông báo cho Chỉ huy đơn vị & Đạt \\ \hline
-4 & Đề nghị trùng BKTTCP & Đề nghị BKTTCP cho người đã có & Hệ thống chặn và huỷ bỏ thao tác & Đạt \\ \hline
-5 & Hai cán bộ cùng phê duyệt & Hai phiên đồng thời & Chỉ một thành công, người sau bị từ chối do xung đột & Đạt \\ \hline
+1 & Phê duyệt bình thường & Nhập số quyết định và ngày ký rồi bấm ``Phê duyệt''; loại theo mốc thời gian nhập thêm tháng, năm nhận và có thể đính kèm tệp PDF quyết định & Lưu khen thưởng, đề xuất chuyển trạng thái đã duyệt, hệ thống tự tính lại điều kiện & Đạt \\ \hline
+2 & Dùng lại quyết định đã có & Chọn một số quyết định đã tồn tại trong hệ thống & Năm và ngày ký tự động điền theo quyết định đã chọn & Đạt \\ \hline
+3 & Thiếu số quyết định & Bỏ trống ô số quyết định rồi bấm ``Phê duyệt'' & Biểu mẫu báo ``Vui lòng nhập số quyết định'' và chặn gửi & Đạt \\ \hline
+4 & Từ chối đề xuất & Bấm ``Từ chối'' kèm lý do & Đề xuất chuyển trạng thái bị từ chối, gửi thông báo cho Chỉ huy đơn vị & Đạt \\ \hline
+5 & Hai cán bộ cùng phê duyệt & Hai phiên đồng thời duyệt một đề xuất & Chỉ một thành công, người sau bị từ chối do xung đột & Đạt \\ \hline
 \end{tabular}
 \end{table}
 
@@ -1001,7 +993,7 @@ Tám bảng kiểm thử dưới đây tóm tắt kết quả.
 \setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.25}\begin{tabular}{|c|R{3.2cm}|R{3.3cm}|R{4.5cm}|c|}
 \hline
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{Kết quả} \\ \hline
-1 & Đủ điều kiện BKBQP & 2 năm CSTĐCS liên tục & Hệ thống đề nghị BKBQP kèm lời giải thích & Đạt \\ \hline
+1 & Đủ điều kiện BKBQP & 2 năm CSTĐCS liên tục kèm nghiên cứu khoa học mỗi năm & Hệ thống đề nghị BKBQP kèm lời giải thích & Đạt \\ \hline
 2 & Đã nhận BKTTCP & Quân nhân đã có BKTTCP & Hiển thị thông báo đã có BKTTCP và chưa hỗ trợ danh hiệu cao hơn & Đạt \\ \hline
 3 & Bỏ lỡ đợt đề nghị & 6 năm CSTĐCS liên tục, bỏ lỡ mốc năm 2 và năm 4 & Vẫn đủ điều kiện đề nghị BKBQP vì chu kỳ lặp mỗi 2 năm & Đạt \\ \hline
 4 & Cửa sổ xét 3 năm của CSTĐTQ & BKBQP đã nhận cách 4 năm & BKBQP đó không được tính, yêu cầu BKBQP mới & Đạt \\ \hline
@@ -1018,7 +1010,7 @@ Tám bảng kiểm thử dưới đây tóm tắt kết quả.
 \textbf{STT} & \textbf{Chức năng} & \textbf{Đầu vào} & \textbf{Đầu ra mong muốn} & \textbf{Kết quả} \\ \hline
 1 & Nhập 50 bản ghi hợp lệ & Tệp Excel đúng mẫu & Tạo đủ 50 bản ghi và ghi nhật ký hệ thống & Đạt \\ \hline
 2 & Có dòng trùng dữ liệu & Một dòng trùng cùng quân nhân và năm & Bản xem trước báo 49 dòng hợp lệ và 1 dòng lỗi & Đạt \\ \hline
-3 & Dữ liệu thay đổi giữa hai bước & Có bản ghi chen vào sau khi xem trước & Huỷ bỏ toàn bộ, không ghi bản ghi nào & Đạt \\ \hline
+3 & Chỉ xem trước, chưa xác nhận & Tải tệp lên và bấm ``Xem trước'' nhưng chưa bấm ``Xác nhận nhập'' & Hệ thống chỉ hiển thị bảng kiểm tra, chưa tạo bản ghi nào trong cơ sở dữ liệu & Đạt \\ \hline
 4 & Tệp sai định dạng & Tải lên tệp không phải Excel & Hệ thống báo lỗi định dạng tệp & Đạt \\ \hline
 \end{tabular}
 \end{table}
@@ -1084,7 +1076,7 @@ Hệ thống được thiết kế để triển khai trên một máy chủ Win
     \item RAM: 4 GB (khuyến nghị 8 GB cho môi trường nhiều người dùng đồng thời).
     \item Ổ cứng: 50 GB SSD cho dữ liệu và bản sao lưu.
     \item Hệ điều hành: Windows Server 2019 hoặc Windows Server 2022.
-    \item Phần mềm phụ thuộc: Node.js 20 LTS, PostgreSQL 15.
+    \item Phần mềm phụ thuộc: Node.js 24 LTS, PostgreSQL 16.
 \end{itemize}
 
 \subsection{Hướng dẫn triển khai môi trường phát triển}
@@ -1103,12 +1095,11 @@ Lệnh này tải các gói phụ thuộc liệt kê tại tệp \texttt{package
 
 Sau bước 4, mở trình duyệt tới \url{http://localhost:3000} và đăng nhập bằng tài khoản Quản trị viên mặc định để bắt đầu cấu hình các đơn vị, chức vụ và tài khoản phụ trợ.
 
-\subsection{Triển khai sản xuất với PM2}
+\subsection{Vận hành sản phẩm với PM2}
 \label{subsection:4.5.3}
 
-Trên máy chủ sản xuất, sản phẩm được vận hành bằng PM2, một công cụ quản lý tiến trình hỗ trợ tự khởi động lại khi tiến trình bị dừng đột ngột, ghi nhật ký kèm dấu thời gian và theo dõi tài nguyên hệ thống.
+Trên máy chủ vận hành, sản phẩm được chạy bằng PM2, một công cụ quản lý tiến trình hỗ trợ tự khởi động lại khi tiến trình bị dừng đột ngột, ghi nhật ký kèm dấu thời gian và theo dõi tài nguyên hệ thống.
 Tệp \texttt{ecosystem.config.js} ở thư mục gốc của dự án khai báo hai tiến trình ứng dụng: \texttt{be-qlkt} chạy bản đã build (\texttt{dist/index.js}) trong thư mục \texttt{BE-QLKT} ở cổng 4000 và \texttt{fe-qlkt} chạy \texttt{next start} trong thư mục \texttt{FE-QLKT} ở cổng 3000.
-Cả hai tiến trình được đặt biến môi trường \texttt{NODE\_ENV} là \texttt{production}.
 
 Khởi chạy bằng lệnh \texttt{pm2 start ecosystem.config.js}, sau đó dùng \texttt{pm2 save} để ghi nhớ danh sách tiến trình đang chạy.
 Để PM2 tự khởi động cùng máy chủ Windows, cài gói \texttt{pm2-windows-startup} và chạy \texttt{pm2-startup install}, đăng ký PM2 như một tác vụ khởi động của Windows.
@@ -1121,8 +1112,6 @@ Tác vụ sao lưu chạy bên trong tiến trình backend nhờ \texttt{node-cr
 Mặc định, hệ thống sao lưu lúc 02:00 hằng ngày: mỗi lần chạy, dịch vụ đọc 21 bảng dữ liệu nghiệp vụ (không gồm nhật ký hệ thống và thông báo), kết xuất thành các câu lệnh chèn dữ liệu SQL đã làm sạch rồi ghi ra một tệp \texttt{.sql} trong thư mục sao lưu.
 Các bản cũ quá số ngày lưu trữ đã cấu hình (mặc định 15 ngày) được tự động dọn.
 Về giám sát, PM2 cung cấp lệnh xem log thời gian thực và gom toàn bộ log vào một thư mục riêng, có thể tích hợp với hệ thống giám sát tập trung của Học viện trong tương lai.
-
-\section*{Kết chương}
 
 Chương này đã trình bày kiến trúc phân tầng, thiết kế gói, thiết kế lớp, thiết kế cơ sở dữ liệu, thiết kế giao diện, kết quả xây dựng, kết quả kiểm thử hộp đen các chức năng nghiệp vụ và phương án triển khai của hệ thống.
 Các kết quả này cho thấy phần mềm đã đáp ứng đầy đủ những yêu cầu chức năng và phi chức năng đặt ra ở Chương~\ref{chapter:Related_works}.

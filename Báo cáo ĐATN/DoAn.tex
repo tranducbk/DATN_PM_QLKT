@@ -59,15 +59,17 @@
 
 % ===================================================
 
-\renewcommand{\bibname}{Danh_sach_tai_lieu_tham_khao} 
-\usepackage[backend=biber,style=ieee]{biblatex}
+ 
+
+
+
 
 \renewcommand\appendixname{PHỤ LỤC}
 \renewcommand\appendixpagename{PHỤ LỤC}
 \renewcommand\appendixtocname{PHỤ LỤC}
 
 
-\addbibresource{Danh_sach_tai_lieu_tham_khao.bib} % chèn file chứa danh mục tài liệu tham khảo vào 
+ % chèn file chứa danh mục tài liệu tham khảo vào 
 
 % Tên cột DB trong bảng schema — monospace, ngắt dòng sát _ không thêm trắng
 \makeatletter
@@ -228,6 +230,7 @@
 \begin{document}
 % \newgeometry{top=2cm, bottom=2cm, left=2cm, right=2cm}
 \subfile{Bia} % Phần bìa
+\subfile{Bia_lot} % Phần bìa lót
 % \restoregeometry
 
 % ===================================================
@@ -302,7 +305,7 @@
 
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[RE, LO]{\leftmark}
+\fancyhead[RE, LO]{\small\leftmark}
 %\fancyhead[LE]{\rightmark}
 \fancyfoot[RE, LO]{\thepage}
 
@@ -325,7 +328,7 @@
 
 \newpage
 %\pagestyle{fancy} % Áp dụng header và footer
-\chapter[THIẾT KẾ, TRIỂN KHAI VÀ ĐÁNH GIÁ]{THIẾT KẾ, TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ THỐNG}
+\chapter{PHÂN TÍCH THIẾT KẾ, TRIỂN KHAI VÀ ĐÁNH GIÁ HỆ~THỐNG}
 \label{chapter:Experiment}
 \subfile{Chuong/4_Ket_qua_thuc_nghiem}
 
@@ -343,7 +346,23 @@
 % ===================================================
 \newpage
 \renewcommand\bibname{TÀI LIỆU THAM KHẢO}
-\printbibliography
+\begin{thebibliography}{99}
 \phantomsection\addcontentsline{toc}{chapter}{TÀI LIỆU THAM KHẢO}
+\bibitem{luat062022} Quốc hội nước CHXHCN Việt Nam, \textit{Luật Thi đua, Khen thưởng số 06/2022/QH15}, 2022.
+\bibitem{nextjs} Next.js. [Online]. Available: \url{https://nextjs.org} (visited on 04/03/2026).
+\bibitem{react} React. [Online]. Available: \url{https://react.dev} (visited on 04/03/2026).
+\bibitem{express} Express. [Online]. Available: \url{https://expressjs.com} (visited on 05/03/2026).
+\bibitem{nodejs} Node.js. [Online]. Available: \url{https://nodejs.org} (visited on 05/03/2026).
+\bibitem{typescript} TypeScript. [Online]. Available: \url{https://www.typescriptlang.org} (visited on 06/03/2026).
+\bibitem{postgresql} PostgreSQL. [Online]. Available: \url{https://www.postgresql.org} (visited on 08/03/2026).
+\bibitem{prisma} Prisma. [Online]. Available: \url{https://www.prisma.io} (visited on 10/03/2026).
+\bibitem{antdesign} Ant Design. [Online]. Available: \url{https://ant.design} (visited on 12/03/2026).
+\bibitem{tailwind} Tailwind CSS. [Online]. Available: \url{https://tailwindcss.com} (visited on 13/03/2026).
+\bibitem{socketio} Socket.IO. [Online]. Available: \url{https://socket.io} (visited on 16/03/2026).
+\bibitem{jwt} JSON Web Token (JWT). [Online]. Available: \url{https://jwt.io} (visited on 18/03/2026).
+\bibitem{zod} Zod. [Online]. Available: \url{https://zod.dev} (visited on 20/03/2026).
+\bibitem{exceljs} ExcelJS. [Online]. Available: \url{https://github.com/exceljs/exceljs} (visited on 22/03/2026).
+\bibitem{layeredref} Microsoft, N-tier architecture style. [Online]. Available: \url{https://learn.microsoft.com/azure/architecture/guide/architecture-styles/n-tier} (visited on 02/03/2026).
+\end{thebibliography}
 
 \end{document}

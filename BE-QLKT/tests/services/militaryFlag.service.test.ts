@@ -12,8 +12,8 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-describe('militaryFlag.service - getAll', () => {
-  it('Cho không có filter, Khi gọi getAll, Thì trả về danh sách + pagination', async () => {
+describe('HC QKQT (Quân kỳ quyết thắng): danh sách', () => {
+  it('HC QKQT (Quân kỳ quyết thắng): lấy danh sách không lọc → trả về danh sách kèm tổng số bản ghi', async () => {
     prismaMock.huanChuongQuanKyQuyetThang.findMany.mockResolvedValueOnce([
       { id: 'hc-1', quan_nhan_id: 'qn-1', nam: 2024 },
     ]);
@@ -28,7 +28,7 @@ describe('militaryFlag.service - getAll', () => {
     expect(findArgs.orderBy).toEqual({ nam: 'desc' });
   });
 
-  it('Cho filter don_vi_id (CQDV) không include sub units, Khi getAll, Thì where dùng OR cho CQDV và DVTT trực tiếp', async () => {
+  it('HC QKQT (Quân kỳ quyết thắng): lọc theo đơn vị (CQDV) không gồm đơn vị con → lấy quân nhân thuộc CQDV hoặc DVTT trực tiếp', async () => {
     prismaMock.huanChuongQuanKyQuyetThang.findMany.mockResolvedValueOnce([]);
     prismaMock.huanChuongQuanKyQuyetThang.count.mockResolvedValueOnce(0);
 
@@ -42,7 +42,7 @@ describe('militaryFlag.service - getAll', () => {
     expect(prismaMock.donViTrucThuoc.findMany).not.toHaveBeenCalled();
   });
 
-  it('Cho filter don_vi_id với include_sub_units=true, Khi getAll, Thì query DVTT con và build OR list', async () => {
+  it('HC QKQT (Quân kỳ quyết thắng): lọc theo đơn vị kèm gồm cả đơn vị con → lấy thêm các DVTT con và gộp vào điều kiện lọc', async () => {
     prismaMock.donViTrucThuoc.findMany.mockResolvedValueOnce([
       { id: 'dvtt-a' },
       { id: 'dvtt-b' },
@@ -67,7 +67,7 @@ describe('militaryFlag.service - getAll', () => {
     ]);
   });
 
-  it('Cho filter ho_ten + nam, Khi getAll, Thì where có contains insensitive và nam parse Int', async () => {
+  it('HC QKQT (Quân kỳ quyết thắng): lọc theo họ tên và năm → tìm tên không phân biệt hoa thường, lọc đúng năm', async () => {
     prismaMock.huanChuongQuanKyQuyetThang.findMany.mockResolvedValueOnce([]);
     prismaMock.huanChuongQuanKyQuyetThang.count.mockResolvedValueOnce(0);
 
@@ -81,8 +81,8 @@ describe('militaryFlag.service - getAll', () => {
   });
 });
 
-describe('militaryFlag.service - getByPersonnelId', () => {
-  it('Cho personnel có HC QKQT, Khi getByPersonnelId, Thì trả về mảng 1 phần tử', async () => {
+describe('HC QKQT (Quân kỳ quyết thắng): tra theo quân nhân', () => {
+  it('HC QKQT (Quân kỳ quyết thắng): quân nhân đã có HC QKQT → trả về danh sách 1 phần tử', async () => {
     prismaMock.huanChuongQuanKyQuyetThang.findUnique.mockResolvedValueOnce({
       id: 'hc-1',
       quan_nhan_id: 'qn-1',
@@ -97,7 +97,7 @@ describe('militaryFlag.service - getByPersonnelId', () => {
     expect(findArgs.where).toEqual({ quan_nhan_id: 'qn-1' });
   });
 
-  it('Cho personnel chưa có HC QKQT, Khi getByPersonnelId, Thì trả về mảng rỗng', async () => {
+  it('HC QKQT (Quân kỳ quyết thắng): quân nhân chưa có HC QKQT → trả về danh sách rỗng', async () => {
     prismaMock.huanChuongQuanKyQuyetThang.findUnique.mockResolvedValueOnce(null);
 
     const result = await militaryFlagService.getByPersonnelId('qn-2');
@@ -106,8 +106,8 @@ describe('militaryFlag.service - getByPersonnelId', () => {
   });
 });
 
-describe('militaryFlag.service - getStatistics', () => {
-  it('Cho có data, Khi getStatistics, Thì trả về total và byYear', async () => {
+describe('HC QKQT (Quân kỳ quyết thắng): thống kê', () => {
+  it('HC QKQT (Quân kỳ quyết thắng): có dữ liệu → trả về tổng số và thống kê theo năm', async () => {
     prismaMock.huanChuongQuanKyQuyetThang.groupBy.mockResolvedValueOnce([
       { nam: 2024, _count: { id: 3 } },
       { nam: 2023, _count: { id: 2 } },
@@ -121,8 +121,8 @@ describe('militaryFlag.service - getStatistics', () => {
   });
 });
 
-describe('militaryFlag.service - getUserWithUnit / getPersonnelById', () => {
-  it('Cho userId, Khi getUserWithUnit, Thì query taiKhoan kèm QuanNhan unit ids', async () => {
+describe('HC QKQT (Quân kỳ quyết thắng): lấy đơn vị của tài khoản / quân nhân', () => {
+  it('HC QKQT (Quân kỳ quyết thắng): tra tài khoản theo id → trả về tài khoản kèm các mã đơn vị của quân nhân', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-1',
       QuanNhan: { co_quan_don_vi_id: 'cqdv-1', don_vi_truc_thuoc_id: null },
@@ -135,7 +135,7 @@ describe('militaryFlag.service - getUserWithUnit / getPersonnelById', () => {
     expect(args.where).toEqual({ id: 'acc-1' });
   });
 
-  it('Cho personnelId, Khi getPersonnelById, Thì trả về unit ids của quân nhân', async () => {
+  it('HC QKQT (Quân kỳ quyết thắng): tra quân nhân theo id → trả về các mã đơn vị của quân nhân', async () => {
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce({
       co_quan_don_vi_id: null,
       don_vi_truc_thuoc_id: 'dvtt-1',
@@ -147,8 +147,8 @@ describe('militaryFlag.service - getUserWithUnit / getPersonnelById', () => {
   });
 });
 
-describe('militaryFlag.service - deleteAward', () => {
-  it('Cho id hợp lệ, Khi deleteAward, Thì xoá record và trả về personnelId', async () => {
+describe('HC QKQT (Quân kỳ quyết thắng): xóa khen thưởng', () => {
+  it('HC QKQT (Quân kỳ quyết thắng): xóa bản ghi theo id hợp lệ → xóa thành công và trả về mã quân nhân', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1' });
     const personnel = makePersonnel({ unit: cqdv, id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     prismaMock.huanChuongQuanKyQuyetThang.findUnique.mockResolvedValueOnce({
@@ -168,7 +168,7 @@ describe('militaryFlag.service - deleteAward', () => {
     });
   });
 
-  it('Cho id không tồn tại, Khi deleteAward, Thì throw NotFoundError', async () => {
+  it('HC QKQT (Quân kỳ quyết thắng) bị chặn: xóa bản ghi không tồn tại → báo không tìm thấy và không xóa', async () => {
     prismaMock.huanChuongQuanKyQuyetThang.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -179,8 +179,8 @@ describe('militaryFlag.service - deleteAward', () => {
   });
 });
 
-describe('militaryFlag.service - confirmImport (lifetime conflict)', () => {
-  it('Cho personnel đã có HC QKQT, Khi confirmImport, Thì throw ValidationError "đã có Huy chương Quân kỳ quyết thắng"', async () => {
+describe('HC QKQT (Quân kỳ quyết thắng): nhập Excel (khen thưởng chỉ trao một lần)', () => {
+  it('Nhập Excel HC QKQT bị chặn: quân nhân đã có HC QKQT (chỉ trao một lần) → báo "đã có Huy chương Quân kỳ quyết thắng" và không lưu', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.huanChuongQuanKyQuyetThang.findMany.mockResolvedValueOnce([
       { quan_nhan_id: 'qn-1', nam: 2020 },
@@ -202,7 +202,7 @@ describe('militaryFlag.service - confirmImport (lifetime conflict)', () => {
     expect(prismaMock.huanChuongQuanKyQuyetThang.upsert).not.toHaveBeenCalled();
   });
 
-  it('Cho personnel đang có đề xuất HC QKQT pending, Khi confirmImport, Thì throw ValidationError "đang có đề xuất ... chờ duyệt"', async () => {
+  it('Nhập Excel HC QKQT bị chặn: quân nhân đang có đề xuất HC QKQT chờ duyệt → báo "đang có đề xuất ... chờ duyệt" và không lưu', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       { id: 'prop-1', data_nien_han: [{ personnel_id: 'qn-1' }] },
     ]);

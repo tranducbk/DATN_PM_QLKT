@@ -49,8 +49,8 @@ async function makeCaNhanExcelBuffer(rows: CaNhanRow[]): Promise<Buffer> {
   return Buffer.from(arrayBuffer as ArrayBuffer);
 }
 
-describe('annualReward.service - previewImport', () => {
-  it('Excel hợp lệ với 3 row CSTDCS → trả 3 valid items, no errors', async () => {
+describe('Nhập Excel danh hiệu cá nhân hằng năm: xem trước (preview)', () => {
+  it('Nhập Excel cá nhân hằng năm: 3 dòng CSTDCS hợp lệ → cả 3 vào danh sách hợp lệ, không có lỗi', async () => {
     // Given: three personnel rows, all referencing existing personnel and decisions
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     const p2 = makePersonnel({ id: 'qn-2', ho_ten: 'Nguyễn Văn B' });
@@ -85,7 +85,7 @@ describe('annualReward.service - previewImport', () => {
     });
   });
 
-  it('Row thiếu năm → vào errors với message "Thiếu năm"', async () => {
+  it('Nhập Excel cá nhân hằng năm: dòng thiếu năm → báo lỗi "Thiếu năm"', async () => {
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -103,7 +103,7 @@ describe('annualReward.service - previewImport', () => {
     expect(result.errors[0].message).toBe('Thiếu năm');
   });
 
-  it('Row thiếu danh_hieu (có id) → bỏ qua với message "không có danh hiệu nào được điền"', async () => {
+  it('Nhập Excel cá nhân hằng năm: dòng có mã quân nhân nhưng bỏ trống danh hiệu → báo "không có danh hiệu nào được điền"', async () => {
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -121,7 +121,7 @@ describe('annualReward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('không có danh hiệu nào được điền');
   });
 
-  it('Mã quân nhân không tồn tại trong DB → errors "Không tìm thấy quân nhân"', async () => {
+  it('Nhập Excel cá nhân hằng năm: mã quân nhân không có trong hệ thống → báo lỗi "Không tìm thấy quân nhân"', async () => {
     // Given: personnelMap is empty so any ID lookup fails
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -139,7 +139,7 @@ describe('annualReward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('Không tìm thấy quân nhân');
   });
 
-  it('Tên trong file không khớp tên trong DB → errors mismatch', async () => {
+  it('Nhập Excel cá nhân hằng năm: tên trong file khác tên trong hệ thống → báo lỗi không khớp', async () => {
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn Đúng' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -156,7 +156,7 @@ describe('annualReward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('không khớp với tên trong hệ thống');
   });
 
-  it('Trùng năm-danh hiệu trong DB → errors "Đã có"', async () => {
+  it('Nhập Excel cá nhân hằng năm: đã có cùng danh hiệu cùng năm trên hệ thống → báo lỗi "Đã có"', async () => {
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1]);
     // Existing record with same year + same danh_hieu
@@ -185,7 +185,7 @@ describe('annualReward.service - previewImport', () => {
     expect(result.errors[0].message).toBe('Đã có Chiến sĩ thi đua cơ sở cho năm 2024.');
   });
 
-  it('BKBQP trong Excel → reject "không import qua Excel"', async () => {
+  it('Nhập Excel cá nhân hằng năm: khai BKBQP trong file → từ chối "không import qua Excel"', async () => {
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -209,7 +209,7 @@ describe('annualReward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('không import qua Excel');
   });
 
-  it('Pending proposal → errors "đang có đề xuất"', async () => {
+  it('Nhập Excel cá nhân hằng năm: đang có đề xuất chờ duyệt cùng năm → báo lỗi "đang có đề xuất"', async () => {
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -234,7 +234,7 @@ describe('annualReward.service - previewImport', () => {
     );
   });
 
-  it('Row trống hoàn toàn → bỏ qua, không tính total/errors', async () => {
+  it('Nhập Excel cá nhân hằng năm: dòng trống hoàn toàn → bỏ qua, không tính vào tổng lẫn lỗi', async () => {
     // Empty rows with no id/nam/danh_hieu are skipped silently (continue)
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1]);
@@ -254,7 +254,7 @@ describe('annualReward.service - previewImport', () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it('Duplicate trong file (cùng quân nhân + năm) → row sau báo "Trùng lặp trong file"', async () => {
+  it('Nhập Excel cá nhân hằng năm: cùng quân nhân và năm lặp lại trong file → dòng sau báo "Trùng lặp trong file"', async () => {
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -276,7 +276,7 @@ describe('annualReward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('Trùng lặp trong file');
   });
 
-  it('Năm < 1900 → errors về boundary', async () => {
+  it('Nhập Excel cá nhân hằng năm: năm trước 1900 → báo lỗi không hợp lệ', async () => {
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -293,7 +293,7 @@ describe('annualReward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('không hợp lệ');
   });
 
-  it('Năm tương lai (vượt năm hiện tại) → errors', async () => {
+  it('Nhập Excel cá nhân hằng năm: năm tương lai (vượt năm hiện tại) → báo lỗi không hợp lệ', async () => {
     const futureYear = new Date().getFullYear() + 5;
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1]);
@@ -311,7 +311,7 @@ describe('annualReward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('không hợp lệ');
   });
 
-  it('Danh hiệu enum không hợp lệ → errors "không đúng"', async () => {
+  it('Nhập Excel cá nhân hằng năm: danh hiệu không thuộc danh mục → báo lỗi "không đúng"', async () => {
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -328,7 +328,7 @@ describe('annualReward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('không đúng');
   });
 
-  it('Số quyết định không tồn tại trên hệ thống → errors', async () => {
+  it('Nhập Excel cá nhân hằng năm: số quyết định chưa có trên hệ thống → báo lỗi "không tồn tại trên hệ thống"', async () => {
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -346,7 +346,7 @@ describe('annualReward.service - previewImport', () => {
     expect(result.errors[0].message).toContain('không tồn tại trên hệ thống');
   });
 
-  it('Mix valid + invalid → trả cả 2 phần đúng', async () => {
+  it('Nhập Excel cá nhân hằng năm: file vừa có dòng hợp lệ vừa có dòng lỗi → tách đúng hợp lệ và lỗi', async () => {
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     const p2 = makePersonnel({ id: 'qn-2', ho_ten: 'Nguyễn Văn B' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1, p2]);
@@ -372,8 +372,8 @@ describe('annualReward.service - previewImport', () => {
   });
 });
 
-describe('annualReward.service - confirmImport', () => {
-  it('Confirm với 2 valid rows → upsert 2 lần với args đúng', async () => {
+describe('Nhập Excel danh hiệu cá nhân hằng năm: xác nhận (confirm)', () => {
+  it('Nhập Excel cá nhân hằng năm: xác nhận 2 dòng hợp lệ → tạo (hoặc cập nhật) 2 bản ghi đúng dữ liệu', async () => {
     // Given: two valid items, no pending proposal, no existing records
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -424,7 +424,7 @@ describe('annualReward.service - confirmImport', () => {
     });
   });
 
-  it('Confirm với pending proposal conflict → throw ValidationError "đang có đề xuất chờ duyệt"', async () => {
+  it('Nhập Excel cá nhân hằng năm: xác nhận khi đang có đề xuất chờ duyệt cùng năm → chặn và báo "đang có đề xuất chờ duyệt"', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       {
         id: 'prop-1',
@@ -455,7 +455,7 @@ describe('annualReward.service - confirmImport', () => {
     expect(prismaMock.danhHieuHangNam.upsert).not.toHaveBeenCalled();
   });
 
-  it('Confirm khi DB đã có danh_hieu khác → throw ValidationError "không thể ghi đè"', async () => {
+  it('Nhập Excel cá nhân hằng năm: xác nhận khi hệ thống đã có danh hiệu khác cùng năm → chặn và báo "không thể ghi đè"', async () => {
     // Given: existing CSTDCS for qn-1 in 2024, request tries to overwrite with CSTT
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([
@@ -490,7 +490,7 @@ describe('annualReward.service - confirmImport', () => {
     expect(prismaMock.danhHieuHangNam.upsert).not.toHaveBeenCalled();
   });
 
-  it('Confirm row CSTDCS thiếu so_quyet_dinh → throw ValidationError missing decision', async () => {
+  it('Nhập Excel cá nhân hằng năm: xác nhận dòng CSTDCS thiếu số quyết định → chặn và báo thiếu số quyết định', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ id: 'qn-1', ho_ten: 'Nguyễn Văn A' }]);
@@ -515,7 +515,7 @@ describe('annualReward.service - confirmImport', () => {
     expect(prismaMock.danhHieuHangNam.upsert).not.toHaveBeenCalled();
   });
 
-  it('Preview: row thiếu so_quyet_dinh → vào errors', async () => {
+  it('Nhập Excel cá nhân hằng năm (xem trước): dòng thiếu số quyết định → báo lỗi "Thiếu số quyết định"', async () => {
     const p1 = makePersonnel({ id: 'qn-prev', ho_ten: 'QN Preview' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -531,7 +531,7 @@ describe('annualReward.service - confirmImport', () => {
     expect(result.errors[0].message).toBe('Thiếu số quyết định');
   });
 
-  it('Confirm rỗng → imported: 0', async () => {
+  it('Nhập Excel cá nhân hằng năm: xác nhận danh sách rỗng → không tạo bản ghi nào', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);

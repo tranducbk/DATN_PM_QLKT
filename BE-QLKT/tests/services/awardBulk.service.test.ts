@@ -20,8 +20,8 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
-  it('detect trùng APPROVED record cùng năm + cùng danh hiệu (CA_NHAN_HANG_NAM)', async () => {
+describe('Trao khen thưởng hàng loạt: kiểm tra trùng khen thưởng cá nhân', () => {
+  it('Trao hàng loạt: quân nhân đã có CSTDCS năm 2024 trên hệ thống → báo trùng kèm họ tên', async () => {
     // Cho: đã có CSTDCS cho personnel A năm 2024
     const personnelA = { id: 'qn-A', ho_ten: 'Nguyễn Văn A' };
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([personnelA]);
@@ -42,7 +42,7 @@ describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
     expect(errors[0]).toBe('Nguyễn Văn A: Chiến sĩ thi đua cơ sở năm 2024 đã có trên hệ thống');
   });
 
-  it('detect pending proposal cùng năm + cùng danh hiệu (CA_NHAN_HANG_NAM)', async () => {
+  it('Trao hàng loạt: quân nhân đang có đề xuất chờ duyệt cùng năm, cùng danh hiệu → báo trùng', async () => {
     const personnelA = { id: 'qn-A', ho_ten: 'Trần Thị B' };
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([personnelA]);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
@@ -65,7 +65,7 @@ describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
     expect(errors[0]).toBe('Trần Thị B: đang có đề xuất chờ duyệt');
   });
 
-  it('không trùng → trả mảng rỗng', async () => {
+  it('Trao hàng loạt: không có khen thưởng nào trùng → không báo lỗi nào', async () => {
     const personnelA = { id: 'qn-A', ho_ten: 'A' };
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([personnelA]);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
@@ -80,7 +80,7 @@ describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
     expect(errors).toEqual([]);
   });
 
-  it('one-time HC_QKQT — match theo personnel, không quan tâm danh_hieu', async () => {
+  it('Trao hàng loạt: HC QKQT chỉ trao một lần, quân nhân đã có rồi → báo trùng dù gửi danh hiệu nào', async () => {
     // Cho: personnel đã có record HC_QKQT bất kỳ
     const personnelA = { id: 'qn-A', ho_ten: 'Phạm C' };
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([personnelA]);
@@ -101,7 +101,7 @@ describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
     expect(errors[0]).toBe('Phạm C: đã có Huy chương Quân kỳ quyết thắng trên hệ thống');
   });
 
-  it('one-time KNC_VSNXD_QDNDVN — match theo personnel', async () => {
+  it('Trao hàng loạt: KNC chỉ trao một lần, quân nhân đã có rồi → báo trùng', async () => {
     const personnelA = { id: 'qn-A', ho_ten: 'Lê D' };
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([personnelA]);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
@@ -119,7 +119,7 @@ describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
     expect(errors[0]).toBe('Lê D: đã có Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN trên hệ thống');
   });
 
-  it('one-time CONG_HIEN (HCBVTQ) — match theo personnel', async () => {
+  it('Trao hàng loạt: HCBVTQ chỉ trao một lần, quân nhân đã có hạng Ba → báo trùng dù gửi hạng cao hơn', async () => {
     const personnelA = { id: 'qn-A', ho_ten: 'Hoàng E' };
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([personnelA]);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
@@ -140,7 +140,7 @@ describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
     );
   });
 
-  it('mix 1 trùng + 1 không trùng → trả đúng 1 lỗi', async () => {
+  it('Trao hàng loạt: 1 quân nhân đã có khen thưởng + 1 chưa → chỉ báo đúng 1 lỗi trùng', async () => {
     // Cho: personnel B đã có record, A trống
     const personnelA = { id: 'qn-A', ho_ten: 'A' };
     const personnelB = { id: 'qn-B', ho_ten: 'B' };
@@ -163,7 +163,7 @@ describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
     expect(errors[0]).toBe('B: Chiến sĩ thi đua cơ sở năm 2024 đã có trên hệ thống');
   });
 
-  it('NIEN_HAN — detect existing HCCSVV cùng danh_hieu', async () => {
+  it('Trao hàng loạt: quân nhân đã có HCCSVV hạng Ba → báo trùng cùng hạng', async () => {
     const personnelA = { id: 'qn-A', ho_ten: 'A' };
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([personnelA]);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
@@ -182,8 +182,8 @@ describe('awardBulk.service - checkDuplicateAwards (cá nhân)', () => {
   });
 });
 
-describe('awardBulk.service - checkDuplicateUnitAwards', () => {
-  it('detect existing ĐVQT (CQDV) cùng năm', async () => {
+describe('Trao khen thưởng hàng loạt: kiểm tra trùng khen thưởng đơn vị', () => {
+  it('Trao hàng loạt: CQDV đã có ĐVQT năm 2024 → báo đơn vị đã có danh hiệu năm đó', async () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([
       {
         co_quan_don_vi_id: 'cqdv-1',
@@ -203,7 +203,7 @@ describe('awardBulk.service - checkDuplicateUnitAwards', () => {
     expect(errors[0]).toBe('Đơn vị đã có danh hiệu Đơn vị quyết thắng năm 2024');
   });
 
-  it('mutual exclusion: ĐVQT đã có → reject thêm ĐVTT cùng năm', async () => {
+  it('Trao hàng loạt: đơn vị đã có ĐVQT → không cho thêm ĐVTT cùng năm (hai danh hiệu loại trừ lẫn nhau)', async () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([
       {
         co_quan_don_vi_id: 'cqdv-1',
@@ -225,7 +225,7 @@ describe('awardBulk.service - checkDuplicateUnitAwards', () => {
     );
   });
 
-  it('pending proposal conflict → reject', async () => {
+  it('Trao hàng loạt: đơn vị đang có đề xuất chờ duyệt cùng danh hiệu → chặn trao', async () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([]);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       {
@@ -244,7 +244,7 @@ describe('awardBulk.service - checkDuplicateUnitAwards', () => {
     expect(errors[0]).toBe('Đơn vị đã có đề xuất Đơn vị quyết thắng cho năm 2024');
   });
 
-  it('phân biệt CQDV vs DVTT — record DVTT không trùng với request CQDV', async () => {
+  it('Trao hàng loạt: chỉ có danh hiệu của ĐVTT, trao cho CQDV id khác → không coi là trùng', async () => {
     // Cho: chỉ có record DVTT — request nhắm vào CQDV với id khác
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([
       {
@@ -266,7 +266,7 @@ describe('awardBulk.service - checkDuplicateUnitAwards', () => {
     expect(errors).toEqual([]);
   });
 
-  it('reject thêm BKBQP khi đơn vị đã có BKBQP', async () => {
+  it('Trao hàng loạt: đơn vị đã có BKBQP → từ chối thêm BKBQP lần nữa', async () => {
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce([
       {
         co_quan_don_vi_id: 'cqdv-1',
@@ -289,7 +289,7 @@ describe('awardBulk.service - checkDuplicateUnitAwards', () => {
   });
 });
 
-describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard', () => {
+describe('Trao khen thưởng hàng loạt: HCBVTQ chỉ cho nâng hạng, không cho hạ hạng', () => {
   const HCBVTQ_BULK_ADMIN_ID = 'acc-admin-bulk-hcbvtq';
 
   /**
@@ -345,7 +345,7 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
     });
   }
 
-  it('upgrade HANG_BA → HANG_NHI: ghi đè hợp lệ, không lỗi', async () => {
+  it('Trao hàng loạt HCBVTQ: nâng hạng Ba lên hạng Nhì → ghi đè hợp lệ, không lỗi', async () => {
     const qn = { id: 'qn-bulk-A', ho_ten: 'Nguyễn Văn A' };
     HCBVTQ_BULK_stagePreGuardMocks(qn, { he_so: 0.8, so_thang: 130 });
     prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([
@@ -364,7 +364,7 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
     expect(prismaMock.khenThuongHCBVTQ.upsert).toHaveBeenCalledTimes(1);
   });
 
-  it('upgrade HANG_NHI → HANG_NHAT: hợp lệ', async () => {
+  it('Trao hàng loạt HCBVTQ: nâng hạng Nhì lên hạng Nhất → hợp lệ', async () => {
     const qn = { id: 'qn-bulk-B', ho_ten: 'Trần Thị B' };
     HCBVTQ_BULK_stagePreGuardMocks(qn);
     prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([
@@ -382,7 +382,7 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
     expect(result.data.errorCount).toBe(0);
   });
 
-  it('downgrade HANG_NHI → HANG_BA: chặn, không upsert', async () => {
+  it('Trao hàng loạt HCBVTQ: hạ hạng Nhì xuống hạng Ba → chặn, không ghi DB', async () => {
     const qn = { id: 'qn-bulk-C', ho_ten: 'Phạm C' };
     HCBVTQ_BULK_stagePreGuardMocks(qn);
     prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([
@@ -404,7 +404,7 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
     expect(prismaMock.khenThuongHCBVTQ.upsert).not.toHaveBeenCalled();
   });
 
-  it('downgrade HANG_NHAT → HANG_BA: chặn', async () => {
+  it('Trao hàng loạt HCBVTQ: hạ hạng Nhất xuống hạng Ba → chặn', async () => {
     const qn = { id: 'qn-bulk-D', ho_ten: 'Lê D' };
     HCBVTQ_BULK_stagePreGuardMocks(qn);
     prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([
@@ -426,7 +426,7 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
     expect(prismaMock.khenThuongHCBVTQ.upsert).not.toHaveBeenCalled();
   });
 
-  it('cùng hạng HANG_NHI → HANG_NHI: chặn "thêm trùng"', async () => {
+  it('Trao hàng loạt HCBVTQ: trao lại đúng hạng Nhì đã có → chặn vì thêm trùng', async () => {
     const qn = { id: 'qn-bulk-E', ho_ten: 'Hoàng E' };
     HCBVTQ_BULK_stagePreGuardMocks(qn);
     prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([
@@ -448,7 +448,7 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
     expect(prismaMock.khenThuongHCBVTQ.upsert).not.toHaveBeenCalled();
   });
 
-  it('chưa có HCBVTQ + HANG_NHAT: tạo mới hợp lệ', async () => {
+  it('Trao hàng loạt HCBVTQ: quân nhân chưa có HCBVTQ, trao hạng Nhất → tạo mới hợp lệ', async () => {
     const qn = { id: 'qn-bulk-F', ho_ten: 'Vũ F' };
     HCBVTQ_BULK_stagePreGuardMocks(qn);
     prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
@@ -464,7 +464,7 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
     expect(result.data.errorCount).toBe(0);
   });
 
-  it('mix 1 upgrade hợp lệ + 1 downgrade: upgrade thành công, downgrade ghi vào errors', async () => {
+  it('Trao hàng loạt HCBVTQ: 1 quân nhân nâng hạng + 1 quân nhân hạ hạng → người nâng hạng trao được, người hạ hạng vào danh sách lỗi', async () => {
     const qnA = { id: 'qn-bulk-G1', ho_ten: 'Quân Nhân G1' };
     const qnB = { id: 'qn-bulk-G2', ho_ten: 'Quân Nhân G2' };
 
@@ -519,7 +519,7 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
     expect(prismaMock.khenThuongHCBVTQ.upsert).toHaveBeenCalledTimes(1);
   });
 
-  describe('highest qualifying rank guard', () => {
+  describe('Trao khen thưởng hàng loạt: HCBVTQ không cho trao thấp hơn hạng cao nhất quân nhân đủ điều kiện', () => {
     function HCBVTQ_BULK_HIGHEST_stage(
       personnel: { id: string; ho_ten: string },
       heSo: number,
@@ -543,7 +543,7 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
       prismaMock.khenThuongHCBVTQ.findMany.mockResolvedValueOnce([]);
     }
 
-    it('QN đủ ĐK HANG_NHAT (m_0910 = 200) + admin bulk HANG_BA → reject', async () => {
+    it('Trao hàng loạt HCBVTQ: quân nhân đủ điều kiện hạng Nhất nhưng admin trao hạng Ba → từ chối', async () => {
       const qn = { id: 'qn-highest-1', ho_ten: 'Test Highest 1' };
       HCBVTQ_BULK_HIGHEST_stage(qn, 1.0, 200);
 
@@ -556,7 +556,7 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
       expect(prismaMock.khenThuongHCBVTQ.upsert).not.toHaveBeenCalled();
     });
 
-    it('QN đủ ĐK HANG_NHAT + admin bulk HANG_NHI → reject', async () => {
+    it('Trao hàng loạt HCBVTQ: quân nhân đủ điều kiện hạng Nhất nhưng admin trao hạng Nhì → từ chối', async () => {
       const qn = { id: 'qn-highest-2', ho_ten: 'Test Highest 2' };
       HCBVTQ_BULK_HIGHEST_stage(qn, 1.0, 200);
 
@@ -569,7 +569,7 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
       expect(prismaMock.khenThuongHCBVTQ.upsert).not.toHaveBeenCalled();
     });
 
-    it('QN đủ ĐK HANG_NHAT + admin bulk HANG_NHAT → success', async () => {
+    it('Trao hàng loạt HCBVTQ: quân nhân đủ điều kiện hạng Nhất, admin trao đúng hạng Nhất → thành công', async () => {
       const qn = { id: 'qn-highest-3', ho_ten: 'Test Highest 3' };
       HCBVTQ_BULK_HIGHEST_stage(qn, 1.0, 200);
       prismaMock.khenThuongHCBVTQ.upsert.mockResolvedValueOnce({ id: 'kt-h-3' });
@@ -584,7 +584,7 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
       expect(result.data.errorCount).toBe(0);
     });
 
-    it('QN đủ ĐK HANG_BA only (m_07 = 200) + admin bulk HANG_BA → success', async () => {
+    it('Trao hàng loạt HCBVTQ: quân nhân chỉ đủ điều kiện hạng Ba, admin trao hạng Ba → thành công', async () => {
       const qn = { id: 'qn-highest-4', ho_ten: 'Test Highest 4' };
       HCBVTQ_BULK_HIGHEST_stage(qn, 0.7, 200);
       prismaMock.khenThuongHCBVTQ.upsert.mockResolvedValueOnce({ id: 'kt-h-4' });
@@ -601,8 +601,8 @@ describe('awardBulk.service - bulkCreateAwards CONG_HIEN — rank upgrade guard'
   });
 });
 
-describe('awardBulk.service - success message', () => {
-  it('DON_VI_HANG_NAM partial success chỉ đếm đơn vị thêm thành công', async () => {
+describe('Trao khen thưởng hàng loạt: thông báo kết quả', () => {
+  it('Trao hàng loạt cho đơn vị: 2 đơn vị, 1 thành công + 1 lỗi → thông báo chỉ đếm số đơn vị trao được', async () => {
     jest.spyOn(awardBulkService, 'checkDuplicateUnitAwards').mockResolvedValueOnce([]);
     jest.spyOn(unitAnnualAwardService, 'upsert')
       .mockResolvedValueOnce({ id: 'unit-award-1' } as never)

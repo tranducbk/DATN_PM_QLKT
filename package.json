@@ -24,7 +24,7 @@
     "test": "cd BE-QLKT && npx jest",
     "doc:build": "cd \"Báo cáo ĐATN\" && latexmk",
     "doc:watch": "cd \"Báo cáo ĐATN\" && latexmk -pvc",
-    "doc:clean": "cd \"Báo cáo ĐATN\" && latexmk -c"
+    "doc:clean": "bash \"Báo cáo ĐATN/clean.sh\""
   },
   "devDependencies": {
     "pm2": "^5.4.0"

@@ -32,8 +32,8 @@ afterEach(() => {
 
 const ADMIN_ID = 'acc-admin-1';
 
-describe('approveProposal — CA_NHAN_HANG_NAM (decision number requirements)', () => {
-  it('reject khi item CSTDCS thiếu so_quyet_dinh — gom errors trong message', async () => {
+describe('Phê duyệt đề xuất cá nhân hằng năm (yêu cầu số quyết định)', () => {
+  it('Phê duyệt bị chặn: đề xuất CSTDCS chưa có số quyết định và admin không nhập → báo "Thiếu số quyết định"', async () => {
     const personnel = makePersonnel({ id: 'qn-no-qd', ho_ten: 'Quân Nhân Thiếu QĐ' });
     const item = makeProposalItemCaNhan({
       personnel_id: personnel.id,
@@ -67,7 +67,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (decision number requirements)', 
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('reject mix item đủ + thiếu so_quyet_dinh — error chỉ list cái thiếu', async () => {
+  it('Phê duyệt bị chặn: đề xuất có dòng đủ và dòng thiếu số quyết định → chỉ báo dòng còn thiếu', async () => {
     const ok = makePersonnel({ id: 'qn-ok-qd', ho_ten: 'QN Đủ' });
     const missing = makePersonnel({ id: 'qn-mis-qd', ho_ten: 'QN Thiếu' });
     const itemOk = makeProposalItemCaNhan({
@@ -111,7 +111,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (decision number requirements)', 
     expect(prismaMock.danhHieuHangNam.upsert).not.toHaveBeenCalled();
   });
 
-  it('reject item BKBQP thiếu so_quyet_dinh_bkbqp', async () => {
+  it('Phê duyệt bị chặn: đề xuất BKBQP thiếu số quyết định BKBQP → báo "Thiếu số quyết định"', async () => {
     const personnel = makePersonnel({ id: 'qn-bkbqp-no-qd', ho_ten: 'QN BKBQP Thiếu' });
     const item = makeProposalItemCaNhan({
       personnel_id: personnel.id,
@@ -141,7 +141,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (decision number requirements)', 
     );
   });
 
-  it('reject item CSTDTQ thiếu so_quyet_dinh_cstdtq', async () => {
+  it('Phê duyệt bị chặn: đề xuất CSTDTQ thiếu số quyết định CSTDTQ → báo "Thiếu số quyết định"', async () => {
     // Given: item CSTDTQ chain thiếu so_quyet_dinh_cstdtq
     const personnel = makePersonnel({ id: 'qn-cstdtq-no-qd', ho_ten: 'QN CSTDTQ Thiếu' });
     const item = makeProposalItemCaNhan({
@@ -175,7 +175,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (decision number requirements)', 
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('reject item BKTTCP thiếu so_quyet_dinh_bkttcp', async () => {
+  it('Phê duyệt bị chặn: đề xuất BKTTCP thiếu số quyết định BKTTCP → báo "Thiếu số quyết định"', async () => {
     // Given: item BKTTCP chain thiếu so_quyet_dinh_bkttcp
     const personnel = makePersonnel({ id: 'qn-bkttcp-no-qd', ho_ten: 'QN BKTTCP Thiếu' });
     const item = makeProposalItemCaNhan({
@@ -209,7 +209,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (decision number requirements)', 
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('field swap — item BKBQP nhưng chỉ có so_quyet_dinh_cstdtq → reject thiếu so_quyet_dinh_bkbqp', async () => {
+  it('Phê duyệt bị chặn: đề xuất BKBQP gắn nhầm số quyết định sang CSTDTQ, thiếu số quyết định BKBQP → báo "Thiếu số quyết định"', async () => {
     // Given: item BKBQP gắn nhầm field quyết định (so_quyet_dinh_cstdtq).
     // Field bắt buộc (so_quyet_dinh_bkbqp) thiếu → phải reject.
     const personnel = makePersonnel({ id: 'qn-swap-bk', ho_ten: 'QN Swap BK' });
@@ -247,7 +247,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (decision number requirements)', 
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('field swap — item CSTDCS nhưng chỉ có so_quyet_dinh_bkbqp → reject thiếu so_quyet_dinh', async () => {
+  it('Phê duyệt bị chặn: đề xuất CSTDCS gắn nhầm số quyết định sang BKBQP, thiếu số quyết định CSTDCS → báo "Thiếu số quyết định"', async () => {
     // Given: item CSTDCS gắn nhầm field quyết định (so_quyet_dinh_bkbqp)
     // và không có flag nhan_bkbqp. Thiếu so_quyet_dinh bắt buộc cho CSTDCS.
     const personnel = makePersonnel({ id: 'qn-swap-cs', ho_ten: 'QN Swap CS' });

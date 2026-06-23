@@ -35,8 +35,8 @@ afterEach(() => {
 
 const ADMIN_ID = 'acc-state-admin';
 
-describe('Personnel state mid-flow — discharge, transfer, delete', () => {
-  it('QN xuất ngũ giữa năm proposal → approve HCQKQT vẫn tính tới ngay_xuat_ngu (không tới refDate)', async () => {
+describe('Sửa dữ liệu sau khi gửi: quân nhân thay đổi giữa lúc gửi và phê duyệt (xuất ngũ, chuyển đơn vị, xóa)', () => {
+  it('Sửa dữ liệu sau khi gửi: quân nhân xuất ngũ giữa năm đề xuất → duyệt HC QKQT tính thâm niên tới ngày xuất ngũ, từ chối vì chưa đủ 25 năm', async () => {
     // Given: proposal nam=2024 thang=12, QN xuất ngũ 2024-06-30 mới phục vụ 24 năm
     const target = makePersonnel({ id: 'qn-discharge-mid' });
     const proposal = makeProposal({
@@ -73,7 +73,7 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
     expect(prismaMock.huanChuongQuanKyQuyetThang.create).not.toHaveBeenCalled();
   });
 
-  it('QN bị xoá hoàn toàn giữa flow → approve HCQKQT throw "Không tìm thấy quân nhân"', async () => {
+  it('Sửa dữ liệu sau khi gửi: quân nhân bị xóa hẳn giữa lúc gửi và phê duyệt → duyệt HC QKQT báo "Không tìm thấy quân nhân"', async () => {
     // Given: proposal trỏ đến qn-ghost đã không còn tồn tại
     const proposal = makeProposal({
       id: 'p-deleted-qn',
@@ -98,7 +98,7 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
     );
   });
 
-  it('QN thiếu ngay_nhap_ngu (data corruption) → approve HCQKQT reject với reason exact', async () => {
+  it('Sửa dữ liệu sau khi gửi: quân nhân bị xóa mất ngày nhập ngũ giữa flow → duyệt HC QKQT từ chối với lý do thiếu ngày nhập ngũ', async () => {
     // Given: QN đã có nhưng ngay_nhap_ngu bị xóa sau khi submit
     const target = makePersonnel({ id: 'qn-no-nhapngu' });
     const proposal = makeProposal({
@@ -127,7 +127,7 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
     );
   });
 
-  it('ngay_xuat_ngu < ngay_nhap_ngu (data corruption) → service clamp 0 tháng, reject "0 năm"', async () => {
+  it('Sửa dữ liệu sau khi gửi: ngày xuất ngũ trước ngày nhập ngũ (dữ liệu hỏng) → thâm niên về 0 tháng, duyệt HC QKQT từ chối "hiện 0 tháng"', async () => {
     // Given: ngày bị lỗi (xuất ngũ trước nhập ngũ) — calculateServiceMonths clamp về 0
     // TODO: service nên reject corruption này thay vì giả bộ months=0
     const target = makePersonnel({ id: 'qn-corrupt-dates' });
@@ -163,7 +163,7 @@ describe('Personnel state mid-flow — discharge, transfer, delete', () => {
     );
   });
 
-  it('QN chuyển đơn vị giữa flow → approve vẫn dùng đơn vị cũ trong proposal record', async () => {
+  it('Sửa dữ liệu sau khi gửi: quân nhân chuyển đơn vị giữa flow → đề xuất vẫn giữ đơn vị gốc lúc gửi (không tra lại theo quân nhân)', async () => {
     // Given: proposal lưu CQDV cũ; QN row giờ trỏ CQDV mới.
     // proposal.co_quan_don_vi_id là source of truth — KHÔNG tra lại từ QN.
     // TODO: cảnh báo người duyệt khi đơn vị QN lệch với đơn vị trong proposal.

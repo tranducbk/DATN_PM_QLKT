@@ -29,12 +29,12 @@ function arrangeLogQueries(logs: unknown[] = [], total = 0) {
     .mockResolvedValueOnce(0);
 }
 
-describe('systemLogs.service - getLogs role visibility', () => {
+describe('Nhật ký hệ thống: quyền xem nhật ký theo vai trò', () => {
   beforeEach(() => {
     mockIsFeatureEnabled.mockResolvedValue(false);
   });
 
-  it('Cho role không hợp lệ → Khi getLogs → Thì trả null', async () => {
+  it('Nhật ký hệ thống: vai trò không đủ quyền (USER) → không trả dữ liệu', async () => {
     const result = await systemLogsService.getLogs({
       ...PARAMS_BASE,
       userRole: ROLES.USER,
@@ -43,7 +43,7 @@ describe('systemLogs.service - getLogs role visibility', () => {
     expect(result).toBeNull();
   });
 
-  it('Cho ADMIN không truyền resource → Khi getLogs → Thì where.resource = { not: "backup" }', async () => {
+  it('Nhật ký hệ thống: ADMIN xem nhật ký → ẩn nhật ký sao lưu (backup) và chỉ thấy nhật ký từ vai trò ngang/thấp hơn', async () => {
     arrangeLogQueries([], 0);
 
     await systemLogsService.getLogs({ ...PARAMS_BASE, userRole: ROLES.ADMIN });
@@ -55,7 +55,7 @@ describe('systemLogs.service - getLogs role visibility', () => {
     });
   });
 
-  it('Cho ADMIN truyền resource=backup → Khi getLogs → Thì trả thẳng empty (không query)', async () => {
+  it('Nhật ký hệ thống: ADMIN cố lọc đúng nhật ký sao lưu (backup) → trả rỗng ngay, không truy vấn', async () => {
     const result = await systemLogsService.getLogs({
       ...PARAMS_BASE,
       resource: 'backup',
@@ -66,7 +66,7 @@ describe('systemLogs.service - getLogs role visibility', () => {
     expect(prismaMock.systemLog.findMany).not.toHaveBeenCalled();
   });
 
-  it('Cho SUPER_ADMIN truyền resource=backup → Khi getLogs → Thì cho phép query backup', async () => {
+  it('Nhật ký hệ thống: chỉ SUPER_ADMIN mới được xem nhật ký sao lưu (backup)', async () => {
     arrangeLogQueries([], 0);
 
     await systemLogsService.getLogs({
@@ -79,7 +79,7 @@ describe('systemLogs.service - getLogs role visibility', () => {
     expect(args.where.resource).toBe('backup');
   });
 
-  it('Cho feature view-errors tắt → Khi getLogs → Thì where.action loại trừ ERROR', async () => {
+  it('Nhật ký hệ thống: tính năng xem lỗi đang tắt → ẩn các bản ghi loại ERROR', async () => {
     mockIsFeatureEnabled.mockResolvedValue(false);
     arrangeLogQueries([], 0);
 
@@ -89,7 +89,7 @@ describe('systemLogs.service - getLogs role visibility', () => {
     expect(args.where.action).toEqual({ not: 'ERROR' });
   });
 
-  it('Cho startDate và endDate → Khi getLogs → Thì where.createdAt có gte và lte', async () => {
+  it('Nhật ký hệ thống: lọc theo khoảng ngày (từ ngày - đến ngày) → chỉ lấy bản ghi trong khoảng đó', async () => {
     arrangeLogQueries([], 0);
 
     await systemLogsService.getLogs({
@@ -105,8 +105,8 @@ describe('systemLogs.service - getLogs role visibility', () => {
   });
 });
 
-describe('systemLogs.service - getResources', () => {
-  it('Cho role ADMIN → Khi getResources → Thì filter ra resource backup', async () => {
+describe('Nhật ký hệ thống: danh sách loại tài nguyên để lọc', () => {
+  it('Nhật ký hệ thống: ADMIN lấy danh sách loại tài nguyên → loại bỏ tài nguyên sao lưu (backup)', async () => {
     prismaMock.systemLog.findMany.mockResolvedValueOnce([
       { resource: 'personnel' },
       { resource: 'proposal' },
@@ -119,7 +119,7 @@ describe('systemLogs.service - getResources', () => {
     expect(result).toEqual(['personnel', 'proposal']);
   });
 
-  it('Cho role SUPER_ADMIN → Khi getResources → Thì where rỗng (xem tất cả)', async () => {
+  it('Nhật ký hệ thống: SUPER_ADMIN lấy danh sách loại tài nguyên → thấy tất cả, kể cả sao lưu (backup)', async () => {
     prismaMock.systemLog.findMany.mockResolvedValueOnce([
       { resource: 'backup' },
       { resource: 'personnel' },
@@ -133,8 +133,8 @@ describe('systemLogs.service - getResources', () => {
   });
 });
 
-describe('systemLogs.service - deleteLogs / deleteAllLogs', () => {
-  it('Cho danh sách id → Khi deleteLogs → Thì gọi deleteMany với filter id in', async () => {
+describe('Nhật ký hệ thống: xóa nhật ký', () => {
+  it('Nhật ký hệ thống: xóa theo danh sách được chọn → chỉ xóa đúng các bản ghi đó', async () => {
     prismaMock.systemLog.deleteMany.mockResolvedValueOnce({ count: 3 });
 
     const result = await systemLogsService.deleteLogs(['l1', 'l2', 'l3']);
@@ -145,7 +145,7 @@ describe('systemLogs.service - deleteLogs / deleteAllLogs', () => {
     expect(result).toBe(3);
   });
 
-  it('Cho deleteAllLogs → Khi gọi → Thì xoá hết và viết audit log mới với action DELETE', async () => {
+  it('Nhật ký hệ thống: xóa toàn bộ nhật ký → xóa hết rồi ghi lại một bản ghi xóa (DELETE) để truy vết', async () => {
     prismaMock.systemLog.count.mockResolvedValueOnce(42);
     prismaMock.systemLog.deleteMany.mockResolvedValueOnce({ count: 42 });
     prismaMock.systemLog.create.mockResolvedValueOnce({ id: 'audit-1' });

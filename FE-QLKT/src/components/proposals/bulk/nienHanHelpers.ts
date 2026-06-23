@@ -2,6 +2,7 @@ import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { isMissingGender } from '@/constants/gender.constants';
 import {
   AWARD_TAB_LABELS,
+  DANH_HIEU_HCCSVV,
   HCCSVV_YEARS_HANG_BA,
   HCCSVV_YEARS_HANG_NHI,
   HCCSVV_YEARS_HANG_NHAT,
@@ -9,7 +10,7 @@ import {
 import { calculateTotalMonths } from './serviceDuration';
 import type { Step2Personnel as Personnel } from './types';
 
-export type HCCSVVRank = 'HCCSVV_HANG_BA' | 'HCCSVV_HANG_NHI' | 'HCCSVV_HANG_NHAT';
+export type HCCSVVRank = (typeof DANH_HIEU_HCCSVV)[keyof typeof DANH_HIEU_HCCSVV];
 
 export interface NienHanEligibility {
   eligible: boolean;
@@ -31,9 +32,9 @@ export interface HCCSVVTimeBreakdown {
 }
 
 export const HCCSVV_RANK_LABEL: Record<HCCSVVRank, string> = {
-  HCCSVV_HANG_BA: 'hạng Ba',
-  HCCSVV_HANG_NHI: 'hạng Nhì',
-  HCCSVV_HANG_NHAT: 'hạng Nhất',
+  [DANH_HIEU_HCCSVV.HANG_BA]: 'hạng Ba',
+  [DANH_HIEU_HCCSVV.HANG_NHI]: 'hạng Nhì',
+  [DANH_HIEU_HCCSVV.HANG_NHAT]: 'hạng Nhất',
 };
 
 export function formatMonthsRemaining(years: number, months: number): string {
@@ -127,23 +128,23 @@ export function evaluateNienHanProposalEligibility(
   let lowerRankName = '';
 
   if (!hasHangBa) {
-    targetRank = 'HCCSVV_HANG_BA';
+    targetRank = DANH_HIEU_HCCSVV.HANG_BA;
     targetTimeOk = breakdown.hangBa.eligible;
     yearsThreshold = HCCSVV_YEARS_HANG_BA;
     timeRemaining = breakdown.hangBa;
   } else if (!hasHangNhi) {
-    targetRank = 'HCCSVV_HANG_NHI';
+    targetRank = DANH_HIEU_HCCSVV.HANG_NHI;
     targetTimeOk = breakdown.hangNhi.eligible;
     yearsThreshold = HCCSVV_YEARS_HANG_NHI;
     timeRemaining = breakdown.hangNhi;
-    lowerRankYear = namNhan?.HCCSVV_HANG_BA?.nam ?? null;
+    lowerRankYear = namNhan?.[DANH_HIEU_HCCSVV.HANG_BA]?.nam ?? null;
     lowerRankName = 'hạng Ba';
   } else {
-    targetRank = 'HCCSVV_HANG_NHAT';
+    targetRank = DANH_HIEU_HCCSVV.HANG_NHAT;
     targetTimeOk = breakdown.hangNhat.eligible;
     yearsThreshold = HCCSVV_YEARS_HANG_NHAT;
     timeRemaining = breakdown.hangNhat;
-    lowerRankYear = namNhan?.HCCSVV_HANG_NHI?.nam ?? null;
+    lowerRankYear = namNhan?.[DANH_HIEU_HCCSVV.HANG_NHI]?.nam ?? null;
     lowerRankName = 'hạng Nhì';
   }
 

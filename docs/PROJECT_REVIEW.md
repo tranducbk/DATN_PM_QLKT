@@ -455,3 +455,27 @@ Tách bạch system management (SA) khỏi business operations (ADMIN); SA có r
 - `bypassEligibility` chỉ skip `validatePersonnelConditions` (service-years check). Handler-level checks (rank order HCCSVV, downgrade HCBVTQ) vẫn chạy → SA vẫn không thể tạo dữ liệu trái thứ tự hạng. Nếu cần bypass hoàn toàn cho data import lịch sử, mở rộng để handlers respect `ctx.bypassEligibility`.
 - DELETE personnel giữ `requireAdmin` (SA+ADMIN) là exception có chủ ý — phục vụ workflow xoá account cascade. Document ở route JSDoc.
 
+---
+
+## 13. Full-project bug/sync audit — 2026-06-23
+
+Audit toàn dự án (5 mảng song song: eligibility chuỗi, slug/audit/notification, hợp đồng API FE↔BE, correctness BE, correctness FE). Kết luận: engine eligibility (recalc vs API), hợp đồng API FE↔BE, audit/notification map đều **đã đồng bộ**; không có bug HIGH. Các mục đã fix:
+
+| # | Việc | Trạng thái | Evidence |
+|---|---|---|---|
+| A1 | Format ngày thủ công ở `manager/proposals/page.tsx` (HH:mm DD/MM/YYYY, lệch toàn app) | DONE | Thay bằng `formatDateTime(date)` — cùng định dạng mọi nơi. Vi phạm AP-FE-2 đã hết. |
+| A2 | Leak `error.message` Prisma ra user ở `account.service.ts` (decrement so_luong catch) | DONE | `console.error('[deleteAccount] ...')` + message generic + `AppError(..., 500)`, mirror `personnel.service.ts:363`. Hết leak (AP-9). |
+| A3 | Dead code `localStorage.getItem('unit_id')` + state bị vứt ở `manager/personnel/[id]/edit/page.tsx` | DONE | Xoá state `setManagerUnitId` + đọc key không tồn tại (đúng key là `don_vi_id`). |
+| A4 | Hardcode mã HCCSVV (`'HCCSVV_HANG_*'`) ở `nienHanHelpers.ts` + `Step3SetTitlesNienHan.tsx` | DONE | Dùng `DANH_HIEU_HCCSVV.*` (kể cả type union + Select options). |
+| A5 | Hardcode `'DTKH'/'SKKH'` ở 4 file (ProposalDetailModal, manager proposals, awards bulk create, user profile) | DONE | Dùng `THANH_TICH_KHOA_HOC.*`. Label tiếng Việt giữ nguyên (không có constant mã). |
+| A6 | Dead stub `checkUnitAwardEligibility` trong `unitAnnualAward/crud.ts:defaultDeps` (không bao giờ gọi qua deps) | DONE | Xoá khỏi `defaultDeps` + interface `UnitAnnualAwardDeps`. |
+| A7 | Comment cũ `hccsvv` ở `configs/multer.ts` | DONE | Đổi thành `tenureMedal`. |
+| A8 | military-flag: slug số ít `military-flag` lệch path/7-loại-còn-lại (số nhiều) | DONE | `AWARD_SLUGS.MILITARY_FLAG = 'military-flags'` (slug=path=plural). Migration `SystemLog`/`ThongBao` đã chạy `--apply` (0 dòng — DB chưa có audit log slug cũ); script one-time đã xoá sau khi chạy. |
+
+**Để lại có chủ ý (không phải bug):**
+- Single-add (`annualReward/crud.ts`) + unit `upsert` bỏ qua chain eligibility, bulk thì enforce — đúng thiết kế "đột xuất Admin thêm trực tiếp".
+- `deleteProposal` chặn xoá đề xuất đã duyệt/từ chối (ledger integrity); message đã nêu "có thể đã được phê duyệt hoặc từ chối" nên không gây hiểu nhầm nghiêm trọng.
+- `GET /api/awards` trả `success` thay `paginated` — không có FE consumer.
+
+**Verify state:** BE typecheck clean · FE typecheck clean · FE lint clean · BE jest 1017/1017 pass (89 suites).
+

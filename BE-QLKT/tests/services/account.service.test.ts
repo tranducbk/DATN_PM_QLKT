@@ -23,8 +23,8 @@ afterAll(() => {
   process.env.DEFAULT_PASSWORD = ORIGINAL_DEFAULT_PASSWORD;
 });
 
-describe('account.service - getAccounts', () => {
-  it('Cho không có filter, Khi getAccounts, Thì trả về danh sách kèm pagination', async () => {
+describe('Tài khoản: lấy danh sách tài khoản', () => {
+  it('Tài khoản: không có bộ lọc → trả danh sách kèm thông tin phân trang', async () => {
     prismaMock.taiKhoan.findMany.mockResolvedValueOnce([
       {
         id: 'acc-1',
@@ -50,7 +50,7 @@ describe('account.service - getAccounts', () => {
     expect(result.pagination).toMatchObject({ total: 1, page: 1, limit: 10, totalPages: 1 });
   });
 
-  it('Cho role filter dạng "ADMIN,MANAGER", Khi getAccounts, Thì where dùng role IN list', async () => {
+  it('Tài khoản: lọc theo nhiều vai trò "ADMIN,MANAGER" → chỉ lấy tài khoản thuộc danh sách vai trò đó', async () => {
     prismaMock.taiKhoan.findMany.mockResolvedValueOnce([]);
     prismaMock.taiKhoan.count.mockResolvedValueOnce(0);
 
@@ -62,7 +62,7 @@ describe('account.service - getAccounts', () => {
     expect(roleClause.role).toEqual({ in: [ROLES.ADMIN, ROLES.MANAGER] });
   });
 
-  it('Cho excludeSuperAdmin=true, Khi getAccounts, Thì where loại role SUPER_ADMIN', async () => {
+  it('Tài khoản: yêu cầu ẩn SUPER_ADMIN → danh sách loại bỏ tài khoản SUPER_ADMIN', async () => {
     prismaMock.taiKhoan.findMany.mockResolvedValueOnce([]);
     prismaMock.taiKhoan.count.mockResolvedValueOnce(0);
 
@@ -77,7 +77,7 @@ describe('account.service - getAccounts', () => {
     expect(exclude.role).toEqual({ not: ROLES.SUPER_ADMIN });
   });
 
-  it('Cho excludeSuperAdmin=false (SA call), Khi getAccounts, Thì where KHÔNG loại SUPER_ADMIN', async () => {
+  it('Tài khoản: SUPER_ADMIN xem danh sách → không loại bỏ tài khoản SUPER_ADMIN', async () => {
     prismaMock.taiKhoan.findMany.mockResolvedValueOnce([]);
     prismaMock.taiKhoan.count.mockResolvedValueOnce(0);
 
@@ -93,8 +93,8 @@ describe('account.service - getAccounts', () => {
   });
 });
 
-describe('account.service - createAccount', () => {
-  it('Cho MANAGER với chức vụ is_manager=true, Khi createAccount, Thì tạo thành công', async () => {
+describe('Tài khoản: tạo tài khoản mới', () => {
+  it('Tài khoản: tạo MANAGER gắn chức vụ Chỉ huy → tạo thành công và tăng quân số đơn vị', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(null);
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({ id: 'cqdv-1' });
     prismaMock.chucVu.findUnique.mockResolvedValueOnce({ he_so_chuc_vu: 5, is_manager: true });
@@ -130,7 +130,7 @@ describe('account.service - createAccount', () => {
     });
   });
 
-  it('Cho MANAGER với chức vụ is_manager=false, Khi createAccount, Thì throw ValidationError yêu cầu Chỉ huy', async () => {
+  it('Tài khoản: tạo MANAGER nhưng chức vụ không phải Chỉ huy → báo lỗi yêu cầu chức vụ Chỉ huy', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(null);
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({ id: 'cqdv-1' });
     prismaMock.chucVu.findUnique.mockResolvedValueOnce({ he_so_chuc_vu: 3, is_manager: false });
@@ -149,7 +149,7 @@ describe('account.service - createAccount', () => {
     expect(prismaMock.taiKhoan.create).not.toHaveBeenCalled();
   });
 
-  it('Cho username đã tồn tại, Khi createAccount, Thì throw ValidationError', async () => {
+  it('Tài khoản: tên đăng nhập đã tồn tại → báo lỗi trùng tên đăng nhập', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({ id: 'acc-existing' });
 
     await expectError(
@@ -163,7 +163,7 @@ describe('account.service - createAccount', () => {
     );
   });
 
-  it('Cho personnel_id không tồn tại, Khi createAccount, Thì throw NotFoundError', async () => {
+  it('Tài khoản: gắn quân nhân không tồn tại → báo không tìm thấy quân nhân', async () => {
     prismaMock.taiKhoan.findUnique
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce(null);
@@ -180,7 +180,7 @@ describe('account.service - createAccount', () => {
     );
   });
 
-  it('Cho password trống và DEFAULT_PASSWORD chưa cấu hình, Khi createAccount, Thì throw ValidationError', async () => {
+  it('Tài khoản: bỏ trống mật khẩu khi chưa cấu hình mật khẩu mặc định → báo lỗi chưa cấu hình mật khẩu mặc định', async () => {
     delete process.env.DEFAULT_PASSWORD;
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(null);
 
@@ -195,7 +195,7 @@ describe('account.service - createAccount', () => {
     );
   });
 
-  it('Cho password không đủ mạnh (thiếu chữ hoa), Khi createAccount, Thì throw ValidationError', async () => {
+  it('Tài khoản: mật khẩu không đủ mạnh (thiếu chữ hoa) → báo lỗi yêu cầu chữ hoa', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -211,8 +211,8 @@ describe('account.service - createAccount', () => {
 
 });
 
-describe('account.service - updateAccount', () => {
-  it('Cho update role, Khi updateAccount, Thì gọi prisma.update với role mới', async () => {
+describe('Tài khoản: cập nhật tài khoản', () => {
+  it('Tài khoản: đổi vai trò → lưu vai trò mới', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-1',
       role: ROLES.USER,
@@ -234,7 +234,7 @@ describe('account.service - updateAccount', () => {
     expect(args.data.role).toBe(ROLES.MANAGER);
   });
 
-  it('Cho tài khoản gắn quân nhân đổi sang ADMIN, Khi updateAccount, Thì throw ValidationError (chặn bắc cầu)', async () => {
+  it('Tài khoản: tài khoản đang gắn quân nhân nâng lên ADMIN → chặn (không cho nhảy bậc vai trò)', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-1',
       role: ROLES.MANAGER,
@@ -249,7 +249,7 @@ describe('account.service - updateAccount', () => {
     );
   });
 
-  it('Cho tài khoản quản trị đổi sang MANAGER, Khi updateAccount, Thì throw ValidationError (chặn bắc cầu)', async () => {
+  it('Tài khoản: tài khoản ADMIN hạ xuống MANAGER → chặn (không cho nhảy bậc vai trò)', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-1',
       role: ROLES.ADMIN,
@@ -264,7 +264,7 @@ describe('account.service - updateAccount', () => {
     );
   });
 
-  it('Cho update password mới, Khi updateAccount, Thì password được hash và lưu', async () => {
+  it('Tài khoản: đổi mật khẩu mới → mật khẩu được mã hóa rồi mới lưu', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({ id: 'acc-1' });
     prismaMock.taiKhoan.update.mockResolvedValueOnce({
       id: 'acc-1',
@@ -281,7 +281,7 @@ describe('account.service - updateAccount', () => {
     expect(args.data.password_hash).not.toBe('NewStrong1');
   });
 
-  it('Cho account không tồn tại, Khi updateAccount, Thì throw NotFoundError', async () => {
+  it('Tài khoản: cập nhật tài khoản không tồn tại → báo không tìm thấy tài khoản', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -291,7 +291,7 @@ describe('account.service - updateAccount', () => {
     expect(prismaMock.taiKhoan.update).not.toHaveBeenCalled();
   });
 
-  it('Cho USER→MANAGER không kèm Cơ quan đơn vị, Khi updateAccount, Thì throw ValidationError', async () => {
+  it('Tài khoản: nâng USER lên MANAGER mà không chọn Cơ quan đơn vị → báo thiếu Cơ quan đơn vị', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-1',
       role: ROLES.USER,
@@ -312,7 +312,7 @@ describe('account.service - updateAccount', () => {
     expect(prismaMock.taiKhoan.update).not.toHaveBeenCalled();
   });
 
-  it('Cho nâng MANAGER nhưng chọn Đơn vị trực thuộc, Khi updateAccount, Thì throw ValidationError', async () => {
+  it('Tài khoản: nâng lên MANAGER nhưng lại chọn Đơn vị trực thuộc → báo lỗi không được gắn Đơn vị trực thuộc', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-1',
       role: ROLES.USER,
@@ -338,7 +338,7 @@ describe('account.service - updateAccount', () => {
     expect(prismaMock.taiKhoan.update).not.toHaveBeenCalled();
   });
 
-  it('Cho hạ MANAGER→USER không kèm đủ đơn vị, Khi updateAccount, Thì throw ValidationError', async () => {
+  it('Tài khoản: hạ MANAGER xuống USER mà không chọn đủ đơn vị → báo lỗi thiếu thông tin đơn vị', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-1',
       role: ROLES.MANAGER,
@@ -363,7 +363,7 @@ describe('account.service - updateAccount', () => {
     expect(prismaMock.taiKhoan.update).not.toHaveBeenCalled();
   });
 
-  it('Cho reassign đơn vị nhưng thiếu chức vụ, Khi updateAccount, Thì throw ValidationError', async () => {
+  it('Tài khoản: đổi đơn vị nhưng không chọn chức vụ → báo lỗi thiếu chức vụ', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-1',
       role: ROLES.USER,
@@ -388,7 +388,7 @@ describe('account.service - updateAccount', () => {
     expect(prismaMock.taiKhoan.update).not.toHaveBeenCalled();
   });
 
-  it('Cho USER→MANAGER hợp lệ, Khi updateAccount, Thì xoá Đơn vị trực thuộc và chỉnh so_luong', async () => {
+  it('Tài khoản: nâng USER lên MANAGER hợp lệ → bỏ Đơn vị trực thuộc, giảm quân số đơn vị cũ và tăng quân số Cơ quan đơn vị mới', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-1',
       role: ROLES.USER,
@@ -441,8 +441,8 @@ describe('account.service - updateAccount', () => {
   });
 });
 
-describe('account.service - deleteAccount', () => {
-  it('Cho account cấp thấp hơn, Khi deleteAccount, Thì xoá thành công', async () => {
+describe('Tài khoản: xóa tài khoản', () => {
+  it('Tài khoản: xóa tài khoản cấp thấp hơn → xóa thành công', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-1',
       role: ROLES.ADMIN,
@@ -456,7 +456,7 @@ describe('account.service - deleteAccount', () => {
     expect(prismaMock.taiKhoan.delete).toHaveBeenCalledWith({ where: { id: 'acc-1' } });
   });
 
-  it('Cho account ngang quyền (ADMIN xóa ADMIN), Khi deleteAccount, Thì throw ForbiddenError', async () => {
+  it('Tài khoản: ADMIN xóa tài khoản ngang quyền (ADMIN) → từ chối, chỉ được xóa cấp thấp hơn', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-admin',
       role: ROLES.ADMIN,
@@ -471,7 +471,7 @@ describe('account.service - deleteAccount', () => {
     expect(prismaMock.taiKhoan.delete).not.toHaveBeenCalled();
   });
 
-  it('Cho account SUPER_ADMIN (kể cả SUPER_ADMIN thực hiện), Khi deleteAccount, Thì throw ForbiddenError', async () => {
+  it('Tài khoản: xóa tài khoản SUPER_ADMIN (kể cả do SUPER_ADMIN thực hiện) → từ chối', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-super',
       role: ROLES.SUPER_ADMIN,
@@ -485,7 +485,7 @@ describe('account.service - deleteAccount', () => {
     );
   });
 
-  it('Cho personnel còn đề xuất pending và force=false, Khi deleteAccount, Thì throw ValidationError', async () => {
+  it('Tài khoản: quân nhân còn đề xuất chờ duyệt và không ép buộc xóa → chặn xóa', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-1',
       role: ROLES.USER,

@@ -68,8 +68,8 @@ function arrangeProposalCreate(id: string) {
   });
 }
 
-describe('Type confusion — numeric vs string nam/thang', () => {
-  it('nam = "2024" (string) → service parseInt, lưu number 2024', async () => {
+describe('Ép kiểu dữ liệu sai: năm/tháng gửi dạng chuỗi thay vì số', () => {
+  it('Ép kiểu dữ liệu sai: năm gửi dạng chuỗi "2024" → hệ thống chuyển về số 2024 rồi lưu', async () => {
     // Pin: submitProposal gọi parseInt(String(nam), 10) trước khi lưu
     arrangeManager();
     const target = makePersonnel({ id: 'qn-str-nam' });
@@ -90,7 +90,7 @@ describe('Type confusion — numeric vs string nam/thang', () => {
     expect(prismaMock.bangDeXuat.create.mock.calls[0][0].data.nam).toBe(2024);
   });
 
-  it('thang = "06" (zero-padded string) cho HC_QKQT → service parseInt, lưu 6', async () => {
+  it('Ép kiểu dữ liệu sai: HC QKQT với tháng gửi dạng chuỗi có số 0 đứng đầu "06" → hệ thống chuyển về số 6 rồi lưu', async () => {
     arrangeManager();
     const target = makePersonnel({
       id: 'qn-zero-thang',
@@ -124,7 +124,7 @@ describe('Type confusion — numeric vs string nam/thang', () => {
     expect(prismaMock.bangDeXuat.create.mock.calls[0][0].data.thang).toBe(6);
   });
 
-  it('thang = "abc" (parseInt → NaN) cho HC_QKQT → service KHÔNG bắt NaN ở guard, fail muộn ở step khác', async () => {
+  it('Ép kiểu dữ liệu sai: HC QKQT với tháng là chữ "abc" → không bị chặn ở bước kiểm tra tháng, lỗi xuất hiện muộn ở bước xét thâm niên', async () => {
     // Pin: `parsedMonth = parseInt('abc', 10)` ra NaN. Guard
     // `parsedMonth == null || parsedMonth < 1 || parsedMonth > 12` đánh giá false với NaN
     // (mọi so sánh NaN đều false), nên nhánh SUBMIT_MISSING_MONTH bị skip.
@@ -156,8 +156,8 @@ describe('Type confusion — numeric vs string nam/thang', () => {
   });
 });
 
-describe('Type confusion — danh_hieu casing & duplicate detection', () => {
-  it('danh_hieu = "cstdcs" (lowercase) trong CA_NHAN_HANG_NAM → reject INVALID_DANH_HIEU', async () => {
+describe('Ép kiểu dữ liệu sai: chữ hoa/thường của mã danh hiệu và phát hiện trùng', () => {
+  it('Ép kiểu dữ liệu sai: đề xuất cá nhân hằng năm với mã danh hiệu viết thường "cstdcs" → từ chối "danh hiệu không hợp lệ"', async () => {
     // Pin: service so sánh exact code "CSTDCS" — chữ thường bị reject.
     // Excel import dùng resolveDanhHieuCode case-insensitive, nhưng proposal
     // submit KHÔNG normalize — route phải pre-validate.
@@ -180,7 +180,7 @@ describe('Type confusion — danh_hieu casing & duplicate detection', () => {
     );
   });
 
-  it('Duplicate check approve dùng exact code matching — "CSTDCS" vs "CSTDCS" (cùng case) → bắt', async () => {
+  it('Phê duyệt bị chặn: duyệt CSTDCS khi quân nhân đã có CSTDCS cùng năm trong hồ sơ → phát hiện trùng và từ chối', async () => {
     // Pin: input đúng case thì duplicate detection trên DanhHieuHangNam lưu sẵn hoạt động.
     const target = makePersonnel({ id: 'qn-dup-exact' });
     const existing = makeAnnualRecord({
@@ -234,8 +234,8 @@ describe('Type confusion — danh_hieu casing & duplicate detection', () => {
   });
 });
 
-describe('Type confusion — whitespace & empty string', () => {
-  it('personnel_id = " qn-1 " (có space) → service KHÔNG trim, treat as ID khác', async () => {
+describe('Ép kiểu dữ liệu sai: khoảng trắng thừa và chuỗi rỗng', () => {
+  it('Ép kiểu dữ liệu sai: mã quân nhân có khoảng trắng thừa " qn-1 " → hệ thống không cắt khoảng trắng, coi là mã khác nên không tìm thấy', async () => {
     // Pin: submitProposal pass personnel_id nguyên xi vào `findMany({ id: { in: [...] }})`.
     // Mock không trả row nào cho giá trị đã trim vì ta chỉ set up qn-1.
     // TODO: trim personnel_id tại entry service để tránh lookup "không tìm thấy" thầm lặng.
@@ -261,7 +261,7 @@ describe('Type confusion — whitespace & empty string', () => {
     expect(stored[0].ho_ten).toBe('');
   });
 
-  it('personnel_id rỗng "" → service skip lookup nhưng vẫn lưu vào data_danh_hieu', async () => {
+  it('Ép kiểu dữ liệu sai: mã quân nhân rỗng "" → hệ thống bỏ qua việc tra cứu nhưng vẫn lưu dòng đề xuất với họ tên rỗng', async () => {
     // Pin: personnel_id rỗng bị filter khỏi findMany nhưng item proposal vẫn được lưu
     arrangeManager();
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);

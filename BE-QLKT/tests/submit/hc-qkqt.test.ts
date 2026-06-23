@@ -53,8 +53,8 @@ function callSubmit(items: NienHanItem[], thang: number | null = 6, nam = 2024) 
   );
 }
 
-describe('proposal.submit - HC_QKQT', () => {
-  it('gửi thành công khi quân nhân đủ 25 năm phục vụ (CQDV)', async () => {
+describe('Gửi đề xuất Huân chương Quân kỳ quyết thắng (HC QKQT)', () => {
+  it('Gửi đề xuất: quân nhân đủ 25 năm phục vụ → tạo đề xuất HC QKQT', async () => {
     // Cho trước: manager + 1 quân nhân 30 năm phục vụ (>= 25)
     arrangeManager('CQDV');
     const target = makePersonnel({
@@ -84,7 +84,7 @@ describe('proposal.submit - HC_QKQT', () => {
     expect(data.thang).toBe(6);
   });
 
-  it('reject khi chưa đủ 25 năm phục vụ', async () => {
+  it('Gửi đề xuất bị chặn: quân nhân chưa đủ 25 năm phục vụ → chưa đủ điều kiện HC QKQT', async () => {
     arrangeManager('CQDV');
     const target = makePersonnel({
       id: 'qn-short',
@@ -102,7 +102,7 @@ describe('proposal.submit - HC_QKQT', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('reject khi thiếu ngay_nhap_ngu', async () => {
+  it('Gửi đề xuất bị chặn: quân nhân thiếu ngày nhập ngũ → không tính được thâm niên, chưa đủ điều kiện HC QKQT', async () => {
     arrangeManager('CQDV');
     const target = makePersonnel({ id: 'qn-no-nn', ho_ten: 'Lê D', ngay_nhap_ngu: null });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -116,7 +116,7 @@ describe('proposal.submit - HC_QKQT', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('reject khi danh_hieu sai (vd HCCSVV_HANG_BA)', async () => {
+  it('Gửi đề xuất bị chặn: chọn nhầm danh hiệu (HCCSVV hạng Ba thay vì HC QKQT) → báo danh hiệu không hợp lệ', async () => {
     arrangeManager('CQDV');
     const target = makePersonnel({
       id: 'qn-wrong',
@@ -132,7 +132,7 @@ describe('proposal.submit - HC_QKQT', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('reject khi thiếu tháng', async () => {
+  it('Gửi đề xuất bị chặn: chưa nhập tháng đề xuất → báo thiếu tháng', async () => {
     arrangeManager('CQDV');
     const target = makePersonnel({
       id: 'qn-no-thang',

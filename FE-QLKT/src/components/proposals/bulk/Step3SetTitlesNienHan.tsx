@@ -10,6 +10,7 @@ import { ServiceHistoryModal } from './ServiceHistoryModal';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import {
+  DANH_HIEU_HCCSVV,
   HCCSVV_YEARS_HANG_BA,
   HCCSVV_YEARS_HANG_NHI,
   HCCSVV_YEARS_HANG_NHAT,
@@ -220,23 +221,23 @@ export function Step3SetTitlesNienHan({
     const namNhan = serviceProfile?.hccsvv_nam_nhan as
       | Record<string, { nam?: number | null }>
       | undefined;
-    const namNhanBa = namNhan?.HCCSVV_HANG_BA?.nam ?? null;
-    const namNhanNhi = namNhan?.HCCSVV_HANG_NHI?.nam ?? null;
+    const namNhanBa = namNhan?.[DANH_HIEU_HCCSVV.HANG_BA]?.nam ?? null;
+    const namNhanNhi = namNhan?.[DANH_HIEU_HCCSVV.HANG_NHI]?.nam ?? null;
 
     if (
       serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN &&
       (namNhanNhi == null || nam > namNhanNhi)
     ) {
-      return 'HCCSVV_HANG_NHAT';
+      return DANH_HIEU_HCCSVV.HANG_NHAT;
     }
     if (
       serviceProfile?.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN &&
       (namNhanBa == null || nam > namNhanBa)
     ) {
-      return 'HCCSVV_HANG_NHI';
+      return DANH_HIEU_HCCSVV.HANG_NHI;
     }
     if (serviceProfile?.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN) {
-      return 'HCCSVV_HANG_BA';
+      return DANH_HIEU_HCCSVV.HANG_BA;
     }
     return undefined;
   };
@@ -393,9 +394,9 @@ export function Step3SetTitlesNienHan({
           const isNotEligible =
             data.danh_hieu &&
             eligibility &&
-            ((data.danh_hieu === 'HCCSVV_HANG_BA' && !eligibility.hangBa) ||
-              (data.danh_hieu === 'HCCSVV_HANG_NHI' && !eligibility.hangNhi) ||
-              (data.danh_hieu === 'HCCSVV_HANG_NHAT' && !eligibility.hangNhat));
+            ((data.danh_hieu === DANH_HIEU_HCCSVV.HANG_BA && !eligibility.hangBa) ||
+              (data.danh_hieu === DANH_HIEU_HCCSVV.HANG_NHI && !eligibility.hangNhi) ||
+              (data.danh_hieu === DANH_HIEU_HCCSVV.HANG_NHAT && !eligibility.hangNhat));
 
           return (
             <div>
@@ -407,9 +408,9 @@ export function Step3SetTitlesNienHan({
                 size="middle"
                 status={isNotEligible ? 'warning' : undefined}
                 options={[
-                  { value: 'HCCSVV_HANG_BA', label: 'hạng Ba' },
-                  { value: 'HCCSVV_HANG_NHI', label: 'hạng Nhì' },
-                  { value: 'HCCSVV_HANG_NHAT', label: 'hạng Nhất' },
+                  { value: DANH_HIEU_HCCSVV.HANG_BA, label: 'hạng Ba' },
+                  { value: DANH_HIEU_HCCSVV.HANG_NHI, label: 'hạng Nhì' },
+                  { value: DANH_HIEU_HCCSVV.HANG_NHAT, label: 'hạng Nhất' },
                 ]}
               />
               {isNotEligible && (

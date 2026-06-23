@@ -33,8 +33,8 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-describe('Proposal race conditions — admin mutates underlying data while pending', () => {
-  it('Admin xóa CSTDCS giữa lúc manager submit BKBQP → reject với reason cụ thể', async () => {
+describe('Tranh chấp đồng thời: Admin sửa/xóa dữ liệu nền trong khi đề xuất đang chờ duyệt', () => {
+  it('Tranh chấp đồng thời: Admin xóa một CSTDCS đúng lúc Manager gửi đề xuất BKBQP → từ chối vì chỉ còn 1 năm CSTDCS', async () => {
     // Race: manager fetch profile thấy 2 năm CSTDCS (đủ BKBQP),
     // admin xóa 1 CSTDCS, manager bấm submit. Submit tính lại eligibility.
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-race-delete' });
@@ -79,7 +79,7 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('Admin xóa CSTDCS giữa lúc proposal BKBQP pending → approve fail với recheck', async () => {
+  it('Tranh chấp đồng thời: Admin xóa một CSTDCS trong khi đề xuất BKBQP đang chờ → phê duyệt thất bại do kiểm tra lại điều kiện', async () => {
     // Race: proposal PENDING có BKBQP item, admin xóa CSTDCS,
     // rồi admin approve. approveProposal tính lại eligibility theo state mới.
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-race-approve-delete' });
@@ -117,8 +117,8 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  describe('Group 1: Admin xóa reward giữa pending → submit/approve fail', () => {
-    it('DON_VI_HANG_NAM: admin xóa ĐVQT năm trước giữa lúc submit BKBQP đơn vị → reject', async () => {
+  describe('Tranh chấp đồng thời: Admin xóa khen thưởng nền trong khi đề xuất chờ → gửi/duyệt thất bại', () => {
+    it('Tranh chấp đồng thời: Admin xóa ĐVQT năm trước đúng lúc Manager gửi BKBQP đơn vị → từ chối vì chưa đủ 2 năm ĐVQT liên tục', async () => {
       // Given: manager submit BKBQP đơn vị nhưng admin vừa xóa ĐVQT 2y trước
       const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-g1-bkbqp-submit' });
       const managerQn = makePersonnel({ id: 'qn-mgr-g1-bkbqp', unit, ho_ten: 'Manager G1' });
@@ -166,7 +166,7 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
       expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
     });
 
-    it('DON_VI_HANG_NAM: admin xóa ĐVQT giữa lúc proposal BKBQP đơn vị pending → approve fail', async () => {
+    it('Tranh chấp đồng thời: Admin xóa lịch sử ĐVQT trong khi đề xuất BKBQP đơn vị đang chờ → phê duyệt thất bại do kiểm tra lại điều kiện', async () => {
       // Given: BKBQP đơn vị pending, admin xóa ĐVQT history → approve recheck fails
       const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-g1-bkbqp-approve' });
       const item = makeProposalItemDonVi({
@@ -207,7 +207,7 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
       expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
     });
 
-    it('CA_NHAN_HANG_NAM CSTDTQ: admin xóa BKBQP giữa pending → approve fail', async () => {
+    it('Tranh chấp đồng thời: Admin xóa một BKBQP cần thiết trong khi đề xuất CSTDTQ đang chờ → phê duyệt thất bại do kiểm tra lại điều kiện', async () => {
       // Given: CSTDTQ pending nhưng admin xóa 1 BKBQP cần thiết → recheck fail
       const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-g1-cstdtq' });
       const target = makePersonnel({ id: 'qn-g1-cstdtq', ho_ten: 'QN CSTDTQ Race', unit });
@@ -242,7 +242,7 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
       expect(prismaMock.danhHieuHangNam.upsert).not.toHaveBeenCalled();
     });
 
-    it('CA_NHAN_HANG_NAM BKTTCP: admin xóa CSTDTQ trong 7y window giữa pending → approve fail', async () => {
+    it('Tranh chấp đồng thời: Admin xóa một CSTDTQ trong cửa sổ 7 năm trong khi đề xuất BKTTCP đang chờ → phê duyệt thất bại do kiểm tra lại điều kiện', async () => {
       // Given: BKTTCP yêu cầu 3 BKBQP + 2 CSTDTQ trong 7y, admin xóa 1 CSTDTQ
       const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-g1-bkttcp' });
       const target = makePersonnel({ id: 'qn-g1-bkttcp', ho_ten: 'QN BKTTCP Race', unit });
@@ -278,8 +278,8 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
     });
   });
 
-  describe('Group 2: Admin xóa LichSuChucVu giữa CONG_HIEN flow', () => {
-    it('CONG_HIEN submit: admin xóa LichSuChucVu → recompute thiếu tháng → reject', async () => {
+  describe('Tranh chấp đồng thời: Admin xóa lịch sử chức vụ trong khi xử lý HCBVTQ', () => {
+    it('Tranh chấp đồng thời: Admin xóa hết lịch sử chức vụ đúng lúc Manager gửi HCBVTQ hạng Nhì → từ chối vì không đủ điều kiện', async () => {
       // Given: manager submit HCBVTQ HANG_NHI nhưng admin vừa xóa hết lịch sử chức vụ
       const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-g2-ch-submit' });
       const managerQn = makePersonnel({ id: 'qn-mgr-g2', unit, ho_ten: 'Manager G2' });
@@ -331,7 +331,7 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
       expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
     });
 
-    it('CONG_HIEN approve: admin xóa LichSuChucVu giữa pending → approve recompute fail', async () => {
+    it('Tranh chấp đồng thời: Admin xóa lịch sử chức vụ trong khi đề xuất HCBVTQ hạng Nhất đang chờ → phê duyệt thất bại do kiểm tra lại điều kiện', async () => {
       // Given: HANG_NHAT pending (cần >=120 tháng nhóm 0.9-1.0), admin xóa lịch sử
       const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-g2-ch-approve' });
       const target = makePersonnel({ id: 'qn-g2-ch-approve', ho_ten: 'QN CH Approve', unit, gioi_tinh: 'NAM' });
@@ -377,8 +377,8 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
     });
   });
 
-  describe('Group 3: Admin sửa ngày nhập ngũ → HC_QKQT/KNC fail', () => {
-    it('HC_QKQT submit: admin sửa ngay_nhap_ngu thành 2002 (chỉ 22y) → reject', async () => {
+  describe('Tranh chấp đồng thời: Admin sửa ngày nhập ngũ làm hỏng điều kiện HC QKQT/KNC', () => {
+    it('Tranh chấp đồng thời: Admin sửa ngày nhập ngũ thành năm 2002 (chỉ 22 năm) đúng lúc Manager gửi HC QKQT → từ chối vì chưa đủ 25 năm phục vụ', async () => {
       // Given: HC_QKQT cần >=25y phục vụ
       const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-g3-qkqt-submit' });
       const managerQn = makePersonnel({ id: 'qn-mgr-g3-qkqt', unit, ho_ten: 'Manager G3' });
@@ -423,7 +423,7 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
       expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
     });
 
-    it('HC_QKQT approve: admin sửa ngay_nhap_ngu giữa pending → approve recheck fail', async () => {
+    it('Tranh chấp đồng thời: Admin sửa ngày nhập ngũ trong khi đề xuất HC QKQT đang chờ → phê duyệt thất bại vì chưa đủ 25 năm phục vụ', async () => {
       const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-g3-qkqt-approve' });
       const target = makePersonnel({
         id: 'qn-g3-qkqt-approve',
@@ -471,7 +471,7 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
       expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
     });
 
-    it('KNC submit: admin sửa ngay_nhap_ngu của QN nữ thành 2005 (chỉ 19y) → reject', async () => {
+    it('Tranh chấp đồng thời: Admin sửa ngày nhập ngũ của quân nhân nữ thành năm 2005 (chỉ 19 năm) đúng lúc gửi KNC → từ chối vì chưa đủ 20 năm phục vụ', async () => {
       // Given: KNC nữ cần 20y, admin sửa ngày nhập ngũ thành 2005-06-01 → 19y < 20y
       const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-g3-knc-submit' });
       const managerQn = makePersonnel({ id: 'qn-mgr-g3-knc', unit, ho_ten: 'Manager G3 KNC' });
@@ -516,7 +516,7 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
       expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
     });
 
-    it('KNC approve: admin sửa ngay_nhap_ngu giữa pending → approve recheck fail', async () => {
+    it('Tranh chấp đồng thời: Admin sửa ngày nhập ngũ trong khi đề xuất KNC đang chờ → phê duyệt thất bại vì chưa đủ 25 năm phục vụ', async () => {
       const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-g3-knc-approve' });
       const target = makePersonnel({
         id: 'qn-g3-knc-approve',
@@ -565,7 +565,7 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
       expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
     });
 
-    it('KNC: admin set gioi_tinh = null giữa pending → approve reject "Chưa cập nhật giới tính"', async () => {
+    it('Tranh chấp đồng thời: Admin xóa giới tính của quân nhân trong khi đề xuất KNC đang chờ → phê duyệt từ chối "Chưa cập nhật thông tin giới tính"', async () => {
       const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-g3-knc-gender' });
       const target = makePersonnel({
         id: 'qn-g3-knc-gender',
@@ -612,8 +612,8 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
     });
   });
 
-  describe('Group 4: NIEN_HAN — admin xóa HCCSVV rank thấp', () => {
-    it('NIEN_HAN submit: admin xóa HANG_BA năm trước giữa lúc submit HANG_NHI → reject', async () => {
+  describe('Tranh chấp đồng thời: Admin xóa HCCSVV hạng thấp làm sai thứ tự hạng', () => {
+    it('Tranh chấp đồng thời: Admin xóa HCCSVV hạng Ba năm trước đúng lúc Manager gửi hạng Nhì → từ chối vì sai thứ tự hạng', async () => {
       // Given: HANG_NHI yêu cầu đã nhận HANG_BA, admin xóa HANG_BA → rank order check fail
       const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-g4-nh-submit' });
       const managerQn = makePersonnel({ id: 'qn-mgr-g4', unit, ho_ten: 'Manager G4' });
@@ -656,7 +656,7 @@ describe('Proposal race conditions — admin mutates underlying data while pendi
       expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
     });
 
-    it('NIEN_HAN approve: admin xóa HANG_BA giữa proposal HANG_NHI pending → import error → reject', async () => {
+    it('Tranh chấp đồng thời: Admin xóa HCCSVV hạng Ba trong khi đề xuất hạng Nhì đang chờ → phê duyệt thất bại do lỗi khi thêm khen thưởng', async () => {
       // Given: HANG_NHI pending, admin xóa HANG_BA → import loop ghi acc.errors → throw cuối tx
       const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-g4-nh-approve' });
       const target = makePersonnel({

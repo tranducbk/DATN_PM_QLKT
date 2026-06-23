@@ -33,7 +33,11 @@ import { InfoNote } from '@/components/shared/InfoNote';
 import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { useTheme } from '@/components/ThemeProvider';
 import { getAntdTableThemeConfig } from '@/lib/antdTheme';
-import { DANH_HIEU_MAP, type ContributionCoefficientGroup } from '@/constants/danhHieu.constants';
+import {
+  DANH_HIEU_MAP,
+  THANH_TICH_KHOA_HOC,
+  type ContributionCoefficientGroup,
+} from '@/constants/danhHieu.constants';
 import {
   PROPOSAL_REVIEW_CARD_TITLES,
   PROPOSAL_STATUS,
@@ -484,8 +488,8 @@ export default function ManagerProposalDetailPage() {
                   width: 150,
                   align: 'center',
                   render: text => (
-                    <Tag color={text === 'DTKH' ? 'blue' : 'green'}>
-                      {text === 'DTKH' ? 'ĐTKH' : 'SKKH'}
+                    <Tag color={text === THANH_TICH_KHOA_HOC.DTKH ? 'blue' : 'green'}>
+                      {text === THANH_TICH_KHOA_HOC.DTKH ? 'ĐTKH' : 'SKKH'}
                     </Tag>
                   ),
                 },

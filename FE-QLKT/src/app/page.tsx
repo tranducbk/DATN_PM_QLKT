@@ -10,10 +10,13 @@ import {
   AuditOutlined,
   BarChartOutlined,
   CrownOutlined,
+  EnvironmentOutlined,
   ExperimentOutlined,
   FileDoneOutlined,
   FileProtectOutlined,
   FlagOutlined,
+  MailOutlined,
+  PhoneOutlined,
   SafetyCertificateOutlined,
   SafetyOutlined,
   SendOutlined,
@@ -41,7 +44,7 @@ const CAPABILITIES = [
   },
   {
     icon: <FileProtectOutlined />,
-    title: 'Đề xuất và xét duyệt nhiều cấp',
+    title: 'Đề xuất và xét duyệt theo phân quyền',
     desc: 'Luồng phê duyệt theo phân quyền, kiểm tra điều kiện và cảnh báo trùng lặp tự động.',
   },
   {
@@ -107,8 +110,8 @@ const WORKFLOW_STEPS = [
   },
   {
     icon: <SolutionOutlined />,
-    title: 'Phê duyệt nhiều cấp',
-    desc: 'Luồng xét duyệt theo phân quyền từ đơn vị đến quản trị.',
+    title: 'Xét duyệt và phê duyệt',
+    desc: 'Cán bộ Phòng Chính trị rà soát điều kiện và thông qua đề xuất theo phân quyền.',
   },
   {
     icon: <FileDoneOutlined />,
@@ -121,7 +124,7 @@ const HEADLINE_PHRASES = ['danh hiệu thi đua', 'khen thưởng các cấp', '
 
 const TRUST_STATS = [
   { value: '7', label: 'Hình thức khen thưởng' },
-  { value: '4', label: 'Cấp phê duyệt' },
+  { value: 'Tự động', label: 'Xét điều kiện danh hiệu' },
   { value: '4', label: 'Vai trò phân quyền' },
   { value: 'Realtime', label: 'Thông báo tức thì' },
 ];
@@ -341,7 +344,6 @@ export default function HomePage() {
         <div className="relative mx-auto flex min-h-[100dvh] max-w-7xl items-center px-6 pb-32 pt-28 lg:px-8 lg:pt-32">
           <div className="max-w-3xl animate-slide-up">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-400/25 bg-amber-400/[0.1] px-4 py-1.5 backdrop-blur-sm">
-              <SafetyCertificateOutlined className="text-sm text-amber-400" />
               <span className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-300">
                 Hệ thống nghiệp vụ nội bộ
               </span>
@@ -541,11 +543,26 @@ export default function HomePage() {
                 </div>
                 <div className="md:border-l md:border-white/10 md:pl-10 lg:pl-16">
                   <h3 className="text-lg font-bold text-white">Liên hệ</h3>
-                  <div className="mt-4 space-y-2 text-sm leading-relaxed text-slate-400">
-                    <p>Học viện Khoa học Quân sự</p>
-                    <p>322E Lê Trọng Tấn, Thanh Xuân, Hà Nội</p>
-                    <p>Email: support@hvkhqs.edu.vn</p>
-                    <p>Hotline: (+84) 24 6328 1853</p>
+                  <div className="mt-4 space-y-3 text-sm leading-relaxed text-slate-100">
+                    <p className="font-semibold text-white">Học viện Khoa học Quân sự</p>
+                    <p className="flex items-start gap-2.5 text-slate-100">
+                      <EnvironmentOutlined className="mt-0.5 text-amber-400" />
+                      <span>322E Lê Trọng Tấn, Phương Liệt, Hà Nội</span>
+                    </p>
+                    <a
+                      href="mailto:support@hvkhqs.edu.vn"
+                      className="flex items-center gap-2.5 transition-colors hover:text-amber-300"
+                    >
+                      <MailOutlined className="text-amber-400" />
+                      support@hvkhqs.edu.vn
+                    </a>
+                    <a
+                      href="tel:+842463281853"
+                      className="flex items-center gap-2.5 transition-colors hover:text-amber-300"
+                    >
+                      <PhoneOutlined className="text-amber-400" />
+                      (+84) 24 6328 1853
+                    </a>
                   </div>
                 </div>
               </div>

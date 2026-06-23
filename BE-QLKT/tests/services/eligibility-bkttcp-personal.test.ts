@@ -9,8 +9,8 @@ import profileService from '../../src/services/profile.service';
 import { DANH_HIEU_CA_NHAN_HANG_NAM } from '../../src/constants/danhHieu.constants';
 import { eligibilityReasons, suggestionMessages } from '../helpers/errorMessages';
 
-describe('profile.service - BKTTCP exhaustive (streak vs flags vs NCKH)', () => {
-  it('7y CSTDCS + 3 BKBQP + 2 CSTDTQ + 7 NCKH → eligible', async () => {
+describe('Xét điều kiện BKTTCP cá nhân: phối hợp số năm liên tục, các cờ BKBQP/CSTDTQ và NCKH', () => {
+  it('Xét điều kiện BKTTCP: 7 năm CSTDCS + 3 BKBQP + 2 CSTDTQ + 7 năm NCKH → đủ điều kiện', async () => {
     const personnelId = 'qn-bkttcp-A1';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -32,7 +32,7 @@ describe('profile.service - BKTTCP exhaustive (streak vs flags vs NCKH)', () => 
     expect(result.reason).toBe(eligibilityReasons.bkttcpEligible);
   });
 
-  it('7y CSTDCS + 3 BKBQP + 2 CSTDTQ nhưng thiếu 1 NCKH (6 NCKH) → fail', async () => {
+  it('Xét điều kiện BKTTCP: 7 năm CSTDCS + 3 BKBQP + 2 CSTDTQ nhưng chỉ 6 năm NCKH (thiếu 1 năm NCKH) → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-bkttcp-A2';
     const { danhHieu } = buildContiguousCSTDCS(2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -62,7 +62,7 @@ describe('profile.service - BKTTCP exhaustive (streak vs flags vs NCKH)', () => 
     expect(result.reason).toBe(eligibilityReasons.bkttcpReason(7, 3, 2, 6));
   });
 
-  it('7y + 2 BKBQP + 2 CSTDTQ + 7 NCKH (thiếu 1 BKBQP) → fail', async () => {
+  it('Xét điều kiện BKTTCP: 7 năm + chỉ 2 BKBQP + 2 CSTDTQ + 7 năm NCKH (thiếu 1 BKBQP) → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-bkttcp-A3';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -84,7 +84,7 @@ describe('profile.service - BKTTCP exhaustive (streak vs flags vs NCKH)', () => 
     expect(result.reason).toBe(eligibilityReasons.bkttcpReason(7, 2, 2, 7));
   });
 
-  it('7y + 3 BKBQP + 1 CSTDTQ + 7 NCKH (thiếu 1 CSTDTQ) → fail', async () => {
+  it('Xét điều kiện BKTTCP: 7 năm + 3 BKBQP + chỉ 1 CSTDTQ + 7 năm NCKH (thiếu 1 CSTDTQ) → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-bkttcp-A4';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -105,7 +105,7 @@ describe('profile.service - BKTTCP exhaustive (streak vs flags vs NCKH)', () => 
     expect(result.reason).toBe(eligibilityReasons.bkttcpReason(7, 3, 1, 7));
   });
 
-  it('7y + 4 BKBQP + 2 CSTDTQ → fail (lifetime cần đúng 3 BKBQP, không phải >=3)', async () => {
+  it('Xét điều kiện BKTTCP: 7 năm + 4 BKBQP + 2 CSTDTQ → chưa đủ điều kiện (chỉ xét một lần nên cần đúng 3 BKBQP, không phải từ 3 trở lên)', async () => {
     const personnelId = 'qn-bkttcp-A5';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2017, 2023, {
       2017: { nhan_bkbqp: true },
@@ -128,7 +128,7 @@ describe('profile.service - BKTTCP exhaustive (streak vs flags vs NCKH)', () => 
     expect(result.reason).toBe(eligibilityReasons.bkttcpReason(7, 4, 2, 7));
   });
 
-  it('7y + 3 BKBQP + 3 CSTDTQ → fail (lifetime cần đúng 2 CSTDTQ)', async () => {
+  it('Xét điều kiện BKTTCP: 7 năm + 3 BKBQP + 3 CSTDTQ → chưa đủ điều kiện (chỉ xét một lần nên cần đúng 2 CSTDTQ)', async () => {
     const personnelId = 'qn-bkttcp-A6';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2017, 2023, {
       2017: { nhan_cstdtq: true },
@@ -152,8 +152,8 @@ describe('profile.service - BKTTCP exhaustive (streak vs flags vs NCKH)', () => 
   });
 });
 
-describe('profile.service - BKTTCP repeatable cycle (chưa nhận → eligible tại bội số 7)', () => {
-  it('14y CSTDCS với flags ĐỦ HẾT trong 7y cuối, chưa nhận BKTTCP → eligible chu kỳ 2', async () => {
+describe('Xét điều kiện BKTTCP cá nhân: chu kỳ lặp lại mỗi 7 năm (chưa nhận thì đủ điều kiện tại bội số 7)', () => {
+  it('Xét điều kiện BKTTCP: 14 năm CSTDCS đủ cờ trong cửa sổ 7 năm gần nhất, chưa từng nhận → đủ điều kiện ở mốc chu kỳ thứ 2', async () => {
     const personnelId = 'qn-bkttcp-cycle2';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2010, 2023, {
       2018: { nhan_bkbqp: true },
@@ -175,7 +175,7 @@ describe('profile.service - BKTTCP repeatable cycle (chưa nhận → eligible t
     expect(result.reason).toBe(eligibilityReasons.bkttcpEligible);
   });
 
-  it('14y CSTDCS với flags KHÔNG đủ trong 7y cuối, chưa nhận → fail insufficient', async () => {
+  it('Xét điều kiện BKTTCP: 14 năm CSTDCS nhưng thiếu cờ BKBQP/CSTDTQ trong cửa sổ 7 năm gần nhất → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-bkttcp-cycle2-no-flags';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2010, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -192,7 +192,7 @@ describe('profile.service - BKTTCP repeatable cycle (chưa nhận → eligible t
     expect(result.reason).toBe(eligibilityReasons.bkttcpReason(14, 0, 0, 14));
   });
 
-  it('21y CSTDCS không có flags → fail insufficient (không phải "chưa hỗ trợ")', async () => {
+  it('Xét điều kiện BKTTCP: 21 năm CSTDCS nhưng không có cờ BKBQP/CSTDTQ → chưa đủ điều kiện (không phải thông báo "chưa hỗ trợ")', async () => {
     const personnelId = 'qn-bkttcp-21y';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2003, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -209,7 +209,7 @@ describe('profile.service - BKTTCP repeatable cycle (chưa nhận → eligible t
     expect(result.reason).toBe(eligibilityReasons.bkttcpReason(21, 0, 0, 21));
   });
 
-  it('8y CSTDCS với flags đủ trong 7y cuối, chưa nhận → fail insufficient (8 không bội 7)', async () => {
+  it('Xét điều kiện BKTTCP: 8 năm CSTDCS đủ cờ trong cửa sổ 7 năm gần nhất, chưa nhận → chưa đủ điều kiện (8 chưa phải mốc chu kỳ 7 năm)', async () => {
     const personnelId = 'qn-bkttcp-8y';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2016, 2023, {
       2018: { nhan_bkbqp: true },
@@ -231,7 +231,7 @@ describe('profile.service - BKTTCP repeatable cycle (chưa nhận → eligible t
     expect(result.reason).toBe(eligibilityReasons.bkttcpReason(8, 3, 2, 8));
   });
 
-  it('15y CSTDCS (không bội 7) → fail insufficient', async () => {
+  it('Xét điều kiện BKTTCP: 15 năm CSTDCS (chưa tới mốc chu kỳ 7 năm) → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-bkttcp-15y';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2009, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -248,7 +248,7 @@ describe('profile.service - BKTTCP repeatable cycle (chưa nhận → eligible t
     expect(result.reason).toBe(eligibilityReasons.bkttcpReason(15, 0, 0, 15));
   });
 
-  it('20y CSTDCS (không bội 7) → fail insufficient', async () => {
+  it('Xét điều kiện BKTTCP: 20 năm CSTDCS (chưa tới mốc chu kỳ 7 năm) → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-bkttcp-20y';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2004, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -266,8 +266,8 @@ describe('profile.service - BKTTCP repeatable cycle (chưa nhận → eligible t
   });
 });
 
-describe('profile.service - BKTTCP đã nhận → "chưa hỗ trợ cao hơn"', () => {
-  it('Đã nhận BKTTCP năm 2010 + 7y CSTDCS mới + đủ flags → "chưa hỗ trợ"', async () => {
+describe('Xét điều kiện BKTTCP cá nhân: đã nhận một lần thì khóa với thông báo "chưa hỗ trợ danh hiệu cao hơn"', () => {
+  it('Xét điều kiện BKTTCP: đã nhận năm 2010 + 7 năm CSTDCS mới đủ cờ → trả thông báo "chưa hỗ trợ" (chỉ xét một lần)', async () => {
     const personnelId = 'qn-bkttcp-received-7y';
     const danhHieu: AnnualRow[] = [
       {
@@ -300,7 +300,7 @@ describe('profile.service - BKTTCP đã nhận → "chưa hỗ trợ cao hơn"',
     expect(result.reason).toBe(eligibilityReasons.bkttcpAlreadyReceived);
   });
 
-  it('Đã nhận BKTTCP + 14y CSTDCS → "chưa hỗ trợ"', async () => {
+  it('Xét điều kiện BKTTCP: đã nhận + 14 năm CSTDCS → trả thông báo "chưa hỗ trợ" (chỉ xét một lần)', async () => {
     const personnelId = 'qn-bkttcp-received-14y';
     const danhHieu: AnnualRow[] = [];
     const nckh: ScienceRow[] = [];
@@ -329,7 +329,7 @@ describe('profile.service - BKTTCP đã nhận → "chưa hỗ trợ cao hơn"',
     expect(result.reason).toBe(eligibilityReasons.bkttcpAlreadyReceived);
   });
 
-  it('Recalc đã nhận BKTTCP + chuỗi tiếp tục → goi_y luôn "chưa hỗ trợ"', async () => {
+  it('Xét điều kiện BKTTCP (tính lại hồ sơ): đã nhận + chuỗi tiếp tục → gợi ý luôn là "chưa hỗ trợ"', async () => {
     const personnelId = 'qn-bkttcp-recalc-received';
     const danhHieu: AnnualRow[] = [];
     const nckh: ScienceRow[] = [];
@@ -357,7 +357,7 @@ describe('profile.service - BKTTCP đã nhận → "chưa hỗ trợ cao hơn"',
     expect(args.update.du_dieu_kien_bkttcp).toBe(false);
   });
 
-  it('Recalc đã nhận BKTTCP + chuỗi mới đủ 7y với flags → goi_y vẫn "chưa hỗ trợ" (lifetime block)', async () => {
+  it('Xét điều kiện BKTTCP (tính lại hồ sơ): đã nhận + chuỗi mới đủ 7 năm và đủ cờ → gợi ý vẫn là "chưa hỗ trợ" (chỉ xét một lần)', async () => {
     const personnelId = 'qn-bkttcp-recalc-received-7y';
     const danhHieu: AnnualRow[] = [
       {
@@ -390,8 +390,8 @@ describe('profile.service - BKTTCP đã nhận → "chưa hỗ trợ cao hơn"',
   });
 });
 
-describe('profile.service - BKTTCP fresh chain after CSTDCS break', () => {
-  it('5y CSTDCS → 1 CSTT (đứt) → 7y CSTDCS mới + đủ flags → eligible BKTTCP', async () => {
+describe('Xét điều kiện BKTTCP cá nhân: chuỗi mới sau khi chuỗi CSTDCS bị đứt', () => {
+  it('Xét điều kiện BKTTCP: 5 năm CSTDCS → 1 năm CSTT làm đứt chuỗi → 7 năm CSTDCS mới đủ cờ → đủ điều kiện', async () => {
     const personnelId = 'qn-bkttcp-fresh';
     const danhHieu: AnnualRow[] = [];
     const nckh: ScienceRow[] = [];
@@ -432,8 +432,8 @@ describe('profile.service - BKTTCP fresh chain after CSTDCS break', () => {
   });
 });
 
-describe('profile.service - BKTTCP boundary edges (streak < 7)', () => {
-  it('6y CSTDCS + flags đủ trong 7y cuối → fail (streak < 7)', async () => {
+describe('Xét điều kiện BKTTCP cá nhân: mốc biên khi chưa đủ 7 năm liên tục', () => {
+  it('Xét điều kiện BKTTCP: chỉ 6 năm CSTDCS dù đủ cờ trong cửa sổ 7 năm gần nhất → chưa đủ điều kiện (chưa đủ 7 năm liên tục)', async () => {
     const personnelId = 'qn-bkttcp-6y';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2018, 2023, {
       2018: { nhan_bkbqp: true },
@@ -456,8 +456,8 @@ describe('profile.service - BKTTCP boundary edges (streak < 7)', () => {
   });
 });
 
-describe('profile.service - BKTTCP edge cases (extra flags)', () => {
-  it('13y + 6 BKBQP rải đều + 4 CSTDTQ → fail (lifetime cần đúng 3 BKBQP / 2 CSTDTQ)', async () => {
+describe('Xét điều kiện BKTTCP cá nhân: dư cờ BKBQP/CSTDTQ vẫn không đủ điều kiện', () => {
+  it('Xét điều kiện BKTTCP: 13 năm + 6 BKBQP rải đều + 4 CSTDTQ → chưa đủ điều kiện (chỉ xét một lần nên cần đúng 3 BKBQP và 2 CSTDTQ)', async () => {
     const personnelId = 'qn-bkttcp-13y-extra';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2011, 2023, {
       2011: { nhan_bkbqp: true },

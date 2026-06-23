@@ -82,8 +82,8 @@ function buildEligibleHistories(personnelId: string): PositionHistoryRow[] {
   ];
 }
 
-describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
-  it('duyệt thành công HCBVTQ hạng nhì cho QN nam đủ tháng', async () => {
+describe('Phê duyệt đề xuất Cống hiến (HCBVTQ)', () => {
+  it('Phê duyệt thông thường: HCBVTQ hạng Nhì cho quân nhân nam đủ thời gian giữ chức → tạo khen thưởng, đề xuất chuyển APPROVED', async () => {
     // Given: đề xuất CONG_HIEN PENDING + quân nhân đủ tháng giữ chức
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-ch' });
     const personnel = makePersonnel({
@@ -138,7 +138,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
     expect(result.message).toBe('Phê duyệt thành công, đã thêm 1 danh hiệu cho 1 quân nhân');
   });
 
-  it('reject khi proposal thiếu tháng (CONG_HIEN bắt buộc thang)', async () => {
+  it('Phê duyệt bị chặn: đề xuất Cống hiến thiếu tháng (bắt buộc có tháng) → báo lỗi thiếu tháng', async () => {
     const proposal = makeProposal({
       id: 'p-ch-no-thang',
       loai: PROPOSAL_TYPES.CONG_HIEN,
@@ -157,7 +157,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
     expect(prismaMock.khenThuongHCBVTQ.create).not.toHaveBeenCalled();
   });
 
-  it('reject khi quân nhân không đủ tháng phục vụ (nam <120m)', async () => {
+  it('Phê duyệt bị chặn: quân nhân nam chưa đủ thời gian phục vụ (dưới 120 tháng) → chưa đủ điều kiện', async () => {
     const personnel = makePersonnel({ id: 'qn-short', ho_ten: 'QN Ngắn', gioi_tinh: 'NAM' });
     const proposal = makeProposal({
       id: 'p-ch-short',
@@ -189,7 +189,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
     expect(prismaMock.khenThuongHCBVTQ.create).not.toHaveBeenCalled();
   });
 
-  it('reject khi QN nữ không đủ tháng phục vụ (nữ cần 80m)', async () => {
+  it('Phê duyệt bị chặn: quân nhân nữ chưa đủ thời gian phục vụ (nữ cần 80 tháng) → chưa đủ điều kiện', async () => {
     const personnel = makePersonnel({
       id: 'qn-fem-short',
       ho_ten: 'Nữ Ngắn',
@@ -225,7 +225,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
     expect(error.message).toContain(CONG_HIEN_APPROVE_INELIGIBLE_PREFIX);
   });
 
-  it('reject khi QN đã có HCBVTQ rank thấp hơn (one-time award, cần upgrade)', async () => {
+  it('Phê duyệt bị chặn: quân nhân đã có HCBVTQ hạng cao hơn hạng đang đề xuất → từ chối hạ hạng', async () => {
     const personnel = makePersonnel({ id: 'qn-existing', ho_ten: 'QN Đã có', gioi_tinh: 'NAM' });
     const proposal = makeProposal({
       id: 'p-ch-existing',
@@ -267,7 +267,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
     expect(prismaMock.khenThuongHCBVTQ.update).not.toHaveBeenCalled();
   });
 
-  it('upgrade rank — QN đã có HCBVTQ hạng ba, đề xuất hạng nhì → update', async () => {
+  it('Phê duyệt thông thường: quân nhân đã có HCBVTQ hạng Ba, đề xuất hạng Nhì → nâng hạng (cập nhật bản ghi)', async () => {
     const personnel = makePersonnel({ id: 'qn-up', ho_ten: 'QN Up', gioi_tinh: 'NAM' });
     const proposal = makeProposal({
       id: 'p-ch-up',
@@ -303,7 +303,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
     expect(updateArgs.data.danh_hieu).toBe(DANH_HIEU_HCBVTQ.HANG_NHI);
   });
 
-  it('HCBVTQ_HIGHEST: reject khi approve HANG_BA cho QN đủ ĐK HANG_NHAT', async () => {
+  it('Phê duyệt bị chặn: đề xuất HCBVTQ hạng Ba nhưng quân nhân đã đủ điều kiện hạng Nhất → không cho nhận hạng thấp', async () => {
     const personnel = makePersonnel({
       id: 'qn-app-highest-ba',
       ho_ten: 'QN approve HANG_NHAT',
@@ -342,7 +342,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
     expect(prismaMock.khenThuongHCBVTQ.create).not.toHaveBeenCalled();
   });
 
-  it('HCBVTQ_HIGHEST: reject khi approve HANG_NHI cho QN đủ ĐK HANG_NHAT', async () => {
+  it('Phê duyệt bị chặn: đề xuất HCBVTQ hạng Nhì nhưng quân nhân đã đủ điều kiện hạng Nhất → không cho nhận hạng thấp', async () => {
     const personnel = makePersonnel({
       id: 'qn-app-highest-nhi',
       ho_ten: 'QN approve HANG_NHAT 2',
@@ -381,7 +381,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
     expect(prismaMock.khenThuongHCBVTQ.create).not.toHaveBeenCalled();
   });
 
-  it('HCBVTQ_HIGHEST: approve thành công HANG_NHAT cho QN đủ ĐK HANG_NHAT', async () => {
+  it('Phê duyệt thông thường: đề xuất HCBVTQ hạng Nhất cho quân nhân đã đủ điều kiện hạng Nhất → tạo khen thưởng', async () => {
     const personnel = makePersonnel({
       id: 'qn-app-highest-nhat-ok',
       ho_ten: 'QN approve HANG_NHAT OK',
@@ -426,7 +426,7 @@ describe('approveProposal — CONG_HIEN (HCBVTQ)', () => {
     );
   });
 
-  it('reject khi proposal đã APPROVED', async () => {
+  it('Phê duyệt bị chặn: đề xuất Cống hiến đã được duyệt trước đó → báo đã phê duyệt', async () => {
     const proposal = makeProposal({
       id: 'p-ch-app',
       loai: PROPOSAL_TYPES.CONG_HIEN,

@@ -24,8 +24,8 @@ function findAward(code: string, list: ChainAwardConfig[]): ChainAwardConfig {
   return found;
 }
 
-describe('eligibility/chainEligibility helper', () => {
-  it('keeps unit chain unaffected by NCKH requirement', () => {
+describe('Xét điều kiện chuỗi danh hiệu: hàm lõi checkChainEligibility', () => {
+  it('Xét điều kiện chuỗi danh hiệu đơn vị: chuỗi đơn vị không bị ràng buộc NCKH (đủ 2 năm là đủ điều kiện)', () => {
     const unitBkbqp = findAward(DANH_HIEU_DON_VI_HANG_NAM.BKBQP, UNIT_CHAIN_AWARDS);
     const result = checkChainEligibility(
       unitBkbqp,
@@ -37,15 +37,15 @@ describe('eligibility/chainEligibility helper', () => {
   });
 });
 
-describe('eligibility/annualBulkValidation helper', () => {
-  it('identifies personal chain awards only', () => {
+describe('Xét điều kiện chuỗi danh hiệu: nhận diện danh hiệu chuỗi và đọc đề xuất chờ duyệt', () => {
+  it('Xét điều kiện chuỗi danh hiệu: chỉ BKBQP/CSTDTQ/BKTTCP là danh hiệu chuỗi cá nhân, CSTDCS thì không', () => {
     expect(isPersonalChainAward(DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP)).toBe(true);
     expect(isPersonalChainAward(DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ)).toBe(true);
     expect(isPersonalChainAward(DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP)).toBe(true);
     expect(isPersonalChainAward(DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS)).toBe(false);
   });
 
-  it('ignores malformed JSON payload rows safely', () => {
+  it('Xét điều kiện chuỗi danh hiệu: bỏ qua an toàn các dòng đề xuất sai định dạng, chỉ lấy đúng quân nhân có BKBQP đang chờ duyệt', () => {
     const pendingIds = collectPendingProposalPersonnelIdsForAward(
       [
         { data_danh_hieu: null },
@@ -64,8 +64,8 @@ describe('eligibility/annualBulkValidation helper', () => {
   });
 });
 
-describe('eligibility/decisionNumberValidation helper', () => {
-  it('requires CSTDTQ decision number for personal context', () => {
+describe('Xét điều kiện chuỗi danh hiệu: kiểm tra số quyết định kèm theo từng danh hiệu', () => {
+  it('Phê duyệt bị chặn: cá nhân có CSTDTQ nhưng chưa nhập số quyết định CSTDTQ → báo thiếu số quyết định', () => {
     const errors = validateDecisionNumbers(
       {
         nhan_cstdtq: true,
@@ -82,7 +82,7 @@ describe('eligibility/decisionNumberValidation helper', () => {
     );
   });
 
-  it('skips CSTDTQ decision-number validation for unit context', () => {
+  it('Phê duyệt đơn vị: bỏ qua kiểm tra số quyết định CSTDTQ (đơn vị không có CSTDTQ) → không báo lỗi', () => {
     const errors = validateDecisionNumbers(
       {
         nhan_cstdtq: true,
@@ -97,7 +97,7 @@ describe('eligibility/decisionNumberValidation helper', () => {
     expect(errors).toEqual([]);
   });
 
-  it('formats missing decision-number message with localized award name', () => {
+  it('Phê duyệt bị chặn: thông báo thiếu số quyết định hiển thị đúng tên danh hiệu tiếng Việt', () => {
     const expected = `Nguyen Van B: Thiếu số quyết định cho danh hiệu ${getDanhHieuName(
       DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP
     )}`;

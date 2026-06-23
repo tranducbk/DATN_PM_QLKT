@@ -12,8 +12,8 @@ const CQDV_ID = 'cqdv-1';
 const DVTT_ID = 'dvtt-1';
 const CV_ID = 'cv-1';
 
-describe('position.service - getPositions', () => {
-  it('Cho không có unitId → Khi getPositions → Thì trả về tất cả chức vụ (where rỗng)', async () => {
+describe('Chức vụ: tra cứu danh sách chức vụ', () => {
+  it('Chức vụ: không lọc theo đơn vị → trả về tất cả chức vụ', async () => {
     prismaMock.chucVu.findMany.mockResolvedValueOnce([{ id: CV_ID, ten_chuc_vu: 'Trợ lý' }]);
 
     const result = await positionService.getPositions();
@@ -23,7 +23,7 @@ describe('position.service - getPositions', () => {
     expect(args.where).toEqual({});
   });
 
-  it('Cho unitId là CQDV và includeChildren=true → Khi getPositions → Thì gom luôn DVTT con', async () => {
+  it('Chức vụ: lọc theo CQDV kèm đơn vị con → gom luôn chức vụ của các DVTT trực thuộc', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({ id: CQDV_ID });
     prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce(null);
     prismaMock.donViTrucThuoc.findMany.mockResolvedValueOnce([{ id: 'dvtt-a' }, { id: 'dvtt-b' }]);
@@ -40,7 +40,7 @@ describe('position.service - getPositions', () => {
     });
   });
 
-  it('Cho unitId không tồn tại với includeChildren → Khi getPositions → Thì throw NotFoundError', async () => {
+  it('Chức vụ: lọc theo đơn vị không tồn tại → báo "Đơn vị không tồn tại"', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce(null);
     prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce(null);
 
@@ -52,8 +52,8 @@ describe('position.service - getPositions', () => {
   });
 });
 
-describe('position.service - createPosition', () => {
-  it('Cho CQDV và tên chưa trùng → Khi createPosition → Thì tạo với is_manager flag và link CQDV', async () => {
+describe('Chức vụ: tạo mới chức vụ', () => {
+  it('Chức vụ: tạo trong CQDV với tên chưa trùng → tạo được, giữ quyền manager, gắn vào CQDV', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({ id: CQDV_ID });
     prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce(null);
     prismaMock.chucVu.findFirst.mockResolvedValueOnce(null);
@@ -76,7 +76,7 @@ describe('position.service - createPosition', () => {
     });
   });
 
-  it('Cho DVTT → Khi createPosition → Thì ép is_manager=false (chỉ CQDV mới được manager)', async () => {
+  it('Chức vụ: tạo trong DVTT → ép bỏ quyền manager (chỉ CQDV mới được làm manager)', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce(null);
     prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce({ id: DVTT_ID });
     prismaMock.chucVu.findFirst.mockResolvedValueOnce(null);
@@ -95,7 +95,7 @@ describe('position.service - createPosition', () => {
     expect(args.data.co_quan_don_vi_id).toBeNull();
   });
 
-  it('Cho tên đã tồn tại trong cùng đơn vị → Khi createPosition → Thì throw AppError 409', async () => {
+  it('Chức vụ: tạo tên đã có sẵn trong cùng đơn vị → bị chặn, báo trùng tên (409)', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({ id: CQDV_ID });
     prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce(null);
     prismaMock.chucVu.findFirst.mockResolvedValueOnce({ id: 'existing' });
@@ -108,7 +108,7 @@ describe('position.service - createPosition', () => {
     expect(err.statusCode).toBe(409);
   });
 
-  it('Cho unit_id không tồn tại → Khi createPosition → Thì throw NotFoundError', async () => {
+  it('Chức vụ: tạo cho đơn vị không tồn tại → báo "Đơn vị không tồn tại"', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce(null);
     prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce(null);
 
@@ -120,8 +120,8 @@ describe('position.service - createPosition', () => {
   });
 });
 
-describe('position.service - updatePosition', () => {
-  it('Cho không có thay đổi → Khi updatePosition → Thì throw ValidationError', async () => {
+describe('Chức vụ: cập nhật chức vụ', () => {
+  it('Chức vụ: cập nhật mà không thay đổi gì → bị chặn, báo "Không có thay đổi nào để cập nhật"', async () => {
     prismaMock.chucVu.findUnique.mockResolvedValueOnce({
       id: CV_ID,
       ten_chuc_vu: 'Trợ lý',
@@ -142,7 +142,7 @@ describe('position.service - updatePosition', () => {
     );
   });
 
-  it('Cho id không tồn tại → Khi updatePosition → Thì throw NotFoundError', async () => {
+  it('Chức vụ: cập nhật chức vụ không tồn tại → báo "Chức vụ không tồn tại"', async () => {
     prismaMock.chucVu.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -152,7 +152,7 @@ describe('position.service - updatePosition', () => {
     );
   });
 
-  it('Cho đổi hệ số → Khi updatePosition → Thì sync hệ số vào dòng lịch sử ĐANG MỞ', async () => {
+  it('Chức vụ: đổi hệ số chức vụ → cập nhật hệ số vào dòng lịch sử đang mở (chưa kết thúc)', async () => {
     prismaMock.chucVu.findUnique.mockResolvedValueOnce({
       id: CV_ID,
       ten_chuc_vu: 'Trợ lý',
@@ -172,7 +172,7 @@ describe('position.service - updatePosition', () => {
     });
   });
 
-  it('Cho đổi tên → Khi updatePosition → Thì sync tên vào MỌI dòng lịch sử, không đụng hệ số', async () => {
+  it('Chức vụ: đổi tên chức vụ → cập nhật tên vào mọi dòng lịch sử, không động vào hệ số', async () => {
     prismaMock.chucVu.findUnique.mockResolvedValueOnce({
       id: CV_ID,
       ten_chuc_vu: 'Trợ lý',
@@ -198,8 +198,8 @@ describe('position.service - updatePosition', () => {
   });
 });
 
-describe('position.service - deletePosition', () => {
-  it('Cho chức vụ không có quân nhân → Khi deletePosition → Thì xoá và trả message thành công', async () => {
+describe('Chức vụ: xoá chức vụ', () => {
+  it('Chức vụ: xoá chức vụ không còn quân nhân giữ → xoá được, báo thành công', async () => {
     prismaMock.chucVu.findUnique.mockResolvedValueOnce({
       id: CV_ID,
       ten_chuc_vu: 'Trợ lý',
@@ -216,7 +216,7 @@ describe('position.service - deletePosition', () => {
     expect(result.ten_chuc_vu).toBe('Trợ lý');
   });
 
-  it('Cho chức vụ còn quân nhân giữ → Khi deletePosition → Thì throw AppError 409 và không gọi delete', async () => {
+  it('Chức vụ: xoá chức vụ còn 3 quân nhân giữ → bị chặn vì còn ràng buộc (409), không xoá', async () => {
     prismaMock.chucVu.findUnique.mockResolvedValueOnce({
       id: CV_ID,
       ten_chuc_vu: 'Trợ lý',
@@ -234,7 +234,7 @@ describe('position.service - deletePosition', () => {
     expect(prismaMock.chucVu.delete).not.toHaveBeenCalled();
   });
 
-  it('Cho DVTT position → Khi deletePosition → Thì freeze tên mới nhất vào lịch sử TRƯỚC khi xoá', async () => {
+  it('Chức vụ: xoá chức vụ của DVTT → chụp (snapshot) tên mới nhất vào lịch sử trước khi xoá', async () => {
     prismaMock.chucVu.findUnique.mockResolvedValueOnce({
       id: CV_ID,
       ten_chuc_vu: 'Trợ lý',

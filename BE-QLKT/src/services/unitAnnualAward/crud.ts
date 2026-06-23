@@ -22,7 +22,6 @@ import type { UnitAnnualAwardDeps } from './types';
 
 const defaultDeps: UnitAnnualAwardDeps = {
   recalculateAnnualUnit: defaultRecalculateAnnualUnit,
-  checkUnitAwardEligibility: async () => ({ eligible: true, reason: '' }),
   getSubUnits: async () => [],
 };
 

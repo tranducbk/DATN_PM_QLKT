@@ -11,8 +11,8 @@ import unitAnnualAwardService from '../../src/services/unitAnnualAward.service';
 import { DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_DON_VI_HANG_NAM } from '../../src/constants/danhHieu.constants';
 import { eligibilityReasons, unitEligibilityReasons } from '../helpers/errorMessages';
 
-describe('Chain cycle scenarios - personal BKBQP (lỡ đợt N lần)', () => {
-  it('lỡ 1 đợt năm 3 → chu kỳ 2 năm 5 vẫn eligible', async () => {
+describe('Xét điều kiện BKBQP cá nhân: chu kỳ vẫn tiếp tục dù bỏ lỡ đợt đề nghị', () => {
+  it('Xét điều kiện BKBQP: bỏ lỡ đợt ở mốc 2 năm, tới mốc chu kỳ tiếp theo (4 năm liên tục) vẫn đủ điều kiện', async () => {
     const personnelId = 'qn-bkbqp-miss-1';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2020, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -28,7 +28,7 @@ describe('Chain cycle scenarios - personal BKBQP (lỡ đợt N lần)', () => {
     expect(result.eligible).toBe(true);
   });
 
-  it('lỡ 1 đợt → tại năm chu kỳ 2 đang còn 1 năm → not eligible', async () => {
+  it('Xét điều kiện BKBQP: bỏ lỡ đợt rồi mới có 3 năm liên tục (lẻ năm, chưa tới mốc chu kỳ 2 năm) → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-bkbqp-miss-2';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2020, 2022);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -44,7 +44,7 @@ describe('Chain cycle scenarios - personal BKBQP (lỡ đợt N lần)', () => {
     expect(result.eligible).toBe(false);
   });
 
-  it('lỡ 2 đợt liên tiếp → đến năm 7 (streak=6) eligible cho cặp 5-6', async () => {
+  it('Xét điều kiện BKBQP: bỏ lỡ 2 đợt liên tiếp, tới mốc 6 năm liên tục (đúng mốc chu kỳ 2 năm) → đủ điều kiện', async () => {
     const personnelId = 'qn-bkbqp-miss-3';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2020, 2025);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -60,7 +60,7 @@ describe('Chain cycle scenarios - personal BKBQP (lỡ đợt N lần)', () => {
     expect(result.eligible).toBe(true);
   });
 
-  it('đã nhận BKBQP cặp 1-2, đến cặp 3-4 chưa lỡ → eligible', async () => {
+  it('Xét điều kiện BKBQP: đã nhận ở chu kỳ đầu (mốc 2 năm), tới chu kỳ kế (mốc 4 năm) không bỏ lỡ → đủ điều kiện', async () => {
     const personnelId = 'qn-bkbqp-cycle2';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2020, 2023, {
       2021: { nhan_bkbqp: true },
@@ -78,7 +78,7 @@ describe('Chain cycle scenarios - personal BKBQP (lỡ đợt N lần)', () => {
     expect(result.eligible).toBe(true);
   });
 
-  it('đã nhận BKBQP cặp 1-2, lỡ cặp 3-4, đến cặp 5-6 đủ → eligible', async () => {
+  it('Xét điều kiện BKBQP: đã nhận ở chu kỳ đầu, bỏ lỡ chu kỳ giữa, tới mốc 6 năm liên tục → đủ điều kiện', async () => {
     const personnelId = 'qn-bkbqp-cycle3-miss';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2018, 2023, {
       2019: { nhan_bkbqp: true },
@@ -97,8 +97,8 @@ describe('Chain cycle scenarios - personal BKBQP (lỡ đợt N lần)', () => {
   });
 });
 
-describe('Chain cycle scenarios - personal CSTDTQ (chu kỳ tiếp theo sau khi nhận)', () => {
-  it('CSTDTQ tại năm 3 cuối cycle 1 + tiếp 3y CSTDCS với BKBQP mới → eligible CSTDTQ năm 7', async () => {
+describe('Xét điều kiện CSTDTQ cá nhân: chu kỳ tiếp theo sau khi đã nhận', () => {
+  it('Xét điều kiện CSTDTQ: đã nhận ở mốc 3 năm + thêm 3 năm CSTDCS với BKBQP mới → đủ điều kiện ở mốc 6 năm liên tục', async () => {
     const personnelId = 'qn-cstdtq-cycle2';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2018, 2023, {
       2019: { nhan_bkbqp: true },
@@ -118,7 +118,7 @@ describe('Chain cycle scenarios - personal CSTDTQ (chu kỳ tiếp theo sau khi 
     expect(result.eligible).toBe(true);
   });
 
-  it('CSTDTQ năm 2020, chu kỳ 2 năm 4-6 không có BKBQP mới → not eligible CSTDTQ năm 7', async () => {
+  it('Xét điều kiện CSTDTQ: đã nhận năm 2020, chu kỳ kế không có BKBQP mới trong cửa sổ 3 năm gần nhất → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-cstdtq-no-new-bkbqp';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2018, 2023, {
       2019: { nhan_bkbqp: true },
@@ -137,7 +137,7 @@ describe('Chain cycle scenarios - personal CSTDTQ (chu kỳ tiếp theo sau khi 
     expect(result.eligible).toBe(false);
   });
 
-  it('lỡ CSTDTQ 2 lần liên tiếp, BKBQP rải đều → eligible CSTDTQ chu kỳ 3 (năm 10, streak=9)', async () => {
+  it('Xét điều kiện CSTDTQ: bỏ lỡ 2 lần liên tiếp, BKBQP rải đều → đủ điều kiện tại mốc 9 năm liên tục', async () => {
     const personnelId = 'qn-cstdtq-miss-twice';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2015, 2023, {
       2016: { nhan_bkbqp: true },
@@ -158,7 +158,7 @@ describe('Chain cycle scenarios - personal CSTDTQ (chu kỳ tiếp theo sau khi 
     expect(result.eligible).toBe(true);
   });
 
-  it('lỡ CSTDTQ 2 lần, BKBQP không nhận trong cửa sổ 3 năm cuối → not eligible CSTDTQ', async () => {
+  it('Xét điều kiện CSTDTQ: bỏ lỡ 2 lần, không có BKBQP trong cửa sổ 3 năm gần nhất → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-cstdtq-miss-no-recent-bkbqp';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2015, 2023, {
       2016: { nhan_bkbqp: true },
@@ -178,7 +178,7 @@ describe('Chain cycle scenarios - personal CSTDTQ (chu kỳ tiếp theo sau khi 
     expect(result.reason).toBe(eligibilityReasons.cstdtqReason(9, 0, 9));
   });
 
-  it('streak=6, BKBQP đầy đủ 3 lần (lỡ CSTDTQ chu kỳ 1 năm 4) → eligible CSTDTQ chu kỳ 2 năm 7', async () => {
+  it('Xét điều kiện CSTDTQ: 6 năm liên tục, đủ 3 BKBQP (bỏ lỡ CSTDTQ chu kỳ đầu) → đủ điều kiện ở mốc chu kỳ thứ 2', async () => {
     const personnelId = 'qn-cstdtq-cycle2-recover';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2017, 2022, {
       2018: { nhan_bkbqp: true },
@@ -198,7 +198,7 @@ describe('Chain cycle scenarios - personal CSTDTQ (chu kỳ tiếp theo sau khi 
     expect(result.eligible).toBe(true);
   });
 
-  it('streak=7, BKBQP đủ 3 lần nhưng CSTDTQ chưa nhận lần nào → BKTTCP fail (thiếu CSTDTQ)', async () => {
+  it('Xét điều kiện BKTTCP: 7 năm liên tục, đủ 3 BKBQP nhưng chưa nhận CSTDTQ lần nào → chưa đủ điều kiện (thiếu CSTDTQ)', async () => {
     const personnelId = 'qn-bkttcp-no-cstdtq';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -219,7 +219,7 @@ describe('Chain cycle scenarios - personal CSTDTQ (chu kỳ tiếp theo sau khi 
     expect(result.reason).toBe(eligibilityReasons.bkttcpReason(7, 3, 0, 7));
   });
 
-  it('streak=7, BKBQP đủ + CSTDTQ chỉ 1 (lỡ 1 đợt CSTDTQ) → BKTTCP fail vì thiếu 1 CSTDTQ', async () => {
+  it('Xét điều kiện BKTTCP: 7 năm liên tục, đủ BKBQP nhưng chỉ 1 CSTDTQ (bỏ lỡ 1 đợt CSTDTQ) → chưa đủ điều kiện (thiếu 1 CSTDTQ)', async () => {
     const personnelId = 'qn-bkttcp-one-cstdtq';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2017, 2023, {
       2018: { nhan_bkbqp: true },
@@ -240,7 +240,7 @@ describe('Chain cycle scenarios - personal CSTDTQ (chu kỳ tiếp theo sau khi 
     expect(result.reason).toBe(eligibilityReasons.bkttcpReason(7, 3, 1, 7));
   });
 
-  it('streak=4 (giữa chu kỳ, đã lỡ 1 lần) → not eligible CSTDTQ', async () => {
+  it('Xét điều kiện CSTDTQ: 4 năm liên tục (đang giữa chu kỳ, đã bỏ lỡ 1 lần) → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-cstdtq-mid-cycle';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2020, 2023, {
       2021: { nhan_bkbqp: true },
@@ -260,8 +260,8 @@ describe('Chain cycle scenarios - personal CSTDTQ (chu kỳ tiếp theo sau khi 
   });
 });
 
-describe('Chain cycle scenarios - personal BKTTCP (repeatable mỗi 7 năm, lifetime block sau khi nhận)', () => {
-  it('Lỡ BKTTCP năm 8 → tiếp tục đến năm 14 (streak=14) flags đủ → eligible chu kỳ 2 (không cần đứt chuỗi)', async () => {
+describe('Xét điều kiện BKTTCP cá nhân: lặp lại mỗi 7 năm, khóa một lần sau khi nhận', () => {
+  it('Xét điều kiện BKTTCP: bỏ lỡ ở mốc 7 năm, tiếp tục tới mốc 14 năm liên tục đủ cờ → đủ điều kiện ở chu kỳ thứ 2 (không cần đứt chuỗi)', async () => {
     const personnelId = 'qn-bkttcp-cycle2-no-break';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2010, 2023, {
       2018: { nhan_bkbqp: true },
@@ -283,7 +283,7 @@ describe('Chain cycle scenarios - personal BKTTCP (repeatable mỗi 7 năm, life
     expect(result.reason).toBe(eligibilityReasons.bkttcpEligible);
   });
 
-  it('Lỡ BKTTCP năm 8, đến năm 10 (streak=9, không bội 7) → fail insufficient', async () => {
+  it('Xét điều kiện BKTTCP: bỏ lỡ ở mốc 7 năm, mới tới 9 năm liên tục (chưa tới mốc chu kỳ 7 năm) → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-bkttcp-mid-cycle2';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2014, 2022, {
       2015: { nhan_bkbqp: true },
@@ -305,7 +305,7 @@ describe('Chain cycle scenarios - personal BKTTCP (repeatable mỗi 7 năm, life
     expect(result.reason).toBe(eligibilityReasons.bkttcpReason(9, 2, 2, 9));
   });
 
-  it('Đã nhận BKTTCP năm 7 + chuỗi đến năm 14 đủ flags → "chưa hỗ trợ" (lifetime block)', async () => {
+  it('Xét điều kiện BKTTCP: đã nhận ở mốc 7 năm + chuỗi tới mốc 14 năm đủ cờ → trả thông báo "chưa hỗ trợ" (chỉ xét một lần)', async () => {
     const personnelId = 'qn-bkttcp-already-received';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2010, 2023, {
       2011: { nhan_bkbqp: true },
@@ -332,7 +332,7 @@ describe('Chain cycle scenarios - personal BKTTCP (repeatable mỗi 7 năm, life
   });
 });
 
-describe('Chain cycle scenarios - unit BKBQP (lỡ đợt)', () => {
+describe('Xét điều kiện BKBQP đơn vị: chu kỳ vẫn tiếp tục dù bỏ lỡ đợt đề nghị', () => {
   function buildUnitDVQT(unitId: string, fromYear: number, toYear: number) {
     return Array.from({ length: toYear - fromYear + 1 }, (_, i) =>
       makeUnitAnnualRecord({
@@ -345,7 +345,7 @@ describe('Chain cycle scenarios - unit BKBQP (lỡ đợt)', () => {
     );
   }
 
-  it('2y ĐVQT → eligible BKBQP', async () => {
+  it('Xét điều kiện BKBQP đơn vị: 2 năm ĐVQT liên tục → đủ điều kiện', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkbqp-unit-1' });
     const records = buildUnitDVQT(cqdv.id, 2022, 2023);
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(records.slice().reverse());
@@ -360,7 +360,7 @@ describe('Chain cycle scenarios - unit BKBQP (lỡ đợt)', () => {
     expect(result.reason).toBe(unitEligibilityReasons.bkbqpEligible);
   });
 
-  it('3y ĐVQT (lỡ 1 đợt) → not eligible BKBQP', async () => {
+  it('Xét điều kiện BKBQP đơn vị: 3 năm ĐVQT (đã bỏ lỡ 1 đợt, lẻ năm chưa tới mốc chu kỳ 2 năm) → chưa đủ điều kiện', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkbqp-unit-2' });
     const records = buildUnitDVQT(cqdv.id, 2021, 2023);
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(records.slice().reverse());
@@ -375,7 +375,7 @@ describe('Chain cycle scenarios - unit BKBQP (lỡ đợt)', () => {
     expect(result.reason).toBe(unitEligibilityReasons.bkbqpReason(3));
   });
 
-  it('4y ĐVQT (lỡ 1 đợt → đỉnh chu kỳ 2) → eligible BKBQP', async () => {
+  it('Xét điều kiện BKBQP đơn vị: 4 năm ĐVQT (bỏ lỡ 1 đợt, tới mốc chu kỳ thứ 2) → đủ điều kiện', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkbqp-unit-3' });
     const records = buildUnitDVQT(cqdv.id, 2020, 2023);
     prismaMock.danhHieuDonViHangNam.findMany.mockResolvedValueOnce(records.slice().reverse());
@@ -390,7 +390,7 @@ describe('Chain cycle scenarios - unit BKBQP (lỡ đợt)', () => {
   });
 });
 
-describe('Chain cycle scenarios - unit BKTTCP (lặp lại sau mỗi 7 năm)', () => {
+describe('Xét điều kiện BKTTCP đơn vị: lặp lại sau mỗi 7 năm', () => {
   function arrangeResolveUnit(unit: ReturnType<typeof makeUnit>): void {
     if (unit.kind === 'CQDV') {
       prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({ id: unit.id });
@@ -424,7 +424,7 @@ describe('Chain cycle scenarios - unit BKTTCP (lặp lại sau mỗi 7 năm)', (
     });
   }
 
-  it('Chu kỳ 1 nhận BKTTCP năm 7 (2016) + chu kỳ 2 đủ BKBQP → recalc năm 14 (2023) eligible BKTTCP lần 2', async () => {
+  it('Xét điều kiện BKTTCP đơn vị (tính lại hồ sơ): nhận BKTTCP ở mốc 7 năm (2016) + chu kỳ 2 đủ BKBQP → đủ điều kiện nhận lần 2 tại mốc 14 năm (2023)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-cycle2' });
     const records = buildUnitDVQTWithFlags(cqdv.id, 2010, 2023, {
       2011: { nhan_bkbqp: true },
@@ -450,7 +450,7 @@ describe('Chain cycle scenarios - unit BKTTCP (lặp lại sau mỗi 7 năm)', (
     expect(upsertArgs.update.du_dieu_kien_bkttcp).toBe(true);
   });
 
-  it('Lỡ BKTTCP chu kỳ 1 (năm 2016 không nhận) + chu kỳ 2 đủ BKBQP → recalc năm 14 vẫn eligible', async () => {
+  it('Xét điều kiện BKTTCP đơn vị (tính lại hồ sơ): bỏ lỡ ở chu kỳ 1 (năm 2016 không nhận) + chu kỳ 2 đủ BKBQP → tới mốc 14 năm vẫn đủ điều kiện', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-miss-cycle1' });
     const records = buildUnitDVQTWithFlags(cqdv.id, 2010, 2023, {
       2011: { nhan_bkbqp: true },
@@ -475,7 +475,7 @@ describe('Chain cycle scenarios - unit BKTTCP (lặp lại sau mỗi 7 năm)', (
     expect(upsertArgs.update.du_dieu_kien_bkttcp).toBe(true);
   });
 
-  it('14y ĐVQT chưa từng nhận BKTTCP, 3 BKBQP cụm chu kỳ 1 (năm 2/4/6) + chu kỳ 2 không có BKBQP → not eligible (cửa sổ 7y trượt)', async () => {
+  it('Xét điều kiện BKTTCP đơn vị (tính lại hồ sơ): 14 năm ĐVQT chưa từng nhận, 3 BKBQP dồn ở chu kỳ 1 nhưng chu kỳ 2 không có BKBQP → chưa đủ điều kiện (cửa sổ 7 năm gần nhất rỗng)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-cycle1-only' });
     const records = buildUnitDVQTWithFlags(cqdv.id, 2010, 2023, {
       2011: { nhan_bkbqp: true },
@@ -497,7 +497,7 @@ describe('Chain cycle scenarios - unit BKTTCP (lặp lại sau mỗi 7 năm)', (
     expect(upsertArgs.update.du_dieu_kien_bkttcp).toBe(false);
   });
 
-  it('21y ĐVQT, đã nhận BKTTCP năm 2009 + 2016, chu kỳ 3 đủ BKBQP (2018/20/22) → eligible BKTTCP lần 3', async () => {
+  it('Xét điều kiện BKTTCP đơn vị (tính lại hồ sơ): 21 năm ĐVQT, đã nhận năm 2009 và 2016, chu kỳ 3 đủ BKBQP (2018/20/22) → đủ điều kiện nhận lần 3', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-cycle3' });
     const records = buildUnitDVQTWithFlags(cqdv.id, 2003, 2023, {
       2009: { nhan_bkttcp: true },
@@ -522,8 +522,8 @@ describe('Chain cycle scenarios - unit BKTTCP (lặp lại sau mỗi 7 năm)', (
   });
 });
 
-describe('Chain cycle scenarios - personal BKBQP recalc + missed counts', () => {
-  it('streak=3 chưa nhận BKBQP → recalc lưu chainContext.missedBkbqp=1', async () => {
+describe('Xét điều kiện BKBQP cá nhân: tính lại hồ sơ và ghi nhận số đợt đã bỏ lỡ', () => {
+  it('Xét điều kiện BKBQP (tính lại hồ sơ): 3 năm liên tục chưa nhận BKBQP (lẻ năm) → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-bkbqp-recalc-missed';
     const danhHieu: AnnualRow[] = [];
     const nckh: ScienceRow[] = [];
@@ -547,7 +547,7 @@ describe('Chain cycle scenarios - personal BKBQP recalc + missed counts', () => 
     expect(args.update.du_dieu_kien_bkbqp).toBe(false);
   });
 
-  it('streak=4 chưa nhận BKBQP (đỉnh chu kỳ 2 sau khi lỡ 1) → eligible', async () => {
+  it('Xét điều kiện BKBQP (tính lại hồ sơ): 4 năm liên tục chưa nhận BKBQP (tới mốc chu kỳ thứ 2 sau khi bỏ lỡ 1 lần) → đủ điều kiện', async () => {
     const personnelId = 'qn-bkbqp-recalc-cycle2';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2020, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -563,8 +563,8 @@ describe('Chain cycle scenarios - personal BKBQP recalc + missed counts', () => 
   });
 });
 
-describe('Chain cycle scenarios - eligibilityReasons untouched cho personal', () => {
-  it('Personal BKBQP insufficient streak vẫn dùng cstdcs_lien_tuc trong reason', async () => {
+describe('Xét điều kiện BKBQP cá nhân: nội dung lý do chưa đủ điều kiện', () => {
+  it('Xét điều kiện BKBQP: khi chưa đủ số năm liên tục, lý do hiển thị đúng số năm CSTDCS liên tục', async () => {
     const personnelId = 'qn-bkbqp-reason';
     const { danhHieu, nckh } = buildContiguousCSTDCS(2021, 2023);
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(

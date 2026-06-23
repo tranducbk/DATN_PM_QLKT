@@ -26,8 +26,8 @@ function buildItem(personnelId: string, override: Record<string, unknown> = {}) 
   };
 }
 
-describe('approveProposal — KNC_VSNXD_QDNDVN', () => {
-  it('duyệt thành công nam đủ 25 năm', async () => {
+describe('Phê duyệt đề xuất KNC (VSNXD QĐNDVN)', () => {
+  it('Phê duyệt thông thường: quân nhân nam đủ 25 năm phục vụ → tạo KNC, đề xuất chuyển APPROVED', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1' });
     const personnel = makePersonnel({
       unit: cqdv,
@@ -67,7 +67,7 @@ describe('approveProposal — KNC_VSNXD_QDNDVN', () => {
     expect(prismaMock.bangDeXuat.updateMany.mock.calls[0][0].data.status).toBe(PROPOSAL_STATUS.APPROVED);
   });
 
-  it('duyệt thành công nữ đủ 20 năm', async () => {
+  it('Phê duyệt thông thường: quân nhân nữ đủ 20 năm phục vụ → tạo KNC', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-2' });
     const personnel = makePersonnel({
       unit: cqdv,
@@ -104,7 +104,7 @@ describe('approveProposal — KNC_VSNXD_QDNDVN', () => {
     expect(prismaMock.kyNiemChuongVSNXDQDNDVN.create).toHaveBeenCalledTimes(1);
   });
 
-  it('reject nam <25 năm', async () => {
+  it('Phê duyệt bị chặn: quân nhân nam chưa đủ 25 năm phục vụ → chưa đủ điều kiện KNC', async () => {
     const personnel = makePersonnel({
       id: 'qn-male-short',
       ho_ten: 'Nam C',
@@ -134,7 +134,7 @@ describe('approveProposal — KNC_VSNXD_QDNDVN', () => {
     expect(err.message).toContain(personnel.ho_ten);
   });
 
-  it('reject thiếu giới tính', async () => {
+  it('Phê duyệt bị chặn: quân nhân thiếu giới tính → không xác định được mốc năm, chưa đủ điều kiện', async () => {
     const personnel = {
       ...makePersonnel({
         id: 'qn-no-gender',
@@ -165,7 +165,7 @@ describe('approveProposal — KNC_VSNXD_QDNDVN', () => {
     expect(err.message).toContain(KNC_MISSING_GENDER(personnel.ho_ten));
   });
 
-  it('reject khi proposal thiếu tháng', async () => {
+  it('Phê duyệt bị chặn: đề xuất KNC thiếu tháng → báo lỗi thiếu tháng', async () => {
     const proposal = makeProposal({
       id: 'p-knc-no-thang',
       loai: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
@@ -183,7 +183,7 @@ describe('approveProposal — KNC_VSNXD_QDNDVN', () => {
     );
   });
 
-  it('regression: duplicate check exclude chính proposal đang duyệt (không self-match)', async () => {
+  it('Phê duyệt KNC: bộ lọc chống trùng bỏ qua chính đề xuất đang duyệt → không tự báo trùng oan, vẫn duyệt được', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-self-knc' });
     const personnel = makePersonnel({
       unit: cqdv,

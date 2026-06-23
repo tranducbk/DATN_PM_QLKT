@@ -15,8 +15,8 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-describe('unit.service - getAllUnits', () => {
-  it('Cho hierarchy=true, Khi getAllUnits, Thì trả về danh sách CQDV kèm DVTT con', async () => {
+describe('Đơn vị: tra cứu danh sách đơn vị', () => {
+  it('Đơn vị: tra cứu dạng cây → trả về danh sách CQDV kèm các DVTT con', async () => {
     prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
       {
         id: 'cqdv-1',
@@ -36,7 +36,7 @@ describe('unit.service - getAllUnits', () => {
     expect(args.include).toMatchObject({ DonViTrucThuoc: { include: { ChucVu: true } } });
   });
 
-  it('Cho hierarchy=false, Khi getAllUnits, Thì trả về danh sách phẳng CQDV + DVTT đã sort theo ma_don_vi', async () => {
+  it('Đơn vị: tra cứu dạng phẳng → gộp CQDV và DVTT, sắp xếp theo mã đơn vị', async () => {
     prismaMock.coQuanDonVi.findMany.mockResolvedValueOnce([
       { id: 'cqdv-1', ten_don_vi: 'Cơ quan B', ma_don_vi: 'B1' },
     ]);
@@ -52,8 +52,8 @@ describe('unit.service - getAllUnits', () => {
   });
 });
 
-describe('unit.service - getUnitById', () => {
-  it('Cho id của CQDV, Khi getUnitById, Thì trả về CQDV kèm DVTT con', async () => {
+describe('Đơn vị: tra cứu một đơn vị theo định danh', () => {
+  it('Đơn vị: tra cứu một CQDV → trả về CQDV kèm các DVTT con', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({
       id: 'cqdv-1',
       ma_don_vi: 'A1',
@@ -68,7 +68,7 @@ describe('unit.service - getUnitById', () => {
     expect(result?.id).toBe('cqdv-1');
   });
 
-  it('Cho id không tồn tại, Khi getUnitById, Thì throw NotFoundError', async () => {
+  it('Đơn vị: tra cứu đơn vị không tồn tại → bị chặn', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce(null);
     prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce(null);
 
@@ -76,8 +76,8 @@ describe('unit.service - getUnitById', () => {
   });
 });
 
-describe('unit.service - createUnit', () => {
-  it('Cho ma_don_vi chưa tồn tại và không có parent, Khi createUnit, Thì tạo CQDV mới', async () => {
+describe('Đơn vị: tạo mới đơn vị', () => {
+  it('Đơn vị: tạo với mã chưa trùng và không có đơn vị cha → tạo CQDV mới', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce(null);
     prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce(null);
     prismaMock.coQuanDonVi.create.mockResolvedValueOnce({
@@ -96,7 +96,7 @@ describe('unit.service - createUnit', () => {
     expect(prismaMock.donViTrucThuoc.create).not.toHaveBeenCalled();
   });
 
-  it('Cho ma_don_vi đã tồn tại trong CQDV, Khi createUnit, Thì throw AppError 409', async () => {
+  it('Đơn vị: tạo với mã đã trùng CQDV khác → bị chặn vì trùng mã (409)', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({ id: 'cqdv-existing' });
     prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce(null);
 
@@ -107,7 +107,7 @@ describe('unit.service - createUnit', () => {
     );
   });
 
-  it('Cho có co_quan_don_vi_id parent hợp lệ, Khi createUnit, Thì tạo DVTT mới', async () => {
+  it('Đơn vị: tạo với CQDV cha hợp lệ → tạo DVTT mới trực thuộc', async () => {
     prismaMock.coQuanDonVi.findUnique
       .mockResolvedValueOnce(null)
       .mockResolvedValueOnce({ id: 'cqdv-parent' });
@@ -129,8 +129,8 @@ describe('unit.service - createUnit', () => {
   });
 });
 
-describe('unit.service - updateUnit', () => {
-  it('Cho rename ma_don_vi của CQDV trùng đơn vị khác, Khi updateUnit, Thì throw AppError 409', async () => {
+describe('Đơn vị: cập nhật đơn vị', () => {
+  it('Đơn vị: đổi mã CQDV thành mã trùng đơn vị khác → bị chặn vì trùng mã (409)', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({ id: 'cqdv-1', ma_don_vi: 'OLD' });
     prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce(null);
     prismaMock.coQuanDonVi.findFirst.mockResolvedValueOnce({ id: 'cqdv-other' });
@@ -143,7 +143,7 @@ describe('unit.service - updateUnit', () => {
     );
   });
 
-  it('Cho đổi tên DVTT, Khi updateUnit, Thì sync ten_don_vi vào lịch sử các chức vụ của DVTT', async () => {
+  it('Đơn vị: đổi tên DVTT → cập nhật tên vào lịch sử chức vụ của các chức vụ thuộc DVTT', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce(null);
     prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce({ id: 'dvtt-1', ten_don_vi: 'Tên cũ' });
     prismaMock.donViTrucThuoc.update.mockResolvedValueOnce({ id: 'dvtt-1', ten_don_vi: 'Tên mới' });
@@ -158,7 +158,7 @@ describe('unit.service - updateUnit', () => {
     });
   });
 
-  it('Cho đổi tên CQDV, Khi updateUnit, Thì sync ten_co_quan_don_vi cho cả chức vụ trực tiếp lẫn chức vụ đơn vị con', async () => {
+  it('Đơn vị: đổi tên CQDV → cập nhật tên CQDV vào lịch sử của cả chức vụ trực tiếp lẫn chức vụ đơn vị con', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({ id: 'cqdv-1', ten_don_vi: 'CQ cũ' });
     prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce(null);
     prismaMock.coQuanDonVi.update.mockResolvedValueOnce({ id: 'cqdv-1', ten_don_vi: 'CQ mới' });
@@ -177,8 +177,8 @@ describe('unit.service - updateUnit', () => {
   });
 });
 
-describe('unit.service - deleteUnit', () => {
-  it('Cho CQDV còn DVTT con, Khi deleteUnit, Thì throw ValidationError', async () => {
+describe('Đơn vị: xoá đơn vị', () => {
+  it('Đơn vị: xoá CQDV còn 2 DVTT con → bị chặn vì còn ràng buộc', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({
       id: 'cqdv-1',
       DonViTrucThuoc: [{ id: 'dvtt-1' }, { id: 'dvtt-2' }],
@@ -193,7 +193,7 @@ describe('unit.service - deleteUnit', () => {
     expect(prismaMock.coQuanDonVi.delete).not.toHaveBeenCalled();
   });
 
-  it('Cho CQDV còn quân nhân, Khi deleteUnit, Thì throw ValidationError', async () => {
+  it('Đơn vị: xoá CQDV còn 3 quân nhân → bị chặn vì còn ràng buộc', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({
       id: 'cqdv-1',
       DonViTrucThuoc: [],
@@ -209,7 +209,7 @@ describe('unit.service - deleteUnit', () => {
     );
   });
 
-  it('Cho CQDV không có ràng buộc, Khi deleteUnit, Thì xoá thành công', async () => {
+  it('Đơn vị: xoá CQDV không còn ràng buộc nào → xoá được, báo thành công', async () => {
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce({
       id: 'cqdv-1',
       DonViTrucThuoc: [],
@@ -226,8 +226,8 @@ describe('unit.service - deleteUnit', () => {
   });
 });
 
-describe('unit.service - getAllSubUnits', () => {
-  it('Cho coQuanDonViId, Khi getAllSubUnits, Thì query DVTT theo parent', async () => {
+describe('Đơn vị: tra cứu các DVTT trực thuộc một CQDV', () => {
+  it('Đơn vị: tra cứu theo CQDV cha → chỉ lấy các DVTT trực thuộc đúng CQDV đó', async () => {
     prismaMock.donViTrucThuoc.findMany.mockResolvedValueOnce([
       { id: 'dvtt-1', ten_don_vi: 'A', ma_don_vi: 'A1' },
     ]);

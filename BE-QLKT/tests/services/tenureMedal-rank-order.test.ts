@@ -4,8 +4,8 @@ import {
   DANH_HIEU_HCCSVV,
 } from '../../src/constants/danhHieu.constants';
 
-describe('validateHCCSVVRankOrder', () => {
-  it('HANG_BA luôn hợp lệ — không có rank thấp hơn để check', () => {
+describe('HCCSVV (niên hạn): kiểm tra thứ tự hạng khi nhận', () => {
+  it('HCCSVV (niên hạn): nhận hạng Ba luôn hợp lệ — không có hạng thấp hơn cần kiểm tra trước', () => {
     expect(validateHCCSVVRankOrder(DANH_HIEU_HCCSVV.HANG_BA, 2024, [])).toBeNull();
     expect(
       validateHCCSVVRankOrder(DANH_HIEU_HCCSVV.HANG_BA, 2024, [
@@ -14,14 +14,14 @@ describe('validateHCCSVVRankOrder', () => {
     ).toBeNull();
   });
 
-  it('HANG_NHI khi chưa có HANG_BA → reject "Phải nhận ... trước"', () => {
+  it('HCCSVV (niên hạn): nhận hạng Nhì khi chưa có hạng Ba → từ chối "Phải nhận ... hạng Ba trước"', () => {
     const error = validateHCCSVVRankOrder(DANH_HIEU_HCCSVV.HANG_NHI, 2024, []);
     expect(error).toBe(
       'Phải nhận Huy chương Chiến sĩ vẻ vang hạng Ba trước khi nhận Huy chương Chiến sĩ vẻ vang hạng Nhì'
     );
   });
 
-  it('HANG_NHI cùng năm với HANG_BA → reject "phải sau năm"', () => {
+  it('HCCSVV (niên hạn): nhận hạng Nhì cùng năm với hạng Ba → từ chối "phải sau năm nhận hạng Ba"', () => {
     const error = validateHCCSVVRankOrder(DANH_HIEU_HCCSVV.HANG_NHI, 2018, [
       { danh_hieu: DANH_HIEU_HCCSVV.HANG_BA, nam: 2018 },
     ]);
@@ -30,7 +30,7 @@ describe('validateHCCSVVRankOrder', () => {
     );
   });
 
-  it('HANG_NHI sau HANG_BA năm trước → hợp lệ', () => {
+  it('HCCSVV (niên hạn): nhận hạng Nhì ở năm sau năm nhận hạng Ba → hợp lệ', () => {
     expect(
       validateHCCSVVRankOrder(DANH_HIEU_HCCSVV.HANG_NHI, 2018, [
         { danh_hieu: DANH_HIEU_HCCSVV.HANG_BA, nam: 2017 },
@@ -38,7 +38,7 @@ describe('validateHCCSVVRankOrder', () => {
     ).toBeNull();
   });
 
-  it('HANG_NHAT chỉ có HANG_BA (thiếu HANG_NHI) → reject', () => {
+  it('HCCSVV (niên hạn): nhận hạng Nhất khi mới có hạng Ba, thiếu hạng Nhì → từ chối "Phải nhận ... hạng Nhì trước"', () => {
     const error = validateHCCSVVRankOrder(DANH_HIEU_HCCSVV.HANG_NHAT, 2025, [
       { danh_hieu: DANH_HIEU_HCCSVV.HANG_BA, nam: 2017 },
     ]);
@@ -47,7 +47,7 @@ describe('validateHCCSVVRankOrder', () => {
     );
   });
 
-  it('HANG_NHAT cùng năm với HANG_NHI → reject "phải sau năm"', () => {
+  it('HCCSVV (niên hạn): nhận hạng Nhất cùng năm với hạng Nhì → từ chối "phải sau năm nhận hạng Nhì"', () => {
     const error = validateHCCSVVRankOrder(DANH_HIEU_HCCSVV.HANG_NHAT, 2020, [
       { danh_hieu: DANH_HIEU_HCCSVV.HANG_BA, nam: 2017 },
       { danh_hieu: DANH_HIEU_HCCSVV.HANG_NHI, nam: 2020 },
@@ -57,7 +57,7 @@ describe('validateHCCSVVRankOrder', () => {
     );
   });
 
-  it('HANG_NHAT đầy đủ tuần tự → hợp lệ', () => {
+  it('HCCSVV (niên hạn): nhận hạng Nhất khi đã có đủ hạng Ba rồi hạng Nhì theo đúng thứ tự năm → hợp lệ', () => {
     expect(
       validateHCCSVVRankOrder(DANH_HIEU_HCCSVV.HANG_NHAT, 2025, [
         { danh_hieu: DANH_HIEU_HCCSVV.HANG_BA, nam: 2017 },
@@ -66,7 +66,7 @@ describe('validateHCCSVVRankOrder', () => {
     ).toBeNull();
   });
 
-  it('Rank không thuộc HCCSVV → return null (no-op)', () => {
+  it('HCCSVV (niên hạn): danh hiệu không thuộc HCCSVV (vd: CSTDCS) → bỏ qua kiểm tra thứ tự hạng', () => {
     expect(validateHCCSVVRankOrder(DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS, 2024, [])).toBeNull();
   });
 });

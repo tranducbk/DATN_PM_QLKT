@@ -30,8 +30,8 @@ afterEach(() => {
 
 const ADMIN_ID = 'acc-admin-1';
 
-describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)', () => {
-  it('reject khi proposal đã APPROVED', async () => {
+describe('Phê duyệt đề xuất cá nhân hằng năm (kiểm tra dữ liệu và điều kiện)', () => {
+  it('Phê duyệt bị chặn: đề xuất đã được duyệt trước đó → báo đã phê duyệt', async () => {
     // Given: đề xuất đã APPROVED
     const proposal = makeProposal({
       id: 'prop-already',
@@ -52,7 +52,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
     expect(prismaMock.danhHieuHangNam.upsert).not.toHaveBeenCalled();
   });
 
-  it('throw NotFoundError khi proposalId không tồn tại', async () => {
+  it('Phê duyệt bị chặn: đề xuất không tồn tại → báo "Đề xuất không tồn tại"', async () => {
     // Given: lookup trả null
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(null);
 
@@ -64,7 +64,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
     );
   });
 
-  it('bypass FE — reject mixed group CSTDCS + BKBQP cùng đề xuất', async () => {
+  it('Phê duyệt bị chặn: đề xuất trộn CSTDCS với BKBQP (lách kiểm tra giao diện, gửi thẳng API) → buộc tách riêng', async () => {
     // Given: đề xuất trộn CSTDCS với BKBQP — FE chặn, ở đây bypass
     const personnelA = makePersonnel({ id: 'qn-A' });
     const personnelB = makePersonnel({ id: 'qn-B' });
@@ -95,7 +95,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
     expect(prismaMock.danhHieuHangNam.upsert).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject mixed group CSTT + CSTDTQ cùng đề xuất', async () => {
+  it('Phê duyệt bị chặn: đề xuất trộn CSTT với CSTDTQ (lách kiểm tra giao diện, gửi thẳng API) → buộc tách riêng', async () => {
     // Given: đề xuất trộn CSTT (basic) với CSTDTQ (chain)
     const personnelA = makePersonnel({ id: 'qn-A2' });
     const personnelB = makePersonnel({ id: 'qn-B2' });
@@ -124,7 +124,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject mixed group CSTT + BKTTCP cùng đề xuất', async () => {
+  it('Phê duyệt bị chặn: đề xuất trộn CSTT với BKTTCP (lách kiểm tra giao diện, gửi thẳng API) → buộc tách riêng', async () => {
     // Given: đề xuất trộn CSTT với BKTTCP
     const personnelA = makePersonnel({ id: 'qn-A3' });
     const personnelB = makePersonnel({ id: 'qn-B3' });
@@ -153,7 +153,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('reject duplicate cùng năm + cùng danh hiệu — message ghép `${hoTen}: ...`', async () => {
+  it('Phê duyệt bị chặn: quân nhân đã có cùng danh hiệu trong cùng năm → báo trùng kèm tên quân nhân', async () => {
     // Given: trong DB đã có CSTDCS của quân nhân/năm này
     const personnel = makePersonnel({ id: 'qn-dup', ho_ten: 'Trần Văn B' });
     const item = makeProposalItemCaNhan({
@@ -196,7 +196,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('reject mutual exclusive CSTDCS khi đã có CSTT cùng năm', async () => {
+  it('Phê duyệt bị chặn: đề xuất CSTDCS nhưng quân nhân đã có CSTT cùng năm (hai danh hiệu loại trừ lẫn nhau) → báo trùng', async () => {
     // Given: đề xuất CSTDCS nhưng quân nhân đã có CSTT đối diện cùng năm
     const personnel = makePersonnel({ id: 'qn-mx', ho_ten: 'Lê Thị C' });
     const item = makeProposalItemCaNhan({
@@ -237,7 +237,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
     expect(prismaMock.danhHieuHangNam.upsert).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject khi chưa đủ ĐK BKBQP cá nhân', async () => {
+  it('Phê duyệt bị chặn: quân nhân chưa đủ điều kiện BKBQP (lách kiểm tra giao diện, gửi thẳng API) → từ chối', async () => {
     // Given: item BKBQP nhưng eligibility trả false
     const personnel = makePersonnel({ id: 'qn-bk-not-elig', ho_ten: 'Nguyễn Chưa Đủ' });
     const item = makeProposalItemCaNhan({
@@ -275,7 +275,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject khi chưa đủ ĐK CSTDTQ cá nhân', async () => {
+  it('Phê duyệt bị chặn: quân nhân chưa đủ điều kiện CSTDTQ (lách kiểm tra giao diện, gửi thẳng API) → từ chối', async () => {
     const personnel = makePersonnel({ id: 'qn-cs-not-elig', ho_ten: 'Lê Chưa Đủ' });
     const item = makeProposalItemCaNhan({
       personnel_id: personnel.id,
@@ -310,7 +310,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
     expect(prismaMock.danhHieuHangNam.upsert).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject khi chưa đủ ĐK BKTTCP cá nhân', async () => {
+  it('Phê duyệt bị chặn: quân nhân chưa đủ điều kiện BKTTCP (lách kiểm tra giao diện, gửi thẳng API) → từ chối', async () => {
     const personnel = makePersonnel({ id: 'qn-bkttcp-not-elig', ho_ten: 'Phạm Chưa Đủ' });
     const item = makeProposalItemCaNhan({
       personnel_id: personnel.id,
@@ -345,7 +345,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
     expect(prismaMock.danhHieuHangNam.upsert).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject BKBQP khi thiếu NCKH liên tục', async () => {
+  it('Phê duyệt bị chặn: đề xuất BKBQP nhưng thiếu NCKH liên tục (lách kiểm tra giao diện, gửi thẳng API) → từ chối', async () => {
     const personnel = makePersonnel({ id: 'qn-nckh-bkbqp', ho_ten: 'QN Thiếu NCKH BKBQP' });
     const item = makeProposalItemCaNhan({
       personnel_id: personnel.id,
@@ -383,7 +383,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject CSTDTQ khi thiếu NCKH liên tục', async () => {
+  it('Phê duyệt bị chặn: đề xuất CSTDTQ nhưng thiếu NCKH liên tục (lách kiểm tra giao diện, gửi thẳng API) → từ chối', async () => {
     const personnel = makePersonnel({ id: 'qn-nckh-cstdtq', ho_ten: 'QN Thiếu NCKH CSTDTQ' });
     const item = makeProposalItemCaNhan({
       personnel_id: personnel.id,
@@ -421,7 +421,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject BKTTCP khi thiếu NCKH liên tục', async () => {
+  it('Phê duyệt bị chặn: đề xuất BKTTCP nhưng thiếu NCKH liên tục (lách kiểm tra giao diện, gửi thẳng API) → từ chối', async () => {
     const personnel = makePersonnel({ id: 'qn-nckh-bkttcp', ho_ten: 'QN Thiếu NCKH BKTTCP' });
     const item = makeProposalItemCaNhan({
       personnel_id: personnel.id,
@@ -459,7 +459,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (validation + eligibility errors)
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — editedData danh_hieu rác trong approve CA_NHAN_HANG_NAM → reject', async () => {
+  it('Phê duyệt bị chặn: dữ liệu chỉnh sửa chứa danh hiệu không hợp lệ (lách kiểm tra giao diện, gửi thẳng API) → từ chối', async () => {
     const personnel = makePersonnel({ id: 'qn-approve-invalid-dh', ho_ten: 'QN Invalid Approve' });
     const proposal = makeProposal({
       id: 'p-approve-invalid-dh',

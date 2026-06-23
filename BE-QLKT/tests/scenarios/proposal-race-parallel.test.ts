@@ -30,8 +30,8 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-describe('Proposal race conditions — parallel approvals across proposals', () => {
-  it('Hai proposal CA_NHAN_HANG_NAM từ 2 manager duyệt song song -> chỉ 1 request chốt trạng thái', async () => {
+describe('Tranh chấp đồng thời: phê duyệt song song nhiều đề xuất khác nhau', () => {
+  it('Tranh chấp đồng thời: hai đề xuất cá nhân hằng năm từ 2 Manager được duyệt song song → chỉ một request chốt được trạng thái', async () => {
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-race-ca-nhan' });
     const target = makePersonnel({ id: 'qn-race-ca-nhan', ho_ten: 'QN Race CN', unit });
     const item = {
@@ -110,7 +110,7 @@ describe('Proposal race conditions — parallel approvals across proposals', () 
     expect(prismaMock.bangDeXuat.updateMany).toHaveBeenCalledTimes(2);
   });
 
-  it('Hai proposal DON_VI_HANG_NAM từ 2 manager duyệt song song -> chỉ 1 request chốt trạng thái', async () => {
+  it('Tranh chấp đồng thời: hai đề xuất đơn vị hằng năm (cơ quan đơn vị) từ 2 Manager được duyệt song song → chỉ một request chốt được trạng thái', async () => {
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-race-don-vi' });
     const item = makeProposalItemDonVi({
       unitKind: 'CQDV',
@@ -191,7 +191,7 @@ describe('Proposal race conditions — parallel approvals across proposals', () 
     }
   });
 
-  it('Hai proposal DON_VI_HANG_NAM (DVTT) duyệt song song -> chỉ 1 request chốt trạng thái', async () => {
+  it('Tranh chấp đồng thời: hai đề xuất đơn vị hằng năm cho đơn vị trực thuộc được duyệt song song → chỉ một request chốt được trạng thái', async () => {
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-race-don-vi', parentId: 'cqdv-race-parent' });
     const item = makeProposalItemDonVi({
       unitKind: 'DVTT',
@@ -268,7 +268,7 @@ describe('Proposal race conditions — parallel approvals across proposals', () 
     expect(firstCreateArgs.data.don_vi_truc_thuoc_id).toBe(dvtt.id);
   });
 
-  it('Hai proposal NCKH từ 2 manager duyệt song song -> hiện tại cả hai đều approve', async () => {
+  it('Tranh chấp đồng thời: hai đề xuất NCKH từ 2 Manager được duyệt song song → hiện tại cả hai đều được phê duyệt', async () => {
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-race-nckh' });
     const target = makePersonnel({ id: 'qn-race-nckh', ho_ten: 'QN Race NCKH', unit });
     const item = {
@@ -321,7 +321,7 @@ describe('Proposal race conditions — parallel approvals across proposals', () 
     expect(prismaMock.bangDeXuat.updateMany).toHaveBeenCalledTimes(2);
   });
 
-  it('DON_VI_HANG_NAM (DVTT): 1 admin duyệt và 1 admin từ chối cùng lúc -> chỉ 1 bên thành công', async () => {
+  it('Tranh chấp đồng thời: đề xuất đơn vị trực thuộc — một Admin duyệt và một Admin từ chối cùng lúc → chỉ một bên thành công', async () => {
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-race-approve-reject', parentId: 'cqdv-parent-race' });
     const item = makeProposalItemDonVi({
       unitKind: 'DVTT',
@@ -372,7 +372,7 @@ describe('Proposal race conditions — parallel approvals across proposals', () 
     expect(prismaMock.bangDeXuat.updateMany).toHaveBeenCalledTimes(1);
   });
 
-  it('NIEN_HAN: 1 admin duyệt và 1 admin từ chối cùng lúc -> chỉ 1 bên thành công', async () => {
+  it('Tranh chấp đồng thời: đề xuất HCCSVV — một Admin duyệt và một Admin từ chối cùng lúc → chỉ một bên thành công', async () => {
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-race-nh' });
     const target = makePersonnel({
       id: 'qn-race-nh',
@@ -426,7 +426,7 @@ describe('Proposal race conditions — parallel approvals across proposals', () 
     expect(rejected).toHaveLength(1);
   });
 
-  it('CONG_HIEN: 1 admin duyệt và 1 admin từ chối cùng lúc -> chỉ 1 bên thành công', async () => {
+  it('Tranh chấp đồng thời: đề xuất HCBVTQ — một Admin duyệt và một Admin từ chối cùng lúc → chỉ một bên thành công', async () => {
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-race-ch' });
     const target = makePersonnel({
       id: 'qn-race-ch',
@@ -497,7 +497,7 @@ describe('Proposal race conditions — parallel approvals across proposals', () 
     expect(rejected).toHaveLength(1);
   });
 
-  it('KNC: 1 admin duyệt và 1 admin từ chối cùng lúc -> chỉ 1 bên thành công', async () => {
+  it('Tranh chấp đồng thời: đề xuất KNC — một Admin duyệt và một Admin từ chối cùng lúc → chỉ một bên thành công', async () => {
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-race-knc' });
     const target = makePersonnel({
       id: 'qn-race-knc',

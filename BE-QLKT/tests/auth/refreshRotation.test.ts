@@ -14,8 +14,8 @@ function makeRefresh(tag: number, iatOffsetSec = 0): string {
 
 const baseAccount = { id: 'acc-1', username: 'u', role: 'USER', quan_nhan_id: null };
 
-describe('refreshAccessToken — single-column rotation + grace', () => {
-  it('rotates the current token and keeps the old one as prev', async () => {
+describe('Làm mới access token bằng refresh token (xoay vòng token kèm thời gian ân hạn)', () => {
+  it('Đổi refresh token hiện tại sang token mới và giữ token cũ làm token trước đó', async () => {
     const current = makeRefresh(1);
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       ...baseAccount,
@@ -36,7 +36,7 @@ describe('refreshAccessToken — single-column rotation + grace', () => {
     );
   });
 
-  it('on a lost concurrent-rotate race, returns the winner token (no logout)', async () => {
+  it('Khi hai yêu cầu làm mới chạy đồng thời và thua cuộc tranh chấp, trả về token của bên thắng (không bị đăng xuất)', async () => {
     const current = makeRefresh(1);
     const winner = makeRefresh(2);
     prismaMock.taiKhoan.findUnique
@@ -49,7 +49,7 @@ describe('refreshAccessToken — single-column rotation + grace', () => {
     expect(result.refreshToken).toBe(winner);
   });
 
-  it('within grace, replaying the previous token returns the current token (no logout)', async () => {
+  it('Trong thời gian ân hạn, gửi lại token trước đó vẫn trả về token hiện tại (không bị đăng xuất)', async () => {
     const prev = makeRefresh(1);
     const current = makeRefresh(2); // issued just now → within grace
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
@@ -64,7 +64,7 @@ describe('refreshAccessToken — single-column rotation + grace', () => {
     expect(prismaMock.taiKhoan.update).not.toHaveBeenCalled();
   });
 
-  it('outside grace, replaying the previous token is rejected', async () => {
+  it('Quá thời gian ân hạn, gửi lại token trước đó bị từ chối (trả 401)', async () => {
     const prev = makeRefresh(1);
     const graceSec = Math.ceil(REFRESH_GRACE_MS / 1000);
     const current = makeRefresh(2, -(graceSec + 5)); // current was issued long ago
@@ -78,7 +78,7 @@ describe('refreshAccessToken — single-column rotation + grace', () => {
     expect(prismaMock.taiKhoan.update).not.toHaveBeenCalled();
   });
 
-  it('rejects an unknown valid-signature token without nuking the session', async () => {
+  it('Từ chối token lạ tuy chữ ký hợp lệ nhưng không khớp phiên, không hủy phiên đang dùng (trả 401)', async () => {
     const stray = makeRefresh(9);
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       ...baseAccount,
@@ -90,7 +90,7 @@ describe('refreshAccessToken — single-column rotation + grace', () => {
     expect(prismaMock.taiKhoan.update).not.toHaveBeenCalled();
   });
 
-  it('rejects when the account has been logged out (refreshToken cleared)', async () => {
+  it('Từ chối khi tài khoản đã đăng xuất (refresh token đã bị xóa) (trả 401)', async () => {
     const token = makeRefresh(1);
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       ...baseAccount,

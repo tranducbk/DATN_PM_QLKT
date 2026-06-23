@@ -31,8 +31,8 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-describe('Proposal race conditions — direct contention on same proposal', () => {
-  it('Manager xóa đúng lúc Admin duyệt cùng proposal -> approve fail với "đã bị thay đổi"', async () => {
+describe('Tranh chấp đồng thời: hai thao tác cùng lúc trên cùng một đề xuất', () => {
+  it('Tranh chấp đồng thời: Manager xóa đúng lúc Admin duyệt cùng một đề xuất → phê duyệt thất bại với "Đề xuất đã bị thay đổi bởi người khác"', async () => {
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-race-1' });
     const proposal = makeProposal({
       id: 'prop-race-approve-delete',
@@ -61,7 +61,7 @@ describe('Proposal race conditions — direct contention on same proposal', () =
     }
   });
 
-  it('Manager và Admin cùng lúc xóa 1 proposal -> chỉ 1 bên thành công', async () => {
+  it('Tranh chấp đồng thời: Manager và Admin cùng lúc xóa một đề xuất → chỉ một bên thành công, bên kia báo "Đề xuất đã bị thay đổi bởi người khác"', async () => {
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-race-2' });
     const proposal = makeProposal({
       id: 'prop-race-double-delete',
@@ -97,7 +97,7 @@ describe('Proposal race conditions — direct contention on same proposal', () =
     }
   });
 
-  it('Approve vẫn success khi recalc đơn vị fail do dữ liệu vừa bị xóa', async () => {
+  it('Tranh chấp đồng thời: duyệt đề xuất đơn vị vẫn thành công khi tính lại hồ sơ đơn vị lỗi do dữ liệu vừa bị xóa → ghi nhận 1 lỗi tính lại nhưng vẫn trao thưởng', async () => {
     const submittedUnit = makeUnit({ kind: 'CQDV', id: 'cqdv-submitted' });
 
     const submittedItem = makeProposalItemDonVi({
@@ -155,7 +155,7 @@ describe('Proposal race conditions — direct contention on same proposal', () =
     expect(result.result.recalculate_errors).toBe(1);
   });
 
-  it('Hai admin duyệt/từ chối cùng lúc 1 proposal -> chỉ 1 thao tác thành công', async () => {
+  it('Tranh chấp đồng thời: một Admin duyệt và một Admin từ chối cùng lúc một đề xuất → chỉ một thao tác thành công', async () => {
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-race-approve-reject' });
     const proposal = makeProposal({
       id: 'prop-race-approve-reject',
@@ -191,7 +191,7 @@ describe('Proposal race conditions — direct contention on same proposal', () =
     }
   });
 
-  it('Hai manager submit cùng payload cùng lúc -> hiện tại cả hai đều tạo proposal', async () => {
+  it('Tranh chấp đồng thời: hai Manager gửi cùng một nội dung đề xuất cùng lúc → hiện tại cả hai đều tạo được đề xuất', async () => {
     const unit = makeUnit({ kind: 'CQDV', id: 'cqdv-race-submit' });
     const managerQn = makePersonnel({ id: 'qn-manager-race-submit', unit, ho_ten: 'Manager Race' });
     const account = makeAdmin({ id: MANAGER_ID, quanNhan: managerQn });

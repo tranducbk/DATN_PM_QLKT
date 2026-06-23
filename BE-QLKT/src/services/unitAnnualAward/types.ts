@@ -1,10 +1,5 @@
 export interface UnitAnnualAwardDeps {
   recalculateAnnualUnit: (donViId: string, year?: number | null) => Promise<unknown>;
-  checkUnitAwardEligibility: (
-    donViId: string,
-    year: number,
-    danhHieu: string
-  ) => Promise<{ eligible: boolean; reason: string }>;
   getSubUnits: (coQuanDonViId: string) => Promise<string[]>;
 }
 

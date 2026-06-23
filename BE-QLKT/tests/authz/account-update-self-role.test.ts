@@ -62,8 +62,8 @@ function accountRow(id: string, role: string) {
   };
 }
 
-describe('accountController.updateAccount — no self role change', () => {
-  it('SA đổi vai trò chính mình sang ADMIN → 403, không gọi update', async () => {
+describe('Bảo mật: không cho tự đổi vai trò của chính mình', () => {
+  it('Bảo mật: SUPER_ADMIN tự hạ vai trò mình xuống ADMIN → bị chặn (403), không cập nhật', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce(accountRow('sa-1', ROLES.SUPER_ADMIN));
 
     const req = makeReq('sa-1', ROLES.SUPER_ADMIN, { id: 'sa-1' }, { role: ROLES.ADMIN });
@@ -74,7 +74,7 @@ describe('accountController.updateAccount — no self role change', () => {
     expect(prismaMock.taiKhoan.update).not.toHaveBeenCalled();
   });
 
-  it('SA giữ nguyên vai trò chính mình → cho phép update', async () => {
+  it('Phân quyền: SUPER_ADMIN sửa tài khoản mình nhưng giữ nguyên vai trò → cho phép cập nhật', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValue(accountRow('sa-1', ROLES.SUPER_ADMIN));
     prismaMock.taiKhoan.update.mockResolvedValueOnce(accountRow('sa-1', ROLES.SUPER_ADMIN));
 
@@ -86,7 +86,7 @@ describe('accountController.updateAccount — no self role change', () => {
     expect(prismaMock.taiKhoan.update).toHaveBeenCalled();
   });
 
-  it('SA đổi vai trò tài khoản KHÁC sang ADMIN → cho phép update', async () => {
+  it('Phân quyền: SUPER_ADMIN đổi vai trò của tài khoản KHÁC lên ADMIN → cho phép cập nhật', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValue(accountRow('other-1', ROLES.MANAGER));
     prismaMock.taiKhoan.update.mockResolvedValueOnce(accountRow('other-1', ROLES.ADMIN));
 

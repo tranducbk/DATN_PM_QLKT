@@ -12,8 +12,8 @@ function getUpdateCallsFor(model: 'coQuanDonVi' | 'donViTrucThuoc') {
   return prismaMock[model].update.mock.calls.map(call => call[0]);
 }
 
-describe('personnelService — Rule A: ưu tiên DVTT khi xác định đơn vị', () => {
-  it('Cho quân nhân có cả DVTT và CQDV, khi xoá thì giảm so_luong DVTT (không giảm CQDV)', async () => {
+describe('Quân nhân: ưu tiên DVTT trước CQDV khi xác định đơn vị', () => {
+  it('Quân nhân: có cả DVTT và CQDV, khi xoá → giảm đếm số lượng DVTT, CQDV giữ nguyên', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-A' });
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-A1', parentId: cqdv.id });
     const personnel = makePersonnel({ id: 'qn-1', unit: dvtt });
@@ -35,7 +35,7 @@ describe('personnelService — Rule A: ưu tiên DVTT khi xác định đơn v�
     expect(prismaMock.coQuanDonVi.update).not.toHaveBeenCalled();
   });
 
-  it('Cho quân nhân chỉ có CQDV (không DVTT), khi xoá thì giảm so_luong CQDV', async () => {
+  it('Quân nhân: chỉ thuộc CQDV (không có DVTT), khi xoá → giảm đếm số lượng CQDV', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-B' });
     const personnel = makePersonnel({ id: 'qn-2', unit: cqdv });
 
@@ -54,7 +54,7 @@ describe('personnelService — Rule A: ưu tiên DVTT khi xác định đơn v�
     expect(prismaMock.donViTrucThuoc.update).not.toHaveBeenCalled();
   });
 
-  it('Cho quân nhân chỉ có DVTT (không CQDV), khi xoá thì giảm so_luong DVTT', async () => {
+  it('Quân nhân: chỉ thuộc DVTT (không có CQDV), khi xoá → giảm đếm số lượng DVTT', async () => {
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-C1' });
     const personnel = makePersonnel({ id: 'qn-3', unit: dvtt });
 
@@ -70,7 +70,7 @@ describe('personnelService — Rule A: ưu tiên DVTT khi xác định đơn v�
   });
 });
 
-describe('personnelService — Rule B: so_luong chỉ tăng/giảm 1 đơn vị duy nhất', () => {
+describe('Quân nhân: đếm số lượng chỉ tăng/giảm đúng 1 đơn vị', () => {
   function mockCreatePersonnelDeps(unitKind: 'CQDV' | 'DVTT', unitId: string, positionId = 'cv-1') {
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(null);
     if (unitKind === 'CQDV') {
@@ -101,7 +101,7 @@ describe('personnelService — Rule B: so_luong chỉ tăng/giảm 1 đơn vị 
     } as any);
   }
 
-  it('Khi tạo quân nhân với DVTT, thì DVTT.so_luong += 1 và CQDV không đổi', async () => {
+  it('Quân nhân: tạo mới thuộc DVTT → đếm số lượng DVTT tăng 1, CQDV không đổi', async () => {
     const dvttId = 'dvtt-X';
     mockCreatePersonnelDeps('DVTT', dvttId);
     prismaMock.donViTrucThuoc.update.mockResolvedValueOnce({} as any);
@@ -120,7 +120,7 @@ describe('personnelService — Rule B: so_luong chỉ tăng/giảm 1 đơn vị 
     expect(prismaMock.coQuanDonVi.update).not.toHaveBeenCalled();
   });
 
-  it('Khi tạo quân nhân CQDV only, thì CQDV.so_luong += 1', async () => {
+  it('Quân nhân: tạo mới chỉ thuộc CQDV → đếm số lượng CQDV tăng 1', async () => {
     const cqdvId = 'cqdv-Y';
     mockCreatePersonnelDeps('CQDV', cqdvId);
     prismaMock.coQuanDonVi.update.mockResolvedValueOnce({} as any);
@@ -139,7 +139,7 @@ describe('personnelService — Rule B: so_luong chỉ tăng/giảm 1 đơn vị 
     expect(prismaMock.donViTrucThuoc.update).not.toHaveBeenCalled();
   });
 
-  it('Khi đổi quân nhân từ DVTT-A sang DVTT-B, thì A -= 1, B += 1, CQDV không đổi', async () => {
+  it('Quân nhân: chuyển từ DVTT-A sang DVTT-B → A giảm 1, B tăng 1, CQDV không đổi', async () => {
     const cqdvParent = makeUnit({ kind: 'CQDV', id: 'cqdv-parent' });
     const dvttA = makeUnit({ kind: 'DVTT', id: 'dvtt-A', parentId: cqdvParent.id });
     const dvttB = makeUnit({ kind: 'DVTT', id: 'dvtt-B', parentId: cqdvParent.id });
@@ -189,7 +189,7 @@ describe('personnelService — Rule B: so_luong chỉ tăng/giảm 1 đơn vị 
     expect(prismaMock.coQuanDonVi.update).not.toHaveBeenCalled();
   });
 
-  it('Khi đổi quân nhân từ DVTT-A sang CQDV-X, thì DVTT-A -= 1 và CQDV-X += 1', async () => {
+  it('Quân nhân: chuyển từ DVTT-A sang CQDV-X → DVTT-A giảm 1, CQDV-X tăng 1', async () => {
     const cqdvParent = makeUnit({ kind: 'CQDV', id: 'cqdv-parent2' });
     const dvttA = makeUnit({ kind: 'DVTT', id: 'dvtt-A2', parentId: cqdvParent.id });
     const cqdvX = makeUnit({ kind: 'CQDV', id: 'cqdv-X' });
@@ -230,7 +230,7 @@ describe('personnelService — Rule B: so_luong chỉ tăng/giảm 1 đơn vị 
     ]);
   });
 
-  it('Khi xoá quân nhân chỉ có CQDV, thì CQDV.so_luong -= 1 (đúng 1 đơn vị)', async () => {
+  it('Quân nhân: xoá quân nhân chỉ thuộc CQDV → đếm số lượng CQDV giảm đúng 1', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-Z' });
     const personnel = makePersonnel({ id: 'qn-del-1', unit: cqdv });
 

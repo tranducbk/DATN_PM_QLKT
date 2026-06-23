@@ -70,8 +70,8 @@ function EDITED_buildAnnualProposal(personnelId: string, ho_ten = 'QN A') {
   return { cqdv, submittedItem, proposal };
 }
 
-describe('editedData tampering — personnel_id swap', () => {
-  it('Đổi personnel_id từ qn-A sang qn-B → reject (không có trong đề xuất gốc)', async () => {
+describe('Sửa dữ liệu sau khi gửi: tráo quân nhân lúc phê duyệt', () => {
+  it('Sửa dữ liệu sau khi gửi: admin tráo quân nhân A thành quân nhân B lúc duyệt → từ chối vì B không có trong đề xuất gốc', async () => {
     // Given: submit với qn-A, admin gửi editedData với qn-B
     const { proposal } = EDITED_buildAnnualProposal('qn-A', 'Nguyễn A');
     const swappedItem = makeProposalItemCaNhan({
@@ -114,8 +114,8 @@ describe('editedData tampering — personnel_id swap', () => {
   });
 });
 
-describe('editedData tampering — nam override', () => {
-  it('editedData nam=2099 trên item nhưng proposal.nam=2024 → service vẫn dùng proposal.nam', async () => {
+describe('Sửa dữ liệu sau khi gửi: ghi đè năm khen thưởng lúc phê duyệt', () => {
+  it('Sửa dữ liệu sau khi gửi: admin sửa năm của dòng thành 2099 nhưng đề xuất gốc là 2024 → khen thưởng vẫn lưu theo năm 2024 gốc', async () => {
     // Given: proposal lưu nam=2024; editedData mang item.nam=2099
     const { proposal, submittedItem } = EDITED_buildAnnualProposal('qn-nam-override');
     const tamperedItem = { ...submittedItem, nam: 2099 };
@@ -151,8 +151,8 @@ describe('editedData tampering — nam override', () => {
   });
 });
 
-describe('editedData tampering — danh_hieu group escalation', () => {
-  it('editedData thêm BKBQP cùng item CSTDCS đã có → block với MIXED_CA_NHAN_HANG_NAM_ERROR', async () => {
+describe('Sửa dữ liệu sau khi gửi: nâng danh hiệu lên nhóm xung khắc lúc phê duyệt', () => {
+  it('Sửa dữ liệu sau khi gửi: đề xuất gốc chỉ có CSTDCS, admin chèn thêm BKBQP cho cùng quân nhân → từ chối trộn nhóm', async () => {
     // Given: proposal lưu chỉ có CSTDCS; admin chèn thêm BKBQP cho cùng QN
     const { proposal, submittedItem } = EDITED_buildAnnualProposal('qn-mix');
     const escalatedBkbqp = makeProposalItemCaNhan({
@@ -182,8 +182,8 @@ describe('editedData tampering — danh_hieu group escalation', () => {
   });
 });
 
-describe('editedData tampering — extra item injection', () => {
-  it('editedData thêm item mới (qn-C) ngoài đề xuất gốc → reject (chống injection)', async () => {
+describe('Sửa dữ liệu sau khi gửi: chèn thêm quân nhân lạ lúc phê duyệt', () => {
+  it('Sửa dữ liệu sau khi gửi: admin chèn thêm quân nhân C ngoài đề xuất gốc lúc duyệt → từ chối (chống chèn dữ liệu lạ)', async () => {
     // Given: submit chỉ có qn-A; admin thêm qn-C; DB đã có qn-C CSTDCS năm 2024
     const { proposal, submittedItem } = EDITED_buildAnnualProposal('qn-A');
     const injectedItem = makeProposalItemCaNhan({
@@ -227,8 +227,8 @@ describe('editedData tampering — extra item injection', () => {
   });
 });
 
-describe('editedData tampering — wrong decision field key', () => {
-  it('Item BKBQP nhưng admin set so_quyet_dinh thay vì so_quyet_dinh_bkbqp → vẫn ghi DB (so_quyet_dinh_bkbqp = null)', async () => {
+describe('Sửa dữ liệu sau khi gửi: gắn nhầm ô số quyết định lúc phê duyệt', () => {
+  it('Sửa dữ liệu sau khi gửi: dòng BKBQP nhưng admin gắn số quyết định vào ô chung thay vì ô BKBQP → số gắn nhầm vẫn lưu vào số quyết định chuỗi, che mất số hợp lệ', async () => {
     // Given: item BKBQP nhưng số quyết định chuỗi bị đặt nhầm dưới so_quyet_dinh
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bk' });
     const personnel = makePersonnel({ unit: cqdv, id: 'qn-bk' });
@@ -288,8 +288,8 @@ describe('editedData tampering — wrong decision field key', () => {
   });
 });
 
-describe('editedData tampering — DON_VI item swap', () => {
-  it('Đổi co_quan_don_vi_id trong DON_VI item → reject (không có trong đề xuất gốc)', async () => {
+describe('Sửa dữ liệu sau khi gửi: tráo đơn vị lúc phê duyệt', () => {
+  it('Sửa dữ liệu sau khi gửi: admin tráo cơ quan đơn vị X sang Y lúc duyệt → từ chối vì Y không có trong đề xuất gốc', async () => {
     // Given: submit với cqdv-X; admin sửa editedData trỏ về cqdv-Y
     const cqdvX = makeUnit({ kind: 'CQDV', id: 'cqdv-X' });
     const cqdvY = makeUnit({ kind: 'CQDV', id: 'cqdv-Y' });

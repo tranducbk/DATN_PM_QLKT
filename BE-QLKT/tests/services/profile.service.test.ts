@@ -4,8 +4,8 @@ import profileService from '../../src/services/profile.service';
 import { DANH_HIEU_CA_NHAN_HANG_NAM } from '../../src/constants/danhHieu.constants';
 import { eligibilityReasons, suggestionMessages } from '../helpers/errorMessages';
 
-describe('profile.service - checkAwardEligibility (BKBQP)', () => {
-  it('2 năm CSTDCS liên tục + NCKH đủ → eligible BKBQP', async () => {
+describe('Xét điều kiện BKBQP cá nhân', () => {
+  it('Xét điều kiện BKBQP: 2 năm CSTDCS liên tục + NCKH mỗi năm → đủ điều kiện', async () => {
     // Cho: personnel đạt CSTDCS năm 2022 + 2023 với NCKH match mỗi năm
     const personnelId = 'qn-elig-1';
     const personnel = buildPersonnelWithHistory(
@@ -37,7 +37,7 @@ describe('profile.service - checkAwardEligibility (BKBQP)', () => {
     expect(result.eligible).toBe(true);
   });
 
-  it('1 năm CSTDCS → KHÔNG eligible BKBQP', async () => {
+  it('Xét điều kiện BKBQP: mới 1 năm CSTDCS → chưa đủ điều kiện', async () => {
     const personnelId = 'qn-elig-2';
     const personnel = buildPersonnelWithHistory(
       personnelId,
@@ -62,7 +62,7 @@ describe('profile.service - checkAwardEligibility (BKBQP)', () => {
     expect(result.reason).toBe(eligibilityReasons.bkbqpReason(1, 1));
   });
 
-  it('CSTT giữa chuỗi → break streak CSTDCS, BKBQP fail', async () => {
+  it('Xét điều kiện BKBQP: có CSTT xen giữa làm đứt chuỗi CSTDCS → chưa đủ điều kiện', async () => {
     // Cho: 2022 CSTDCS, 2023 CSTT (non-CSTDCS) — streak reset, năm cuối là CSTT.
     // Streak kết 2023 = 0 (năm cuối là CSTT). Với year=2024, ending year=2023.
     const personnelId = 'qn-elig-3';
@@ -89,7 +89,7 @@ describe('profile.service - checkAwardEligibility (BKBQP)', () => {
     expect(result.eligible).toBe(false);
   });
 
-  it('2 năm CSTDCS nhưng thiếu NCKH năm cuối → BKBQP fail', async () => {
+  it('Xét điều kiện BKBQP: đủ 2 năm CSTDCS nhưng thiếu NCKH năm cuối → chưa đủ điều kiện', async () => {
     // Cho: NCKH chỉ có 2022 — streak NCKH kết 2022 (1 năm), streak CSTDCS = 2
     const personnelId = 'qn-elig-4';
     const personnel = buildPersonnelWithHistory(
@@ -121,8 +121,8 @@ describe('profile.service - checkAwardEligibility (BKBQP)', () => {
   });
 });
 
-describe('profile.service - checkAwardEligibility (CSTDTQ + BKTTCP)', () => {
-  it('3 năm CSTDCS + 1 BKBQP + NCKH đủ → eligible CSTDTQ', async () => {
+describe('Xét điều kiện CSTDTQ và BKTTCP cá nhân', () => {
+  it('Xét điều kiện CSTDTQ: 3 năm CSTDCS + 1 BKBQP + NCKH đủ → đủ điều kiện', async () => {
     const personnelId = 'qn-cstdtq';
     const personnel = buildPersonnelWithHistory(
       personnelId,
@@ -158,7 +158,7 @@ describe('profile.service - checkAwardEligibility (CSTDTQ + BKTTCP)', () => {
     expect(result.eligible).toBe(true);
   });
 
-  it('7 năm CSTDCS + 3 BKBQP + 2 CSTDTQ + NCKH đủ → eligible BKTTCP', async () => {
+  it('Xét điều kiện BKTTCP: 7 năm CSTDCS + 3 BKBQP + 2 CSTDTQ + NCKH đủ → đủ điều kiện', async () => {
     // Cho: BKBQP tại 2017/2019/2021, CSTDTQ tại 2020/2023, CSTDCS 2017-2023
     const personnelId = 'qn-bkttcp';
     const personnel = buildPersonnelWithHistory(
@@ -231,7 +231,7 @@ describe('profile.service - checkAwardEligibility (CSTDTQ + BKTTCP)', () => {
     expect(result.eligible).toBe(true);
   });
 
-  it('14 năm CSTDCS liên tục, chưa nhận BKTTCP, không có flags → fail insufficient (không phải "chưa hỗ trợ")', async () => {
+  it('Xét điều kiện BKTTCP: 14 năm CSTDCS liên tục nhưng chưa có BKBQP/CSTDTQ → chưa đủ điều kiện (không phải báo "chưa hỗ trợ")', async () => {
     const personnelId = 'qn-overflow';
     const danhHieuRows: AnnualRow[] = [];
     const thanhTichRows: ScienceRow[] = [];
@@ -257,8 +257,8 @@ describe('profile.service - checkAwardEligibility (CSTDTQ + BKTTCP)', () => {
   });
 });
 
-describe('profile.service - recalculateAnnualProfile', () => {
-  it('upsert đúng tong_cstdcs, cstdcs_lien_tuc, du_dieu_kien_bkbqp khi đủ điều kiện', async () => {
+describe('Tính lại hồ sơ / gợi ý khen thưởng hằng năm cá nhân', () => {
+  it('Tính lại hồ sơ: 2 năm CSTDCS + NCKH đủ → ghi nhận đủ điều kiện BKBQP và gợi ý tương ứng', async () => {
     // Cho: 2 năm CSTDCS (2022, 2023) + NCKH match
     const personnelId = 'qn-recalc-1';
     const personnel = buildPersonnelWithHistory(
@@ -299,7 +299,7 @@ describe('profile.service - recalculateAnnualProfile', () => {
     expect(upsertArgs.update.goi_y).toBe(suggestionMessages.personalEligibleBkbqp);
   });
 
-  it('CSTDCS bị break giữa chuỗi → không đủ điều kiện BKTTCP', async () => {
+  it('Tính lại hồ sơ: chuỗi CSTDCS bị đứt giữa chừng → không đủ điều kiện BKTTCP', async () => {
     // Cho: 7 năm CSTDCS với CSTT giữa (năm 2020) — streak reset tại 2020
     const personnelId = 'qn-broken';
     const personnel = buildPersonnelWithHistory(
@@ -369,7 +369,7 @@ describe('profile.service - recalculateAnnualProfile', () => {
     expect(upsertArgs.update.du_dieu_kien_bkttcp).toBe(false);
   });
 
-  it('recalculate cho year khác → kết quả khác (2022 vs 2024)', async () => {
+  it('Tính lại hồ sơ: cùng dữ liệu nhưng tính cho năm khác cho kết quả khác (số năm liên tục năm 2022 là 2, năm 2024 là 4)', async () => {
     // Cho: cùng data — evaluate cho 2022 (streak kết tại 2021)
     const personnelId = 'qn-year-shift';
     const danhHieuRows: AnnualRow[] = [
@@ -408,7 +408,7 @@ describe('profile.service - recalculateAnnualProfile', () => {
     expect(args2024.update.cstdcs_lien_tuc).toBe(4);
   });
 
-  it('đã nhận BKTTCP + streak > 7 + chia hết 7 → goi_y "chưa hỗ trợ"', async () => {
+  it('Tính lại hồ sơ: quân nhân đã nhận BKTTCP → gợi ý báo "chưa hỗ trợ danh hiệu cao hơn"', async () => {
     // Cho: 14 năm CSTDCS với cờ BKTTCP ở năm mới nhất
     const personnelId = 'qn-after-bkttcp';
     const danhHieuRows: AnnualRow[] = [];

@@ -100,8 +100,8 @@ function mockBangDeXuatCreated(id = 'p-ch-1') {
   });
 }
 
-describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
-  it('gửi thành công với hệ số TB 0.85 (60 tháng 0.8 + 60 tháng 0.9) → proposal lưu data_cong_hien', async () => {
+describe('Gửi đề xuất khen thưởng cống hiến (HCBVTQ)', () => {
+  it('Gửi đề xuất: quân nhân nam 120 tháng cương vị (hệ số TB 0.85) → tạo đề xuất HCBVTQ kèm dữ liệu cống hiến', async () => {
     // Cho trước: 1 manager + 1 quân nhân nam + 120 tháng trải hệ số 0.8 và 0.9
     arrangeCongHienManager('CQDV');
     const target = makePersonnel({
@@ -150,7 +150,7 @@ describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
     expect(data.data_cong_hien[0].thoi_gian_nhom_0_9_1_0).toBeDefined();
   });
 
-  it('gửi thành công cho QN nữ — payload vẫn lưu đầy đủ', async () => {
+  it('Gửi đề xuất: quân nhân nữ đủ cương vị → tạo đề xuất HCBVTQ kèm đầy đủ dữ liệu cống hiến', async () => {
     arrangeCongHienManager('CQDV');
     const target = makePersonnel({
       id: 'qn-ch-female',
@@ -178,7 +178,7 @@ describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
     expect(data.data_cong_hien[0].danh_hieu).toBe(DANH_HIEU_HCBVTQ.HANG_BA);
   });
 
-  it('reject khi thiếu tháng (CONG_HIEN bắt buộc thang)', async () => {
+  it('Gửi đề xuất bị chặn: khen thưởng cống hiến chưa nhập tháng đề xuất → báo thiếu tháng', async () => {
     arrangeCongHienManager('CQDV');
 
     await expectError(
@@ -192,7 +192,7 @@ describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('reject khi titleData không phải mảng', async () => {
+  it('Gửi đề xuất bị chặn: danh sách quân nhân không phải mảng hợp lệ → báo dữ liệu đề xuất không hợp lệ', async () => {
     arrangeCongHienManager('CQDV');
 
     await expectError(
@@ -210,7 +210,7 @@ describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('gửi thành công với DVTT — proposal lưu don_vi_truc_thuoc_id', async () => {
+  it('Gửi đề xuất: manager thuộc đơn vị trực thuộc (ĐVTT) → đề xuất gắn đúng đơn vị trực thuộc', async () => {
     arrangeCongHienManager('DVTT');
     const target = makePersonnel({
       id: 'qn-ch-dvtt',
@@ -238,7 +238,7 @@ describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
     expect(data.co_quan_don_vi_id).toBe(null);
   });
 
-  it('reject khi quân nhân đã có HCBVTQ trên hệ thống — duplicate actual', async () => {
+  it('Gửi đề xuất bị chặn: quân nhân đã có HCBVTQ trên hệ thống → báo trùng khen thưởng', async () => {
     arrangeCongHienManager('CQDV');
     const target = makePersonnel({
       id: 'qn-ch-dup-actual',
@@ -276,7 +276,7 @@ describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('reject khi quân nhân đang có pending CONG_HIEN proposal — duplicate pending', async () => {
+  it('Gửi đề xuất bị chặn: quân nhân đang có đề xuất cống hiến chờ duyệt → báo trùng đề xuất chờ duyệt', async () => {
     arrangeCongHienManager('CQDV');
     const target = makePersonnel({
       id: 'qn-ch-dup-pending',
@@ -317,7 +317,7 @@ describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('gom errors theo từng QN khi 1 QN duplicate, 1 QN hợp lệ trong cùng payload', async () => {
+  it('Gửi đề xuất bị chặn: trong cùng đề xuất có 1 quân nhân trùng và 1 hợp lệ → hủy toàn bộ và gộp lý do theo từng quân nhân', async () => {
     arrangeCongHienManager('CQDV');
     const valid = makePersonnel({
       id: 'qn-ch-valid',
@@ -376,7 +376,7 @@ describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('reject khi quân nhân không có lịch sử chức vụ — không đủ điều kiện CONG_HIEN', async () => {
+  it('Gửi đề xuất bị chặn: quân nhân không có lịch sử chức vụ → chưa đủ điều kiện cống hiến', async () => {
     arrangeCongHienManager('CQDV');
     const target = makePersonnel({ id: 'qn-ch-empty', gioi_tinh: 'NAM' });
     prismaMock.quanNhan.findMany.mockResolvedValue([target]);
@@ -392,7 +392,7 @@ describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('HCBVTQ_HIGHEST: reject khi đề xuất HANG_BA nhưng QN đủ ĐK HANG_NHAT', async () => {
+  it('Gửi đề xuất bị chặn: đề xuất HCBVTQ hạng Ba nhưng quân nhân đã đủ điều kiện hạng Nhất → buộc đề xuất hạng cao nhất', async () => {
     arrangeCongHienManager('CQDV');
     const target = makePersonnel({
       id: 'qn-ch-highest-ba',
@@ -422,7 +422,7 @@ describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('HCBVTQ_HIGHEST: reject khi đề xuất HANG_NHI nhưng QN đủ ĐK HANG_NHAT', async () => {
+  it('Gửi đề xuất bị chặn: đề xuất HCBVTQ hạng Nhì nhưng quân nhân đã đủ điều kiện hạng Nhất → buộc đề xuất hạng cao nhất', async () => {
     arrangeCongHienManager('CQDV');
     const target = makePersonnel({
       id: 'qn-ch-highest-nhi',
@@ -452,7 +452,7 @@ describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('HCBVTQ_HIGHEST: chấp nhận đề xuất HANG_NHAT khi QN đủ ĐK HANG_NHAT', async () => {
+  it('Gửi đề xuất: đề xuất HCBVTQ hạng Nhất khi quân nhân đủ điều kiện hạng Nhất → chấp nhận', async () => {
     arrangeCongHienManager('CQDV');
     const target = makePersonnel({
       id: 'qn-ch-highest-nhat-ok',
@@ -478,7 +478,7 @@ describe('proposal.submit - CONG_HIEN (HCBVTQ)', () => {
     expect(prismaMock.bangDeXuat.create).toHaveBeenCalledTimes(1);
   });
 
-  it('HCBVTQ_HIGHEST: chấp nhận đề xuất HANG_BA khi QN chỉ đủ ĐK HANG_BA', async () => {
+  it('Gửi đề xuất: đề xuất HCBVTQ hạng Ba khi quân nhân chỉ đủ điều kiện hạng Ba → chấp nhận', async () => {
     arrangeCongHienManager('CQDV');
     const target = makePersonnel({
       id: 'qn-ch-only-ba',

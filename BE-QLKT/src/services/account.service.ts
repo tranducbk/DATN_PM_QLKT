@@ -625,9 +625,11 @@ class AccountService {
           } else {
             await donViTrucThuocRepository.decrementSoLuong(unitId, prismaTx);
           }
-        } catch (error: unknown) {
+        } catch (error) {
+          console.error('[deleteAccount] decrement unit count failed', { unitId, error });
           throw new AppError(
-            `Không thể cập nhật số lượng quân nhân của đơn vị: ${error instanceof Error ? error.message : String(error)}`
+            'Không thể cập nhật số lượng quân nhân của đơn vị, vui lòng thử lại.',
+            500
           );
         }
       }
