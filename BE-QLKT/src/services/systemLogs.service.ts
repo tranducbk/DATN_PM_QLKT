@@ -1,7 +1,7 @@
 import { systemLogRepository } from '../repositories/systemLog.repository';
 import { ROLES } from '../constants/roles.constants';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
-import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
+import { RESOURCE_SLUGS, SUPER_ADMIN_ONLY_RESOURCES } from '../constants/resourceSlugs.constants';
 import { buildLogVisibilityScope } from './systemLog/logVisibility';
 
 interface GetLogsParams {
@@ -57,7 +57,7 @@ class SystemLogsService {
     // Backup logs are restricted to SUPER_ADMIN only
     if (userRole !== ROLES.SUPER_ADMIN) {
       if (resource) {
-        if (resource === RESOURCE_SLUGS.BACKUP)
+        if (SUPER_ADMIN_ONLY_RESOURCES.includes(resource))
           return { logs: [], total: 0, stats: { create: 0, delete: 0, update: 0 } };
         where.resource = resource;
       }
@@ -124,7 +124,7 @@ class SystemLogsService {
    */
   async getResources(userRole: string) {
     const where =
-      userRole !== ROLES.SUPER_ADMIN ? { resource: { not: RESOURCE_SLUGS.BACKUP } } : {};
+      userRole !== ROLES.SUPER_ADMIN ? { resource: { notIn: SUPER_ADMIN_ONLY_RESOURCES } } : {};
     const resources = await systemLogRepository.findManyRaw({
       select: { resource: true },
       distinct: ['resource'],

@@ -21,7 +21,11 @@ import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import bcrypt from 'bcrypt';
 import { parseCCCD } from '../helpers/cccdHelper';
-import { notifyOnPersonnelDeleted } from '../helpers/notification';
+import { notifyOnPersonnelDeleted, notifyOnSelfProfileUpdate } from '../helpers/notification';
+import { writeSystemLog } from '../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
+import { diffPersonnelChanges, formatPersonnelChanges } from '../helpers/profileFieldDiff';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import {
@@ -37,6 +41,16 @@ import { updatePersonnel as doUpdatePersonnel } from './personnel/update';
 import type { UpdatePersonnelInput } from './personnel/update';
 
 const HCBVTQ_LABEL = AWARD_LABELS[AWARD_SLUGS.CONTRIBUTION_MEDALS];
+
+export interface UpdateOwnProfileData {
+  ho_ten?: string;
+  ngay_sinh?: Date | null;
+  so_dien_thoai?: string | null;
+  que_quan_2_cap?: string | null;
+  que_quan_3_cap?: string | null;
+  tru_quan?: string | null;
+  cho_o_hien_nay?: string | null;
+}
 
 class PersonnelService {
   parseCCCD(value) {
@@ -168,6 +182,44 @@ class PersonnelService {
   }
 
   /** Returns one personnel record by id. */
+  /**
+   * Updates the limited self-editable fields of the caller's own profile.
+   * @param quanNhanId - Personnel id resolved from the caller's token
+   * @param data - Whitelisted contact/biographical fields
+   * @returns Updated personnel record
+   */
+  async updateOwnProfile(
+    quanNhanId: string,
+    data: UpdateOwnProfileData,
+    actor: { actorId: string; actorRole: string }
+  ) {
+    const before = await quanNhanRepository.findById(quanNhanId);
+    const updated = await quanNhanRepository.update(quanNhanId, data);
+    const changes = diffPersonnelChanges(before, data);
+
+    if (changes.length > 0) {
+      void writeSystemLog({
+        userId: actor.actorId,
+        userRole: actor.actorRole,
+        action: AUDIT_ACTIONS.UPDATE,
+        resource: RESOURCE_SLUGS.PERSONNEL,
+        resourceId: quanNhanId,
+        description: `Cập nhật thông tin cá nhân: ${formatPersonnelChanges(changes)}`,
+      });
+      void notifyOnSelfProfileUpdate(
+        {
+          id: updated.id,
+          ho_ten: updated.ho_ten,
+          co_quan_don_vi_id: updated.co_quan_don_vi_id,
+          don_vi_truc_thuoc_id: updated.don_vi_truc_thuoc_id,
+        },
+        changes.map(change => change.label)
+      );
+    }
+
+    return updated;
+  }
+
   async getPersonnelById(id, userRole, userQuanNhanId) {
     const personnel = await quanNhanRepository.findByIdForDetail(String(id));
 

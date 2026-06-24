@@ -71,32 +71,6 @@ router.post(
 );
 
 /**
- * @route   POST /api/scientific-achievements
- * @desc    Create a scientific achievement record
- * @access  Private - ADMIN, MANAGER
- */
-router.post(
-  '/',
-  verifyToken,
-  requireAdminOrManager,
-  validate(scientificAchievementValidation.createAchievement),
-  scientificAchievementController.createAchievement
-);
-
-/**
- * @route   PUT /api/scientific-achievements/:id
- * @desc    Update a scientific achievement record
- * @access  Private - ADMIN, MANAGER
- */
-router.put(
-  '/:id',
-  verifyToken,
-  requireAdminOrManager,
-  validate(scientificAchievementValidation.updateAchievement),
-  scientificAchievementController.updateAchievement
-);
-
-/**
  * @route   DELETE /api/scientific-achievements/:id
  * @desc    Delete a scientific achievement record
  * @access  Private - ADMIN, MANAGER

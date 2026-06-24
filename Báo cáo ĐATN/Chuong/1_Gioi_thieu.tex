@@ -34,8 +34,8 @@ Trên thị trường có các phần mềm quản lý nhân sự nói chung, nh
 
 \begin{enumerate}
     \item \textbf{Quản lý hồ sơ và danh mục cơ bản}: quân nhân, đơn vị theo cơ cấu hai cấp gồm Cơ quan đơn vị và Đơn vị trực thuộc, chức vụ và lịch sử biến động chức vụ.
-    \item \textbf{Đề xuất và phê duyệt khen thưởng}: tạo đợt đề xuất cho bảy nhóm danh hiệu với bộ lọc hỗ trợ tra cứu nhanh theo đơn vị, năm, giới tính và mốc thời gian phục vụ; quy trình phê duyệt nhiều bước, lưu tệp PDF quyết định kèm số quyết định. Riêng khen thưởng đột xuất phát sinh ngoài chu kỳ được ghi nhận trực tiếp dưới dạng quyết định, không qua bước đề xuất.
-    \item \textbf{Tự động hoá nghiệp vụ}: kiểm tra điều kiện chuỗi danh hiệu cho cá nhân (BKBQP, CSTĐTQ, BKTTCP) và đơn vị (BKBQP, BKTTCP), tự động tạo thông báo gợi ý đủ hoặc chưa đủ điều kiện kèm lý do bằng tiếng Việt, nhập lịch sử khen thưởng từ Excel theo cơ chế xem trước rồi xác nhận, và xuất danh sách theo nhiều tiêu chí. Quá trình nhập tuân thủ tính toàn vẹn của giao dịch cơ sở dữ liệu: hoặc ghi nhận toàn bộ, hoặc hoàn tác hoàn toàn.
+    \item \textbf{Đề xuất và phê duyệt khen thưởng}: tạo đợt đề xuất cho bảy nhóm danh hiệu với bộ lọc hỗ trợ tra cứu nhanh theo đơn vị, năm, giới tính và mốc thời gian phục vụ; quy trình phê duyệt nhiều bước, lưu tệp PDF quyết định kèm số quyết định. Riêng khen thưởng đột xuất phát sinh ngoài chu kỳ và đã có quyết định của cấp trên nên được thêm trực tiếp, không qua bước đề xuất.
+    \item \textbf{Tự động hoá nghiệp vụ}: kiểm tra điều kiện chuỗi danh hiệu cho cá nhân (BKBQP, CSTĐTQ, BKTTCP) và đơn vị (BKBQP, BKTTCP), tự động tạo thông báo gợi ý đủ hoặc chưa đủ điều kiện kèm lý do, nhập lịch sử khen thưởng từ Excel theo cơ chế xem trước rồi xác nhận, và xuất danh sách theo nhiều tiêu chí. Quá trình nhập tuân thủ tính toàn vẹn của giao dịch cơ sở dữ liệu: hoặc ghi nhận toàn bộ, hoặc hoàn tác hoàn toàn.
     \item \textbf{Bảo mật và truy vết}: phân quyền theo bốn cấp tương ứng đặc thù tổ chức. Quản trị viên cấp cao quản trị hạ tầng, Cán bộ Phòng Chính trị toàn quyền nghiệp vụ, Chỉ huy đơn vị đề xuất trong phạm vi đơn vị, còn Người dùng tra cứu hồ sơ cá nhân. Toàn bộ thao tác làm thay đổi dữ liệu đều được ghi vào nhật ký hệ thống.
     \item \textbf{Vận hành}: sao lưu cơ sở dữ liệu định kỳ và quản lý nhật ký hệ thống.
 \end{enumerate}
@@ -51,25 +51,30 @@ Việc tích hợp với hệ thống quản lý nhân sự tổng thể của B
 Phần mềm được xây dựng theo mô hình máy khách/máy chủ, gồm hai thành phần triển khai độc lập, có thể đặt chung trên một máy chủ hoặc tách ra nhiều máy.
 Phần giao diện dùng Next.js theo App Router viết bằng TypeScript, trong đó Ant Design đảm nhiệm lớp giao diện chính và Tailwind CSS bổ sung cho bố cục.
 Phần xử lý dùng Express trên Node.js, cũng viết bằng TypeScript và tổ chức theo kiến trúc phân tầng tách biệt định tuyến, xử lý nghiệp vụ và truy cập dữ liệu.
-Dữ liệu được lưu trong PostgreSQL và truy cập qua Prisma ORM với lược đồ khai báo tập trung, áp dụng cơ chế cập nhật lược đồ tự động (Prisma Migration).
+Dữ liệu được lưu trong PostgreSQL và truy cập qua Prisma ORM. Toàn bộ mô hình dữ liệu được khai báo tập trung trong một tệp, và Prisma dùng khai báo này để đồng bộ cấu trúc cơ sở dữ liệu khi có thay đổi.
 Hệ thống xác thực bằng cặp JSON Web Token có cơ chế làm mới luân phiên, đồng thời kiểm tra vai trò người dùng trước mỗi thao tác cần quyền truy cập.
-Các sự kiện phê duyệt, từ chối, xoá đề xuất và nhập Excel khối lượng lớn được thông báo theo thời gian thực qua Socket.IO.
+Các sự kiện phê duyệt, từ chối, xoá đề xuất và nhập khen thưởng qua Excel được thông báo theo thời gian thực qua Socket.IO.
 
 Đóng góp chính của đồ án nằm ở việc tự động hoá nghiệp vụ xét khen thưởng, vốn có nhiều điều kiện phụ thuộc theo thời gian và dễ phát sinh sai lệch khi xử lý thủ công.
-Nổi bật là cơ chế xét điều kiện chuỗi danh hiệu thống nhất cho cả cá nhân và đơn vị. Bên cạnh đó, bảy nhóm khen thưởng vốn rời rạc được hợp nhất vào một quy trình chung từ đề xuất, phê duyệt đến gắn quyết định. Cuối cùng, nhật ký hệ thống ghi vết mọi thao tác làm thay đổi dữ liệu.
+Nổi bật là cơ chế xét điều kiện chuỗi danh hiệu thống nhất cho cả cá nhân và đơn vị. Bên cạnh đó, bảy nhóm khen thưởng vốn rời rạc được hợp nhất vào một quy trình chung từ đề xuất, thêm số quyết định đến phê duyệt. Cuối cùng, nhật ký hệ thống ghi vết mọi thao tác làm thay đổi dữ liệu.
 Các đóng góp này được phân tích chi tiết trong Chương~\ref{chapter:SolutionAndContribution}.
 
 \section{Bố cục đồ án}
 \label{section:1.4}
 
 Báo cáo gồm sáu chương. Ngoài chương này, phần còn lại được tổ chức như sau.
+
 Chương~\ref{chapter:Related_works} trình bày khảo sát hiện trạng, biểu đồ use case, đặc tả các use case trọng yếu và các yêu cầu phi chức năng của hệ thống.
+
 Chương~\ref{chapter:Methodology} giới thiệu các thành phần công nghệ được lựa chọn cùng lý do lựa chọn trong ngữ cảnh phần mềm quản lý khen thưởng.
+
 Chương~\ref{chapter:Experiment} trình bày kiến trúc phân tầng, thiết kế cơ sở dữ liệu, các biểu đồ gói, lớp và tuần tự, kết quả kiểm thử cùng hướng dẫn triển khai.
+
 Chương~\ref{chapter:SolutionAndContribution} phân tích năm đóng góp nổi bật, mỗi đóng góp gồm thực trạng, giải pháp và kết quả đạt được.
+
 Cuối cùng, Chương~\ref{chapter:conclusion} tổng kết những kết quả đã đạt được và đề xuất các hướng phát triển tiếp theo.
 
-Chương này đã trình bày bối cảnh và động lực của đề tài. Xuất phát từ thực trạng quản lý khen thưởng thủ công tại Học viện Khoa học Quân sự cùng những hạn chế của cách làm hiện tại, đồ án xác định mục tiêu, phạm vi và định hướng giải pháp công nghệ cho phần mềm.
+Chương này đã giới thiệu bối cảnh và những hạn chế của cách quản lý khen thưởng thủ công tại Học viện Khoa học Quân sự, từ đó xác định mục tiêu, phạm vi và định hướng giải pháp công nghệ cho phần mềm.
 Những nội dung này là cơ sở để chương tiếp theo đi sâu khảo sát hiện trạng, mô hình hoá yêu cầu qua biểu đồ use case và xác định các yêu cầu phi chức năng của hệ thống.
 
 \end{document}

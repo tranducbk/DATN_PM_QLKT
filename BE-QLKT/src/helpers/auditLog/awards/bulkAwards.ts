@@ -6,8 +6,8 @@ import { getAwardLabelByProposalType } from '../../../constants/awardResource.co
 
 /**
  * Builds the standard "bulk award add" description.
- * Used by both BULK (normal admin path) and BULK_BYPASS (SA data correction) — the
- * BULK_BYPASS handler wraps this and prepends a "Sửa dữ liệu cũ" marker.
+ * Used by both BULK (normal admin path) and BULK_BYPASS (SUPER_ADMIN adds legacy data) — the
+ * BULK_BYPASS handler wraps this and prepends a "Thêm dữ liệu cũ" marker.
  */
 async function buildBulkDescription(
   req: Request,
@@ -151,6 +151,6 @@ export const awards: Record<
   BULK: buildBulkDescription,
   BULK_BYPASS: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     const base = await buildBulkDescription(req, res, responseData);
-    return `Sửa dữ liệu cũ (bỏ qua kiểm tra): ${base}`;
+    return `Thêm dữ liệu cũ (bỏ qua kiểm tra): ${base}`;
   },
 };

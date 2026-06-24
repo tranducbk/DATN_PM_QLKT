@@ -11,6 +11,7 @@ jest.mock('../../src/helpers/settingsHelper', () => ({
 import systemLogsService from '../../src/services/systemLogs.service';
 import { ROLES } from '../../src/constants/roles.constants';
 import { AUDIT_ACTIONS } from '../../src/constants/auditActions.constants';
+import { SUPER_ADMIN_ONLY_RESOURCES } from '../../src/constants/resourceSlugs.constants';
 import { isFeatureEnabled } from '../../src/helpers/settingsHelper';
 
 const mockIsFeatureEnabled = isFeatureEnabled as jest.Mock;
@@ -49,7 +50,7 @@ describe('Nhật ký hệ thống: quyền xem nhật ký theo vai trò', () => 
     await systemLogsService.getLogs({ ...PARAMS_BASE, userRole: ROLES.ADMIN });
 
     const args = prismaMock.systemLog.findMany.mock.calls[0][0];
-    expect(args.where.resource).toEqual({ not: 'backup' });
+    expect(args.where.resource).toEqual({ notIn: SUPER_ADMIN_ONLY_RESOURCES });
     expect(args.where.actor_role).toEqual({
       in: [ROLES.USER, ROLES.MANAGER, ROLES.ADMIN, 'SYSTEM'],
     });
@@ -115,7 +116,7 @@ describe('Nhật ký hệ thống: danh sách loại tài nguyên để lọc', 
     const result = await systemLogsService.getResources(ROLES.ADMIN);
 
     const args = prismaMock.systemLog.findMany.mock.calls[0][0];
-    expect(args.where).toEqual({ resource: { not: 'backup' } });
+    expect(args.where).toEqual({ resource: { notIn: SUPER_ADMIN_ONLY_RESOURCES } });
     expect(result).toEqual(['personnel', 'proposal']);
   });
 

@@ -2,7 +2,6 @@ import { Request, Response } from 'express';
 import scientificAchievementService, {
   ConfirmImportItem,
 } from '../services/scientificAchievement.service';
-import profileService from '../services/profile.service';
 import personnelService from '../services/personnel.service';
 import { ROLES } from '../constants/roles.constants';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
@@ -32,27 +31,8 @@ interface GetAchievementsQuery {
   ho_ten?: string;
 }
 
-interface CreateAchievementBody {
-  personnel_id?: string;
-  nam?: number;
-  loai?: string;
-  mo_ta?: string;
-  cap_bac?: string;
-  chuc_vu?: string;
-  ghi_chu?: string;
-}
-
 interface IdParams {
   id?: string;
-}
-
-interface UpdateAchievementBody {
-  nam?: number;
-  loai?: string;
-  mo_ta?: string;
-  cap_bac?: string;
-  chuc_vu?: string;
-  ghi_chu?: string;
 }
 
 interface ExportToExcelQuery {
@@ -107,69 +87,6 @@ class ScientificAchievementController {
       limit: limitNum,
       message: 'Lấy danh sách thành tích khoa học thành công',
     });
-  });
-
-  createAchievement = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user;
-    const body = req.body as CreateAchievementBody;
-    const { personnel_id, nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu } = body;
-    if (!personnel_id || !nam || !loai || !mo_ta) {
-      return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ: quân nhân, năm, loại và mô tả');
-    }
-    const result = await scientificAchievementService.createAchievement({
-      personnel_id,
-      nam,
-      loai,
-      mo_ta,
-      cap_bac,
-      chuc_vu,
-      ghi_chu,
-    });
-    try {
-      await profileService.recalculateAnnualProfile(personnel_id);
-    } catch (recalcError) {
-      await writeSystemLog({
-        userId: user?.id,
-        userRole: user?.role,
-        action: AUDIT_ACTIONS.ERROR,
-        resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
-        description: logMessages.recalcError('thêm', AWARD_LABEL, recalcError),
-        payload: { error: String(recalcError), personnel_id },
-      });
-    }
-    return ResponseHelper.created(res, { message: 'Thêm thành tích thành công', data: result });
-  });
-
-  updateAchievement = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user;
-    const params = req.params as IdParams;
-    const id = normalizeParam(params.id);
-    if (!id) {
-      return ResponseHelper.badRequest(res, 'Thiếu id');
-    }
-    const body = req.body as UpdateAchievementBody;
-    const { nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu } = body;
-    const result = await scientificAchievementService.updateAchievement(id, {
-      nam,
-      loai,
-      mo_ta,
-      cap_bac,
-      chuc_vu,
-      ghi_chu,
-    });
-    try {
-      await profileService.recalculateAnnualProfile(result.quan_nhan_id);
-    } catch (recalcError) {
-      await writeSystemLog({
-        userId: user?.id,
-        userRole: user?.role,
-        action: AUDIT_ACTIONS.ERROR,
-        resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
-        description: logMessages.recalcError('cập nhật', AWARD_LABEL, recalcError),
-        payload: { error: String(recalcError), personnel_id: result.quan_nhan_id },
-      });
-    }
-    return ResponseHelper.success(res, { message: 'Cập nhật thành tích thành công', data: result });
   });
 
   deleteAchievement = catchAsync(async (req: Request, res: Response) => {

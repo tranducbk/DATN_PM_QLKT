@@ -53,6 +53,15 @@ export async function updatePersonnel(id: string, body: Record<string, unknown>)
   }
 }
 
+export async function updateMyProfile(body: Record<string, unknown>): Promise<ApiResponse> {
+  try {
+    const res = await axiosInstance.put('/api/personnel/me', body);
+    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
+  }
+}
+
 export async function deletePersonnel(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/personnel/${id}`);

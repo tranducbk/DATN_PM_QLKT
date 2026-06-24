@@ -17,6 +17,7 @@ import { writeSystemLog } from '../../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../../constants/auditActions.constants';
 import { logMessages } from '../../constants/logMessages.constants';
 import { adjustUnitCount } from './unitCount';
+import { diffPersonnelChanges } from '../../helpers/profileFieldDiff';
 
 type DateInput = Date | null;
 
@@ -376,8 +377,11 @@ export async function updatePersonnel(
     }
   }
 
+  const changes = diffPersonnelChanges(personnel, data);
+
   return {
     ...updatedPersonnel,
     unitTransferInfo,
+    changes,
   };
 }

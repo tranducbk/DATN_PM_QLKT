@@ -479,3 +479,28 @@ Audit toàn dự án (5 mảng song song: eligibility chuỗi, slug/audit/notifi
 
 **Verify state:** BE typecheck clean · FE typecheck clean · FE lint clean · BE jest 1017/1017 pass (89 suites).
 
+---
+
+## 14. Audit log coverage — 2026-06-23
+
+Rà thao tác quan trọng chưa ghi `SystemLog`. Phát hiện cơ chế: middleware `auditLog` chỉ ghi khi response `success===true` **và** `req.user` tồn tại → route không có `verifyToken` (login/logout) thì config audit gắn vào nhưng không bao giờ chạy (dead code).
+
+| # | Việc | Trạng thái | Evidence |
+|---|---|---|---|
+| B1 | Login/logout: `auditLog({LOGIN/LOGOUT})` dead (không `verifyToken` → `req.user` undefined → không bao giờ ghi) | DONE (gỡ dead code) | Xoá `auditLog` khỏi route login+logout (`auth.route.ts`); xoá `AUDIT_ACTIONS.LOGIN/LOGOUT` + builder `LOGIN/LOGOUT` trong `helpers/auditLog/auth.ts`. Theo quyết định user: không thêm logging login, chỉ dọn dead code. |
+| B2 | NCKH: route `POST /` + `PUT /:id` (tạo/sửa đơn lẻ) chưa log VÀ không ai dùng (FE chỉ list/delete/export/template/import) | DONE (gỡ route thừa) | NCKH theo nghiệp vụ chỉ thêm-qua-import + xoá. Xoá route create/update (main + nested alias) + controller method + validation + `service.updateAchievement` + interface. **Giữ** `service.createAchievement` (bulk/import dùng — `awardBulk/handlers.ts:177`). |
+| B3 | DevZone config changes chưa log (toggle feature, đổi cron schedule, đổi backup schedule) | DONE (log SA-only) | Thêm `writeSystemLog` (actor `SYSTEM_ACTOR`) cho `PUT /cron/schedule` + `PUT /features` (resource `dev-zone`), `PUT /backup/schedule` (resource `backup`). Hiển thị chỉ SUPER_ADMIN. |
+| B4 | `cleanupOldBackups` xoá file backup cũ không vết (chạy ở route thủ công + tự động sau mỗi backup) | DONE (log SA-only, kèm tên file) | Log `DELETE` trong chính `backup.service.cleanupOldBackups` (phủ cả lần auto) khi có file bị xoá; payload chứa **danh sách tên file** (`files`) + `retentionDays`. Bỏ log trùng ở route. |
+| B5 | Test cron + log (user lo cron không chạy thật) | DONE | Tách logic cron khỏi route → `services/recalcCron.service.ts` (export tự nhiên, KHÔNG để guard `NODE_ENV==='test'` lộ test trong prod); auto-init chuyển về `index.ts` (`initScheduledJobs`). Test: `tests/services/devZoneCron.test.ts` (6 — runCronJob recalc+log, lưu cron_last_run/result, fail; updateCronTask đăng ký/tắt theo settings), `tests/routes/devZoneConfig.test.ts` (4 — 3 config route ghi đúng log + sai mật khẩu 401), +3 assert ghi log trong `backup.service.test.ts`. Lưu ý: cron chạy-thật chỉ verify ở production qua `cron_last_run` + log RECALCULATE (lịch mặc định `0 1 1 * *` = 1h sáng ngày 1 hàng tháng). |
+| B6 | Backup cleanup route mồ côi (UI không có nút) → đổi thành liệt kê + xoá file cụ thể | DONE (FE cần test browser) | Bỏ `POST /backup/cleanup`; thêm `DELETE /backup/:filename` (dùng `deleteBackup` sẵn có, validate tên file); `GET /backup/status` trả toàn bộ file (`recentBackups`). FE `dev_zone/page.tsx`: render danh sách file (tên/ngày/dung lượng/loại) + nút xoá (Popconfirm). Auto-cleanup theo retention vẫn giữ. |
+
+**Cơ chế SA-only:** thêm `SUPER_ADMIN_ONLY_RESOURCES = [backup, dev-zone]` (`resourceSlugs.constants.ts`); filter visibility đổi từ `{ not: 'backup' }` → `{ notIn: SUPER_ADMIN_ONLY_RESOURCES }` ở `logVisibility.ts` + `systemLogs.service.ts` (getLogs + getResources). Cập nhật 2 assertion trong `tests/services/systemLogs.service.test.ts` (dùng constant, user duyệt).
+
+**Để lại theo quyết định user (không cần log):**
+- Cron run/fail (operational) + DevZone auth fail — không cần log.
+- `DELETE /api/system-logs` (xoá log theo ID) — user quyết "xoá log không cần ghi log"; giữ không log (`/all` vẫn tự ghi 1 dòng, không đụng vì có test).
+
+**Đã log đúng (không phải gap):** đổi mật khẩu, account CRUD + đổi role, submit/approve/reject/delete đề xuất, decisions, bulk + bulk-bypass, import 7 loại (confirm), xoá account/personnel/unit/position, **xoá toàn bộ log** (`/all`), backup tạo/xoá đơn lẻ, recalc-all, rate-limit breach.
+
+**Verify state:** BE typecheck clean · BE jest 1030/1030 pass (91 suites, +13 test mới) · FE typecheck + lint clean (UI backup list/delete chờ user test browser).
+

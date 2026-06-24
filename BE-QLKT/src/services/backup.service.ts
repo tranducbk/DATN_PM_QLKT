@@ -381,6 +381,17 @@ class BackupService {
       }
     }
 
+    if (deleted.length > 0) {
+      void writeSystemLog({
+        userId: SYSTEM_ACTOR,
+        userRole: SYSTEM_ACTOR,
+        action: AUDIT_ACTIONS.DELETE,
+        resource: RESOURCE_SLUGS.BACKUP,
+        description: `Dọn backup cũ: đã xóa ${deleted.length} file (giữ ${retentionDays} ngày)`,
+        payload: { deleted: deleted.length, files: deleted, retentionDays },
+      });
+    }
+
     return { deleted: deleted.length, files: deleted };
   }
 }

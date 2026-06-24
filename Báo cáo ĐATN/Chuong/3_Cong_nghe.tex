@@ -1,12 +1,12 @@
 \documentclass[../DoAn.tex]{subfiles}
 \begin{document}
 
-Chương này giới thiệu các công nghệ nền tảng của PM QLKT, nêu vai trò của từng công nghệ với bài toán quản lý khen thưởng và lý do lựa chọn. Bảng tổng hợp đầy đủ thư viện và công cụ được trình bày ở Mục~\ref{subsection:4.3.1}.
+Chương trước đã xác định các yêu cầu chức năng và phi chức năng của hệ thống. Để đáp ứng những yêu cầu đó, chương này giới thiệu các công nghệ nền tảng của PM QLKT cùng vai trò và lý do lựa chọn của từng công nghệ. Các mục lần lượt trình bày công nghệ cho giao diện, máy chủ, cơ sở dữ liệu, xác thực, giao tiếp thời gian thực và xử lý tệp Excel. Bảng tổng hợp đầy đủ thư viện và công cụ được trình bày ở Mục~\ref{subsection:4.3.1}.
 
 \section{Next.js, khung phát triển giao diện người dùng}
 \label{section:3.1}
 
-Frontend dùng Next.js \cite{nextjs} trên nền React \cite{react}. Next.js tổ chức ứng dụng theo App Router, ánh xạ cây thư mục thành các tuyến URL và tách mã tải về theo từng tuyến. Đặc điểm này khớp với việc PM QLKT phân vùng giao diện theo bốn vai trò người dùng: mỗi vai trò nằm dưới một nhánh thư mục riêng, có bố cục và kiểm tra phân quyền riêng, và chỉ tải phần mã thuộc phạm vi của mình. Next.js được chọn để tận dụng hệ sinh thái React sẵn có cùng cơ chế định tuyến dựng sẵn.
+Frontend dùng Next.js \cite{nextjs} trên nền React \cite{react}. Next.js tổ chức ứng dụng theo App Router, ánh xạ cây thư mục thành các tuyến URL và tách mã tải về theo từng tuyến. Đặc điểm này khớp với việc PM QLKT phân vùng giao diện theo bốn vai trò người dùng: mỗi vai trò nằm dưới một nhánh thư mục riêng, có bố cục và kiểm tra phân quyền riêng, và chỉ tải phần mã thuộc phạm vi của vai trò đó. Next.js được chọn để tận dụng hệ sinh thái React sẵn có cùng cơ chế định tuyến dựng sẵn.
 
 \section{TypeScript và Express, nền tảng phía máy chủ}
 \label{section:3.2}

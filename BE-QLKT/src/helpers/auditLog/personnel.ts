@@ -15,6 +15,7 @@ import {
 } from './constants';
 import type { ChucVuWithUnit } from './constants';
 import { positionHistoryRepository } from '../../repositories/positionHistory.repository';
+import { formatPersonnelChanges, PersonnelFieldChange } from '../profileFieldDiff';
 
 const personnel: Record<
   string,
@@ -66,15 +67,17 @@ const personnel: Record<
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       const personnelData = data?.data || data;
       const hoTen = personnelData?.ho_ten || req.body?.ho_ten || FALLBACK.NO_NAME;
+      const changes = (personnelData?.changes as PersonnelFieldChange[] | undefined) || [];
+      const changeDetail = changes.length > 0 ? ` - Đổi: ${formatPersonnelChanges(changes)}` : '';
 
       if (personnelData?.unitTransferInfo) {
         const { oldUnit, newUnit } = personnelData.unitTransferInfo;
         const oldUnitName = oldUnit?.ten_don_vi || FALLBACK.NO_UNIT;
         const newUnitName = newUnit?.ten_don_vi || FALLBACK.NO_UNIT;
-        return `Chuyển đơn vị quân nhân: ${hoTen} từ "${oldUnitName}" sang "${newUnitName}"`;
+        return `Chuyển đơn vị quân nhân: ${hoTen} từ "${oldUnitName}" sang "${newUnitName}"${changeDetail}`;
       }
 
-      return `Cập nhật thông tin quân nhân: ${hoTen}`;
+      return `Cập nhật thông tin quân nhân: ${hoTen}${changeDetail}`;
     } catch (e) {
       console.error('AuditLogPersonnel.buildUpdateDescription failed', { error: e });
       const hoTen = req.body?.ho_ten || FALLBACK.NO_NAME;

@@ -33,7 +33,7 @@ class BangDeXuat {
 }
 
 interface ProposalStrategy {
-    LoaiDeXuat type = null;
+    LoaiDeXuat type;
     Object buildSubmitPayload(Object[] titleData, Object ctx);
     void importInTransaction(Object editedData, Object ctx, Object decisions, Object pdf, Object acc, Object tx);
 }

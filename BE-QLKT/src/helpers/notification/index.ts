@@ -14,7 +14,11 @@ import {
   notifyOnImport,
   safeNotifyImport,
 } from './awards';
-import { notifyOnPersonnelTransfer, notifyOnPersonnelDeleted } from './personnel';
+import {
+  notifyOnPersonnelTransfer,
+  notifyOnPersonnelDeleted,
+  notifyOnSelfProfileUpdate,
+} from './personnel';
 
 export {
   getDisplayName,
@@ -31,4 +35,5 @@ export {
   safeNotifyImport,
   notifyOnPersonnelTransfer,
   notifyOnPersonnelDeleted,
+  notifyOnSelfProfileUpdate,
 };

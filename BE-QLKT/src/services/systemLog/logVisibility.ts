@@ -4,7 +4,7 @@ import { accountRepository } from '../../repositories/account.repository';
 import type { Prisma } from '../../generated/prisma';
 import { ROLES, SYSTEM_ACTOR } from '../../constants/roles.constants';
 import { AUDIT_ACTIONS } from '../../constants/auditActions.constants';
-import { RESOURCE_SLUGS } from '../../constants/resourceSlugs.constants';
+import { SUPER_ADMIN_ONLY_RESOURCES } from '../../constants/resourceSlugs.constants';
 import { isFeatureEnabled } from '../../helpers/settingsHelper';
 
 /** Roles visible at each level (SYSTEM events visible to ADMIN and above) */
@@ -84,7 +84,7 @@ export async function buildLogVisibilityScope(
   }
 
   if (userRole !== ROLES.SUPER_ADMIN) {
-    where.resource = { not: RESOURCE_SLUGS.BACKUP };
+    where.resource = { notIn: SUPER_ADMIN_ONLY_RESOURCES };
   }
 
   return { where, visibleRoles, canViewErrors };

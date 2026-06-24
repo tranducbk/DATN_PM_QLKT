@@ -110,6 +110,7 @@ export function VietnamAddressCascader({
         }}
         displayRender={displayRender}
         allowClear
+        changeOnSelect
         style={{ width: '100%' }}
       />
     </div>

@@ -26,6 +26,7 @@ export const NOTIFICATION_TITLES = {
   PERSONNEL_TRANSFERRED_SUBUNIT: 'Quân nhân chuyển đơn vị trực thuộc',
   PERSONNEL_SELF_TRANSFERRED: 'Bạn đã được chuyển đơn vị',
   PERSONNEL_DELETED: 'Quân nhân đã bị xóa',
+  PERSONNEL_SELF_UPDATED: 'Quân nhân cập nhật thông tin',
 } as const;
 
 export const notificationMessages = {

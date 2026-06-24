@@ -244,4 +244,71 @@ async function notifyOnPersonnelDeleted(
   }
 }
 
-export { notifyOnPersonnelTransfer, notifyOnPersonnelDeleted };
+interface SelfUpdateInfo {
+  id: string;
+  ho_ten?: string | null;
+  co_quan_don_vi_id?: string | null;
+  don_vi_truc_thuoc_id?: string | null;
+}
+
+/**
+ * Notifies all admins and the managers of the personnel's unit when a soldier
+ * edits their own profile.
+ * @param personnel - The personnel who updated their own profile
+ * @returns Number of notifications created
+ */
+async function notifyOnSelfProfileUpdate(
+  personnel: SelfUpdateInfo,
+  changedFields: string[] = []
+): Promise<number> {
+  try {
+    const name = personnel.ho_ten || 'Một quân nhân';
+    const detail = changedFields.length > 0 ? `: ${changedFields.join(', ')}` : '';
+
+    let coQuanDonViId = personnel.co_quan_don_vi_id || null;
+    if (!coQuanDonViId && personnel.don_vi_truc_thuoc_id) {
+      const dvtt = await donViTrucThuocRepository.findCoQuanDonViIdById(
+        personnel.don_vi_truc_thuoc_id
+      );
+      coQuanDonViId = dvtt?.co_quan_don_vi_id || null;
+    }
+
+    const recipients = await accountRepository.findManyRaw({
+      where: {
+        OR: [
+          { role: ROLES.ADMIN },
+          ...(coQuanDonViId
+            ? [{ role: ROLES.MANAGER, QuanNhan: { co_quan_don_vi_id: coQuanDonViId } }]
+            : []),
+        ],
+      },
+      select: { id: true, role: true },
+    });
+
+    const notifications: NotificationInput[] = recipients.map(recipient => ({
+      nguoi_nhan_id: recipient.id,
+      recipient_role: recipient.role,
+      type: NOTIFICATION_TYPES.PERSONNEL_UPDATED,
+      title: NOTIFICATION_TITLES.PERSONNEL_SELF_UPDATED,
+      message: `Quân nhân ${name} đã cập nhật thông tin cá nhân${detail}`,
+      resource: RESOURCE_TYPES.PERSONNEL,
+      tai_nguyen_id: personnel.id,
+      link:
+        recipient.role === ROLES.ADMIN
+          ? `/admin/personnel/${personnel.id}`
+          : `/manager/personnel/${personnel.id}`,
+    }));
+
+    if (notifications.length > 0) {
+      await notificationRepository.createMany(notifications);
+      notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
+    }
+
+    return notifications.length;
+  } catch (error) {
+    console.error('NotificationPersonnel.notifyOnSelfProfileUpdate failed', { error });
+    return 0;
+  }
+}
+
+export { notifyOnPersonnelTransfer, notifyOnPersonnelDeleted, notifyOnSelfProfileUpdate };

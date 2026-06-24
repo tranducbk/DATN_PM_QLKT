@@ -1,12 +1,15 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { timingSafeEqual } from 'crypto';
-import profileService from '../services/profile.service';
-import unitAnnualAwardService from '../services/unitAnnualAward.service';
 import unitService from '../services/unit.service';
 import backupService from '../services/backup.service';
 import cron from 'node-cron';
-import type { ScheduledTask } from 'node-cron';
-import { SETTING_DEFAULTS, AWARD_TYPES, SYSTEM_FEATURES } from '../constants/devZone.constants';
+import { AWARD_TYPES, SYSTEM_FEATURES } from '../constants/devZone.constants';
+import {
+  runCronJob,
+  updateCronTask,
+  updateBackupCronTask,
+  getCronState,
+} from '../services/recalcCron.service';
 import { getSetting, setSetting, getSettings } from '../helpers/settingsHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
@@ -14,7 +17,6 @@ import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 import { SYSTEM_ACTOR } from '../constants/roles.constants';
 import { authLimiter } from '../configs/rateLimiter';
 import { DEV_ZONE_PASSWORD } from '../configs';
-import { systemSettingRepository } from '../repositories/systemSetting.repository';
 
 const router = Router();
 
@@ -27,118 +29,6 @@ const ALL_FEATURE_KEYS = [
   ...AWARD_TYPES.map((t: string) => `allow_${t}`),
   ...SYSTEM_FEATURES.map((f: string) => `allow_${f}`),
 ];
-
-let cronTask: ScheduledTask | null = null;
-let backupCronTask: ScheduledTask | null = null;
-let lastCronRun: string | null = null;
-interface CronResult {
-  status: 'success' | 'error';
-  time: string | null;
-  success?: number;
-  errors?: number;
-  message?: string;
-}
-
-let lastCronResult: CronResult | null = null;
-
-/** Runs the scheduled recalculation job for all personnel profiles and unit awards. */
-const runCronJob = async () => {
-  lastCronRun = new Date().toISOString();
-  await setSetting('cron_last_run', lastCronRun);
-  try {
-    const [personnelResult, unitRecalculated, unitCountUpdated] = await Promise.all([
-      profileService.recalculateAll(),
-      unitAnnualAwardService.recalculate({ don_vi_id: undefined, nam: undefined }),
-      unitService.recalculatePersonnelCount(),
-    ]);
-    const totalSuccess = (personnelResult.success || 0) + unitRecalculated;
-    const totalErrors = personnelResult.errors?.length || 0;
-    lastCronResult = {
-      status: 'success',
-      time: lastCronRun,
-      success: totalSuccess,
-      errors: totalErrors,
-    };
-    await setSetting('cron_last_result', JSON.stringify(lastCronResult));
-
-    await writeSystemLog({
-      userId: SYSTEM_ACTOR,
-      userRole: SYSTEM_ACTOR,
-      action: AUDIT_ACTIONS.RECALCULATE,
-      resource: RESOURCE_SLUGS.PROFILES,
-      description: `Tác vụ định kỳ tính toán hồ sơ: cá nhân ${personnelResult.success} thành công (${totalErrors} lỗi), đơn vị ${unitRecalculated} bản ghi, quân số ${unitCountUpdated} đơn vị cập nhật`,
-      payload: {
-        personnelSuccess: personnelResult.success,
-        personnelErrors: totalErrors,
-        unitRecalculated,
-        unitCountUpdated,
-        schedule: await getSetting('cron_schedule', '0 1 1 * *'),
-      },
-    });
-
-    return lastCronResult;
-  } catch (error: unknown) {
-    const errMessage = error instanceof Error ? error.message : String(error);
-    lastCronResult = {
-      status: 'error',
-      time: lastCronRun,
-      message: errMessage,
-    };
-    await setSetting('cron_last_result', JSON.stringify(lastCronResult));
-    throw error;
-  }
-};
-
-/** Updates the active cron task based on cron_enabled and cron_schedule settings. */
-const updateCronTask = async () => {
-  if (cronTask) {
-    cronTask.stop();
-    cronTask = null;
-  }
-  const enabled = (await getSetting('cron_enabled', 'true')) === 'true';
-  const schedule = await getSetting('cron_schedule', '0 1 1 * *');
-  if (enabled && cron.validate(schedule)) {
-    cronTask = cron.schedule(schedule, runCronJob);
-  }
-};
-
-/** Updates the backup cron task based on backup_enabled and backup_cron settings. */
-const updateBackupCronTask = async () => {
-  if (backupCronTask) {
-    backupCronTask.stop();
-    backupCronTask = null;
-  }
-  const enabled = (await getSetting('backup_enabled', 'false')) === 'true';
-  const schedule = await getSetting('backup_cron', '0 2 * * *');
-  if (enabled && cron.validate(schedule)) {
-    backupCronTask = cron.schedule(schedule, () => {
-      backupService
-        .createBackup({ triggeredBy: SYSTEM_ACTOR, userId: SYSTEM_ACTOR, type: 'scheduled' })
-        .catch(err => console.error('[BackupCron] Failed:', err));
-    });
-  }
-};
-
-/** Seeds default system settings to DB if they do not already exist. */
-async function seedDefaults() {
-  const existing = await systemSettingRepository.findManyRaw({
-    where: { key: { in: Object.keys(SETTING_DEFAULTS) } },
-    select: { key: true },
-  });
-  const existingKeys = new Set(existing.map((s: { key: string }) => s.key));
-  const toCreate = Object.entries(SETTING_DEFAULTS)
-    .filter(([key]) => !existingKeys.has(key))
-    .map(([key, value]) => ({ key, value: value as string }));
-  if (toCreate.length > 0) {
-    await systemSettingRepository.createMany(toCreate);
-  }
-}
-
-seedDefaults()
-  .then(() => Promise.all([updateCronTask(), updateBackupCronTask()]))
-  .catch(error => {
-    console.error('[DevZone] Failed to seed defaults or initialize cron:', error);
-  });
 
 /** Length-revealing constant-time string compare (avoids early-exit timing oracle). */
 function constantTimeEqual(input: string, secret: string): boolean {
@@ -213,6 +103,7 @@ router.post('/auth', authLimiter, (req: Request, res: Response) => {
  * @access  Private - DevZone password required
  */
 router.get('/status', verifyDevPassword, async (req: Request, res: Response) => {
+  const { lastCronRun, lastCronResult } = getCronState();
   const cronEnabled = (await getSetting('cron_enabled', 'true')) === 'true';
   const cronSchedule = await getSetting('cron_schedule', '0 1 1 * *');
   const storedLastRun = await getSetting('cron_last_run', null);
@@ -299,6 +190,15 @@ router.put('/cron/schedule', verifyDevPassword, async (req: Request, res: Respon
   const cronEnabled = (await getSetting('cron_enabled', 'true')) === 'true';
   const cronSchedule = await getSetting('cron_schedule', '0 1 1 * *');
 
+  await writeSystemLog({
+    userId: SYSTEM_ACTOR,
+    userRole: SYSTEM_ACTOR,
+    action: AUDIT_ACTIONS.UPDATE,
+    resource: RESOURCE_SLUGS.DEV_ZONE,
+    description: `Cập nhật tác vụ định kỳ: ${cronEnabled ? 'bật' : 'tắt'}, lịch ${cronSchedule}`,
+    payload: { enabled: cronEnabled, schedule: cronSchedule },
+  });
+
   res.json({
     success: true,
     message: `Tác vụ định kỳ ${cronEnabled ? 'đã bật' : 'đã tắt'}. Lịch: ${cronSchedule}`,
@@ -343,10 +243,23 @@ router.post('/recalculate-unit-count', verifyDevPassword, async (req: Request, r
 router.put('/features', verifyDevPassword, async (req: Request, res: Response) => {
   const updates = req.body;
 
+  const changed: string[] = [];
   for (const key of ALL_FEATURE_KEYS) {
     if (typeof updates[key] === 'boolean') {
       await setSetting(key, String(updates[key]));
+      changed.push(`${key}=${updates[key]}`);
     }
+  }
+
+  if (changed.length > 0) {
+    await writeSystemLog({
+      userId: SYSTEM_ACTOR,
+      userRole: SYSTEM_ACTOR,
+      action: AUDIT_ACTIONS.UPDATE,
+      resource: RESOURCE_SLUGS.DEV_ZONE,
+      description: `Cập nhật tính năng hệ thống: ${changed.join(', ')}`,
+      payload: { changed },
+    });
   }
 
   res.json({
@@ -395,7 +308,7 @@ router.get('/backup/status', verifyDevPassword, async (req: Request, res: Respon
       schedule,
       retentionDays: parseInt(retentionDays, 10),
       lastRun,
-      recentBackups: files.slice(0, 5),
+      recentBackups: files,
       totalFiles: files.length,
     },
   });
@@ -432,6 +345,19 @@ router.put('/backup/schedule', verifyDevPassword, async (req: Request, res: Resp
   const currentSchedule = await getSetting('backup_cron', '0 2 * * *');
   const currentRetention = await getSetting('backup_retention_days', '15');
 
+  await writeSystemLog({
+    userId: SYSTEM_ACTOR,
+    userRole: SYSTEM_ACTOR,
+    action: AUDIT_ACTIONS.UPDATE,
+    resource: RESOURCE_SLUGS.BACKUP,
+    description: `Cập nhật lịch backup tự động: ${currentEnabled ? 'bật' : 'tắt'}, lịch ${currentSchedule}, giữ ${currentRetention} ngày`,
+    payload: {
+      enabled: currentEnabled,
+      schedule: currentSchedule,
+      retentionDays: parseInt(currentRetention, 10),
+    },
+  });
+
   res.json({
     success: true,
     message: `Backup tự động ${currentEnabled ? 'đã bật' : 'đã tắt'}`,
@@ -444,21 +370,19 @@ router.put('/backup/schedule', verifyDevPassword, async (req: Request, res: Resp
 });
 
 /**
- * @route   POST /api/dev-zone/backup/cleanup
- * @desc    Manually trigger old backup cleanup
+ * @route   DELETE /api/dev-zone/backup/:filename
+ * @desc    Delete a specific backup file by name
  * @access  Private - DevZone password required
  */
-router.post('/backup/cleanup', verifyDevPassword, async (req: Request, res: Response) => {
+router.delete('/backup/:filename', verifyDevPassword, async (req: Request, res: Response) => {
+  const param = req.params.filename;
+  const filename = Array.isArray(param) ? param[0] : param;
   try {
-    const result = await backupService.cleanupOldBackups();
-    res.json({
-      success: true,
-      message: `Đã xóa ${result.deleted} file backup cũ`,
-      data: result,
-    });
+    await backupService.deleteBackup(filename);
+    res.json({ success: true, message: 'Đã xóa file sao lưu' });
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ success: false, message: errMessage });
+    res.status(400).json({ success: false, message: errMessage });
   }
 });
 

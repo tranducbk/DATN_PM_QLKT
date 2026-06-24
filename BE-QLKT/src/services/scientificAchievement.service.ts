@@ -34,15 +34,6 @@ interface CreateAchievementData {
   ghi_chu?: string | null;
 }
 
-interface UpdateAchievementData {
-  nam?: number;
-  loai?: string;
-  mo_ta?: string;
-  cap_bac?: string;
-  chuc_vu?: string;
-  ghi_chu?: string;
-}
-
 interface ExportFilters {
   nam?: number;
   loai?: string;
@@ -114,48 +105,6 @@ class ScientificAchievementService {
     }
 
     return newAchievement;
-  }
-
-  async updateAchievement(id: string, data: UpdateAchievementData) {
-    const { nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu } = data;
-
-    const achievement = await scientificAchievementRepository.findUniqueRaw({
-      where: { id },
-    });
-
-    if (!achievement) {
-      throw new NotFoundError('Thành tích');
-    }
-
-    let loaiCode: string | null = null;
-    if (loai) {
-      loaiCode = resolveNckhCode(loai);
-      if (!loaiCode) {
-        throw new ValidationError('Loại thành tích không hợp lệ');
-      }
-    }
-
-    const updateData: Record<string, unknown> = {};
-    if (nam !== undefined) updateData.nam = nam;
-    if (loaiCode) updateData.loai = loaiCode;
-    if (mo_ta !== undefined) updateData.mo_ta = mo_ta;
-    if (cap_bac !== undefined) updateData.cap_bac = cap_bac;
-    if (chuc_vu !== undefined) updateData.chuc_vu = chuc_vu;
-    if (ghi_chu !== undefined) updateData.ghi_chu = ghi_chu;
-
-    const updatedAchievement = await scientificAchievementRepository.update(id, updateData);
-
-    try {
-      await profileService.recalculateAnnualProfile(achievement.quan_nhan_id);
-    } catch (e) {
-      void writeSystemLog({
-        action: AUDIT_ACTIONS.ERROR,
-        resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
-        description: logMessages.recalcError('cập nhật', AWARD_LABEL, e),
-      });
-    }
-
-    return updatedAchievement;
   }
 
   async deleteAchievement(id: string, adminUsername = 'Admin') {

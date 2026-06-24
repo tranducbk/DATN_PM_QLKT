@@ -11,6 +11,7 @@ import {
   Select,
   Alert,
   Spin,
+  Popconfirm,
   ConfigProvider,
   theme,
 } from 'antd';
@@ -260,6 +261,21 @@ export default function DevZonePage() {
       message.error(getApiErrorMessage(err, 'Sao lưu thất bại'));
     } finally {
       setBackupTriggerLoading(false);
+    }
+  };
+
+  const handleDeleteBackupFile = async (filename: string) => {
+    try {
+      const res = await axiosInstance.delete(
+        DEV_ZONE_API + '/backup/' + encodeURIComponent(filename),
+        { headers: { 'x-dev-password': devPassword } },
+      );
+      if (res.data.success) {
+        message.success('Đã xoá file sao lưu');
+        fetchBackupStatus(devPassword);
+      }
+    } catch (err: unknown) {
+      message.error(getApiErrorMessage(err, 'Xoá file sao lưu thất bại'));
     }
   };
 
@@ -694,6 +710,40 @@ export default function DevZonePage() {
                     message={`Lần sao lưu gần nhất: ${formatDateTime(backupStatus.lastRun)}`}
                     showIcon={false}
                   />
+                </div>
+              )}
+
+              {backupStatus?.recentBackups && backupStatus.recentBackups.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div className="dz-feature-label" style={{ marginBottom: 8 }}>
+                    File sao lưu hiện có ({backupStatus.totalFiles})
+                  </div>
+                  <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                    {backupStatus.recentBackups.map(file => (
+                      <div key={file.filename} className="dz-util-row">
+                        <div className="dz-util-info">
+                          <DatabaseOutlined className="dz-feature-icon" />
+                          <div>
+                            <div className="dz-feature-label">{file.filename}</div>
+                            <div className="dz-feature-desc">
+                              {formatDateTime(file.createdAt)} · {file.sizeKB} KB ·{' '}
+                              {file.type === 'manual' ? 'Thủ công' : 'Tự động'}
+                            </div>
+                          </div>
+                        </div>
+                        <Popconfirm
+                          title="Xoá file sao lưu này?"
+                          okText="Xoá"
+                          cancelText="Huỷ"
+                          onConfirm={() => handleDeleteBackupFile(file.filename)}
+                        >
+                          <Button className="dz-delete-btn" icon={<DeleteOutlined />} danger>
+                            Xoá
+                          </Button>
+                        </Popconfirm>
+                      </div>
+                    ))}
+                  </Space>
                 </div>
               )}
             </div>

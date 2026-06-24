@@ -11,6 +11,7 @@ import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLES } from '@/constants/roles.constants';
 import { VietnamAddressCascader } from '@/components/shared/VietnamAddressCascader';
+import { parseAddressToArray, formatAddressToString } from '@/lib/address';
 import type { UnitOptionRow, ManagerPositionRow } from '@/lib/types/personnelList';
 
 const { Title } = Typography;
@@ -22,20 +23,6 @@ interface PersonnelEditFormProps {
   /** Called when the user cancels the edit. */
   onCancel: () => void;
 }
-
-const parseAddressToArray = (addressString: string | null): string[] | undefined => {
-  if (!addressString) return undefined;
-  const parts = addressString.split(',').map(part => part.trim());
-  if (parts.length !== 3) return undefined;
-  const [ward, district, province] = parts;
-  return [province, district, ward];
-};
-
-const formatAddressToString = (addressArray: string[]): string => {
-  if (!addressArray || addressArray.length !== 3) return '';
-  const [province, district, ward] = addressArray;
-  return `${ward}, ${district}, ${province}`;
-};
 
 const formatAddressInput = (input: string): string => {
   if (!input || !input.trim()) return input;

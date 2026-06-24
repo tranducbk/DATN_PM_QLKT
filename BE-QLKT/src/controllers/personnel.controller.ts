@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import personnelService from '../services/personnel.service';
+import personnelService, { UpdateOwnProfileData } from '../services/personnel.service';
 import { parsePagination } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
@@ -101,6 +101,19 @@ class PersonnelController {
       data: result,
       message: `Thêm quân nhân và tạo tài khoản thành công. Username: ${cccd}, Password: mật khẩu mặc định`,
     });
+  });
+
+  updateMyProfile = catchAsync(async (req: Request, res: Response) => {
+    const user = req.user!;
+    if (!user.quan_nhan_id) {
+      return ResponseHelper.badRequest(res, 'Tài khoản chưa gắn với hồ sơ quân nhân');
+    }
+    const result = await personnelService.updateOwnProfile(
+      user.quan_nhan_id,
+      req.body as UpdateOwnProfileData,
+      { actorId: user.id, actorRole: user.role }
+    );
+    return ResponseHelper.success(res, { data: result, message: 'Cập nhật thông tin thành công' });
   });
 
   updatePersonnel = catchAsync(async (req: Request, res: Response) => {

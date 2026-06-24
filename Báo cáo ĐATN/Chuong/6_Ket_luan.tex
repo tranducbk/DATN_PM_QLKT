@@ -1,6 +1,8 @@
 \documentclass[../DoAn.tex]{subfiles}
 \begin{document}
 
+Các chương trước đã trình bày khảo sát yêu cầu, công nghệ nền tảng, thiết kế cùng kết quả xây dựng và các đóng góp nổi bật của đồ án. Chương này tổng kết những kết quả đã đạt được, nêu các hạn chế còn tồn tại và đề xuất hướng phát triển tiếp theo.
+
 \section{Kết luận}
 \label{section:6.1}
 
@@ -14,7 +16,7 @@ Mỗi nhóm có tiêu chuẩn xét riêng nhưng cùng dùng chung quy trình đ
 
 Về mặt kỹ thuật, hệ thống được tổ chức theo kiến trúc phân tầng, trải từ tầng định tuyến tới tầng truy cập dữ liệu.
 Hệ thống dùng cơ sở dữ liệu quan hệ chuẩn hoá, xác thực bằng JWT có cơ chế làm mới luân phiên và ghi nhật ký hệ thống đầy đủ.
-Các quy tắc xét chuỗi cho cá nhân và đơn vị, tình huống lỡ đợt đề nghị, điều kiện tính trên cửa sổ thời gian gần nhất và quy tắc chặn nhận lại danh hiệu chỉ trao một lần đều đã được kiểm chứng với nhiều bộ dữ liệu mẫu.
+Các quy tắc xét chuỗi cho cá nhân và đơn vị, tình huống lỡ đợt đề nghị, điều kiện tính trên khoảng thời gian gần nhất và quy tắc chặn nhận lại danh hiệu chỉ trao một lần đều đã được kiểm chứng với nhiều bộ dữ liệu mẫu.
 
 Đóng góp nổi bật của đồ án là đưa quy tắc chuỗi danh hiệu vào một bảng cấu hình tập trung.
 Bảng này mô tả số năm chu kỳ, danh hiệu tiền điều kiện kèm số lượng yêu cầu, có yêu cầu nghiên cứu khoa học hay không, và danh hiệu nhận một lần duy nhất hay có thể lặp lại.
@@ -23,11 +25,11 @@ Tương tự, bảy loại đề xuất được chuẩn hoá qua mẫu thiết 
 
 Bên cạnh các kết quả đạt được, đồ án còn một số hạn chế.
 Thứ nhất, phần triển khai hiện chỉ ở môi trường mạng nội bộ Học viện trên một máy chủ đơn lẻ, chưa đánh giá được khả năng vận hành ở quy mô nhiều cơ sở.
-Thứ hai, các báo cáo thống kê hiện chủ yếu dưới dạng bảng và biểu đồ tĩnh, chưa cung cấp công cụ phân tích so sánh giữa các đơn vị trong chuỗi thời gian dài.
+Thứ hai, phần thống kê hiện chủ yếu dưới dạng bảng và biểu đồ tĩnh, chưa cung cấp công cụ phân tích so sánh giữa các đơn vị trong chuỗi thời gian dài.
 Thứ ba, hệ thống chưa tích hợp chữ ký số quân đội; các quyết định khen thưởng được quản lý dưới dạng tệp PDF ký tay, phù hợp với quy trình hiện hành của Học viện.
 Thứ tư, hệ thống mới được kiểm chứng trên dữ liệu mô phỏng và kiểm thử hộp đen, chưa qua thử nghiệm với người dùng thật tại Phòng Chính trị nên cần một giai đoạn chạy thử nội bộ trước khi đưa vào vận hành chính thức.
 
-Trong quá trình thực hiện, đồ án rút ra một số kinh nghiệm chuyên môn, bao gồm: (i) tách biệt quy tắc nghiệp vụ phức tạp ra khỏi mã nguồn thông qua cấu hình tập trung; (ii) thiết kế kiến trúc phân tầng với ranh giới rõ giữa các tầng; (iii) phân tích các tình huống phức tạp khi điều kiện danh hiệu được xét trên cửa sổ thời gian trượt, chẳng hạn ba năm gần nhất; và (iv) chuyển đổi văn bản pháp lý và quy chế nội bộ thành thiết kế kỹ thuật.
+Trong quá trình thực hiện, đồ án rút ra một số kinh nghiệm chuyên môn, bao gồm: (i) tách biệt quy tắc nghiệp vụ phức tạp ra khỏi mã nguồn thông qua cấu hình tập trung; (ii) thiết kế kiến trúc phân tầng với ranh giới rõ giữa các tầng; (iii) phân tích các tình huống phức tạp khi điều kiện danh hiệu được xét trên khoảng thời gian gần nhất, chẳng hạn ba năm gần nhất; và (iv) chuyển đổi văn bản pháp lý và quy chế nội bộ thành thiết kế kỹ thuật.
 
 \section{Hướng phát triển}
 \label{section:6.2}
@@ -69,5 +71,7 @@ Sáu hướng được sắp xếp theo độ ưu tiên giảm dần.
 Các hướng (i), (ii), (iv) và (v) khả thi trong ngắn hạn nhờ kiến trúc cấu hình kết hợp Strategy và hạ tầng Socket.IO đã có.
 Hướng (iii) và (vi) cần thời gian dài hơn.
 Hướng (iii) phụ thuộc vào quyết định mở rộng phạm vi sử dụng, còn hướng (vi) cần thời gian tích hợp và đánh giá độ tin cậy của mô hình AI trước khi đưa vào hỗ trợ ra quyết định khen thưởng.
+
+Những hướng phát triển trên sẽ giúp phần mềm tiếp tục hoàn thiện và phục vụ ngày càng tốt hơn công tác khen thưởng tại Học viện.
 
 \end{document}

@@ -5,8 +5,12 @@ import { prismaMock } from '../helpers/prismaMock';
 import { expectError } from '../helpers/errorAssert';
 
 import backupService from '../../src/services/backup.service';
+import { writeSystemLog } from '../../src/helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../../src/constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../../src/constants/resourceSlugs.constants';
 
 const BACKUP_DIR = path.join(process.cwd(), 'backups');
+const mockWriteSystemLog = writeSystemLog as jest.Mock;
 
 function makeStats(mtime: Date, size = 2048) {
   return {
@@ -109,6 +113,22 @@ describe('Sao lưu: xóa file sao lưu', () => {
 
     expect(unlinkSpy).not.toHaveBeenCalled();
   });
+
+  it('Sao lưu: xóa file → ghi log hệ thống (DELETE / backup) kèm tên file', async () => {
+    const filename = 'backup_20260301_120000_scheduled.sql';
+    jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+    jest.spyOn(fs, 'unlinkSync').mockReturnValue(undefined);
+
+    await backupService.deleteBackup(filename);
+
+    expect(mockWriteSystemLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: AUDIT_ACTIONS.DELETE,
+        resource: RESOURCE_SLUGS.BACKUP,
+        description: expect.stringContaining(filename),
+      })
+    );
+  });
 });
 
 describe('Sao lưu: dọn dẹp file sao lưu cũ', () => {
@@ -148,6 +168,25 @@ describe('Sao lưu: dọn dẹp file sao lưu cũ', () => {
 
     expect(result.deleted).toBe(0);
     expect(result.files).toEqual([]);
+  });
+
+  it('Sao lưu: có file cũ bị xóa → ghi log hệ thống (DELETE / backup) kèm danh sách file', async () => {
+    prismaMock.systemSetting.findUnique.mockResolvedValue({ key: 'backup_retention_days', value: '15' });
+    const oldDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    jest.spyOn(fs, 'mkdirSync').mockReturnValue(undefined);
+    (jest.spyOn(fs, 'readdirSync') as jest.Mock).mockReturnValue(['backup_20250101_120000_manual.sql']);
+    jest.spyOn(fs, 'statSync').mockImplementation(() => makeStats(oldDate));
+    jest.spyOn(fs, 'unlinkSync').mockReturnValue(undefined);
+
+    await backupService.cleanupOldBackups();
+
+    expect(mockWriteSystemLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: AUDIT_ACTIONS.DELETE,
+        resource: RESOURCE_SLUGS.BACKUP,
+        payload: expect.objectContaining({ files: ['backup_20250101_120000_manual.sql'] }),
+      })
+    );
   });
 });
 
@@ -235,5 +274,20 @@ describe('Sao lưu: tạo bản sao lưu và tự động dọn dẹp file cũ',
     const result = await backupService.createBackup({ triggeredBy: 'SYSTEM', userId: 'SYSTEM', type: 'scheduled' });
 
     expect(result.filename).toMatch(/^backup_\d{8}_\d{6}_scheduled\.sql$/);
+  });
+
+  it('Sao lưu: tạo backup thành công → ghi log hệ thống (BACKUP / backup)', async () => {
+    mockEmptyTables();
+    mockFsHappyPath();
+    jest.spyOn(backupService, 'cleanupOldBackups').mockResolvedValue({ deleted: 0, files: [] });
+
+    await backupService.createBackup({ triggeredBy: 'admin', userId: 'u1', type: 'manual' });
+
+    expect(mockWriteSystemLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: AUDIT_ACTIONS.BACKUP,
+        resource: RESOURCE_SLUGS.BACKUP,
+      })
+    );
   });
 });

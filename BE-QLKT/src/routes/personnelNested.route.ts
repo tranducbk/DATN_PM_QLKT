@@ -168,22 +168,6 @@ router.get(
 );
 
 /**
- * @route   POST /api/personnel/:personnelId/scientific-achievements
- * @desc    Create a scientific achievement for a personnel (alias route)
- * @access  Private - ADMIN, MANAGER
- */
-router.post(
-  '/scientific-achievements',
-  verifyToken,
-  requireAdminOrManager,
-  (req: Request, res: Response, next: NextFunction) => {
-    // Add personnel_id from URL params to body (CUID, not a number)
-    req.body.personnel_id = req.params.personnelId;
-    scientificAchievementController.createAchievement(req, res, next);
-  }
-);
-
-/**
  * @route   GET /api/personnel/:personnelId/profile
  * @desc    Get annual award profile for a personnel (alias route)
  * @access  Private - ADMIN, MANAGER, USER

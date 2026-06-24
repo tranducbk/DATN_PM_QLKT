@@ -66,6 +66,18 @@ router.post(
 );
 
 /**
+ * @route   PUT /api/personnel/me
+ * @desc    Update own profile — limited contact/biographical fields only
+ * @access  Private - authenticated user (own record, resolved from token)
+ */
+router.put(
+  '/me',
+  verifyToken,
+  validate(personnelValidation.updateOwnProfile),
+  personnelController.updateMyProfile
+);
+
+/**
  * @route   PUT /api/personnel/:id
  * @desc    Update a personnel record (position change; unit transfer is ADMIN-only)
  * @access  Private - ADMIN (incl. unit transfer), MANAGER (own unit, no transfer), USER (own record only)

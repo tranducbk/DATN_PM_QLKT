@@ -21,3 +21,9 @@ export const RESOURCE_SLUGS = {
   BACKUP: 'backup',
   DEV_ZONE: 'dev-zone',
 } as const;
+
+/** Resources whose system logs are visible to SUPER_ADMIN only. */
+export const SUPER_ADMIN_ONLY_RESOURCES: string[] = [
+  RESOURCE_SLUGS.BACKUP,
+  RESOURCE_SLUGS.DEV_ZONE,
+];

@@ -17,10 +17,18 @@ export interface DevStatus {
   } & Record<string, boolean | undefined>;
 }
 
+export interface BackupFile {
+  filename: string;
+  sizeKB: number;
+  createdAt: string;
+  type: 'manual' | 'scheduled';
+}
+
 export interface BackupStatus {
   enabled: boolean;
   schedule: string;
   retentionDays: number;
   lastRun: string | null;
   totalFiles: number;
+  recentBackups: BackupFile[];
 }
