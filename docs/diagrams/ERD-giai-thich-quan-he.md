@@ -1,7 +1,7 @@
 # Giải thích các mối quan hệ trong CSDL (tài liệu ôn bảo vệ)
 
 > Nguồn: `BE-QLKT/prisma/schema.prisma` (đã đối chiếu với `database.dbml`).
-> 23 bảng · 47 khóa ngoại. Mọi hành vi `onDelete` dưới đây đúng theo schema thật.
+> 23 bảng · 47 khóa ngoại. Sơ đồ minh họa: `ERD 0.png` (báo cáo) dựng từ `database.dbml`. Mọi hành vi `onDelete` dưới đây đúng theo schema thật.
 
 ---
 
@@ -31,13 +31,19 @@
 3. **`TaiKhoan`** là tài khoản đăng nhập, gắn 1–1 với một quân nhân; đồng thời là "người thực hiện" trong đề xuất, nhật ký, thông báo.
 4. **`FileQuyetDinh`** là "sổ quyết định": các bảng khen thưởng không lưu lại thông tin quyết định mà **trỏ tới số quyết định** trong sổ này.
 
+Sơ đồ ERD tổng quan dưới đây (dựng từ `database.dbml`, chính là sơ đồ tổng quan trong báo cáo) thể hiện toàn bộ 23 bảng và các quan hệ giữa chúng. Các mục 3.1–3.6 phóng to và giải thích chi tiết từng nhóm.
+
+![Sơ đồ ERD tổng quan toàn bộ cơ sở dữ liệu (database.dbml)](erd-0-tong-quan.png){ width=100% }
+
 ---
 
 ## 3. Chi tiết quan hệ theo nhóm
 
-Ký hiệu: `Bảng con.khóa_ngoại → Bảng cha.khóa`.
+Ký hiệu: *Bảng con.khóa_ngoại → Bảng cha.khóa*.
 
 ### 3.1. Tổ chức · Quân nhân · Tài khoản
+
+![Sơ đồ quan hệ nhóm Tổ chức · Quân nhân · Tài khoản](erd-groups/g1.png){ width=95% }
 
 | Quan hệ | Kiểu | Ý nghĩa | onDelete · vì sao |
 |---|---|---|---|
@@ -55,6 +61,8 @@ Ký hiệu: `Bảng con.khóa_ngoại → Bảng cha.khóa`.
 
 ### 3.2. Đề xuất khen thưởng
 
+![Sơ đồ quan hệ nhóm Đề xuất](erd-groups/g2.png){ width=95% }
+
 | Quan hệ | Kiểu | Ý nghĩa | onDelete · vì sao |
 |---|---|---|---|
 | `BangDeXuat.co_quan_don_vi_id → CoQuanDonVi.id` | 1–N | Cơ quan của bên nộp đề xuất | **Cascade** |
@@ -63,6 +71,8 @@ Ký hiệu: `Bảng con.khóa_ngoại → Bảng cha.khóa`.
 | `BangDeXuat.nguoi_duyet_id → TaiKhoan.id` | 1–N | Tài khoản người phê duyệt | **SetNull** — tương tự, giữ lịch sử duyệt |
 
 ### 3.3. Khen thưởng cá nhân & hồ sơ điều kiện (đều quy về `QuanNhan`)
+
+![Sơ đồ quan hệ nhóm Khen thưởng & hồ sơ cá nhân](erd-groups/g3.png){ width=95% }
 
 | Quan hệ | Kiểu | Ý nghĩa | onDelete · vì sao |
 |---|---|---|---|
@@ -83,40 +93,46 @@ Ký hiệu: `Bảng con.khóa_ngoại → Bảng cha.khóa`.
 
 ### 3.4. Khen thưởng & hồ sơ đơn vị
 
+![Sơ đồ quan hệ nhóm Khen thưởng & hồ sơ đơn vị](erd-groups/g4.png){ width=95% }
+
 | Quan hệ | Kiểu | Ý nghĩa | onDelete · vì sao |
 |---|---|---|---|
 | `DanhHieuDonViHangNam.co_quan_don_vi_id → CoQuanDonVi.id` | 1–N (UNIQUE theo `co_quan_don_vi_id, nam`) | Danh hiệu của đơn vị cấp cơ quan | **Cascade** |
 | `DanhHieuDonViHangNam.don_vi_truc_thuoc_id → DonViTrucThuoc.id` | 1–N (UNIQUE theo `don_vi_truc_thuoc_id, nam`) | Danh hiệu của đơn vị con | **Cascade** |
-| `DanhHieuDonViHangNam.nguoi_tao_id → TaiKhoan.id` | 1–N | Tài khoản người tạo đề nghị | **Cascade** |
+| `DanhHieuDonViHangNam.nguoi_tao_id → TaiKhoan.id` | 1–N | Tài khoản người tạo đề nghị | **SetNull** — giữ bản ghi danh hiệu khi tài khoản người tạo bị xóa |
 | `DanhHieuDonViHangNam.nguoi_duyet_id → TaiKhoan.id` | 1–N | Tài khoản người duyệt | **SetNull** — giữ bản ghi khi tài khoản người duyệt bị xóa |
 | `HoSoDonViHangNam.co_quan_don_vi_id → CoQuanDonVi.id` | 1–N (UNIQUE theo `co_quan_don_vi_id, nam`) | Hồ sơ điều kiện đơn vị cấp cơ quan | **Cascade** |
 | `HoSoDonViHangNam.don_vi_truc_thuoc_id → DonViTrucThuoc.id` | 1–N (UNIQUE theo `don_vi_truc_thuoc_id, nam`) | Hồ sơ điều kiện đơn vị con | **Cascade** |
 
 ### 3.5. Quyết định — trỏ vào `FileQuyetDinh.so_quyet_dinh`
 
+![Sơ đồ quan hệ nhóm Quyết định](erd-groups/g5.png){ width=95% }
+
 Đặc thù: các bảng khen thưởng **không** trỏ vào khóa chính `id` của `FileQuyetDinh` mà trỏ vào cột `so_quyet_dinh` (cột UNIQUE). Tất cả đều `onUpdate: Cascade` và `onDelete: Restrict`.
 
 | Bảng con (khóa ngoại) | → `FileQuyetDinh.so_quyet_dinh` |
 |---|---|
-| `DanhHieuHangNam.so_quyet_dinh` | ✔ (1–N) |
-| `DanhHieuHangNam.so_quyet_dinh_bkbqp` | ✔ |
-| `DanhHieuHangNam.so_quyet_dinh_cstdtq` | ✔ |
-| `DanhHieuHangNam.so_quyet_dinh_bkttcp` | ✔ |
-| `DanhHieuDonViHangNam.so_quyet_dinh` | ✔ |
-| `DanhHieuDonViHangNam.so_quyet_dinh_bkbqp` | ✔ |
-| `DanhHieuDonViHangNam.so_quyet_dinh_bkttcp` | ✔ |
-| `ThanhTichKhoaHoc.so_quyet_dinh` | ✔ |
-| `KhenThuongHCCSVV.so_quyet_dinh` | ✔ |
-| `KhenThuongHCBVTQ.so_quyet_dinh` | ✔ |
-| `HuanChuongQuanKyQuyetThang.so_quyet_dinh` | ✔ |
-| `KyNiemChuongVSNXDQDNDVN.so_quyet_dinh` | ✔ |
-| `KhenThuongDotXuat.so_quyet_dinh` | ✔ |
+| `DanhHieuHangNam.so_quyet_dinh` | Có (1–N) |
+| `DanhHieuHangNam.so_quyet_dinh_bkbqp` | Có |
+| `DanhHieuHangNam.so_quyet_dinh_cstdtq` | Có |
+| `DanhHieuHangNam.so_quyet_dinh_bkttcp` | Có |
+| `DanhHieuDonViHangNam.so_quyet_dinh` | Có |
+| `DanhHieuDonViHangNam.so_quyet_dinh_bkbqp` | Có |
+| `DanhHieuDonViHangNam.so_quyet_dinh_bkttcp` | Có |
+| `ThanhTichKhoaHoc.so_quyet_dinh` | Có |
+| `KhenThuongHCCSVV.so_quyet_dinh` | Có |
+| `KhenThuongHCBVTQ.so_quyet_dinh` | Có |
+| `HuanChuongQuanKyQuyetThang.so_quyet_dinh` | Có |
+| `KyNiemChuongVSNXDQDNDVN.so_quyet_dinh` | Có |
+| `KhenThuongDotXuat.so_quyet_dinh` | Có |
 
 → Tổng **13 khóa ngoại** vào `FileQuyetDinh`.
 - **onUpdate Cascade**: khi cán bộ sửa lại số quyết định trong sổ, mọi bảng khen thưởng tham chiếu tự cập nhật theo (không phải sửa tay nhiều nơi).
 - **onDelete Restrict**: không cho xóa một quyết định khi vẫn còn khen thưởng tham chiếu — tránh mất căn cứ pháp lý của danh hiệu đã trao.
 
 ### 3.6. Hệ thống
+
+![Sơ đồ quan hệ nhóm Hệ thống](erd-groups/g6.png){ width=95% }
 
 | Quan hệ | Kiểu | Ý nghĩa | onDelete · vì sao |
 |---|---|---|---|
@@ -162,5 +178,5 @@ Ký hiệu: `Bảng con.khóa_ngoại → Bảng cha.khóa`.
 **H: Vì sao `DanhHieuHangNam` có tới 4 cột số quyết định?**
 Đ: Mỗi quân nhân có một dòng cho mỗi năm (UNIQUE `quan_nhan_id, nam`), nhưng trong năm có thể nhận thêm các cấp danh hiệu chuỗi (BKBQP, CSTĐTQ, BKTTCP), mỗi cấp một số quyết định riêng → 4 khóa ngoại cùng trỏ về sổ quyết định.
 
-**H: Có quan hệ nào nên lưu ý là điểm khác thường không?**
-Đ: `DanhHieuDonViHangNam` xử lý người tạo và người duyệt khác nhau: `nguoi_tao_id` là **Cascade** còn `nguoi_duyet_id` là **SetNull**. Nếu bị hỏi sâu, giải thích: bản ghi gắn với người tạo (chủ thể đề nghị), còn người duyệt chỉ là thông tin tham chiếu nên giữ bản ghi và bỏ liên kết là đủ.
+**H: Hành vi xóa của khen thưởng đơn vị (`DanhHieuDonViHangNam`) ra sao?**
+Đ: Cả `nguoi_tao_id` lẫn `nguoi_duyet_id` đều là **SetNull**: khi tài khoản người tạo hoặc người duyệt bị xóa, bản ghi danh hiệu đơn vị vẫn sống và chỉ bỏ liên kết tới tài khoản — nhất quán với cách xử lý dữ liệu lịch sử/sổ cái ở toàn hệ thống. Còn liên kết tới đơn vị (cơ quan hoặc đơn vị trực thuộc) là **Cascade** vì danh hiệu thuộc về đơn vị đó.
