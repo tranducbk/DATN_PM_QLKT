@@ -2,6 +2,7 @@ import { proposalRepository } from '../../repositories/proposal.repository';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import {
   PROPOSAL_TYPES,
+  PROPOSAL_SUBMITTER_DELETED_LABEL,
   requiresProposalMonth,
   type ProposalType,
 } from '../../constants/proposalTypes.constants';
@@ -12,6 +13,7 @@ import { buildApproveSummaryMessage } from '../../helpers/award/awardSummaryMess
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { RESOURCE_SLUGS } from '../../constants/resourceSlugs.constants';
 import { writeSystemLog } from '../../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../../constants/auditActions.constants';
 import type {
   ProposalDanhHieuItem,
   ProposalThanhTichItem,
@@ -47,7 +49,7 @@ function asJsonObjectArray<T = Record<string, unknown>>(value: unknown): T[] {
  * Edited payload mapped to BangDeXuat JSON columns.
  * Elements are business JSON objects and are not strictly typed at DB level.
  */
-export type EditedProposalPayload = {
+type EditedProposalPayload = {
   data_danh_hieu?: ProposalDanhHieuItem[] | null;
   data_thanh_tich?: ProposalThanhTichItem[] | null;
   data_nien_han?: ProposalNienHanItem[] | null;
@@ -62,10 +64,20 @@ async function loadApproveProposal(proposalId: ProposalId) {
       CoQuanDonVi: true,
       DonViTrucThuoc: { include: { CoQuanDonVi: true } },
       NguoiDeXuat: {
-        select: { id: true, username: true, role: true, QuanNhan: { select: { id: true, ho_ten: true } } },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          QuanNhan: { select: { id: true, ho_ten: true } },
+        },
       },
       NguoiDuyet: {
-        select: { id: true, username: true, role: true, QuanNhan: { select: { id: true, ho_ten: true } } },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          QuanNhan: { select: { id: true, ho_ten: true } },
+        },
       },
     },
   });
@@ -78,6 +90,14 @@ function validateApproveStatus(proposal: LoadedProposal): void {
   }
 }
 
+// Separation of duties: the proposer must not approve their own proposal. A null
+// nguoi_de_xuat_id (submitter account deleted) is not a self-approval.
+function validateNotSelfApproval(proposal: LoadedProposal, adminId: AdminAccountId): void {
+  if (proposal.nguoi_de_xuat_id && proposal.nguoi_de_xuat_id === adminId) {
+    throw new ValidationError('Không thể tự phê duyệt đề xuất do chính mình tạo.');
+  }
+}
+
 /** Throws if proposal type requires a month and the stored month is missing/invalid. */
 function validateApproveMonth(proposal: LoadedProposal): void {
   if (
@@ -87,6 +107,49 @@ function validateApproveMonth(proposal: LoadedProposal): void {
     throw new ValidationError(
       'Đề xuất thiếu tháng. HCCSVV/HCQKQT/KNC bắt buộc có tháng (1-12) trước khi phê duyệt.'
     );
+  }
+}
+
+function collectTargetIds(...arrays: unknown[]): Set<string> {
+  const ids = new Set<string>();
+  for (const arr of arrays) {
+    for (const item of asJsonObjectArray<{ personnel_id?: string; don_vi_id?: string }>(arr)) {
+      const id = item.personnel_id ?? item.don_vi_id;
+      if (id) ids.add(id);
+    }
+  }
+  return ids;
+}
+
+// editedData may only edit fields of targets already in the submission — it must not
+// introduce a personnel/unit that wasn't proposed (swap or injection). ID-based, so a
+// rename does not trip it; a transfer/delete is caught later by the existence check.
+function assertEditedDataMatchesOriginal(
+  proposal: LoadedProposal,
+  editedData: EditedProposalPayload
+): void {
+  const originalIds = collectTargetIds(
+    proposal.data_danh_hieu,
+    proposal.data_thanh_tich,
+    proposal.data_nien_han,
+    proposal.data_cong_hien
+  );
+  const editedArrays = [
+    editedData.data_danh_hieu,
+    editedData.data_thanh_tich,
+    editedData.data_nien_han,
+    editedData.data_cong_hien,
+  ];
+  for (const arr of editedArrays) {
+    if (arr == null) continue;
+    for (const item of asJsonObjectArray<{ personnel_id?: string; don_vi_id?: string }>(arr)) {
+      const id = item.personnel_id ?? item.don_vi_id;
+      if (id && !originalIds.has(id)) {
+        throw new ValidationError(
+          'Không thể phê duyệt: dữ liệu chỉnh sửa chứa quân nhân hoặc đơn vị không có trong đề xuất gốc.'
+        );
+      }
+    }
   }
 }
 
@@ -186,10 +249,10 @@ function logImportErrors(
   if (errors.length === 0) return;
   void writeSystemLog({
     userId: adminId,
-    action: 'ERROR',
+    action: AUDIT_ACTIONS.ERROR,
     resource: RESOURCE_SLUGS.PROPOSALS,
     resourceId: proposalId,
-    description: `[Phê duyệt đề xuất] ${proposal.loai_de_xuat} năm ${proposal.nam}: ${errors.length} lỗi. Chi tiết: ${errors.join('; ')}`,
+    description: `Phê duyệt đề xuất ${proposal.loai_de_xuat} năm ${proposal.nam}: ${errors.length} lỗi. Chi tiết: ${errors.join('; ')}`,
   });
 }
 
@@ -223,7 +286,10 @@ function buildApproveResponse(
     affectedPersonnelIds: Array.from(acc.affectedPersonnelIds),
     result: {
       don_vi: (proposal.DonViTrucThuoc || proposal.CoQuanDonVi)?.ten_don_vi || '-',
-      nguoi_de_xuat: proposal.NguoiDeXuat.QuanNhan?.ho_ten || proposal.NguoiDeXuat.username,
+      nguoi_de_xuat:
+        proposal.NguoiDeXuat?.QuanNhan?.ho_ten ||
+        proposal.NguoiDeXuat?.username ||
+        PROPOSAL_SUBMITTER_DELETED_LABEL,
       imported_danh_hieu: acc.importedDanhHieu,
       imported_thanh_tich: acc.importedThanhTich,
       imported_nien_han: acc.importedNienHan,
@@ -256,34 +322,13 @@ async function approveProposal(
   ghiChu: string | null = null,
   adminAttachedFiles: AttachedFileInput[] = []
 ) {
-  // ═══════════════════════════════════════════════════════════════════════
-  //  ORCHESTRATION 7 BƯỚC CỦA APPROVE FLOW
-  // ═══════════════════════════════════════════════════════════════════════
-  //  Đây là entry point chính khi Admin bấm "Phê duyệt". Hàm này KHÔNG
-  //  chứa business logic — chỉ điều phối 7 bước theo thứ tự đảm bảo:
-  //   ① Pre-flight checks fail SỚM (trước khi ghi DB).
-  //   ② Persist files OUT-OF-TRANSACTION (vì write file không rollback).
-  //   ③ Atomic transaction (import + update proposal status).
-  //   ④ Recalc downstream profile (best-effort, không rollback nếu fail).
-  //
-  //  BƯỚC 1: Load proposal + validate status/month.
-  //  BƯỚC 2: Parse editedData (Admin có thể sửa data trước khi duyệt).
-  //  BƯỚC 3: 3 pre-flight checks — duplicate, eligibility, decision#.
-  //  BƯỚC 4: Persist file (PDF quyết định + admin attachments).
-  //  BƯỚC 5: Run transaction (import vào bảng đích + update bangDeXuat).
-  //  BƯỚC 6: Recalc hồ sơ (Promise.allSettled — fail không ảnh hưởng).
-  //  BƯỚC 7: Trả về response message + summary.
-  // ═══════════════════════════════════════════════════════════════════════
-
-  // BƯỚC 1: Load proposal kèm relations + validate.
   const proposal = await loadApproveProposal(proposalId);
   if (!proposal) throw new NotFoundError('Đề xuất');
-  validateApproveStatus(proposal); // chặn re-approve
-  validateApproveMonth(proposal);  // HCCSVV/HCQKQT/KNC bắt buộc có tháng
+  validateApproveStatus(proposal);
+  validateNotSelfApproval(proposal, adminId);
+  assertEditedDataMatchesOriginal(proposal as LoadedProposal, editedData);
+  validateApproveMonth(proposal);
 
-  // BƯỚC 2: Resolve data. Admin có thể edit data trên UI trước khi duyệt
-  // (vd: sửa số quyết định, tháng nhận); những field undefined giữ nguyên
-  // từ DB. Fallback `?? proposal.X` đảm bảo dùng version edit nếu có.
   const danhHieuData = asJsonObjectArray<ProposalDanhHieuItem>(
     editedData.data_danh_hieu ?? proposal.data_danh_hieu
   );
@@ -297,8 +342,6 @@ async function approveProposal(
     editedData.data_cong_hien ?? proposal.data_cong_hien
   );
 
-  // Batch query để build map { personnel_id → ho_ten } một lần — dùng cho
-  // mọi error message bên dưới, tránh leak CUID cho user (xem AP-9).
   const personnelHoTenMap = await buildPersonnelHoTenMap(danhHieuData, nienHanData, thanhTichData);
 
   const ctx: ProposalContext = {
@@ -312,31 +355,14 @@ async function approveProposal(
     personnelHoTenMap,
   };
 
-  // BƯỚC 3: 3 lớp validation, fail fast theo thứ tự:
-  //   ① Duplicate — kiểm tra trùng đề xuất (đã có award/proposal cùng key).
-  //      Throw `Phát hiện đề xuất trùng (...)`.
-  //   ② Eligibility — kiểm tra đủ điều kiện business (chuỗi CSTDCS,
-  //      thâm niên, NCKH, ...). Throw `Không đủ điều kiện (...)`.
-  //   ③ Decision number — mỗi item phải có so_quyet_dinh hợp lệ.
-  //      Throw `Thiếu số quyết định (...)`.
-  //
-  // Thứ tự quan trọng: duplicate trước vì rẻ nhất + UI fix dễ nhất; còn
-  // eligibility cần query bảng phụ.
   await runDuplicateChecks(ctx, danhHieuData, nienHanData, thanhTichData);
   await runEligibilityChecks(ctx, danhHieuData, nienHanData, congHienData);
   runDecisionNumberChecks(ctx, danhHieuData, decisions);
 
-  // BƯỚC 4: Persist file — OUT-OF-TRANSACTION!
-  // Lý do: filesystem write KHÔNG được Prisma transaction rollback. Phải
-  // chạy SAU validation (tránh ghi file rồi validate fail = orphan file)
-  // nhưng TRƯỚC transaction (file path cần để build decision mapping).
-  // Trade-off: nếu transaction bên dưới fail, file đã ghi sẽ orphan.
-  // → CHẤP NHẬN vì orphan PDF không gây side-effect; cleanup job riêng.
   const pdfPaths = await persistDecisionPdfs(decisions, pdfFiles);
   const { decisionMapping, specialDecisionMapping } = buildDecisionMappings(decisions, pdfPaths);
   const mappings: DecisionMappings = { decisionMapping, specialDecisionMapping, pdfPaths };
 
-  // File đính kèm của Admin (tùy chọn) — ghi xuống disk + metadata.
   const adminFilesInfo = await persistProposalAttachments(adminAttachedFiles);
 
   const updateData: Record<string, unknown> = {
@@ -353,13 +379,6 @@ async function approveProposal(
       : {}),
   };
 
-  // ACCUMULATOR — gom kết quả import từ transaction về 1 chỗ.
-  // Pattern: thay vì return từng item, transaction mutate `acc` trong loop.
-  // Sau transaction, ta đọc `acc.errors`, `acc.imported*`, `acc.affectedIds`
-  // để build response + log + recalc downstream.
-  //
-  // Set<string> dùng cho affectedIds để dedupe — vì 1 item có thể trigger
-  // recalc cho cùng 1 quân nhân nhiều lần (vd: cả CSTDCS + BKBQP flag).
   const acc: ImportAccumulator = {
     importedDanhHieu: 0,
     importedThanhTich: 0,
@@ -369,10 +388,6 @@ async function approveProposal(
     affectedUnitIds: new Set<string>(),
   };
 
-  // BƯỚC 5: Atomic import — Prisma transaction wrap toàn bộ insert + update.
-  // Bên trong sẽ dispatch sang strategy của loại đề xuất tương ứng và gọi
-  // strategy.importInTransaction(tx, ...). Nếu BẤT KỲ item nào lỗi nghiêm
-  // trọng → throw ValidationError → rollback toàn bộ.
   await runImportTransaction(
     ctx,
     danhHieuData,
@@ -386,14 +401,7 @@ async function approveProposal(
     acc
   );
 
-  // BƯỚC 6: Recalc hồ sơ cá nhân/đơn vị bị ảnh hưởng.
-  // Promise.allSettled = best-effort: nếu recalc fail cho 1 personnel,
-  // vẫn tiếp tục cho các personnel khác. Lý do: approve đã commit thành
-  // công, recalc chỉ là cập nhật field derived (chuỗi liên tục, gợi ý).
-  // Fail recalc không nên rollback approve — chỉ log để cron retry.
   const recalc = await recalculateAffectedProfiles(proposal as LoadedProposal, acc);
-
-  // Log các lỗi non-fatal từ transaction (best-effort, không throw).
   logImportErrors(proposal as LoadedProposal, adminId, proposalId, acc.errors);
   return buildApproveResponse(
     proposal as LoadedProposal,
@@ -419,7 +427,12 @@ async function rejectProposal(proposalId: ProposalId, lyDo: string, adminId: Adm
       CoQuanDonVi: true,
       DonViTrucThuoc: { include: { CoQuanDonVi: true } },
       NguoiDeXuat: {
-        select: { id: true, username: true, role: true, QuanNhan: { select: { id: true, ho_ten: true } } },
+        select: {
+          id: true,
+          username: true,
+          role: true,
+          QuanNhan: { select: { id: true, ho_ten: true } },
+        },
       },
     },
   });
@@ -432,16 +445,6 @@ async function rejectProposal(proposalId: ProposalId, lyDo: string, adminId: Adm
     throw new ValidationError('Đề xuất này đã bị từ chối trước đó');
   }
 
-  // ─── RACE-AWARE: optimistic locking khi REJECT ───────────────────
-  // Tương tự approve flow — dùng updateMany với compound where
-  // (id + status=PENDING) thay vì update({where:{id}}). Lý do:
-  //   - 2 admin cùng bấm Approve + Reject 1 proposal đồng thời:
-  //       Admin A: SELECT status=PENDING → APPROVE thành công.
-  //       Admin B: SELECT status=PENDING → REJECT chạy đây.
-  //       Sau approve, status=APPROVED → updateMany count=0 → reject này
-  //       throw "đã bị thay đổi", không ghi đè trạng thái APPROVED.
-  //   - Đảm bảo BC business: 1 proposal chỉ có 1 trạng thái cuối cùng,
-  //     không bị "vừa duyệt vừa từ chối".
   const updateResult = await proposalRepository.updateMany(
     { id: proposalId, status: PROPOSAL_STATUS.PENDING },
     {
@@ -463,7 +466,10 @@ async function rejectProposal(proposalId: ProposalId, lyDo: string, adminId: Adm
     proposal: proposal,
     result: {
       don_vi: (proposal.DonViTrucThuoc || proposal.CoQuanDonVi)?.ten_don_vi || '-',
-      nguoi_de_xuat: proposal.NguoiDeXuat.QuanNhan?.ho_ten || proposal.NguoiDeXuat.username,
+      nguoi_de_xuat:
+        proposal.NguoiDeXuat?.QuanNhan?.ho_ten ||
+        proposal.NguoiDeXuat?.username ||
+        PROPOSAL_SUBMITTER_DELETED_LABEL,
       ly_do: lyDo,
     },
   };

@@ -91,7 +91,7 @@ if (!fs.existsSync(decisionUploadDir)) {
 
 /**
  * Shared multer configuration for Excel-only file uploads.
- * Used by import routes: awards, commemorativeMedal, contributionAward, hccsvv, militaryFlag.
+ * Used by import routes: awards, commemorativeMedal, contributionAward, tenureMedal, militaryFlag.
  */
 export const excelUpload = multer({
   storage: multer.memoryStorage(),

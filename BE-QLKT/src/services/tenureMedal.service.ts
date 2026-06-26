@@ -1,38 +1,9 @@
-/*
- * ════════════════════════════════════════════════════════════════════════════
- *  TENURE MEDAL SERVICE — CRUD + Excel I/O cho HCCSVV (Huy chương CSVV)
- * ════════════════════════════════════════════════════════════════════════════
- *
- *  TRÁCH NHIỆM:
- *  - CRUD record KhenThuongHCCSVV.
- *  - Excel template export (mẫu) + import (preview + confirm).
- *  - Trigger recalc profile/tenure.ts sau insert/update/delete.
- *
- *  RANK ORDER VALIDATION (xem helpers/awardValidation/tenureMedalRankOrder.ts):
- *  - Hạng Nhì → phải đã có Hạng Ba với năm < year.
- *  - Hạng Nhất → phải đã có Hạng Ba + Hạng Nhì.
- *
- *  EXCEL IMPORT FLOW — 2-STEP (preview + confirm):
- *  ① previewImport: parse + validate → trả {valid, invalid, summary}.
- *  ② confirmImport: user confirm → ghi DB trong transaction.
- *  Lý do tách: user review lỗi trước khi commit + atomic confirm.
- *
- *  RECALC SAU IMPORT:
- *  Bulk import → loop trigger safeRecalculateTenureProfile cho từng quân
- *  nhân. Trade-off: chậm với 100+ row. NÊN tối ưu batch recalc.
- * ════════════════════════════════════════════════════════════════════════════
- */
-
-import ExcelJS from 'exceljs';
 import { tenureMedalRepository } from '../repositories/tenureMedal.repository';
 import { buildMedalListWhere } from '../helpers/unitHelper';
-import { accountRepository } from '../repositories/account.repository';
 import profileService from './profile.service';
-import * as notificationHelper from '../helpers/notification';
-import { sanitizeRowData } from '../helpers/excel/excelHelper';
-import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
+import { buildTemplate, buildAwardExportBuffer } from '../helpers/excel/excelTemplateHelper';
 import { fetchTemplateData } from './excel/templateData.service';
-import { writeSystemLog } from '../helpers/systemLogHelper';
+import { finalizeMedalAwardDeletion, getAccountUnitScope } from './medalAwardHelpers';
 import { NotFoundError } from '../middlewares/errorHandler';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
@@ -43,20 +14,20 @@ import {
   HCCSVV_TEMPLATE_COLUMNS,
   HCCSVV_TEMPLATE_OPTIONS,
 } from '../constants/awardExcel.constants';
-import { previewImport as doPreviewImport, confirmImport as doConfirmImport } from './tenureMedal/import';
+import {
+  previewImport as doPreviewImport,
+  confirmImport as doConfirmImport,
+} from './tenureMedal/import';
 import type { HccsvvValidItem } from './tenureMedal/types';
 
 export type { HccsvvValidItem } from './tenureMedal/types';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.TENURE_MEDALS];
 
-class HCCSVVService {
+class TenureMedalService {
   /**
    * Export template Excel for HCCSVV import
    */
-  // HCCSVV (niên hạn) theo đúng khuôn export chung qua buildTemplate. Khác biệt:
-  // dropdown danh hiệu là 3 hạng Ba/Nhì/Nhất (HCCSVV_TEMPLATE_OPTIONS) và có 3
-  // cột admin điền ('J','K','L') thay vì 2.
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const { personnelList, decisionNumbers } = await fetchTemplateData({
       personnelIds,
@@ -133,37 +104,25 @@ class HCCSVVService {
   /**
    * Export HCCSVV to Excel
    */
-  // Tái dùng this.getAll (đã sẵn logic filter + join QuanNhan) thay vì viết lại
-  // where — limit 10000 để lấy trọn cho báo cáo. LƯU Ý: hàm này trả thẳng BUFFER
-  // (tự gọi writeBuffer ở cuối), khác annualReward trả Workbook để controller gói.
   async exportToExcel(filters: Record<string, unknown> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.HCCSVV);
-
-    worksheet.columns = [...HCCSVV_EXPORT_COLUMNS];
-
-    styleHeaderRow(worksheet);
-
-    data.forEach((item, index) => {
-      worksheet.addRow(
-        sanitizeRowData({
-          stt: index + 1,
-          id: item.quan_nhan_id,
-          ho_ten: item.QuanNhan?.ho_ten ?? '',
-          cap_bac: item.cap_bac ?? '',
-          chuc_vu: item.chuc_vu ?? '',
-          nam: item.nam,
-          thang: item.thang,
-          danh_hieu: item.danh_hieu,
-          so_quyet_dinh: item.so_quyet_dinh ?? '',
-          ghi_chu: item.ghi_chu ?? '',
-        })
-      );
-    });
-
-    return await workbook.xlsx.writeBuffer();
+    return buildAwardExportBuffer(
+      data,
+      AWARD_EXCEL_SHEETS.HCCSVV,
+      [...HCCSVV_EXPORT_COLUMNS],
+      (item, index) => ({
+        stt: index + 1,
+        id: item.quan_nhan_id,
+        ho_ten: item.QuanNhan?.ho_ten ?? '',
+        cap_bac: item.cap_bac ?? '',
+        chuc_vu: item.chuc_vu ?? '',
+        nam: item.nam,
+        thang: item.thang,
+        danh_hieu: item.danh_hieu,
+        so_quyet_dinh: item.so_quyet_dinh ?? '',
+        ghi_chu: item.ghi_chu ?? '',
+      })
+    );
   }
 
   /**
@@ -186,17 +145,7 @@ class HCCSVVService {
    * Get user with unit info (helper method)
    */
   async getUserWithUnit(userId: string) {
-    return await accountRepository.findUniqueRaw({
-      where: { id: userId },
-      include: {
-        QuanNhan: {
-          select: {
-            co_quan_don_vi_id: true,
-            don_vi_truc_thuoc_id: true,
-          },
-        },
-      },
-    });
+    return getAccountUnitScope(userId);
   }
 
   /**
@@ -223,45 +172,19 @@ class HCCSVVService {
       throw new NotFoundError('Bản ghi khen thưởng');
     }
 
-    const personnelId = award.quan_nhan_id;
-    const personnel = award.QuanNhan;
-
-    // Delete award only, proposals are kept for audit trail
-    await tenureMedalRepository.delete(id);
-
-    try {
-      await profileService.recalculateTenureProfile(personnelId);
-    } catch (recalcError) {
-      void writeSystemLog({
-        action: 'ERROR',
-        resource: AWARD_SLUGS.TENURE_MEDALS,
-        resourceId: id,
-        description: `Lỗi tính lại hồ sơ khen thưởng niên hạn sau khi xóa ${AWARD_LABEL}: ${recalcError}`,
-      });
-    }
-
-    try {
-      await notificationHelper.notifyOnAwardDeleted(
-        award,
-        personnel,
-        PROPOSAL_TYPES.NIEN_HAN,
-        adminUsername
-      );
-    } catch (notifyError) {
-      void writeSystemLog({
-        action: 'ERROR',
-        resource: AWARD_SLUGS.TENURE_MEDALS,
-        resourceId: id,
-        description: `Lỗi gửi thông báo xóa khen thưởng ${AWARD_LABEL}: ${notifyError}`,
-      });
-    }
-
-    return {
-      message: `Xóa khen thưởng ${AWARD_LABEL} thành công`,
-      personnelId,
+    return finalizeMedalAwardDeletion({
+      id,
       award,
-    };
+      personnel: award.QuanNhan,
+      personnelId: award.quan_nhan_id,
+      adminUsername,
+      awardLabel: AWARD_LABEL,
+      resourceSlug: AWARD_SLUGS.TENURE_MEDALS,
+      proposalType: PROPOSAL_TYPES.NIEN_HAN,
+      deleteFn: () => tenureMedalRepository.delete(id),
+      recalcProfile: pid => profileService.recalculateTenureProfile(pid),
+    });
   }
 }
 
-export default new HCCSVVService();
+export default new TenureMedalService();

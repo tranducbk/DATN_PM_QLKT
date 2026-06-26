@@ -9,7 +9,6 @@ import {
   Space,
   Tag,
   message,
-  Breadcrumb,
   ConfigProvider,
   theme as antdTheme,
   Modal,
@@ -17,10 +16,11 @@ import {
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 
-import { ArrowLeftOutlined, ReloadOutlined, HomeOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, ReloadOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { apiClient } from '@/lib/http/apiClient';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { formatDateTime } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
@@ -122,11 +122,9 @@ export default function AccountDetailPage() {
       }}
     >
       <div className="space-y-6 p-6">
-        {/* Breadcrumb */}
-        <Breadcrumb
+        <PageBreadcrumb
           items={[
-            { title: <Link href="/super-admin/dashboard"><HomeOutlined /></Link> },
-            { title: <Link href="/super-admin/accounts">Tài khoản</Link> },
+            { title: 'Tài khoản', href: '/super-admin/accounts' },
             { title: `#${account.id}` },
           ]}
         />

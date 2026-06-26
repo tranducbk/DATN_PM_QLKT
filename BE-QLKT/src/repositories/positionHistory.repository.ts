@@ -52,6 +52,14 @@ export const positionHistoryRepository = {
     return tx.lichSuChucVu.update(args);
   },
 
+  updateMany(
+    where: Prisma.LichSuChucVuWhereInput,
+    data: Prisma.LichSuChucVuUncheckedUpdateManyInput,
+    tx: PrismaLike = prisma
+  ) {
+    return tx.lichSuChucVu.updateMany({ where, data });
+  },
+
   deleteMany(where: Prisma.LichSuChucVuWhereInput, tx: PrismaLike = prisma) {
     return tx.lichSuChucVu.deleteMany({ where });
   },

@@ -104,10 +104,16 @@
 }
 \lstset{style=tscode}
 
+% Trỏ tới thư mục ảnh của báo cáo để tái sử dụng ERD / sơ đồ lớp.
+% Ảnh sẵn có: erd-0-tat-ca-bang ... erd-6-he-thong (ERD); lop-de-xuat (sơ đồ lớp Strategy);
+% goi-be, goi-fe, so-do-goi-cnhn, so-do-goi-dvhn (biểu đồ gói); seq-de-xuat (tuần tự).
+% Dùng: \includegraphics[width=0.9\textwidth]{erd-0-tat-ca-bang}
+\graphicspath{{../../Báo cáo ĐATN/Hinhve/}{../../Báo cáo ĐATN/Hinhve/Database/}}
+
 % --- Metadata ---
 \title{Phần mềm Quản lý Khen thưởng}
 \subtitle{Tại Học viện Khoa học Quân sự}
-\author[Trần Anh Đức]{Sinh viên thực hiện: \textbf{Trần Anh Đức}\\Giảng viên hướng dẫn: \textbf{[Học hàm. Tên giảng viên]}}
+\author[Trần Anh Đức]{Sinh viên thực hiện: \textbf{Trần Anh Đức}\\Giảng viên hướng dẫn: \textbf{ThS. Lê Đức Trung}}
 \institute[ĐHBKHN]{Trường Công nghệ Thông tin và Truyền thông --- Đại học Bách khoa Hà Nội}
 \date{Tháng 5/2026}
 
@@ -126,14 +132,13 @@
     {\Huge \textcolor{hustred}{\textbf{PHẦN MỀM QUẢN LÝ}}}\\[0.3cm]
     {\Huge \textcolor{hustred}{\textbf{KHEN THƯỞNG}}}\\[0.5cm]
 
-    {\large Đồ án Tốt nghiệp Đại học --- Niên khóa 2025/2026}\\[1.5cm]
+    {\large Đồ án Tốt nghiệp Đại học --- Niên khóa 2025/2026}\\[1cm]
 
     \begin{tabular}{rl}
       \textbf{Sinh viên thực hiện} & : Trần Anh Đức \\
-      \textbf{Mã số sinh viên} & : [MSSV] \\
-      \textbf{Lớp} & : [Lớp] \\
-      \textbf{Giảng viên hướng dẫn} & : [Học hàm. Tên GVHD] \\
-    \end{tabular}\\[1cm]
+      \textbf{Mã số sinh viên} & : 20220120 \\
+      \textbf{Giảng viên hướng dẫn} & : ThS. Lê Đức Trung \\
+    \end{tabular}\\[0.6cm]
 
     {\small \textcolor{textmuted}{Hà Nội, tháng 5 năm 2026}}
   \end{center}
@@ -148,40 +153,36 @@
     \textcolor{hustdark}{\textbf{Phần I --- Mở đầu}}
     \begin{enumerate}
       \item Mục tiêu của đồ án
-      \item Phân tích bài toán
-      \item Hệ thống danh hiệu khen thưởng
-      \item Logic chuỗi danh hiệu
+      \item Hệ thống khen thưởng
+      \item Chuỗi danh hiệu \& các danh hiệu dài hạn
+      \item Thách thức \& yêu cầu
     \end{enumerate}
-    \vspace{0.1cm}
-    \textcolor{hustdark}{\textbf{Phần II --- Thiết kế}}
+    \vspace{0.05cm}
+    \textcolor{hustdark}{\textbf{Phần II --- Công nghệ \& Thiết kế}}
     \begin{enumerate}\setcounter{enumi}{4}
-      \item Kiến trúc \& công nghệ
+      \item Công nghệ sử dụng
+      \item Kiến trúc hệ thống
       \item Cơ sở dữ liệu
-      \item Phân tích chức năng \& quy trình
-      \item Kiến trúc phần mềm
+      \item Use-case \& quy trình duyệt
+      \item Kiến trúc phần mềm (Strategy)
     \end{enumerate}
 
     \column{0.5\textwidth}
     \small
-    \textcolor{hustdark}{\textbf{Phần III --- Tính năng nổi bật}}
-    \begin{enumerate}\setcounter{enumi}{8}
-      \item Tự động xét điều kiện
-      \item Quy trình đề xuất \& ra quyết định
-      \item Nhập/xuất dữ liệu hàng loạt
-      \item Vận hành \& quản trị hệ thống
+    \textcolor{hustdark}{\textbf{Phần III --- Các đóng góp nổi bật}}
+    \begin{enumerate}\setcounter{enumi}{9}
+      \item Tự động xét điều kiện \& gợi ý
+      \item Số hoá quy trình \& lưu vết
+      \item Nhập Excel có giao dịch
+      \item Lưu vết, sao lưu \& thông báo
     \end{enumerate}
-    \vspace{0.1cm}
+    \vspace{0.05cm}
     \textcolor{hustdark}{\textbf{Phần IV --- Đánh giá \& Tổng kết}}
-    \begin{enumerate}\setcounter{enumi}{12}
-      \item Kiểm thử, hiệu năng, triển khai
-      \item Kết luận và hướng phát triển
+    \begin{enumerate}\setcounter{enumi}{13}
+      \item Kiểm thử \& triển khai
+      \item Kết luận \& hướng phát triển
     \end{enumerate}
   \end{columns}
-
-  \vspace{0.15cm}
-  \begin{block}{}
-    \centering\small Thời lượng trình bày: \highlight{13--14 phút}, sau đó là phần Hỏi \& Đáp với Hội đồng.
-  \end{block}
 \end{frame}
 
 % --- Slide 3: Mục tiêu của đồ án ---
@@ -192,16 +193,16 @@
     \begin{itemize}\small
       \item Quản lý khen thưởng tại đơn vị quân đội hiện chủ yếu dựa trên \textbf{Excel và hồ sơ giấy}
       \item Khó tra cứu lịch sử khen thưởng nhiều năm
-      \item \highlight{Quy định chuỗi danh hiệu phức tạp} (BKBQP, CSTĐTQ, BKTTCP) dễ sai sót khi tính thủ công
+      \item \highlight{Quy định chuỗi danh hiệu phức tạp} (BKBTBQP, CSTĐTQ, BKTTCP) dễ sai sót khi tính thủ công
       \item Vận hành trên \textbf{mạng nội bộ}, không phụ thuộc Internet
     \end{itemize}
 
     \column{0.5\textwidth}
     \textbf{Mục tiêu cụ thể}
     \begin{itemize}\small
-      \item Quản lý \textbf{5 nhóm khen thưởng} với 4 cấp vai trò
+      \item Quản lý \textbf{bảy nhóm khen thưởng} với 4 cấp vai trò
       \item \textbf{Tự động hoá} xét điều kiện theo quy định hiện hành
-      \item Hỗ trợ \textbf{đề xuất $\to$ duyệt $\to$ ra quyết định}
+      \item Hỗ trợ \textbf{đề xuất $\to$ đính kèm quyết định $\to$ phê duyệt}
       \item Đảm bảo \textbf{truy vết và bảo mật} đầy đủ
       \item \textbf{Triển khai trên mạng nội bộ} offline
     \end{itemize}
@@ -211,51 +212,27 @@
   \end{columns}
 \end{frame}
 
-% --- Slide 4: Phân tích bài toán — 4 thách thức cốt lõi ---
-\begin{frame}{Phân tích bài toán --- 4 thách thức cốt lõi}
-  \begin{columns}[T,onlytextwidth]
-    \column{0.5\textwidth}
-    \textbf{\textcolor{hustred}{\textcircled{1} Logic chuỗi danh hiệu nhiều năm}}\\
-    \scriptsize Cửa sổ trượt 3y/7y, ràng buộc lifetime, lỡ đợt --- không thể xét bằng truy vấn đơn lẻ, đòi hỏi \textbf{engine xét điều kiện trên toàn timeline} của quân nhân.\\[0.3cm]
-
-    \textbf{\textcolor{hustred}{\textcircled{2} Tính nhất quán đa bảng}}\\
-    \scriptsize Một lần duyệt đề xuất cập nhật $\geq$ 5 bảng (đề xuất, hồ sơ, số quyết định, file PDF, thông báo, audit). Bắt buộc \textbf{transaction} và \textbf{chống race condition} khi hai cán bộ duyệt cùng lúc.
-
-    \column{0.5\textwidth}
-    \textbf{\textcolor{hustred}{\textcircled{3} Phân quyền theo cây tổ chức}}\\
-    \scriptsize 4 vai trò $\times$ cây đơn vị nhiều cấp $\to$ \textbf{hai lớp middleware độc lập} (\texttt{requireRole} + \texttt{unitFilter}). Bypass được lớp này thì lớp kia vẫn chặn.\\[0.3cm]
-
-    \textbf{\textcolor{hustred}{\textcircled{4} Vận hành mạng nội bộ (offline-first)}}\\
-    \scriptsize Không CDN, không dịch vụ ngoài $\to$ tự host font, tự backup theo lịch, \textbf{PM2 auto-restart}, cài đặt qua thư mục \texttt{node\_modules} đóng gói sẵn.
-  \end{columns}
-
-  \vspace{0.4cm}
-  \begin{block}{}
-    \centering\small Trọng tâm trình bày: \highlight{\textcircled{1}} (slide 6--7) và \highlight{\textcircled{2}} (slide 13, 18).
-  \end{block}
-\end{frame}
-
-% --- Slide 5: Hệ thống khen thưởng — 5 nhóm chính ---
-\begin{frame}{Hệ thống khen thưởng --- 5 nhóm chính}
+% --- Slide 5: Hệ thống khen thưởng — bảy nhóm / loại đề xuất ---
+\begin{frame}{Hệ thống khen thưởng}
   \scriptsize
   \begin{tabularx}{\textwidth}{|>{\raggedright\arraybackslash}p{2.8cm}|>{\raggedright\arraybackslash}X|>{\raggedright\arraybackslash}p{2.6cm}|}
     \hline
     \rowcolor{hustred}\textcolor{white}{\textbf{Nhóm khen thưởng}} & \textcolor{white}{\textbf{Phân rã chi tiết}} & \textcolor{white}{\textbf{Tiêu chí xét}} \\ \hline
-    \textbf{Khen thưởng hằng năm} & Cá nhân (CSTĐCS, CSTT, BKBQP, CSTĐTQ, BKTTCP) + Đơn vị (ĐVQT, ĐVTT, BKBQP, BKTTCP) & Theo năm \\ \hline
+    \textbf{Khen thưởng hằng năm} & Cá nhân (CSTĐCS, CSTT, BKBTBQP, CSTĐTQ, BKTTCP) + Đơn vị (ĐVQT, ĐVTT, BKBTBQP, BKTTCP) & Theo năm \\ \hline
     \textbf{Khen thưởng niên hạn} & HCCSVV (3 hạng), HCQKQT, KNC VSNXD QĐNDVN & Theo thời gian phục vụ \\ \hline
-    \textbf{Khen thưởng cống hiến} & HCBVTQ (3 hạng) & Cộng dồn 120 tháng \\ \hline
+    \textbf{Khen thưởng cống hiến} & HCBVTQ (3 hạng) & 120 tháng (nam) / 80 (nữ) theo nhóm hệ số \\ \hline
     \textbf{Khen thưởng thành tích} & NCKH (Đề tài KH, Sáng kiến KH) & Theo công trình \\ \hline
     \textbf{Khen thưởng đột xuất} & Theo sự kiện / chiến công cụ thể & Phi định kỳ \\ \hline
   \end{tabularx}
 
   \vspace{0.4cm}
   \begin{block}{}
-    Mỗi nhóm được hiện thực bằng một hoặc nhiều \highlight{proposal type} trong code, dispatch qua \highlight{Strategy pattern} (Slide 13).
+    Bốn nhóm đầu gồm \highlight{bảy loại đề xuất} xử lý qua \highlight{Strategy pattern} (phần Kiến trúc phần mềm); khen thưởng đột xuất được quản lý riêng, ngoài luồng đề xuất.
   \end{block}
 \end{frame}
 
 % --- Slide 6: Khen thưởng hằng năm — cá nhân + đơn vị (timeline) ⭐ ---
-\begin{frame}{Khen thưởng hằng năm --- chu trình hoàn hảo}
+\begin{frame}{Khen thưởng hằng năm --- vòng đời chuỗi danh hiệu}
   \centering
 
   % ===== CÁ NHÂN lane =====
@@ -278,24 +255,24 @@
     }
     \node[right, font=\tiny] at (10.0, -0.05) {\dots};
 
-    % Năm 3: BKBQP#1
-    \node[award, anchor=south] (b1) at (2.30, 0.65) {BKBQP \#1};
+    % Năm 3: BKBTBQP#1
+    \node[award, anchor=south] (b1) at (2.30, 0.65) {BKBTBQP \#1};
     \draw[hustred, dashed, thin] (2.30, 0.5) -- (b1.south);
 
     % Năm 4: CSTĐTQ#1
     \node[awardhigh, anchor=south] (c1) at (3.45, 1.3) {CSTĐTQ \#1};
     \draw[hustdark, dashed, thin] (3.45, 0.5) -- (c1.south);
 
-    % Năm 5: BKBQP#2
-    \node[award, anchor=south] (b2) at (4.60, 0.65) {BKBQP \#2};
+    % Năm 5: BKBTBQP#2
+    \node[award, anchor=south] (b2) at (4.60, 0.65) {BKBTBQP \#2};
     \draw[hustred, dashed, thin] (4.60, 0.5) -- (b2.south);
 
-    % Năm 7: BKBQP#3 + CSTĐTQ#2
-    \node[awardhigh, anchor=south] (c2) at (6.90, 1.3) {BKBQP \#3 + CSTĐTQ \#2};
+    % Năm 7: BKBTBQP#3 + CSTĐTQ#2
+    \node[awardhigh, anchor=south] (c2) at (6.90, 1.3) {BKBTBQP \#3 + CSTĐTQ \#2};
     \draw[hustdark, dashed, thin] (6.90, 0.5) -- (c2.south);
 
     % Năm 8: BKTTCP
-    \node[awardtop, anchor=south] (bk) at (8.05, 2.0) {$\bigstar$ BKTTCP (lifetime)};
+    \node[awardtop, anchor=south] (bk) at (8.05, 2.0) {$\bigstar$ BKTTCP (một lần)};
     \draw[hustdark, very thick] (8.05, 0.5) -- (bk.south);
   \end{tikzpicture}
 
@@ -320,14 +297,14 @@
     }
     \node[right, font=\tiny] at (10.0, -0.05) {\dots\ \textit{(lặp lại)}};
 
-    % Năm 3, 5, 7: BKBQP đv
-    \node[uaward, anchor=south] (ub1) at (2.30, 0.65) {BKBQP đv \#1};
+    % Năm 3, 5, 7: BKBTBQP đv
+    \node[uaward, anchor=south] (ub1) at (2.30, 0.65) {BKBTBQP đv \#1};
     \draw[hustred, dashed, thin] (2.30, 0.5) -- (ub1.south);
 
-    \node[uaward, anchor=south] (ub2) at (4.60, 0.65) {BKBQP đv \#2};
+    \node[uaward, anchor=south] (ub2) at (4.60, 0.65) {BKBTBQP đv \#2};
     \draw[hustred, dashed, thin] (4.60, 0.5) -- (ub2.south);
 
-    \node[uaward, anchor=south] (ub3) at (6.90, 0.65) {BKBQP đv \#3};
+    \node[uaward, anchor=south] (ub3) at (6.90, 0.65) {BKBTBQP đv \#3};
     \draw[hustred, dashed, thin] (6.90, 0.5) -- (ub3.south);
 
     % Năm 8: BKTTCP đv
@@ -385,7 +362,7 @@
     \column{0.42\textwidth}
 
     \textbf{\textcolor{hustdark}{Cống hiến (HCBVTQ)}}\\[0.05cm]
-    \scriptsize Tích luỹ \textbf{120 tháng} giữ chức vụ --- không phụ thuộc năm phục vụ, mà theo \emph{nhóm hệ số chức vụ}:\\[0.15cm]
+    \scriptsize Tích luỹ \textbf{120 tháng} (nam) hoặc \textbf{80 tháng} (nữ, bằng 2/3) giữ chức vụ trong từng \emph{nhóm hệ số chức vụ}, không phụ thuộc số năm phục vụ:\\[0.15cm]
 
     \begin{tikzpicture}[
       every node/.style={font=\tiny},
@@ -410,33 +387,31 @@
   \end{columns}
 \end{frame}
 
-% --- Slide 8: Kiến trúc tổng quan ---
-\begin{frame}{Kiến trúc tổng quan hệ thống}
-  \centering
-  \begin{block}{Luồng dữ liệu chính}
-    \centering\normalsize
-    \textcolor{hustred}{\textbf{Browser}} $\xrightarrow{\text{HTTPS}}$
-    \textcolor{hustred}{\textbf{Frontend}} $\xrightarrow{\text{REST}}$
-    \textcolor{hustred}{\textbf{Backend}} $\xrightarrow{\text{Prisma}}$
-    \textcolor{hustred}{\textbf{PostgreSQL}}\\[0.2cm]
-    \footnotesize \textcolor{hustdark}{\textit{Socket.IO --- thông báo real-time hai chiều Browser $\leftrightarrow$ Backend}}
-  \end{block}
-
-  \vspace{0.3cm}
+% --- Phân tích bài toán: bốn thách thức cốt lõi ---
+\begin{frame}{Phân tích bài toán --- bốn thách thức cốt lõi}
   \begin{columns}[T,onlytextwidth]
-    \column{0.33\textwidth}
-    \textbf{\textcolor{hustred}{Tầng giao diện}}\\
-    \scriptsize \textbf{Next.js}, Ant Design, TypeScript end-to-end
-    \column{0.33\textwidth}
-    \textbf{\textcolor{hustred}{Tầng ứng dụng}}\\
-    \scriptsize \textbf{Express} + Prisma ORM, layered\\Controller $\to$ Service $\to$ Repository
-    \column{0.33\textwidth}
-    \textbf{\textcolor{hustred}{Tầng dữ liệu}}\\
-    \scriptsize \textbf{PostgreSQL} + Socket.IO real-time, PM2 process manager
+    \column{0.5\textwidth}
+    \textbf{\textcolor{hustred}{\textcircled{1} Logic chuỗi danh hiệu nhiều năm}}\\
+    \scriptsize Cửa sổ trượt 3 năm và 7 năm, ràng buộc nhận một lần duy nhất và tình huống lỡ đợt khiến không thể xét bằng một truy vấn đơn lẻ; phải xét trên toàn dòng thời gian của quân nhân.\\[0.3cm]
+
+    \textbf{\textcolor{hustred}{\textcircled{2} Tính nhất quán đa bảng}}\\
+    \scriptsize Mỗi lần duyệt đề xuất cập nhật nhiều bảng cùng lúc (đề xuất, hồ sơ, quyết định, thông báo, nhật ký), nên bắt buộc dùng giao dịch và chống tranh chấp ghi khi hai cán bộ duyệt cùng lúc.
+
+    \column{0.5\textwidth}
+    \textbf{\textcolor{hustred}{\textcircled{3} Phân quyền theo cây tổ chức}}\\
+    \scriptsize Bốn vai trò trên cây đơn vị nhiều cấp đòi hỏi hai lớp middleware độc lập (kiểm tra vai trò và lọc theo đơn vị); bypass được lớp này thì lớp kia vẫn chặn.\\[0.3cm]
+
+    \textbf{\textcolor{hustred}{\textcircled{4} Vận hành trong mạng nội bộ}}\\
+    \scriptsize Không có Internet hay dịch vụ ngoài, nên hệ thống tự lưu trữ phông chữ, tự sao lưu theo lịch và tự khởi động lại bằng PM2.
   \end{columns}
+
+  \vspace{0.4cm}
+  \begin{block}{}
+    \centering\small Trọng tâm là hai thách thức \textcircled{1} và \textcircled{2}; các đóng góp ở phần sau giải quyết trực tiếp hai vấn đề này.
+  \end{block}
 \end{frame}
 
-% --- Slide 9: Công nghệ sử dụng ---
+% --- Công nghệ sử dụng ---
 \begin{frame}{Công nghệ sử dụng --- Tech Stack}
   \begin{columns}[T,onlytextwidth]
     \column{0.5\textwidth}
@@ -464,7 +439,22 @@
 
   \vspace{0.3cm}
   \centering
-  \hustpill{Socket.IO} \hustpill{PM2} \hustpill{node-cron} \hustpill{ExcelJS} \hustpill{PDFKit} \hustpill{Local deploy}
+  \hustpill{Socket.IO} \hustpill{PM2} \hustpill{node-cron} \hustpill{ExcelJS} \hustpill{Multer} \hustpill{Helmet} \hustpill{Local deploy}
+\end{frame}
+
+% --- Slide 8: Kiến trúc tổng quan ---
+\begin{frame}{Kiến trúc tổng quan hệ thống}
+  \centering
+  \begin{block}{Luồng dữ liệu chính}
+    \centering\small
+    \textcolor{hustred}{\textbf{Trình duyệt}} $\xrightarrow{\text{HTTPS}}$ \textcolor{hustred}{\textbf{Frontend (Next.js)}} \;\textit{\footnotesize tải giao diện}\\[0.25cm]
+    \textcolor{hustred}{\textbf{Trình duyệt}} $\xrightarrow{\text{REST\,/\,Socket.IO}}$ \textcolor{hustred}{\textbf{Backend (Express)}} $\xrightarrow{\text{Prisma}}$ \textcolor{hustred}{\textbf{PostgreSQL}}\\[0.15cm]
+    \footnotesize \textcolor{hustdark}{\textit{Trình duyệt gọi trực tiếp Backend qua REST API và Socket.IO, không đi qua Frontend.}}
+  \end{block}
+
+  \vspace{0.1cm}
+  \centering
+  \includegraphics[width=\textwidth,height=0.5\textheight,keepaspectratio]{KienTrucPhanTang}
 \end{frame}
 
 % --- Slide 10: Thiết kế CSDL ---
@@ -473,7 +463,7 @@
     \column{0.5\textwidth}
     \textbf{Tổng quan}\\
     \begin{block}{}
-      \centering {\LARGE \textcolor{hustred}{\textbf{23}}} bảng chính, FK đầy đủ, ID dạng CUID 25 ký tự
+      \centering {\LARGE \textcolor{hustred}{\textbf{23}}} bảng, \textbf{47} khoá ngoại, khoá chính kiểu CUID
     \end{block}
 
     \textbf{Nhóm bảng}
@@ -500,38 +490,126 @@
   \end{columns}
 \end{frame}
 
+% --- ERD tổng quan ---
+\begin{frame}{Thiết kế cơ sở dữ liệu --- Sơ đồ ERD tổng quan}
+  \centering
+  \includegraphics[width=\textwidth,height=0.78\textheight,keepaspectratio]{erd-0-tat-ca-bang}\\[0.1cm]
+  {\scriptsize 23 bảng, 47 khoá ngoại, chia thành sáu nhóm dữ liệu nghiệp vụ; quan hệ chi tiết từng nhóm ở các slide tiếp theo.}
+\end{frame}
+
 % --- Slide 11: Use-case Diagram ---
 \begin{frame}{Phân tích chức năng --- Use-case Diagram}
+  \setlength{\tabcolsep}{3.5pt}%
   \begin{columns}[T,onlytextwidth]
     \column{0.42\textwidth}
     \textbf{Phân quyền theo vai trò}\\[0.2cm]
     \scriptsize
-    \begin{tabular}{|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{2.6cm}|}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{2.5cm}|>{\raggedright\arraybackslash}p{1.9cm}|}
       \hline
       \rowcolor{hustred}\textcolor{white}{\textbf{Vai trò}} & \textcolor{white}{\textbf{Phạm vi}} \\ \hline
-      \textbf{USER} & Cá nhân \\ \hline
-      \textbf{MANAGER} & Đơn vị quản lý \\ \hline
-      \textbf{ADMIN} & Toàn nghiệp vụ \\ \hline
-      \textbf{SUPER\_ADMIN} & Hệ thống + quản trị \\ \hline
+      \textbf{Quản trị hệ thống} & Hạ tầng, quản trị \\ \hline
+      \textbf{Cán bộ Phòng Chính trị} & Toàn nghiệp vụ \\ \hline
+      \textbf{Chỉ huy đơn vị} & Đơn vị phụ trách \\ \hline
+      \textbf{Người dùng} & Cá nhân \\ \hline
     \end{tabular}\\[0.3cm]
 
     \begin{block}{Hai lớp phân quyền}
       \scriptsize
-      Middleware \texttt{requireRole} chặn ở route + \texttt{unitFilter} giới hạn dữ liệu theo đơn vị --- hai lớp độc lập, dù bypass được lớp này thì lớp kia vẫn chặn.
+      Một middleware kiểm tra vai trò chặn ở route, một middleware lọc dữ liệu theo đơn vị --- hai lớp độc lập, bypass được lớp này thì lớp kia vẫn chặn.
     \end{block}
 
     \column{0.55\textwidth}
     \textbf{Use-case chính theo vai trò}\\[0.2cm]
     \scriptsize
-    \begin{tabular}{|>{\raggedright\arraybackslash}p{2cm}|>{\raggedright\arraybackslash}p{4cm}|}
+    \begin{tabular}{|>{\raggedright\arraybackslash}p{2.4cm}|>{\raggedright\arraybackslash}p{3.2cm}|}
       \hline
       \rowcolor{hustdark}\textcolor{white}{\textbf{Vai trò}} & \textcolor{white}{\textbf{Use-case chính}} \\ \hline
-      SUPER\_ADMIN & Quản trị hệ thống, sao lưu, nhật ký toàn hệ thống \\ \hline
-      ADMIN & Duyệt đề xuất, cấp số quyết định, quản lý quân nhân \\ \hline
-      MANAGER & Tạo đề xuất, xem hồ sơ đơn vị, tính lại hồ sơ quân nhân \\ \hline
-      USER & Xem hồ sơ cá nhân, nhận thông báo \\ \hline
+      Quản trị hệ thống & Quản trị hệ thống, sao lưu, nhật ký toàn hệ thống \\ \hline
+      Cán bộ Phòng Chính trị & Duyệt đề xuất, nhập số quyết định, quản lý quân nhân \\ \hline
+      Chỉ huy đơn vị & Tạo đề xuất, xem hồ sơ đơn vị, tính lại hồ sơ quân nhân \\ \hline
+      Người dùng & Xem hồ sơ cá nhân, nhận thông báo \\ \hline
     \end{tabular}
   \end{columns}
+\end{frame}
+
+% --- ERD nhóm 1 ---
+\begin{frame}{ERD --- Tổ chức, Quân nhân, Tài khoản}
+  \centering
+  \includegraphics[width=\textwidth,height=0.46\textheight,keepaspectratio]{erd-1-to-chuc}\\[0.05cm]
+  \scriptsize\raggedright \textbf{Sáu bảng, chín khoá ngoại.} Quan hệ chính:
+  \begin{itemize}\scriptsize
+    \item Một \texttt{CoQuanDonVi} có nhiều \texttt{DonViTrucThuoc}.
+    \item Mỗi \texttt{QuanNhan} gắn với một \texttt{ChucVu} và một đơn vị (\texttt{CoQuanDonVi} hoặc \texttt{DonViTrucThuoc}).
+    \item Mỗi \texttt{QuanNhan} có tối đa một \texttt{TaiKhoan}; \texttt{LichSuChucVu} ghi nhiều giai đoạn giữ chức vụ của một quân nhân (để tính tháng cống hiến).
+    \item \texttt{ChucVu} thuộc một đơn vị, duy nhất theo cặp (đơn vị, tên chức vụ).
+  \end{itemize}
+\end{frame}
+
+% --- ERD nhóm 2 ---
+\begin{frame}{ERD --- Đề xuất khen thưởng}
+  \centering
+  \includegraphics[width=\textwidth,height=0.5\textheight,keepaspectratio]{erd-2-de-xuat}\\[0.05cm]
+  \scriptsize\raggedright \textbf{\texttt{BangDeXuat} là trung tâm, bốn khoá ngoại:}
+  \begin{itemize}\scriptsize
+    \item Mỗi đề xuất gắn với một đơn vị nộp.
+    \item Mỗi đề xuất ghi nhận \texttt{TaiKhoan} người đề xuất và \texttt{TaiKhoan} người duyệt.
+    \item Không nối trực tiếp tới bảng khen thưởng --- chi tiết từng loại nằm trong các cột JSON (\texttt{data\_danh\_hieu}, \texttt{data\_thanh\_tich}, \texttt{data\_nien\_han}, \texttt{data\_cong\_hien}), chỉ ghi thành bản ghi khen thưởng khi phê duyệt.
+  \end{itemize}
+\end{frame}
+
+% --- ERD nhóm 3 ---
+\begin{frame}{ERD --- Khen thưởng \& hồ sơ cá nhân}
+  \centering
+  \includegraphics[width=\textwidth,height=0.44\textheight,keepaspectratio]{erd-3-khen-thuong-ca-nhan}\\[0.05cm]
+  \scriptsize\raggedright \textbf{Mười bảng, mười hai khoá ngoại tới \texttt{QuanNhan}:}
+  \begin{itemize}\scriptsize
+    \item Một quân nhân có nhiều bản ghi \texttt{DanhHieuHangNam}, \texttt{ThanhTichKhoaHoc}, \texttt{KhenThuongHCCSVV}.
+    \item Mỗi quân nhân chỉ có một bản ghi cho \texttt{HCBVTQ}, \texttt{HCQKQT}, \texttt{KNC} và ba bảng \texttt{HoSo*} (quan hệ một--một).
+    \item Mỗi bản ghi tham chiếu một \texttt{FileQuyetDinh} (riêng \texttt{DanhHieuHangNam} tham chiếu bốn lần --- mỗi cấp một số QĐ).
+    \item Duy nhất (quân nhân, năm) ở \texttt{DanhHieuHangNam}, (quân nhân, hạng) ở \texttt{HCCSVV}; xoá quân nhân thì các bản ghi xoá theo.
+  \end{itemize}
+\end{frame}
+
+% --- ERD nhóm 4 ---
+\begin{frame}{ERD --- Khen thưởng \& hồ sơ đơn vị}
+  \centering
+  \includegraphics[width=\textwidth,height=0.5\textheight,keepaspectratio]{erd-4-don-vi}\\[0.05cm]
+  \scriptsize\raggedright \textbf{Hai bảng, sáu khoá ngoại:}
+  \begin{itemize}\scriptsize
+    \item Mỗi bản ghi gắn với một đơn vị được khen (\texttt{CoQuanDonVi} hoặc \texttt{DonViTrucThuoc} tuỳ cấp).
+    \item \texttt{DanhHieuDonViHangNam} còn ghi nhận \texttt{TaiKhoan} người tạo, người duyệt và tham chiếu \texttt{FileQuyetDinh}.
+    \item Duy nhất theo cặp (đơn vị, năm) ở cả hai bảng.
+  \end{itemize}
+\end{frame}
+
+% --- ERD nhóm 5 ---
+\begin{frame}{ERD --- Quyết định}
+  \centering
+  \includegraphics[width=\textwidth,height=0.5\textheight,keepaspectratio]{erd-5-quyet-dinh}\\[0.05cm]
+  \scriptsize\raggedright \textbf{\texttt{FileQuyetDinh} là tâm điểm, mười ba khoá ngoại từ tám bảng khen thưởng:}
+  \begin{itemize}\scriptsize
+    \item Một quyết định có thể gắn với nhiều bản ghi khen thưởng.
+    \item Khoá ngoại trỏ tới cột \texttt{so\_quyet\_dinh} (khoá tự nhiên, duy nhất) thay vì khoá chính \texttt{id}.
+    \item Sửa số quyết định thì thay đổi tự lan truyền sang mọi bảng liên quan (\texttt{ON UPDATE CASCADE}); không xoá được quyết định khi còn bản ghi tham chiếu (\texttt{ON DELETE RESTRICT}).
+  \end{itemize}
+\end{frame}
+
+% --- ERD nhóm 6 ---
+\begin{frame}{ERD --- Hệ thống}
+  \centering
+  \includegraphics[width=\textwidth,height=0.5\textheight,keepaspectratio]{erd-6-he-thong}\\[0.05cm]
+  \scriptsize\raggedright \textbf{Ba bảng:}
+  \begin{itemize}\scriptsize
+    \item Mỗi bản ghi \texttt{SystemLog} gắn với \texttt{TaiKhoan} người thực hiện (có thể trống với thao tác do hệ thống tự chạy).
+    \item Mỗi \texttt{ThongBao} gắn với một \texttt{TaiKhoan} người nhận và có thể trỏ ngược về bản ghi \texttt{SystemLog} đã sinh ra nó.
+    \item \texttt{SystemSetting} lưu cấu hình dạng khoá--giá trị, độc lập, không có khoá ngoại.
+  \end{itemize}
+\end{frame}
+
+% --- Use-case diagram tổng quát ---
+\begin{frame}{Biểu đồ use-case tổng quát}
+  \centering
+  \includegraphics[width=\textwidth,height=0.84\textheight,keepaspectratio]{uc-tong-quan}
 \end{frame}
 
 % --- Slide 12: Activity Diagram quy trình duyệt ---
@@ -541,10 +619,10 @@
     \textbf{Các bước chính}\\[0.2cm]
     \footnotesize
     \begin{enumerate}
-      \item MANAGER tạo đề xuất qua biểu mẫu năm bước
+      \item Chỉ huy đơn vị tạo đề xuất qua biểu mẫu năm bước
       \item Hệ thống kiểm tra điều kiện, cảnh báo trùng đề xuất
-      \item ADMIN đối chiếu, cấp số quyết định và phê duyệt
-      \item Sinh PDF, lưu file đính kèm
+      \item Cán bộ Phòng Chính trị đối chiếu, nhập số quyết định và phê duyệt
+      \item Đính kèm tệp PDF quyết định đã ký, lưu kèm bản ghi
       \item Cập nhật hồ sơ, gửi thông báo, ghi nhật ký
     \end{enumerate}
     \vspace{0.2cm}
@@ -553,16 +631,8 @@
     \end{block}
 
     \column{0.42\textwidth}
-    \begin{block}{Sơ đồ flow đơn giản}
-      \scriptsize\centering
-      \textbf{MANAGER tạo đề xuất}\\
-      $\downarrow$\\
-      \textbf{ADMIN duyệt + cấp số QĐ}\\
-      $\downarrow$\\
-      \textbf{Sinh PDF + lưu}\\
-      $\downarrow$\\
-      \textbf{Thông báo + nhật ký}
-    \end{block}
+    \centering
+    \includegraphics[width=\textwidth,height=0.8\textheight,keepaspectratio]{activity-quy-trinh}
   \end{columns}
 \end{frame}
 
@@ -571,7 +641,7 @@
   \begin{columns}[T,onlytextwidth]
     \column{0.5\textwidth}
     \textbf{Vấn đề}\\
-    \scriptsize 5 nhóm khen thưởng hiện thực thành 7 proposal type, mỗi loại có logic submit/validate/import khác nhau $\to$ \texttt{if/else} sẽ tạo file 2000+ dòng, khó test và bảo trì.\\[0.3cm]
+    \scriptsize Bảy loại đề xuất, mỗi loại có logic submit/validate/import khác nhau $\to$ \texttt{if/else} sẽ tạo file 2000+ dòng, khó test và bảo trì.\\[0.3cm]
 
     \textbf{Giải pháp}\\
     \scriptsize Định nghĩa \textbf{interface chung}, mỗi loại 1 file riêng, dispatch qua \textbf{Registry}.
@@ -598,154 +668,139 @@ interface ProposalStrategy {
       \end{tabular}
     \end{block}
 
-    \begin{block}{DRY: singleMedalImporter}
-      \scriptsize HCQKQT và KNC dùng chung helper để loại bỏ trùng lặp logic.
+    \begin{block}{DRY \& mở rộng}
+      \scriptsize HCQKQT và KNC dùng chung một hàm nhập để tránh trùng lặp. \textbf{Kết quả:} thêm loại đề xuất mới chỉ cần một tệp chiến lược và một dòng đăng ký, không phải sửa tầng phê duyệt chung.
     \end{block}
   \end{columns}
 \end{frame}
 
-% --- Slide 14: Tự động xét điều kiện ---
-\begin{frame}{Tự động xét điều kiện khen thưởng}
-  \begin{columns}[T,onlytextwidth]
-    \column{0.6\textwidth}
-    \textbf{Cách thức hoạt động}\\[0.2cm]
-
-    \begin{block}{Xét điều kiện hai lớp đồng bộ}
-      \scriptsize \texttt{computeEligibilityFlags} (tính lại hồ sơ) và \texttt{checkAwardEligibility} (kiểm tra ở API) dùng chung helper lõi \texttt{chainEligibility} --- bảo đảm hiển thị và xét duyệt nhất quán.
-    \end{block}
-
-    \begin{block}{Gợi ý đề xuất tự động theo năm}
-      \scriptsize Hồ sơ hằng năm tự sinh \texttt{goi\_y} như \textit{``Đủ điều kiện đề nghị BKBQP năm 2026''} --- cán bộ chỉ cần xác nhận để tạo đề xuất.
-    \end{block}
-
-    \begin{block}{Tính lại tự động khi có thay đổi}
-      \scriptsize Khi quân nhân nhận danh hiệu mới, đổi đơn vị hoặc cập nhật năm phục vụ --- hệ thống tính lại toàn bộ chuỗi và cập nhật trạng thái đủ/không đủ điều kiện.
-    \end{block}
-
-    \column{0.4\textwidth}
-    \begin{block}{Loại bỏ tính thủ công}
-      \scriptsize \centering Loại bỏ hoàn toàn việc \textbf{tính thủ công} các quy định phức tạp 2y / 3y / 7y.
-    \end{block}
-
-    \begin{block}{Lịch sử dạng timeline}
-      \scriptsize Hiển thị toàn bộ danh hiệu của một quân nhân theo trục thời gian --- dễ quan sát chuỗi BKBQP/CSTĐTQ/BKTTCP.
-    \end{block}
-  \end{columns}
+% --- Biểu đồ lớp module đề xuất (Strategy) ---
+\begin{frame}{Biểu đồ lớp module đề xuất (Strategy)}
+  \centering
+  \includegraphics[width=\textwidth,height=0.84\textheight,keepaspectratio]{lop-de-xuat}
 \end{frame}
 
-% --- Slide 15: Quy trình đề xuất + ra quyết định ---
-\begin{frame}{Quy trình đề xuất và ra quyết định}
-  \begin{columns}[T,onlytextwidth]
-    \column{0.55\textwidth}
-    \begin{block}{Form đề xuất theo từng nhóm}
-      \scriptsize Mỗi nhóm khen thưởng có form riêng. Schema \textbf{Zod chia sẻ giữa client và server} đảm bảo nhất quán.
-    \end{block}
+% --- Đóng góp 1: Tự động xét điều kiện & gợi ý ---
+\begin{frame}{Tự động xét điều kiện \& gợi ý chủ động}
+  \footnotesize
+  \textbf{\textcolor{hustred}{Vấn đề}}
+  \begin{itemize}\scriptsize
+    \item Xét chuỗi danh hiệu thủ công: cửa sổ trượt 3 năm và 7 năm, đếm số BKBTBQP/CSTĐTQ, kiểm NCKH từng năm $\to$ tốn thời gian, dễ tính nhầm và bỏ sót.
+  \end{itemize}
 
-    \begin{block}{Workflow đề xuất --- phê duyệt}
-      \scriptsize MANAGER tạo đề xuất (cấp đơn vị) $\to$ ADMIN phê duyệt (cấp toàn nghiệp vụ). Admin có thể duyệt hoặc từ chối kèm lý do, gửi thông báo về người đề xuất.
-    \end{block}
+  \textbf{\textcolor{hustred}{Cách làm}}
+  \begin{itemize}\scriptsize
+    \item Mỗi cấp danh hiệu mô tả bằng một dòng cấu hình: chu kỳ, cờ tiền điều kiện, yêu cầu NCKH, nhận một lần duy nhất hay lặp lại.
+    \item Một hàm thuần đọc cấu hình và ngữ cảnh chuỗi của quân nhân, trả về kết luận đủ/chưa đủ kèm lý do.
+    \item Cùng một bộ quy tắc dùng cho cả tính lại hồ sơ lẫn kiểm tra khi phê duyệt $\to$ hai luồng không lệch nhau.
+    \item Tự tính lại khi dữ liệu nguồn thay đổi; tự sinh gợi ý theo năm (vd ``Đủ điều kiện đề nghị BKBTBQP 2026'').
+  \end{itemize}
 
-    \begin{block}{Cấp số quyết định + Sinh PDF}
-      \scriptsize Sinh số quyết định theo định dạng và bộ đếm riêng từng năm --- không trùng lặp. PDF kết xuất theo template từng loại danh hiệu, lưu vào \texttt{storage/}.
-    \end{block}
-
-    \column{0.4\textwidth}
-    \begin{block}{Bảo đảm toàn vẹn}
-      \scriptsize \centering Toàn bộ quy trình thực hiện trong \textbf{một transaction}, kèm \textbf{audit log} chi tiết và phát thông báo real-time.
-    \end{block}
-  \end{columns}
+  \textbf{\textcolor{hustred}{Kết quả}}
+  \begin{itemize}\scriptsize
+    \item Thời gian xét mỗi quân nhân giảm từ vài chục phút xuống gần như tức thời.
+    \item Phát hiện đúng cả trường hợp lỡ đợt và quân nhân đủ điều kiện nhưng dễ bị bỏ sót.
+  \end{itemize}
 \end{frame}
 
-% --- Slide 16: Import / Export Excel ---
-\begin{frame}{Nhập / Xuất dữ liệu hàng loạt qua Excel}
-  \begin{columns}[T,onlytextwidth]
-    \column{0.55\textwidth}
-    \textbf{Pattern hai bước an toàn}\\[0.2cm]
-    \begin{block}{Bước 1 --- Xem trước}
-      \scriptsize Đọc file Excel, kiểm tra từng dòng (định dạng ngày, CCCD, mã quân nhân, mã đơn vị). Hiển thị bảng lỗi cụ thể trên giao diện trước khi ghi.
-    \end{block}
+% --- Đóng góp 2: Số hoá quy trình đề xuất & lưu vết ---
+\begin{frame}{Số hoá quy trình đề xuất \& lưu vết thao tác}
+  \footnotesize
+  \textbf{\textcolor{hustred}{Vấn đề}}
+  \begin{itemize}\scriptsize
+    \item Quy trình giấy nhiều bước (đơn vị lập $\to$ Phòng Chính trị tổng hợp $\to$ Ban Giám đốc duyệt) kéo dài 5--10 ngày.
+    \item Chỉnh sửa giữa chừng chỉ ghi tay trên bản nháp $\to$ không truy được ai sửa, sửa gì, vì sao.
+  \end{itemize}
 
-    \begin{block}{Bước 2 --- Xác nhận}
-      \scriptsize Cán bộ xác nhận dữ liệu đúng $\to$ ghi vào CSDL trong một transaction. Nếu một dòng lỗi, toàn bộ rollback.
-    \end{block}
+  \textbf{\textcolor{hustred}{Cách làm}}
+  \begin{itemize}\scriptsize
+    \item Đề xuất là một thực thể có ba trạng thái (chờ duyệt / đã duyệt / từ chối); bảy loại đi theo cùng một giao diện chung.
+    \item Chỉ huy đơn vị tạo đề xuất, Cán bộ Phòng Chính trị duyệt hoặc từ chối kèm lý do; biểu mẫu xác thực bằng schema Zod dùng chung hai phía.
+    \item Trước khi duyệt, cán bộ nhập số quyết định và đính kèm tệp PDF quyết định đã ký; sau đó thao tác phê duyệt gói trong một giao dịch: ghi danh hiệu, gắn quyết định, đổi trạng thái; xong mới tính lại hồ sơ và ghi nhật ký.
+  \end{itemize}
 
-    \begin{block}{Template chuẩn có data validation}
-      \scriptsize Hệ thống sinh template Excel với dropdown (cấp bậc, đơn vị, danh hiệu), định dạng ngày tháng --- cán bộ điền theo mẫu, giảm sai sót.
-    \end{block}
-
-    \column{0.4\textwidth}
-    \begin{block}{Hiệu năng}
-      \scriptsize Áp dụng \textbf{batch query}: collect IDs $\to$ 1 query \texttt{findMany} $\to$ đẩy vào \texttt{Map} tra cứu O(1), tránh N+1 truy vấn.
-    \end{block}
-
-    \begin{block}{Hỗ trợ}
-      \scriptsize Import hàng loạt dữ liệu các nhóm khen thưởng qua Excel + Export báo cáo theo năm và đơn vị.
-    \end{block}
-  \end{columns}
+  \textbf{\textcolor{hustred}{Kết quả}}
+  \begin{itemize}\scriptsize
+    \item Rút thời gian một đợt xét từ nhiều ngày xuống trong ngày.
+    \item Truy vết trọn vòng đời một đề xuất (từ chối $\to$ đề nghị lại $\to$ duyệt) kèm người thực hiện, thời điểm và lý do.
+  \end{itemize}
 \end{frame}
 
-% --- Slide 17: Vận hành & Quản trị ---
-\begin{frame}{Vận hành \& Quản trị hệ thống}
-  \begin{columns}[T,onlytextwidth]
-    \column{0.33\textwidth}
-    \textbf{\textcolor{hustred}{Thông báo Real-time}}
-    \begin{block}{Socket.IO push}
-      \scriptsize Phát qua Socket.IO theo room theo user khi có sự kiện.
-    \end{block}
-    \begin{block}{Lưu lâu dài}
-      \scriptsize Đồng thời lưu vào bảng \texttt{ThongBao} để người dùng offline vẫn nhận khi đăng nhập lại.
-    \end{block}
+% --- Đóng góp 3: Nhập Excel hàng loạt có giao dịch ---
+\begin{frame}{Nhập Excel hàng loạt có giao dịch \& kiểm tra trước}
+  \footnotesize
+  \textbf{\textcolor{hustred}{Vấn đề}}
+  \begin{itemize}\scriptsize
+    \item Di trú dữ liệu lịch sử lớn (ước tính khoảng 50.000 bản ghi danh hiệu và 15.000 lịch sử chức vụ) từ tệp Word và bản giấy.
+    \item Nhập tay mất nhiều tháng; chạy thẳng câu lệnh SQL rủi ro toàn vẹn vì định dạng nguồn không thống nhất.
+  \end{itemize}
 
-    \column{0.33\textwidth}
-    \textbf{\textcolor{hustred}{Audit Log}}
-    \begin{block}{Ghi nhận đầy đủ}
-      \scriptsize Middleware tự ghi: ai, làm gì, đối tượng nào, kèm IP \& user-agent.
-    \end{block}
-    \begin{block}{Lọc đa chiều}
-      \scriptsize Lọc theo user, hành động, resource, khoảng thời gian.
-    \end{block}
+  \textbf{\textcolor{hustred}{Cách làm}}
+  \begin{itemize}\scriptsize
+    \item Quy trình hai bước: \textbf{Xem trước} đối chiếu schema Zod và quy tắc nghiệp vụ, liệt kê từng dòng lỗi nhưng chưa ghi xuống cơ sở dữ liệu.
+    \item \textbf{Xác nhận} ghi tuần tự trong một giao dịch; lỗi ở bất kỳ dòng nào thì hoàn tác toàn bộ.
+    \item Tệp mẫu có danh sách thả xuống (Data Validation); tự chuẩn hoá nhiều biến thể viết tắt danh hiệu về một mã chuẩn.
+  \end{itemize}
 
-    \column{0.33\textwidth}
-    \textbf{\textcolor{hustred}{Backup \& DevZone}}
-    \begin{block}{Backup tự động}
-      \scriptsize Lập lịch qua \texttt{node-cron}, kết xuất file SQL vào \texttt{backups/}. Restore bằng \texttt{psql}.
-    \end{block}
-    \begin{block}{DevZone}
-      \scriptsize SUPER\_ADMIN bật/tắt schedule, trigger backup thủ công.
-    \end{block}
-  \end{columns}
+  \textbf{\textcolor{hustred}{Kết quả}}
+  \begin{itemize}\scriptsize
+    \item Di trú khối dữ liệu lớn trong thời gian ngắn; không bản ghi nào lọt vào ở trạng thái dở dang.
+    \item Hỗ trợ thêm xuất danh sách khen thưởng ra Excel theo năm và theo đơn vị.
+  \end{itemize}
+\end{frame}
+
+% --- Đóng góp 4: Lưu vết, sao lưu & thông báo ---
+\begin{frame}{Lưu vết đầy đủ, sao lưu định kỳ \& thông báo}
+  \footnotesize
+  \textbf{\textcolor{hustred}{Vấn đề}}
+  \begin{itemize}\scriptsize
+    \item Tệp dùng chung chỉ kiểm soát ở mức thư mục; sửa hay xoá không để lại dấu vết.
+    \item Sao lưu phụ thuộc kỷ luật cá nhân, không bảo đảm luôn có bản gần nhất để khôi phục.
+  \end{itemize}
+
+  \textbf{\textcolor{hustred}{Cách làm}}
+  \begin{itemize}\scriptsize
+    \item Nhật ký hệ thống ghi mọi thao tác đổi dữ liệu: người thực hiện, hành động, đối tượng, địa chỉ IP và dữ liệu trước/sau; lọc đa chiều.
+    \item Sao lưu định kỳ tự động bằng \texttt{node-cron}, kết xuất tệp SQL và dọn bản cũ; lịch cấu hình trong khu vực DevZone.
+    \item Thông báo thời gian thực qua Socket.IO theo từng người nhận, đồng thời lưu vào bảng \texttt{ThongBao} để xem lại khi đăng nhập.
+  \end{itemize}
+
+  \textbf{\textcolor{hustred}{Kết quả}}
+  \begin{itemize}\scriptsize
+    \item Mọi thay đổi dữ liệu đều truy vết được; nhật ký sao lưu chỉ Quản trị hệ thống xem được.
+    \item Luôn có bản sao lưu hằng ngày sẵn sàng khôi phục, không phụ thuộc thao tác thủ công.
+  \end{itemize}
 \end{frame}
 
 % --- Slide 18: Kiểm thử + Hiệu năng + Triển khai ⭐ ---
 \begin{frame}{Kiểm thử, Hiệu năng và Triển khai}
   \begin{columns}[T,onlytextwidth]
     \column{0.55\textwidth}
-    \textbf{Kiểm thử \& Hiệu năng}\\[0.2cm]
+    \textbf{Kiểm thử}\\[0.2cm]
 
-    \begin{block}{}
-      \centering {\LARGE \textcolor{hustred}{\textbf{4}}} kịch bản kiểm thử nghiệp vụ trọng yếu \quad $|$ \quad {\large \textcolor{hustred}{\textbf{N+1 $\to$ 1}}} batch query Excel
+    \begin{block}{Hai hướng bổ trợ}
+      \scriptsize Kiểm thử \textbf{hộp đen thủ công} qua giao diện (tám nhóm chức năng nghiệp vụ) kết hợp kiểm thử \textbf{tự động bằng Jest} cho các quy tắc xét chuỗi lõi; thêm kiểm thử tương thích trên năm dòng máy và bốn trình duyệt.
     \end{block}
 
-    \scriptsize\textbf{4 kịch bản nổi bật:}
+    \scriptsize\textbf{Một số kịch bản trọng yếu:}
     \begin{enumerate}\scriptsize
-      \item \textbf{Tranh chấp ghi} --- 2 admin duyệt cùng lúc, chỉ 1 thành công
-      \item \textbf{Xét điều kiện BKTTCP} --- cửa sổ trượt 7 năm + ràng buộc lifetime
-      \item \textbf{Chống giả mạo} --- admin sửa dữ liệu gửi lên, server vẫn ghi đúng
-      \item \textbf{Vòng đời thực tế} --- quân nhân thăng tiến qua các danh hiệu
+      \item \textbf{Tranh chấp ghi} --- hai cán bộ duyệt cùng lúc, chỉ một thành công
+      \item \textbf{Xét điều kiện BKTTCP} --- cửa sổ trượt 7 năm + ràng buộc một lần duy nhất
+      \item \textbf{Chống giả mạo} --- gửi thẳng dữ liệu sai qua API, backend vẫn xét lại và từ chối
+      \item \textbf{Lỡ đợt} --- bỏ lỡ mốc đề nghị, chu kỳ sau vẫn được xét đúng
     \end{enumerate}
 
     \column{0.4\textwidth}
     \textbf{Triển khai mạng nội bộ}\\[0.2cm]
     \scriptsize
     \begin{enumerate}
-      \item Cài \texttt{node\_modules} trên máy có Internet, chuyển sang máy nội bộ
-      \item Tạo CSDL PostgreSQL rỗng + cấu hình \texttt{.env}
-      \item \texttt{npm run setup} --- tạo bảng và SUPER\_ADMIN (idempotent)
-      \item \texttt{npm run serve} --- build + khởi chạy bằng PM2
+      \item Chuẩn bị máy chủ Windows Server (Node.js 20 LTS, PostgreSQL 15)
+      \item Cấu hình \texttt{.env}; chạy \texttt{prisma migrate dev} tạo lược đồ và khởi tạo tài khoản Quản trị hệ thống
+      \item \texttt{pm2 start ecosystem.config.js} chạy backend (cổng 4000) và frontend (cổng 3000); \texttt{pm2 save} để tự khởi động cùng máy
     \end{enumerate}
 
-    \begin{block}{PM2 production}
-      \scriptsize Auto-restart, RAM 500MB, log rotation. Hệ thống vận hành \textbf{hoàn toàn offline} sau khi cài đặt.
+    \begin{block}{Vận hành}
+      \scriptsize PM2 tự khởi động lại khi tiến trình lỗi và ghi log có thời gian. Hệ thống chạy \textbf{hoàn toàn trong mạng nội bộ}, không phụ thuộc Internet.
     \end{block}
   \end{columns}
 \end{frame}
@@ -756,7 +811,7 @@ interface ProposalStrategy {
     \column{0.33\textwidth}
     \textbf{\textcolor{hustred}{Đã đạt được}}
     \begin{itemize}\scriptsize
-      \item Hoàn thành 5 nhóm khen thưởng, 4 vai trò
+      \item Hoàn thành bảy nhóm khen thưởng, 4 vai trò
       \item Tự động hoá quy trình xét duyệt
       \item Kiểm thử kỹ các kịch bản nghiệp vụ trọng yếu
       \item Triển khai trên mạng nội bộ

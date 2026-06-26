@@ -4,9 +4,11 @@ import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { logMessages } from '../constants/logMessages.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
-import { notifyOnImport } from '../helpers/notification';
+import { safeNotifyImport, notifyOnUnitAwardDeleted } from '../helpers/notification';
+import { logImportPreview, getAdminUsername } from '../helpers/controllerHelper';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.UNIT_ANNUAL_AWARDS];
 
@@ -23,21 +25,8 @@ interface IdParams {
   id?: string;
 }
 
-interface ApproveBody {
-  so_quyet_dinh?: string;
-  file_quyet_dinh?: string;
-  nhan_bkbqp?: boolean;
-  so_quyet_dinh_bkbqp?: string;
-  file_quyet_dinh_bkbqp?: string;
-  nhan_bkttcp?: boolean;
-  so_quyet_dinh_bkttcp?: string;
-  file_quyet_dinh_bkttcp?: string;
-  nguoi_duyet_id?: string;
-}
-
-interface RejectBody {
-  ghi_chu?: string;
-  nguoi_duyet_id?: string;
+interface AwardTypeQuery {
+  awardType?: string;
 }
 
 interface RecalculateBody {
@@ -50,14 +39,6 @@ interface UpsertBody {
   nam?: number;
   danh_hieu?: string;
   so_quyet_dinh?: string;
-  ghi_chu?: string;
-  nguoi_tao_id?: string;
-}
-
-interface ProposeBody {
-  don_vi_id?: string;
-  nam?: number;
-  danh_hieu?: string;
   ghi_chu?: string;
   nguoi_tao_id?: string;
 }
@@ -161,52 +142,6 @@ class UnitAnnualAwardController {
     });
   });
 
-  propose = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user;
-    const body = req.body as ProposeBody;
-    const data = await service.propose({
-      don_vi_id: body.don_vi_id,
-      nam: body.nam,
-      danh_hieu: body.danh_hieu,
-      ghi_chu: body.ghi_chu,
-      nguoi_tao_id: user?.id || body.nguoi_tao_id,
-      userRole: user?.role,
-      userQuanNhanId: user?.quan_nhan_id,
-    });
-    return ResponseHelper.created(res, {
-      data,
-      message: 'Đã gửi đề xuất khen thưởng đơn vị. Hãy chờ admin duyệt',
-    });
-  });
-
-  approve = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as IdParams;
-    const user = req.user;
-    const body = req.body as ApproveBody;
-    const data = await service.approve(params.id, {
-      so_quyet_dinh: body.so_quyet_dinh,
-      nhan_bkbqp: body.nhan_bkbqp,
-      so_quyet_dinh_bkbqp: body.so_quyet_dinh_bkbqp,
-      file_quyet_dinh_bkbqp: body.file_quyet_dinh_bkbqp,
-      nhan_bkttcp: body.nhan_bkttcp,
-      so_quyet_dinh_bkttcp: body.so_quyet_dinh_bkttcp,
-      file_quyet_dinh_bkttcp: body.file_quyet_dinh_bkttcp,
-      nguoi_duyet_id: user?.id || (body.nguoi_duyet_id as string | undefined),
-    });
-    return ResponseHelper.success(res, { data, message: 'Đã phê duyệt đề xuất' });
-  });
-
-  reject = catchAsync(async (req: Request, res: Response) => {
-    const params = req.params as IdParams;
-    const user = req.user;
-    const body = req.body as RejectBody;
-    const data = await service.reject(String(params.id), {
-      ghi_chu: body.ghi_chu as string | undefined,
-      nguoi_duyet_id: user?.id || (body.nguoi_duyet_id as string | undefined),
-    });
-    return ResponseHelper.success(res, { data, message: 'Đã từ chối đề xuất' });
-  });
-
   recalculate = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as RecalculateBody;
     const count = await service.recalculate({
@@ -218,9 +153,10 @@ class UnitAnnualAwardController {
 
   remove = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
-    const query = req.query as { awardType?: string };
+    const query = req.query as AwardTypeQuery;
     const awardType = typeof query.awardType === 'string' ? query.awardType.trim() || null : null;
     const record = await service.remove(String(params.id), awardType);
+    void notifyOnUnitAwardDeleted(record, awardType, getAdminUsername(req));
     return ResponseHelper.success(res, { data: record, message: 'Đã xóa bản ghi' });
   });
 
@@ -241,12 +177,14 @@ class UnitAnnualAwardController {
   getUnitAnnualProfile = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as GetUnitAnnualProfileParams;
     const query = req.query as GetUnitAnnualProfileQuery;
+    const user = req.user;
     const { don_vi_id } = params;
     const { year } = query;
     const yearNumber = year != null && year !== '' ? Number(year) : null;
     if (!don_vi_id) {
       return ResponseHelper.badRequest(res, 'Thiếu thông tin đơn vị');
     }
+    await service.assertUnitInScope(don_vi_id, user?.role, user?.quan_nhan_id);
     if (yearNumber && !Number.isNaN(yearNumber)) {
       await service.recalculateAnnualUnit(don_vi_id, yearNumber);
     }
@@ -261,26 +199,18 @@ class UnitAnnualAwardController {
   });
 
   previewImport = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
     const file = req.file;
     if (!file) {
       return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
     }
     const result = await service.previewImport(file.buffer);
-    await writeSystemLog({
-      userId: user.id,
-      userRole: user.role,
-      action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-      description: `Tải lên file "${file.originalname ? Buffer.from(file.originalname, 'latin1').toString('utf8') : 'Excel'}" để xem trước ${AWARD_LABEL}: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
-      payload: {
-        filename: file.originalname
-          ? Buffer.from(file.originalname, 'latin1').toString('utf8')
-          : undefined,
-        total: result.total,
-        errors: result.errors?.length || 0,
-      },
-    });
+    await logImportPreview(
+      req,
+      AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
+      AWARD_LABEL,
+      file.originalname,
+      result
+    );
     return ResponseHelper.success(res, { data: result });
   });
 
@@ -297,19 +227,11 @@ class UnitAnnualAwardController {
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
       resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-      description: `Nhập dữ liệu ${AWARD_LABEL} thành công: ${result.imported ?? items.length} bản ghi`,
+      description: logMessages.importSuccess(AWARD_LABEL, result.imported ?? items.length),
       payload: { imported: result.imported ?? items.length },
     });
     const unitIds = items.map((i: { unit_id: string }) => i.unit_id);
-    notifyOnImport(
-      user.id,
-      AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-      result.imported ?? items.length,
-      [],
-      unitIds
-    ).catch(e => {
-      console.error('[unit-annual-awards] notifyOnImport failed:', e);
-    });
+    safeNotifyImport(user.id, AWARD_SLUGS.UNIT_ANNUAL_AWARDS, result.imported ?? items.length, [], unitIds);
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
@@ -329,9 +251,9 @@ class UnitAnnualAwardController {
         Object.assign(repeatMap, JSON.parse(query.repeat_map));
       } catch (e) {
         void writeSystemLog({
-          action: 'ERROR',
+          action: AUDIT_ACTIONS.ERROR,
           resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-          description: `Dữ liệu repeat_map (${AWARD_LABEL}) không hợp lệ: ${e}`,
+          description: logMessages.invalidRepeatMap(AWARD_LABEL, e),
         });
       }
     }

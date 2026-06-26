@@ -2,12 +2,13 @@ import { scientificAchievementRepository } from '../../../repositories/scientifi
 import { buildCutoffDate, formatServiceDuration } from '../../../helpers/serviceYearsHelper';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import {
-  CONG_HIEN_HE_SO_GROUPS,
+  CONTRIBUTION_COEFFICIENT_GROUPS,
   DANH_HIEU_CA_NHAN_HANG_NAM,
   DANH_HIEU_CA_NHAN_CO_BAN,
   DANH_HIEU_CA_NHAN_BANG_KHEN,
   DANH_HIEU_DON_VI_HANG_NAM,
   DANH_HIEU_DON_VI_BANG_KHEN,
+  getLoaiDeXuatName,
 } from '../../../constants/danhHieu.constants';
 import { ValidationError } from '../../../middlewares/errorHandler';
 import { validateHCBVTQHighestRank } from '../../../helpers/awardValidation/contributionMedalHighestRank';
@@ -26,12 +27,12 @@ import {
 } from '../validation';
 import { validateDecisionNumbers } from '../../eligibility/decisionNumberValidation';
 import { collectPersonnelDuplicateErrors } from '../../eligibility/personnelDuplicateCheck';
-import type { PositionMonthsByGroup } from '../../eligibility/congHienMonthsAggregator';
+import type { PositionMonthsByGroup } from '../../eligibility/contributionMonthsAggregator';
 import {
   evaluateHCBVTQRank,
   getMonthsByGroup,
   loadHCBVTQEvaluationContext,
-  requiredCongHienMonths,
+  requiredContributionMonths,
 } from '../../eligibility/hcbvtqEligibility';
 import {
   batchEvaluateServiceYears,
@@ -46,6 +47,8 @@ import type {
   ProposalCongHienItem,
 } from '../../../types/proposal';
 import type { ProposalContext, DecisionInputMap } from './types';
+
+const CONTRIBUTION_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
 
 /** Collects "duplicate award" errors for personal annual proposals. */
 async function collectCaNhanHangNamDuplicates(
@@ -66,9 +69,7 @@ async function collectCaNhanHangNamDuplicates(
     personnelId => personnelHoTenMap.get(personnelId) || personnelId
   );
   if (duplicatePayloadItems.length > 0) {
-    throw new ValidationError(
-      `${DUPLICATE_IN_PAYLOAD_ERROR}\n${duplicatePayloadItems.join('\n')}`
-    );
+    throw new ValidationError(`${DUPLICATE_IN_PAYLOAD_ERROR}\n${duplicatePayloadItems.join('\n')}`);
   }
   const hasChinh = selectedDanhHieu.some(danhHieu => DANH_HIEU_CA_NHAN_CO_BAN.has(danhHieu));
   const chuoiSet: ReadonlySet<string> = new Set([
@@ -84,7 +85,7 @@ async function collectCaNhanHangNamDuplicates(
   const validItems = danhHieuData.filter(item => item.personnel_id && item.danh_hieu);
   const promises = await Promise.all(
     validItems.flatMap(item => {
-      const hoTen = personnelHoTenMap.get(item.personnel_id) || item.personnel_id;
+      const hoTen = personnelHoTenMap.get(item.personnel_id) || 'một quân nhân';
       const isMutuallyExclusive =
         item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT ||
         item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS;
@@ -158,9 +159,7 @@ async function collectDonViHangNamDuplicates(
   // Lớp 2: dedupe trong payload (cùng don_vi + danh_hieu trùng).
   const duplicatePayloadItems = collectDuplicateDonViPayload(danhHieuData);
   if (duplicatePayloadItems.length > 0) {
-    throw new ValidationError(
-      `${DUPLICATE_IN_PAYLOAD_ERROR}\n${duplicatePayloadItems.join('\n')}`
-    );
+    throw new ValidationError(`${DUPLICATE_IN_PAYLOAD_ERROR}\n${duplicatePayloadItems.join('\n')}`);
   }
 
   // Lớp 3: chặn mix group ĐVQT/ĐVTT (danh hiệu cơ bản) với BKBQP/BKTTCP
@@ -215,7 +214,7 @@ async function collectNckhDuplicates(
   for (const item of validItems) {
     const key = `${item.personnel_id}_${item.nam}_${item.mo_ta}`;
     if (existingKeys.has(key)) {
-      const hoTen = ctx.personnelHoTenMap.get(item.personnel_id) || item.personnel_id;
+      const hoTen = ctx.personnelHoTenMap.get(item.personnel_id) || 'một quân nhân';
       errors.push(`${hoTen}: Thành tích "${item.mo_ta}" năm ${item.nam} đã tồn tại`);
     }
   }
@@ -287,7 +286,11 @@ async function collectHCQKQTEligibilityErrors(
   nienHanData: ProposalNienHanItem[]
 ): Promise<string[]> {
   const personnelIds = nienHanData.map(item => item.personnel_id).filter(Boolean);
-  const results = await batchEvaluateServiceYears(personnelIds, PROPOSAL_TYPES.HC_QKQT, ctx.refDate);
+  const results = await batchEvaluateServiceYears(
+    personnelIds,
+    PROPOSAL_TYPES.HC_QKQT,
+    ctx.refDate
+  );
   return results
     .map(r => buildServiceYearsErrorMessage(r, PROPOSAL_TYPES.HC_QKQT))
     .filter((m): m is string => m !== null);
@@ -299,7 +302,11 @@ async function collectKNCEligibilityErrors(
   nienHanData: ProposalNienHanItem[]
 ): Promise<string[]> {
   const personnelIds = nienHanData.map(item => item.personnel_id).filter(Boolean);
-  const results = await batchEvaluateServiceYears(personnelIds, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN, ctx.refDate);
+  const results = await batchEvaluateServiceYears(
+    personnelIds,
+    PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
+    ctx.refDate
+  );
   return results
     .map(r => buildServiceYearsErrorMessage(r, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN))
     .filter((m): m is string => m !== null);
@@ -317,24 +324,24 @@ async function collectCongHienEligibilityErrors(
 
   for (const item of congHienData) {
     if (!item.danh_hieu || !item.personnel_id) continue;
-    const hoTen = evalCtx.hoTenByPersonnel.get(item.personnel_id) || item.personnel_id;
+    const hoTen = evalCtx.hoTenByPersonnel.get(item.personnel_id) || 'một quân nhân';
     const gioiTinh = evalCtx.genderByPersonnel.get(item.personnel_id) ?? null;
-    const requiredMonths = requiredCongHienMonths(gioiTinh);
+    const requiredMonths = requiredContributionMonths(gioiTinh);
     const months: PositionMonthsByGroup = {
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: getMonthsByGroup(
+      [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07]: getMonthsByGroup(
         evalCtx,
         item.personnel_id,
-        CONG_HIEN_HE_SO_GROUPS.LEVEL_07
+        CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07
       ),
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: getMonthsByGroup(
+      [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08]: getMonthsByGroup(
         evalCtx,
         item.personnel_id,
-        CONG_HIEN_HE_SO_GROUPS.LEVEL_08
+        CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08
       ),
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: getMonthsByGroup(
+      [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10]: getMonthsByGroup(
         evalCtx,
         item.personnel_id,
-        CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
+        CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10
       ),
     };
 
@@ -351,7 +358,7 @@ async function collectCongHienEligibilityErrors(
       const requiredYearsText = formatServiceDuration(result.requiredMonths);
       const genderText = gioiTinh === GENDER.FEMALE ? ' (Nữ giảm 1/3 thời gian)' : '';
       errors.push(
-        `${hoTen}: Không đủ điều kiện Huân chương Bảo vệ Tổ quốc ${result.rankName}. ` +
+        `${hoTen}: Không đủ điều kiện ${CONTRIBUTION_LABEL} ${result.rankName}. ` +
           `Yêu cầu: ${requiredYearsText}${genderText}. Hiện tại: ${totalYearsText}.`
       );
     }
@@ -364,21 +371,21 @@ async function collectCaNhanChainEligibilityErrors(
   ctx: ProposalContext,
   danhHieuData: ProposalDanhHieuItem[]
 ): Promise<string[]> {
-  const errors: string[] = [];
-  for (const item of danhHieuData) {
-    if (!item.personnel_id || !item.danh_hieu) continue;
-    if (!DANH_HIEU_CA_NHAN_BANG_KHEN.has(item.danh_hieu)) continue;
-    const eligibility = await profileService.checkAwardEligibility(
-      item.personnel_id,
-      ctx.proposalYear,
-      item.danh_hieu
-    );
-    if (!eligibility.eligible) {
-      const hoTen = ctx.personnelHoTenMap.get(item.personnel_id) || item.personnel_id;
-      errors.push(`${hoTen}: ${eligibility.reason}`);
-    }
-  }
-  return errors;
+  const checks = await Promise.all(
+    danhHieuData.map(async item => {
+      if (!item.personnel_id || !item.danh_hieu) return null;
+      if (!DANH_HIEU_CA_NHAN_BANG_KHEN.has(item.danh_hieu)) return null;
+      const eligibility = await profileService.checkAwardEligibility(
+        item.personnel_id,
+        ctx.proposalYear,
+        item.danh_hieu
+      );
+      if (eligibility.eligible) return null;
+      const hoTen = ctx.personnelHoTenMap.get(item.personnel_id) || 'một quân nhân';
+      return `${hoTen}: ${eligibility.reason}`;
+    })
+  );
+  return checks.filter((e): e is string => e !== null);
 }
 
 /** Collects chain-award eligibility errors for unit annual proposals. */
@@ -386,21 +393,21 @@ async function collectDonViChainEligibilityErrors(
   ctx: ProposalContext,
   danhHieuData: ProposalDanhHieuItem[]
 ): Promise<string[]> {
-  const errors: string[] = [];
-  for (const item of danhHieuData) {
-    if (!item.don_vi_id || !item.danh_hieu) continue;
-    if (!DANH_HIEU_DON_VI_BANG_KHEN.has(item.danh_hieu)) continue;
-    const eligibility = await unitAnnualAwardService.checkUnitAwardEligibility(
-      item.don_vi_id,
-      ctx.proposalYear,
-      item.danh_hieu
-    );
-    if (!eligibility.eligible) {
-      const tenDonVi = item.ten_don_vi || item.don_vi_id;
-      errors.push(`${tenDonVi}: ${eligibility.reason}`);
-    }
-  }
-  return errors;
+  const checks = await Promise.all(
+    danhHieuData.map(async item => {
+      if (!item.don_vi_id || !item.danh_hieu) return null;
+      if (!DANH_HIEU_DON_VI_BANG_KHEN.has(item.danh_hieu)) return null;
+      const eligibility = await unitAnnualAwardService.checkUnitAwardEligibility(
+        item.don_vi_id,
+        ctx.proposalYear,
+        item.danh_hieu
+      );
+      if (eligibility.eligible) return null;
+      const tenDonVi = item.ten_don_vi || 'Một đơn vị';
+      return `${tenDonVi}: ${eligibility.reason}`;
+    })
+  );
+  return checks.filter((e): e is string => e !== null);
 }
 
 /**
@@ -465,12 +472,17 @@ export function runDecisionNumberChecks(
       const isCoBan = DANH_HIEU_CA_NHAN_CO_BAN.has(item.danh_hieu);
       const sqdCoBan =
         item.so_quyet_dinh ||
-        (item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS ? decisions.so_quyet_dinh_cstdcs : null) ||
+        (item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS
+          ? decisions.so_quyet_dinh_cstdcs
+          : null) ||
         (item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTT ? decisions.so_quyet_dinh_cstt : null);
-      const sqdBkbqp = item.so_quyet_dinh_bkbqp || decisions.so_quyet_dinh_bkbqp || item.so_quyet_dinh;
-      const sqdCstdtq = item.so_quyet_dinh_cstdtq || decisions.so_quyet_dinh_cstdtq || item.so_quyet_dinh;
-      const sqdBkttcp = item.so_quyet_dinh_bkttcp || decisions.so_quyet_dinh_bkttcp || item.so_quyet_dinh;
-      const hoTen = personnelHoTenMap.get(item.personnel_id) || item.ho_ten || item.personnel_id;
+      const sqdBkbqp =
+        item.so_quyet_dinh_bkbqp || decisions.so_quyet_dinh_bkbqp || item.so_quyet_dinh;
+      const sqdCstdtq =
+        item.so_quyet_dinh_cstdtq || decisions.so_quyet_dinh_cstdtq || item.so_quyet_dinh;
+      const sqdBkttcp =
+        item.so_quyet_dinh_bkttcp || decisions.so_quyet_dinh_bkttcp || item.so_quyet_dinh;
+      const hoTen = personnelHoTenMap.get(item.personnel_id) || item.ho_ten || 'một quân nhân';
 
       const errs = validateDecisionNumbers(
         {
@@ -498,9 +510,11 @@ export function runDecisionNumberChecks(
         item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVQT ||
         item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVTT;
       const sqdCoBan = item.so_quyet_dinh || decisions.so_quyet_dinh_don_vi_hang_nam;
-      const sqdBkbqp = item.so_quyet_dinh_bkbqp || decisions.so_quyet_dinh_bkbqp || item.so_quyet_dinh;
-      const sqdBkttcp = item.so_quyet_dinh_bkttcp || decisions.so_quyet_dinh_bkttcp || item.so_quyet_dinh;
-      const tenDonVi = item.ten_don_vi || item.don_vi_id;
+      const sqdBkbqp =
+        item.so_quyet_dinh_bkbqp || decisions.so_quyet_dinh_bkbqp || item.so_quyet_dinh;
+      const sqdBkttcp =
+        item.so_quyet_dinh_bkttcp || decisions.so_quyet_dinh_bkttcp || item.so_quyet_dinh;
+      const tenDonVi = item.ten_don_vi || 'Một đơn vị';
 
       const errs = validateDecisionNumbers(
         {

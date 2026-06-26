@@ -15,8 +15,8 @@ import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 const ADMIN_ID = 'acc-admin-reject-1';
 const MANAGER_ID = 'acc-manager-reject-1';
 
-describe('rejectProposal', () => {
-  it('từ chối đề xuất PENDING thành công, lưu lý do và người duyệt', async () => {
+describe('Từ chối đề xuất', () => {
+  it('Từ chối đề xuất: đề xuất đang chờ duyệt → chuyển REJECTED, lưu lý do và người duyệt', async () => {
     // Given: đề xuất đang PENDING
     const proposal = makeProposal({
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
@@ -43,7 +43,7 @@ describe('rejectProposal', () => {
     expect(result.result.ly_do).toBe(reason);
   });
 
-  it('từ chối đề xuất đã APPROVED → ValidationError', async () => {
+  it('Từ chối đề xuất bị chặn: đề xuất đã được duyệt → không cho từ chối', async () => {
     // Given: đề xuất đã APPROVED
     const proposal = makeProposal({
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
@@ -62,7 +62,7 @@ describe('rejectProposal', () => {
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('từ chối đề xuất không tồn tại → NotFoundError', async () => {
+  it('Từ chối đề xuất bị chặn: đề xuất không tồn tại → báo "Đề xuất không tồn tại"', async () => {
     // Given: không có đề xuất nào trong DB
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(null);
 
@@ -75,7 +75,7 @@ describe('rejectProposal', () => {
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('từ chối đề xuất đã REJECTED trước đó → ValidationError', async () => {
+  it('Từ chối đề xuất bị chặn: đề xuất đã bị từ chối trước đó → không cho từ chối lần nữa', async () => {
     // Given: đề xuất đã từng bị REJECTED trước đó
     const proposal = makeProposal({
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
@@ -94,7 +94,7 @@ describe('rejectProposal', () => {
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('từ chối với lý do dài (> 200 ký tự) lưu nguyên vẹn vào rejection_reason', async () => {
+  it('Từ chối đề xuất: lý do dài hơn 200 ký tự → lưu nguyên vẹn lý do từ chối', async () => {
     // Given: đề xuất PENDING và lý do dài
     const proposal = makeProposal({
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,

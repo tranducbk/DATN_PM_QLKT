@@ -8,7 +8,6 @@ import {
   Button,
   Steps,
   Space,
-  Breadcrumb,
   Radio,
   Alert,
   message as antMessage,
@@ -21,7 +20,6 @@ import {
 import { getApiErrorMessage } from '@/lib/http/apiError';
 
 import {
-  HomeOutlined,
   TrophyOutlined,
   TeamOutlined,
   CheckCircleOutlined,
@@ -29,10 +27,10 @@ import {
   EditOutlined,
   FileTextOutlined,
 } from '@ant-design/icons';
-import Link from 'next/link';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/http/apiClient';
-import { getDanhHieuName } from '@/constants/danhHieu.constants';
+import { getDanhHieuName, THANH_TICH_KHOA_HOC } from '@/constants/danhHieu.constants';
 import { PROPOSAL_TYPES, requiresProposalMonth, type ProposalType } from '@/constants/proposal.constants';
 import { PROPOSAL_TYPE_ICON_COMPONENTS } from '@/constants/proposalUi.constants';
 import { AWARD_TYPE_REGISTRY } from '@/constants/awardTypeRegistry.constants';
@@ -202,7 +200,7 @@ export default function BulkAddAwardsPage() {
     } catch {}
   }, [selectedUnitIds]);
 
-  // Fetch personnel/unit details when reaching Step 4 (Review)
+  // Lazy-load personnel/unit details only when the review step opens
   useEffect(() => {
     if (currentStep === 3) {
       if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM && selectedUnitIds.length > 0) {
@@ -387,7 +385,7 @@ export default function BulkAddAwardsPage() {
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 0: // Step 1: Choose Type
+      case 0:
         return (
           <div>
             <Alert
@@ -439,7 +437,7 @@ export default function BulkAddAwardsPage() {
           </div>
         );
 
-      case 1: // Step 2: Select Personnel/Units
+      case 1:
         if (awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
           return (
             <Step2SelectUnits
@@ -532,7 +530,7 @@ export default function BulkAddAwardsPage() {
             return null;
         }
 
-      case 2: // Step 3: Set Titles
+      case 2:
         return (
           <Step3SetTitles
             selectedPersonnelIds={selectedPersonnelIds}
@@ -547,7 +545,7 @@ export default function BulkAddAwardsPage() {
           />
         );
 
-      case 3: // Step 4: Review
+      case 3:
         // Merge personnel/unit details with title data
         let reviewTableData: ReviewRow[] = [];
 
@@ -582,7 +580,7 @@ export default function BulkAddAwardsPage() {
         return (
           <div>
             <Alert
-              message="Bước 5: Xem lại thông tin"
+              message="Bước 4: Xem lại thông tin"
               description="Kiểm tra kỹ thông tin trước khi tiếp tục"
               type="success"
               showIcon
@@ -669,7 +667,7 @@ export default function BulkAddAwardsPage() {
           </div>
         );
 
-      case 4: // Step 5: Add decision number
+      case 4:
         const decisionTableData =
           awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? unitDetails : personnelDetails;
 
@@ -773,7 +771,7 @@ export default function BulkAddAwardsPage() {
           </div>
         );
 
-      case 5: // Step 6: Final review before submit
+      case 5:
         const finalTableData =
           awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM ? unitDetails : personnelDetails;
 
@@ -831,7 +829,7 @@ export default function BulkAddAwardsPage() {
                 const titleInfo = titleData.find(t => String(t.personnel_id) === String(record.id));
                 const loai = titleInfo?.loai;
                 return (
-                  <Tag color={loai === 'DTKH' ? 'blue' : 'green'}>
+                  <Tag color={loai === THANH_TICH_KHOA_HOC.DTKH ? 'blue' : 'green'}>
                     {getDanhHieuName(loai)}
                   </Tag>
                 );
@@ -931,22 +929,7 @@ export default function BulkAddAwardsPage() {
 
   return (
     <div style={{ padding: '24px' }}>
-      {/* Breadcrumb */}
-      <Breadcrumb
-        style={{ marginBottom: 16 }}
-        items={[
-          {
-            title: (
-              <Link href="/admin/dashboard">
-                <HomeOutlined />
-              </Link>
-            ),
-          },
-          {
-            title: 'Thêm khen thưởng đồng loạt',
-          },
-        ]}
-      />
+      <PageBreadcrumb items={[{ title: 'Thêm khen thưởng đồng loạt' }]} />
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>

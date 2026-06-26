@@ -30,6 +30,14 @@ import { Request } from 'express';
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { donViTrucThuocRepository } from '../repositories/unit.repository';
 import { ROLES } from '../constants/roles.constants';
+import { writeSystemLog } from './systemLogHelper';
+import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+
+interface ImportPreviewResult {
+  valid?: unknown[];
+  errors?: unknown[];
+  total?: number;
+}
 
 /**
  * Gets the admin username from the request.
@@ -38,6 +46,34 @@ import { ROLES } from '../constants/roles.constants';
  */
 export function getAdminUsername(req: Request): string {
   return req.user?.username ?? 'Admin';
+}
+
+/**
+ * Writes the IMPORT_PREVIEW audit log for an Excel upload preview.
+ * @param req - Express request (source of user id/role)
+ * @param resourceSlug - Award resource slug
+ * @param awardLabel - Human-readable award label
+ * @param originalname - Uploaded file's original name (latin1-encoded)
+ * @param result - Preview counts (valid / errors / total)
+ */
+export async function logImportPreview(
+  req: Request,
+  resourceSlug: string,
+  awardLabel: string,
+  originalname: string | undefined,
+  result: ImportPreviewResult
+): Promise<void> {
+  const decodedName = originalname
+    ? Buffer.from(originalname, 'latin1').toString('utf8')
+    : undefined;
+  await writeSystemLog({
+    userId: req.user?.id,
+    userRole: req.user?.role,
+    action: AUDIT_ACTIONS.IMPORT_PREVIEW,
+    resource: resourceSlug,
+    description: `Tải lên file "${decodedName ?? 'Excel'}" để xem trước ${awardLabel}: ${result.valid?.length || 0} hợp lệ, ${result.errors?.length || 0} lỗi`,
+    payload: { filename: decodedName, total: result.total, errors: result.errors?.length || 0 },
+  });
 }
 
 /**

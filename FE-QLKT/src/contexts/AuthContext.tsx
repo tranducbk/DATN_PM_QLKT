@@ -70,7 +70,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-/** Decode JWT payload without library (chỉ đọc, không verify signature) */
+/** Decodes the JWT payload without a library (read-only; does not verify the signature). */
 function decodeTokenPayload(token: string): { exp?: number } | null {
   try {
     const base64 = token.split('.')[1];
@@ -80,7 +80,7 @@ function decodeTokenPayload(token: string): { exp?: number } | null {
   }
 }
 
-/** Check xem token còn valid không (chưa hết hạn) */
+/** Returns whether the token is still valid (not expired). */
 function isTokenValid(token: string | null): boolean {
   if (!token) return false;
   const payload = decodeTokenPayload(token);
@@ -197,8 +197,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * useAuth hook - lấy auth state từ context
- * Thay thế việc đọc localStorage.getItem('role') rải rác
+ * useAuth hook — reads auth state from context.
+ * Replaces scattered localStorage.getItem('role') reads.
  */
 export function useAuth() {
   const context = useContext(AuthContext);

@@ -1,9 +1,8 @@
 'use client';
 
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Card, Table, Typography, Breadcrumb, message, Tabs, Empty } from 'antd';
+import { Card, Table, Typography, message, Tabs, Empty } from 'antd';
 import type { TableColumnsType } from 'antd';
-import { HomeOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/http/apiClient';
 import {
   DANH_HIEU_MAP,
@@ -26,6 +25,7 @@ import {
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 import { useDebounce } from '@/hooks/useDebounce';
 import { AwardsFilterBar } from '@/components/awards/AwardsFilterBar';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 
 const { Title, Paragraph, Text } = Typography;
 
@@ -461,12 +461,7 @@ export default function ManagerAwardsPage() {
 
   return (
     <div style={{ padding: '24px' }}>
-      <Breadcrumb style={{ marginBottom: '16px' }}>
-        <Breadcrumb.Item href="/">
-          <HomeOutlined />
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>Quản lý khen thưởng</Breadcrumb.Item>
-      </Breadcrumb>
+      <PageBreadcrumb items={[{ title: 'Quản lý khen thưởng' }]} />
 
       <div
         style={{

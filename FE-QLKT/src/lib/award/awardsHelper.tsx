@@ -78,7 +78,7 @@ export const renderDecision = (
     )
   ) : null;
 
-export const renderAwardItem = (
+const renderAwardItem = (
   key: string,
   title: string,
   soQuyetDinh: string | null | undefined,
@@ -99,7 +99,7 @@ export const renderAwardItem = (
   </div>
 );
 
-export interface AwardEntry {
+interface AwardEntry {
   code: string;
   label: string;
   shortLabel: string;
@@ -226,7 +226,7 @@ export const renderAwardDeleteButtons = (
   );
 };
 
-export interface RenderAnnualAwardsOptions {
+interface RenderAnnualAwardsOptions {
   onDownload?: (soQuyetDinh: string) => void;
 }
 

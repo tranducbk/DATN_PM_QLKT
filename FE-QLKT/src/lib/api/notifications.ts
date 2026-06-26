@@ -75,15 +75,6 @@ export async function markAllNotificationsAsRead(): Promise<ApiResponse> {
   }
 }
 
-export async function deleteNotification(id: string): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.delete(`/api/notifications/${id}`);
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
 export async function deleteAllNotifications(): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete('/api/notifications/all');

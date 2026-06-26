@@ -10,7 +10,7 @@ export const DEV_ZONE_API = '/api/dev-zone';
 export const DEV_SESSION_KEY = 'dev_zone_session';
 export const DEV_SESSION_DURATION = 15 * 60 * 1000; // 15 minutes
 
-/** Preset lịch chạy cron job */
+/** Cron-job schedule presets. */
 export const CRON_PRESETS = [
   { label: 'Mỗi 5 phút', value: '*/5 * * * *' },
   { label: 'Mỗi 30 phút', value: '*/30 * * * *' },
@@ -69,10 +69,28 @@ export const SYSTEM_FEATURE_OPTIONS = [
   },
 ] as const;
 
-/** Preset lịch backup tự động */
+/** Automatic-backup schedule presets. */
 export const BACKUP_CRON_PRESETS = [
   { label: 'Mỗi ngày lúc 02:00', value: '0 2 * * *' },
   { label: 'Mỗi tuần (Thứ 2 lúc 02:00)', value: '0 2 * * 1' },
   { label: 'Ngày 1 hàng tháng lúc 02:00', value: '0 2 1 * *' },
   { label: 'Tùy chỉnh', value: 'custom' },
+] as const;
+
+/** Frequency options for the visual backup-schedule builder (custom preset). */
+export const BACKUP_FREQUENCY_OPTIONS = [
+  { label: 'Hàng ngày', value: 'daily' },
+  { label: 'Hàng tuần', value: 'weekly' },
+  { label: 'Hàng tháng', value: 'monthly' },
+] as const;
+
+/** Weekday options for weekly backups. `value` follows cron convention (Sunday = 0). */
+export const BACKUP_WEEKDAY_OPTIONS = [
+  { label: 'Thứ 2', value: 1 },
+  { label: 'Thứ 3', value: 2 },
+  { label: 'Thứ 4', value: 3 },
+  { label: 'Thứ 5', value: 4 },
+  { label: 'Thứ 6', value: 5 },
+  { label: 'Thứ 7', value: 6 },
+  { label: 'Chủ nhật', value: 0 },
 ] as const;

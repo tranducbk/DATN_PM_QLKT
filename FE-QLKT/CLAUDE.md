@@ -118,9 +118,9 @@ export function FeatureForm({ onSuccess }: { onSuccess: () => void }) {
 
 ## API Calls
 
-Always use `apiClient` from `@/lib/api`:
+Always use the shared `apiClient` — components import it from `@/lib/http/apiClient` (a thin re-export of the single source defined in `@/lib/api`). Both paths resolve to the same instance; do not call `fetch`/`axios` directly:
 ```typescript
-import { apiClient } from '@/lib/api';
+import { apiClient } from '@/lib/http/apiClient';
 const result = await apiClient.getPersonnel({ page: 1, limit: 10 });
 ```
 
@@ -185,9 +185,8 @@ Khi 3+ component có structure giống nhau (vd: `Step2SelectPersonnelHCQKQT`, `
 
 Logic chuỗi danh hiệu nằm hoàn toàn ở BE. FE chỉ render:
 
-- **Hồ sơ hằng năm** trả về từ BE chứa: `cstdcs_lien_tuc`, `nckh_lien_tuc`, `du_dieu_kien_bkbqp/cstdtq/bkttcp`, `goi_y` (text tiếng Việt đã build sẵn), `chainContext` (chainStartYear, lastBkbqp/Cstdtq/BkttcpYear, streakSinceLast<flag>, missedBkbqp/Cstdtq).
-- Hồ sơ đơn vị: `dvqt_lien_tuc`, `du_dieu_kien_bk_tong_cuc/bk_thu_tuong`, `goi_y`.
+- **Hồ sơ hằng năm** trả về từ BE chứa: `cstdcs_lien_tuc`, `nckh_lien_tuc`, `du_dieu_kien_bkbqp/cstdtq/bkttcp`, `goi_y` (text tiếng Việt đã build sẵn).
+- Hồ sơ đơn vị: `dvqt_lien_tuc`, `du_dieu_kien_bkbqp/bkttcp`, `goi_y`.
 - **KHÔNG tự build text gợi ý** trên FE — luôn render `goi_y` từ BE để giữ consistency.
 - BKTTCP cá nhân là one-time per lifetime; sau khi nhận → BE trả `goi_y = "Phần mềm chưa hỗ trợ khen thưởng cao hơn ..."`.
 - BKTTCP đơn vị + BKBQP/CSTDTQ cá nhân: lặp lại theo chu kỳ. UI không cần special-case.
-- Hiển thị progress chu kỳ (vd "đang ở năm X/2 chu kỳ BKBQP"): tính từ `chainContext.streakSinceLast<flag>` chia `cycleYears` (2/3/7).

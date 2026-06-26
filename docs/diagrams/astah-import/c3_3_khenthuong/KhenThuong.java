@@ -71,7 +71,6 @@ class DanhHieuDonViHangNam {
     private String danh_hieu;
     private Boolean nhan_bkbqp;
     private Boolean nhan_bkttcp;
-    private String status;
     private String nguoi_tao_id;
 }
 
@@ -113,8 +112,8 @@ class HoSoDonViHangNam {
     private String id;
     private Integer nam;
     private Integer dvqt_lien_tuc;
-    private Boolean du_dieu_kien_bk_tong_cuc;
-    private Boolean du_dieu_kien_bk_thu_tuong;
+    private Boolean du_dieu_kien_bkbqp;
+    private Boolean du_dieu_kien_bkttcp;
 }
 
 class FileQuyetDinh {

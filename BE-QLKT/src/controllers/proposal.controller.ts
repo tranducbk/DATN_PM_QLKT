@@ -1,9 +1,5 @@
 import { Request, Response } from 'express';
 import proposalService from '../services/proposal';
-import hccsvvService from '../services/tenureMedal.service';
-import contributionAwardService from '../services/contributionMedal.service';
-import commemorativeMedalService from '../services/commemorativeMedal.service';
-import militaryFlagService from '../services/militaryFlag.service';
 import * as notificationHelper from '../helpers/notification';
 import { ROLES } from '../constants/roles.constants';
 import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
@@ -19,7 +15,7 @@ import { setFileSendHeaders } from '../helpers/file/fileResponseHeaders';
 import { resolveIdParam } from '../helpers/controllerHelper';
 import {
   applyManagerUnitFilter,
-  managerUnitFilterId,
+  buildAwardFilters,
   parseApproveBody,
   parseYearQuery,
   safeNotify,
@@ -27,6 +23,7 @@ import {
 } from './proposal/helpers';
 import type {
   ApproveProposalBody,
+  AwardFilterInput,
   AwardsFilterQuery,
   CheckDuplicateAwardQuery,
   CheckDuplicatePersonnelBatchBody,
@@ -38,10 +35,33 @@ import type {
   ProposalIdParams,
   RejectProposalBody,
   SubmitProposalBody,
-  UnitYearFilterQuery,
 } from './proposal/types';
 
 const ALL_PROPOSAL_TYPES = Object.values(PROPOSAL_TYPES);
+
+/**
+ * Builds the award filter map and applies MANAGER unit scoping. Sends a 403 and
+ * returns null when the manager's unit cannot be resolved — callers `return` on null.
+ * @param user - Authenticated user
+ * @param query - Award filter query
+ * @param res - Response (used only to emit the 403)
+ * @returns Filter map, or null when forbidden
+ */
+async function resolveAwardFilters(
+  user: { role: string; id: string },
+  query: AwardFilterInput,
+  res: Response
+): Promise<Record<string, unknown> | null> {
+  const filters = buildAwardFilters(query);
+  const unitResult = await applyManagerUnitFilter(user, filters, id =>
+    proposalService.getUserWithUnit(id)
+  );
+  if (unitResult === 'forbidden') {
+    ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
+    return null;
+  }
+  return filters;
+}
 
 class ProposalController {
   submitProposal = catchAsync(async (req: Request, res: Response) => {
@@ -49,13 +69,7 @@ class ProposalController {
     const body = req.body as SubmitProposalBody;
     const userId = user.id;
     const userRole = user.role;
-    const {
-      type = PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-      title_data,
-      nam,
-      thang,
-      ghi_chu,
-    } = body;
+    const { type = PROPOSAL_TYPES.CA_NHAN_HANG_NAM, title_data, nam, thang, ghi_chu } = body;
     if (!ALL_PROPOSAL_TYPES.includes(type as ProposalType)) {
       return ResponseHelper.badRequest(
         res,
@@ -81,7 +95,10 @@ class ProposalController {
     const attachedFiles = files?.attached_files || [];
     const parsedMonthRaw = typeof thang === 'string' ? parseInt(thang, 10) : Number(thang);
     const parsedMonth = Number.isInteger(parsedMonthRaw) ? parsedMonthRaw : null;
-    if (requiresProposalMonth(type as ProposalType) && (parsedMonth === null || parsedMonth < 1 || parsedMonth > 12)) {
+    if (
+      requiresProposalMonth(type as ProposalType) &&
+      (parsedMonth === null || parsedMonth < 1 || parsedMonth > 12)
+    ) {
       return ResponseHelper.badRequest(
         res,
         'Tháng là bắt buộc cho đề xuất HCCSVV/HCQKQT/KNC và phải nằm trong khoảng 1-12'
@@ -113,12 +130,7 @@ class ProposalController {
     const user = req.user!;
     const query = req.query as GetProposalsQuery;
     const { page, limit } = parsePagination(query);
-    const result = await proposalService.getProposals(
-      user.id,
-      user.role,
-      page,
-      limit
-    );
+    const result = await proposalService.getProposals(user.id, user.role, page, limit);
     return ResponseHelper.paginated(res, {
       message: 'Lấy danh sách đề xuất thành công',
       data: result.proposals,
@@ -254,20 +266,9 @@ class ProposalController {
   getAllAwards = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const query = req.query as AwardsFilterQuery;
-    const { don_vi_id, nam, danh_hieu } = query;
     const { page, limit } = parsePagination(query);
-    const filters: Record<string, unknown> = {};
-    if (don_vi_id) filters.don_vi_id = don_vi_id;
-    if (nam) filters.nam = nam;
-    if (danh_hieu) filters.danh_hieu = danh_hieu;
-    if (user.role === ROLES.MANAGER) {
-      const userWithUnit = await proposalService.getUserWithUnit(user.id);
-      if (!userWithUnit?.QuanNhan) {
-        return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-      }
-      const uid = managerUnitFilterId(userWithUnit.QuanNhan);
-      if (uid) filters.don_vi_id = uid;
-    }
+    const filters = await resolveAwardFilters(user, query, res);
+    if (!filters) return;
     const result = await proposalService.getAllAwards(filters, page, limit);
     return ResponseHelper.success(res, {
       message: 'Lấy danh sách khen thưởng thành công',
@@ -275,17 +276,11 @@ class ProposalController {
     });
   });
 
-
   exportAllAwardsExcel = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const query = req.query as AwardsFilterQuery;
-    const { don_vi_id, nam, danh_hieu } = query;
-    const filters: Record<string, unknown> = {};
-    if (don_vi_id) filters.don_vi_id = don_vi_id;
-    if (nam) filters.nam = nam;
-    if (danh_hieu) filters.danh_hieu = danh_hieu;
-    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
-    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
+    const filters = await resolveAwardFilters(user, query, res);
+    if (!filters) return;
     const buffer = await proposalService.exportAllAwardsExcel(filters);
     sendExcelResponse(res, buffer, 'danh_sach_khen_thuong');
   });
@@ -390,189 +385,6 @@ class ProposalController {
     }
     return ResponseHelper.success(res, {
       data: await proposalService.checkDuplicateUnitBatch(items),
-    });
-  });
-
-  getHCCSVVTemplate = catchAsync(async (req: Request, res: Response) => {
-    const buffer = await hccsvvService.exportTemplate();
-    sendExcelResponse(res, buffer, 'mau_nhap_hccsvv');
-  });
-
-  getAllHCCSVV = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const query = req.query as AwardsFilterQuery;
-    const { don_vi_id, nam, danh_hieu } = query;
-    const { page, limit } = parsePagination(query);
-    const filters: Record<string, unknown> = {};
-    if (don_vi_id) filters.don_vi_id = don_vi_id;
-    if (nam) filters.nam = nam;
-    if (danh_hieu) filters.danh_hieu = danh_hieu;
-    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
-    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-    return ResponseHelper.success(res, {
-      message: 'Lấy danh sách HCCSVV thành công',
-      data: await hccsvvService.getAll(filters, page, limit),
-    });
-  });
-
-  exportHCCSVVExcel = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const query = req.query as AwardsFilterQuery;
-    const { don_vi_id, nam, danh_hieu } = query;
-    const filters: Record<string, unknown> = {};
-    if (don_vi_id) filters.don_vi_id = don_vi_id;
-    if (nam) filters.nam = nam;
-    if (danh_hieu) filters.danh_hieu = danh_hieu;
-    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
-    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-    const buffer = await hccsvvService.exportToExcel(filters);
-    sendExcelResponse(res, buffer, 'danh_sach_hccsvv');
-  });
-
-  getHCCSVVStatistics = catchAsync(async (req: Request, res: Response) => {
-    return ResponseHelper.success(res, {
-      message: 'Lấy thống kê HCCSVV thành công',
-      data: await hccsvvService.getStatistics(),
-    });
-  });
-
-  getContributionAwardsTemplate = catchAsync(async (req: Request, res: Response) => {
-    const buffer = await contributionAwardService.exportTemplate();
-    sendExcelResponse(res, buffer, 'mau_nhap_hcbvtq');
-  });
-
-  importContributionAwards = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const file = req.file;
-    if (!file) {
-      return ResponseHelper.badRequest(res, 'Vui lòng gửi file Excel');
-    }
-    return ResponseHelper.success(res, {
-      message: 'Import Huân chương Bảo vệ Tổ quốc thành công',
-      data: await (async () => {
-        const preview = await contributionAwardService.previewImport(file.buffer);
-        return contributionAwardService.confirmImport(preview.valid, user.id);
-      })(),
-    });
-  });
-
-  getAllContributionAwards = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const query = req.query as AwardsFilterQuery;
-    const { don_vi_id, nam, danh_hieu } = query;
-    const { page, limit } = parsePagination(query);
-    const filters: Record<string, unknown> = {};
-    if (don_vi_id) filters.don_vi_id = don_vi_id;
-    if (nam) filters.nam = nam;
-    if (danh_hieu) filters.danh_hieu = danh_hieu;
-    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
-    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-    return ResponseHelper.success(res, {
-      message: 'Lấy danh sách HCBVTQ thành công',
-      data: await contributionAwardService.getAll(filters, page, limit),
-    });
-  });
-
-  exportContributionAwardsExcel = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const query = req.query as AwardsFilterQuery;
-    const { don_vi_id, nam, danh_hieu } = query;
-    const filters: Record<string, unknown> = {};
-    if (don_vi_id) filters.don_vi_id = don_vi_id;
-    if (nam) filters.nam = nam;
-    if (danh_hieu) filters.danh_hieu = danh_hieu;
-    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
-    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-    const buffer = await contributionAwardService.exportToExcel(filters);
-    sendExcelResponse(res, buffer, 'danh_sach_hcbvtq');
-  });
-
-  getContributionAwardsStatistics = catchAsync(async (req: Request, res: Response) => {
-    return ResponseHelper.success(res, {
-      message: 'Lấy thống kê HCBVTQ thành công',
-      data: await contributionAwardService.getStatistics(),
-    });
-  });
-
-  getCommemorativeMedalsTemplate = catchAsync(async (req: Request, res: Response) => {
-    const buffer = await commemorativeMedalService.exportTemplate();
-    sendExcelResponse(res, buffer, 'mau_nhap_knc_vsnxd_qdndvn');
-  });
-
-  getAllCommemorativeMedals = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const query = req.query as UnitYearFilterQuery;
-    const { don_vi_id, nam } = query;
-    const { page, limit } = parsePagination(query);
-    const filters: Record<string, unknown> = {};
-    if (don_vi_id) filters.don_vi_id = don_vi_id;
-    if (nam) filters.nam = nam;
-    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
-    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-    return ResponseHelper.success(res, {
-      message: 'Lấy danh sách Kỷ niệm chương thành công',
-      data: await commemorativeMedalService.getAll(filters, page, limit),
-    });
-  });
-
-  exportCommemorativeMedalsExcel = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const query = req.query as UnitYearFilterQuery;
-    const { don_vi_id, nam } = query;
-    const filters: Record<string, unknown> = {};
-    if (don_vi_id) filters.don_vi_id = don_vi_id;
-    if (nam) filters.nam = nam;
-    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
-    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-    const buffer = await commemorativeMedalService.exportToExcel(filters);
-    sendExcelResponse(res, buffer, 'danh_sach_knc_vsnxd');
-  });
-
-  getCommemorativeMedalsStatistics = catchAsync(async (req: Request, res: Response) => {
-    return ResponseHelper.success(res, {
-      message: 'Lấy thống kê Kỷ niệm chương thành công',
-      data: await commemorativeMedalService.getStatistics(),
-    });
-  });
-
-  getMilitaryFlagTemplate = catchAsync(async (req: Request, res: Response) => {
-    const buffer = await militaryFlagService.exportTemplate();
-    sendExcelResponse(res, buffer, 'mau_nhap_hcqkqt');
-  });
-
-  getAllMilitaryFlag = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const query = req.query as UnitYearFilterQuery;
-    const { don_vi_id, nam } = query;
-    const { page, limit } = parsePagination(query);
-    const filters: Record<string, unknown> = {};
-    if (don_vi_id) filters.don_vi_id = don_vi_id;
-    if (nam) filters.nam = nam;
-    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
-    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-    return ResponseHelper.success(res, {
-      message: 'Lấy danh sách HCQKQT thành công',
-      data: await militaryFlagService.getAll(filters, page, limit),
-    });
-  });
-
-  exportMilitaryFlagExcel = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
-    const query = req.query as UnitYearFilterQuery;
-    const { don_vi_id, nam } = query;
-    const filters: Record<string, unknown> = {};
-    if (don_vi_id) filters.don_vi_id = don_vi_id;
-    if (nam) filters.nam = nam;
-    const unitResult = await applyManagerUnitFilter(user, filters, id => proposalService.getUserWithUnit(id));
-    if (unitResult === 'forbidden') return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
-    const buffer = await militaryFlagService.exportToExcel(filters);
-    sendExcelResponse(res, buffer, 'danh_sach_hcqkqt');
-  });
-
-  getMilitaryFlagStatistics = catchAsync(async (req: Request, res: Response) => {
-    return ResponseHelper.success(res, {
-      message: 'Lấy thống kê HCQKQT thành công',
-      data: await militaryFlagService.getStatistics(),
     });
   });
 }

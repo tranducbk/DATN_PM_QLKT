@@ -3,7 +3,6 @@
 import {
   Card,
   Typography,
-  Breadcrumb,
   ConfigProvider,
   theme as antdTheme,
   Button,
@@ -11,8 +10,9 @@ import {
 } from 'antd';
 import { AccountCreateForm } from '@/components/accounts/AccountCreateForm';
 import Link from 'next/link';
-import { ArrowLeftOutlined, HomeOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined } from '@ant-design/icons';
 import { useTheme } from '@/components/ThemeProvider';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 
 const { Title } = Typography;
 
@@ -26,16 +26,9 @@ export default function PersonnelCreatePage() {
       }}
     >
       <div className="space-y-4 p-6">
-        <Breadcrumb
+        <PageBreadcrumb
           items={[
-            {
-              title: (
-                <Link href="/admin/dashboard">
-                  <HomeOutlined />
-                </Link>
-              ),
-            },
-            { title: <Link href="/admin/personnel">Quân nhân</Link> },
+            { title: 'Quân nhân', href: '/admin/personnel' },
             { title: 'Tạo mới' },
           ]}
         />

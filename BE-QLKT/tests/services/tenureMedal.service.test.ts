@@ -15,8 +15,8 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-describe('tenureMedal.service - getAll', () => {
-  it('Cho không có filter, Khi gọi getAll, Thì trả về data + pagination với where rỗng', async () => {
+describe('HCCSVV (niên hạn): danh sách', () => {
+  it('HCCSVV (niên hạn): lấy danh sách không lọc → trả về toàn bộ, sắp xếp năm giảm dần', async () => {
     prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([
       { id: 'hccsvv-1', quan_nhan_id: 'qn-1', nam: 2024, danh_hieu: DANH_HIEU_HCCSVV.HANG_BA },
     ]);
@@ -31,7 +31,7 @@ describe('tenureMedal.service - getAll', () => {
     expect(findArgs.orderBy).toEqual({ nam: 'desc' });
   });
 
-  it('Cho filter don_vi_id (CQDV) không include sub units, Khi getAll, Thì where dùng OR cho CQDV và DVTT trực tiếp', async () => {
+  it('HCCSVV (niên hạn): lọc theo đơn vị (CQDV) không gồm đơn vị con → lấy quân nhân thuộc CQDV hoặc DVTT trực tiếp', async () => {
     prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([]);
     prismaMock.khenThuongHCCSVV.count.mockResolvedValueOnce(0);
 
@@ -45,7 +45,7 @@ describe('tenureMedal.service - getAll', () => {
     expect(prismaMock.donViTrucThuoc.findMany).not.toHaveBeenCalled();
   });
 
-  it('Cho filter ho_ten + danh_hieu + pagination, Khi getAll, Thì where có contains insensitive và skip/take đúng', async () => {
+  it('HCCSVV (niên hạn): lọc theo họ tên và hạng kèm phân trang → tìm tên không phân biệt hoa thường, lọc đúng hạng và đúng trang', async () => {
     prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([]);
     prismaMock.khenThuongHCCSVV.count.mockResolvedValueOnce(0);
 
@@ -63,8 +63,8 @@ describe('tenureMedal.service - getAll', () => {
   });
 });
 
-describe('tenureMedal.service - getStatistics', () => {
-  it('Cho có data, Khi getStatistics, Thì trả về total + byRank + byYear', async () => {
+describe('HCCSVV (niên hạn): thống kê', () => {
+  it('HCCSVV (niên hạn): có dữ liệu → trả về tổng số kèm thống kê theo hạng và theo năm', async () => {
     prismaMock.khenThuongHCCSVV.groupBy
       .mockResolvedValueOnce([
         { danh_hieu: DANH_HIEU_HCCSVV.HANG_BA, _count: { id: 5 } },
@@ -84,8 +84,8 @@ describe('tenureMedal.service - getStatistics', () => {
   });
 });
 
-describe('tenureMedal.service - confirmImport (per-rank duplicate)', () => {
-  it('Cho personnel đã có HANG_BA, Khi confirmImport HANG_BA cùng người, Thì transaction upsert (không throw vì cùng rank)', async () => {
+describe('HCCSVV (niên hạn): nhập Excel (chống trùng theo từng hạng)', () => {
+  it('Nhập Excel HCCSVV: quân nhân đã có hạng Ba, nhập lại đúng hạng Ba → tạo (hoặc cập nhật) bản ghi (cùng hạng nên không báo lỗi)', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([
       { quan_nhan_id: 'qn-1', danh_hieu: DANH_HIEU_HCCSVV.HANG_BA, nam: 2020 },
@@ -114,7 +114,7 @@ describe('tenureMedal.service - confirmImport (per-rank duplicate)', () => {
     expect(prismaMock.khenThuongHCCSVV.upsert).toHaveBeenCalledTimes(1);
   });
 
-  it('Cho personnel đã có HANG_NHI, Khi confirmImport HANG_BA (rank thấp hơn), Thì throw ValidationError "hạng thấp hơn"', async () => {
+  it('Nhập Excel HCCSVV bị chặn: quân nhân đã có hạng Nhì, nhập hạng Ba (hạng thấp hơn) → báo "hạng thấp hơn" và không lưu', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([
       { quan_nhan_id: 'qn-1', danh_hieu: DANH_HIEU_HCCSVV.HANG_NHI, nam: 2020 },
@@ -145,8 +145,8 @@ describe('tenureMedal.service - confirmImport (per-rank duplicate)', () => {
   });
 });
 
-describe('tenureMedal.service - confirmImport (pending proposal conflict)', () => {
-  it('Cho personnel đang có đề xuất NIEN_HAN pending cùng danh hiệu, Khi confirmImport, Thì throw ValidationError "chờ duyệt"', async () => {
+describe('HCCSVV (niên hạn): nhập Excel (đang có đề xuất chờ duyệt trùng)', () => {
+  it('Nhập Excel HCCSVV bị chặn: quân nhân đang có đề xuất niên hạn cùng hạng chờ duyệt → báo "chờ duyệt" và không lưu', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([
       {
         id: 'prop-1',
@@ -184,8 +184,8 @@ describe('tenureMedal.service - confirmImport (pending proposal conflict)', () =
   });
 });
 
-describe('tenureMedal.service - deleteAward', () => {
-  it('Cho id hợp lệ, Khi deleteAward, Thì xoá record và trả về personnelId + message', async () => {
+describe('HCCSVV (niên hạn): xóa khen thưởng', () => {
+  it('HCCSVV (niên hạn): xóa bản ghi theo id hợp lệ → xóa thành công và trả về mã quân nhân kèm thông báo', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1' });
     const personnel = makePersonnel({ unit: cqdv, id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
     prismaMock.khenThuongHCCSVV.findUnique.mockResolvedValueOnce({
@@ -204,7 +204,7 @@ describe('tenureMedal.service - deleteAward', () => {
     expect(prismaMock.khenThuongHCCSVV.delete).toHaveBeenCalledWith({ where: { id: 'hccsvv-1' } });
   });
 
-  it('Cho id không tồn tại, Khi deleteAward, Thì throw NotFoundError', async () => {
+  it('HCCSVV (niên hạn) bị chặn: xóa bản ghi không tồn tại → báo không tìm thấy và không xóa', async () => {
     prismaMock.khenThuongHCCSVV.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -215,8 +215,8 @@ describe('tenureMedal.service - deleteAward', () => {
   });
 });
 
-describe('tenureMedal.service - getUserWithUnit', () => {
-  it('Cho userId hợp lệ, Khi getUserWithUnit, Thì query taiKhoan kèm QuanNhan unit ids', async () => {
+describe('HCCSVV (niên hạn): lấy đơn vị của tài khoản', () => {
+  it('HCCSVV (niên hạn): tra tài khoản theo id hợp lệ → trả về tài khoản kèm các mã đơn vị của quân nhân', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({
       id: 'acc-1',
       QuanNhan: { co_quan_don_vi_id: 'cqdv-1', don_vi_truc_thuoc_id: null },

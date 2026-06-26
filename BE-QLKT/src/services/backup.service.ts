@@ -1,6 +1,9 @@
 import fs from 'fs';
 import path from 'path';
-import { danhHieuHangNamRepository, danhHieuDonViHangNamRepository } from '../repositories/danhHieu.repository';
+import {
+  danhHieuHangNamRepository,
+  danhHieuDonViHangNamRepository,
+} from '../repositories/danhHieu.repository';
 import { contributionMedalRepository } from '../repositories/contributionMedal.repository';
 import { tenureMedalRepository } from '../repositories/tenureMedal.repository';
 import { adhocAwardRepository } from '../repositories/adhocAward.repository';
@@ -19,8 +22,11 @@ import { contributionProfileRepository } from '../repositories/contributionProfi
 import { annualProfileRepository } from '../repositories/annualProfile.repository';
 import { unitAnnualProfileRepository } from '../repositories/unitAnnualProfile.repository';
 import { systemSettingRepository } from '../repositories/systemSetting.repository';
+import { systemLogRepository } from '../repositories/systemLog.repository';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
+import { SYSTEM_ACTOR } from '../constants/roles.constants';
 import { getSetting, setSetting } from '../helpers/settingsHelper';
 
 interface BackupResult {
@@ -74,6 +80,7 @@ const TABLES = {
   HoSoDonViHangNam: 'HoSoDonViHangNam',
   FileQuyetDinh: 'FileQuyetDinh',
   SystemSetting: 'SystemSetting',
+  SystemLog: 'SystemLog',
 } as const;
 
 // PostgreSQL preserves identifier case only when quoted
@@ -101,6 +108,7 @@ const TRUNCATE_ORDER = [
   TABLES.DonViTrucThuoc,
   TABLES.CoQuanDonVi,
   TABLES.SystemSetting,
+  TABLES.SystemLog,
 ].map(quoteTable);
 
 const validFilename = (filename: string): boolean => FILENAME_PATTERN.test(filename);
@@ -203,6 +211,7 @@ class BackupService {
       hoSoDonViHangNam,
       fileQuyetDinh,
       systemSettings,
+      systemLog,
     ] = await Promise.all([
       coQuanDonViRepository.findManyRaw({}),
       donViTrucThuocRepository.findManyRaw({}),
@@ -235,6 +244,7 @@ class BackupService {
       unitAnnualProfileRepository.findManyRaw({}),
       decisionFileRepository.findManyRaw({}),
       systemSettingRepository.findManyRaw({}),
+      systemLogRepository.findManyRaw({}),
     ]);
 
     const allSets = [
@@ -259,6 +269,7 @@ class BackupService {
       hoSoDonViHangNam,
       fileQuyetDinh,
       systemSettings,
+      systemLog,
     ];
     const totalRecords = allSets.reduce((sum, arr) => sum + arr.length, 0);
 
@@ -303,6 +314,7 @@ class BackupService {
       buildInsertBlock(TABLES.HoSoDonViHangNam, hoSoDonViHangNam as Record<string, unknown>[]),
       buildInsertBlock(TABLES.FileQuyetDinh, fileQuyetDinh as Record<string, unknown>[]),
       buildInsertBlock(TABLES.SystemSetting, systemSettings as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.SystemLog, systemLog as Record<string, unknown>[]),
       `COMMIT;`,
     ];
 
@@ -311,9 +323,9 @@ class BackupService {
     } catch (error) {
       void writeSystemLog({
         userId: options.userId,
-        userRole: 'SYSTEM',
+        userRole: SYSTEM_ACTOR,
         action: AUDIT_ACTIONS.BACKUP_FAILED,
-        resource: 'backup',
+        resource: RESOURCE_SLUGS.BACKUP,
         description: `Sao lưu thất bại khi ghi tệp ${filename}: ${(error as Error).message}`,
         payload: { filename, type: options.type, error: (error as Error).message },
       });
@@ -324,9 +336,9 @@ class BackupService {
 
     void writeSystemLog({
       userId: options.userId,
-      userRole: 'SYSTEM',
+      userRole: SYSTEM_ACTOR,
       action: AUDIT_ACTIONS.BACKUP,
-      resource: 'backup',
+      resource: RESOURCE_SLUGS.BACKUP,
       description: `Sao lưu dữ liệu: ${filename} (${totalRecords} bản ghi, ${sizeKB} KB)`,
       payload: { filename, type: options.type, totalRecords, sizeKB },
     });
@@ -380,10 +392,10 @@ class BackupService {
     const filePath = this.getBackupFilePath(filename);
     fs.unlinkSync(filePath);
     void writeSystemLog({
-      userId: 'SYSTEM',
-      userRole: 'SYSTEM',
+      userId: SYSTEM_ACTOR,
+      userRole: SYSTEM_ACTOR,
       action: AUDIT_ACTIONS.DELETE,
-      resource: 'backup',
+      resource: RESOURCE_SLUGS.BACKUP,
       description: `Xóa file sao lưu: ${filename}`,
     });
   }
@@ -393,7 +405,10 @@ class BackupService {
    * @returns Count and list of deleted files
    */
   async cleanupOldBackups(): Promise<CleanupResult> {
-    const parsed = parseInt(await getSetting('backup_retention_days', String(DEFAULT_RETENTION_DAYS)), 10);
+    const parsed = parseInt(
+      await getSetting('backup_retention_days', String(DEFAULT_RETENTION_DAYS)),
+      10
+    );
     const retentionDays = isNaN(parsed) || parsed <= 0 ? DEFAULT_RETENTION_DAYS : parsed;
     const cutoff = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
 
@@ -407,6 +422,17 @@ class BackupService {
         fs.unlinkSync(filePath);
         deleted.push(filename);
       }
+    }
+
+    if (deleted.length > 0) {
+      void writeSystemLog({
+        userId: SYSTEM_ACTOR,
+        userRole: SYSTEM_ACTOR,
+        action: AUDIT_ACTIONS.DELETE,
+        resource: RESOURCE_SLUGS.BACKUP,
+        description: `Dọn backup cũ: đã xóa ${deleted.length} file (giữ ${retentionDays} ngày)`,
+        payload: { deleted: deleted.length, files: deleted, retentionDays },
+      });
     }
 
     return { deleted: deleted.length, files: deleted };

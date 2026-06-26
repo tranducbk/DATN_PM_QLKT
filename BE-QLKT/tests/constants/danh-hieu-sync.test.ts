@@ -7,8 +7,8 @@ import {
   DANH_HIEU_HCBVTQ,
   DANH_HIEU_DAC_BIET,
   DANH_HIEU_MAP,
-  CONG_HIEN_HE_SO_GROUPS,
-  CONG_HIEN_HE_SO_RANGES,
+  CONTRIBUTION_COEFFICIENT_GROUPS,
+  CONTRIBUTION_COEFFICIENT_RANGES,
 } from '../../src/constants/danhHieu.constants';
 
 const FE_CONSTS_PATH = path.resolve(
@@ -36,7 +36,7 @@ function extractObjectLiteral(
   return fn(...values) as Record<string, unknown>;
 }
 
-describe('danhHieu constants — BE/FE sync', () => {
+describe('Danh mục danh hiệu giữa backend và frontend phải đồng bộ', () => {
   // Loaded lazily so a missing FE file produces a single descriptive failure
   // instead of cascading errors across every assertion.
   let feSource: string;
@@ -51,46 +51,46 @@ describe('danhHieu constants — BE/FE sync', () => {
     feSource = fs.readFileSync(FE_CONSTS_PATH, 'utf8');
   });
 
-  it('DANH_HIEU_CA_NHAN_HANG_NAM matches', () => {
+  it('Danh hiệu cá nhân hằng năm khớp nhau giữa backend và frontend', () => {
     expect(extractObjectLiteral(feSource, 'DANH_HIEU_CA_NHAN_HANG_NAM')).toEqual(
       DANH_HIEU_CA_NHAN_HANG_NAM
     );
   });
 
-  it('DANH_HIEU_DON_VI_HANG_NAM: FE is a subset of BE (FE may omit BE-only aliases)', () => {
+  it('Danh hiệu đơn vị hằng năm: danh mục frontend là tập con của backend (frontend có thể bỏ bớt mã chỉ dùng ở backend)', () => {
     const fe = extractObjectLiteral(feSource, 'DANH_HIEU_DON_VI_HANG_NAM');
     for (const [key, value] of Object.entries(fe)) {
       expect((DANH_HIEU_DON_VI_HANG_NAM as Record<string, unknown>)[key]).toBe(value);
     }
   });
 
-  it('DANH_HIEU_HCCSVV matches', () => {
+  it('Các hạng HCCSVV khớp nhau giữa backend và frontend', () => {
     expect(extractObjectLiteral(feSource, 'DANH_HIEU_HCCSVV')).toEqual(DANH_HIEU_HCCSVV);
   });
 
-  it('DANH_HIEU_HCBVTQ matches', () => {
+  it('Các hạng HCBVTQ khớp nhau giữa backend và frontend', () => {
     expect(extractObjectLiteral(feSource, 'DANH_HIEU_HCBVTQ')).toEqual(DANH_HIEU_HCBVTQ);
   });
 
-  it('DANH_HIEU_DAC_BIET matches', () => {
+  it('Danh hiệu đặc biệt khớp nhau giữa backend và frontend', () => {
     expect(extractObjectLiteral(feSource, 'DANH_HIEU_DAC_BIET')).toEqual(DANH_HIEU_DAC_BIET);
   });
 
-  it('CONG_HIEN_HE_SO_GROUPS matches', () => {
-    expect(extractObjectLiteral(feSource, 'CONG_HIEN_HE_SO_GROUPS')).toEqual(
-      CONG_HIEN_HE_SO_GROUPS
+  it('Nhóm hệ số huân chương cống hiến khớp nhau giữa backend và frontend', () => {
+    expect(extractObjectLiteral(feSource, 'CONTRIBUTION_COEFFICIENT_GROUPS')).toEqual(
+      CONTRIBUTION_COEFFICIENT_GROUPS
     );
   });
 
-  it('CONG_HIEN_HE_SO_RANGES matches', () => {
+  it('Khoảng hệ số huân chương cống hiến khớp nhau giữa backend và frontend', () => {
     expect(
-      extractObjectLiteral(feSource, 'CONG_HIEN_HE_SO_RANGES', {
-        CONG_HIEN_HE_SO_GROUPS,
+      extractObjectLiteral(feSource, 'CONTRIBUTION_COEFFICIENT_RANGES', {
+        CONTRIBUTION_COEFFICIENT_GROUPS,
       })
-    ).toEqual(CONG_HIEN_HE_SO_RANGES);
+    ).toEqual(CONTRIBUTION_COEFFICIENT_RANGES);
   });
 
-  it('DANH_HIEU_MAP entries match for shared codes', () => {
+  it('Bảng tên danh hiệu khớp nhau với mọi mã danh hiệu dùng chung giữa backend và frontend', () => {
     const feMap = extractObjectLiteral(feSource, 'DANH_HIEU_MAP') as Record<string, string>;
     const sharedCodes = [
       ...Object.values(DANH_HIEU_CA_NHAN_HANG_NAM),

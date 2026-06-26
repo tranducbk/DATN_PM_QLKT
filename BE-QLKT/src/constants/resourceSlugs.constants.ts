@@ -16,6 +16,14 @@ export const RESOURCE_SLUGS = {
   PROFILES: 'profiles',
   AWARDS: 'awards',
   AUTH: 'auth',
+  AWARD_BULK: 'award-bulk',
+  SYSTEM_LOGS: 'system-logs',
+  BACKUP: 'backup',
+  DEV_ZONE: 'dev-zone',
 } as const;
 
-export type ResourceSlug = (typeof RESOURCE_SLUGS)[keyof typeof RESOURCE_SLUGS];
+/** Resources whose system logs are visible to SUPER_ADMIN only. */
+export const SUPER_ADMIN_ONLY_RESOURCES: string[] = [
+  RESOURCE_SLUGS.BACKUP,
+  RESOURCE_SLUGS.DEV_ZONE,
+];

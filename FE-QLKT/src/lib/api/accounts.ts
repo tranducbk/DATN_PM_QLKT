@@ -34,7 +34,7 @@ export async function updateAccount(id: string, body: Record<string, unknown>): 
 }
 
 /** Account creation payload aligned with backend `/api/accounts` fields. */
-export type CreateAccountBody = {
+type CreateAccountBody = {
   username: string;
   password: string;
   role: string;

@@ -225,12 +225,13 @@ class DecisionService {
         decision: decision,
         error: null,
       };
-    } catch (error: unknown) {
+    } catch (error) {
+      console.error('[decision.getFilePath] error:', error);
       return {
         success: false,
         file_path: null,
         decision: null,
-        error: error instanceof Error ? error.message : 'Có lỗi xảy ra khi lấy file quyết định',
+        error: 'Có lỗi xảy ra khi lấy file quyết định',
       };
     }
   }

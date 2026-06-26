@@ -1,8 +1,8 @@
 import { bulkCreateAwards } from '../../src/validations/awardBulk.validation';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 
-describe('awardBulk.validation - bulkCreateAwards (multipart string coercion)', () => {
-  it('DON_VI_HANG_NAM: nam/thang gửi dạng string (multipart) → coerce sang number, parse thành công', () => {
+describe('Kiểm tra dữ liệu tạo khen thưởng hàng loạt (chuyển chuỗi từ form multipart sang số)', () => {
+  it('Đề xuất đơn vị hằng năm: năm và tháng gửi dạng chuỗi → chuyển thành số, hợp lệ', () => {
     const result = bulkCreateAwards.safeParse({
       type: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: '2014',
@@ -19,7 +19,7 @@ describe('awardBulk.validation - bulkCreateAwards (multipart string coercion)', 
     }
   });
 
-  it('nam dạng string hợp lệ → KHÔNG còn lỗi "nam là bắt buộc"', () => {
+  it('Năm gửi dạng chuỗi hợp lệ → hợp lệ, không báo lỗi thiếu năm', () => {
     const result = bulkCreateAwards.safeParse({
       type: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: '2024',
@@ -34,7 +34,7 @@ describe('awardBulk.validation - bulkCreateAwards (multipart string coercion)', 
     }
   });
 
-  it('Loại cần tháng (NIEN_HAN) gửi thang string "6" → coerce 6, parse thành công', () => {
+  it('Loại bắt buộc nhập tháng (niên hạn): tháng gửi chuỗi "6" → chuyển thành số 6, hợp lệ', () => {
     const result = bulkCreateAwards.safeParse({
       type: PROPOSAL_TYPES.NIEN_HAN,
       nam: '2024',
@@ -49,7 +49,7 @@ describe('awardBulk.validation - bulkCreateAwards (multipart string coercion)', 
     }
   });
 
-  it('Loại cần tháng (NIEN_HAN) thiếu thang → fail "thang là bắt buộc cho loại đề xuất này"', () => {
+  it('Loại bắt buộc nhập tháng (niên hạn) thiếu tháng → không hợp lệ, báo "thang là bắt buộc cho loại đề xuất này"', () => {
     const result = bulkCreateAwards.safeParse({
       type: PROPOSAL_TYPES.NIEN_HAN,
       nam: '2024',
@@ -64,7 +64,7 @@ describe('awardBulk.validation - bulkCreateAwards (multipart string coercion)', 
     }
   });
 
-  it('Loại không cần tháng (DON_VI_HANG_NAM) thiếu thang → vẫn parse thành công', () => {
+  it('Loại không cần tháng (đơn vị hằng năm) thiếu tháng → vẫn hợp lệ', () => {
     const result = bulkCreateAwards.safeParse({
       type: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: '2024',
@@ -78,7 +78,7 @@ describe('awardBulk.validation - bulkCreateAwards (multipart string coercion)', 
     }
   });
 
-  it('thang gửi "undefined"/"null" (FE String(undefined)) → coi như rỗng, không lỗi với loại không cần tháng', () => {
+  it('Tháng gửi chuỗi "undefined"/"null" → coi như để trống, hợp lệ với loại không cần tháng', () => {
     const result = bulkCreateAwards.safeParse({
       type: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: '2024',

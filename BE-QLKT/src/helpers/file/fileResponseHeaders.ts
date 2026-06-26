@@ -24,7 +24,7 @@ import type { Response } from 'express';
  * @param filename - Original file name
  * @returns MIME type used for response headers
  */
-export function contentTypeFromFilename(filename: string): string {
+function contentTypeFromFilename(filename: string): string {
   const ext = path.extname(filename).toLowerCase();
   if (ext === '.pdf') return 'application/pdf';
   if (ext === '.doc') return 'application/msword';

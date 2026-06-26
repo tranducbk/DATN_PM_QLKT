@@ -25,6 +25,7 @@ import 'dotenv/config';
 import { PORT, warnInsecureCookieConfig } from './configs';
 import { prisma } from './models';
 import { initSocket } from './utils/socketService';
+import { initScheduledJobs } from './services/recalcCron.service';
 import { app } from './app';
 
 const httpServer = createServer(app);
@@ -42,7 +43,8 @@ async function testDatabaseConnection() {
 
 testDatabaseConnection();
 
-// Cron schedule managed by devZone.route.ts (reads from system_settings table)
+// Recalculation + auto-backup cron tasks (schedules read from system_settings)
+initScheduledJobs().catch(err => console.error('[Scheduler] init failed:', err));
 
 // Gắn Socket.IO vào CÙNG httpServer của Express (chung 1 port) → real-time
 // notification + force_logout. Phải init trước khi server.listen() bên dưới.

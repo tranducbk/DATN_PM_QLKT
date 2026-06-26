@@ -26,8 +26,8 @@ function buildItem(personnelId: string, danhHieu: string, override: Record<strin
   };
 }
 
-describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
-  it('duyệt thành công HCCSVV hạng ba (CQDV)', async () => {
+describe('Phê duyệt đề xuất Niên hạn (HCCSVV)', () => {
+  it('Phê duyệt thông thường: HCCSVV hạng Ba (CQDV) → tạo khen thưởng, đề xuất chuyển APPROVED', async () => {
     // Given: đề xuất NIEN_HAN PENDING với item hợp lệ
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1' });
     const personnel = makePersonnel({
@@ -41,7 +41,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_nien_han: [buildItem(personnel.id, DANH_HIEU_HCCSVV.HANG_BA)],
     });
@@ -76,13 +76,13 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
     );
   });
 
-  it('reject khi proposal thiếu tháng', async () => {
+  it('Phê duyệt bị chặn: đề xuất Niên hạn thiếu tháng → báo lỗi thiếu tháng', async () => {
     const proposal = makeProposal({
       id: 'p-nh-no-thang',
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2024,
       thang: null,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -95,7 +95,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
     expect(prismaMock.khenThuongHCCSVV.upsert).not.toHaveBeenCalled();
   });
 
-  it('throw NotFoundError khi proposalId không tồn tại', async () => {
+  it('Phê duyệt bị chặn: đề xuất Niên hạn không tồn tại → báo "Đề xuất không tồn tại"', async () => {
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -105,14 +105,14 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
     );
   });
 
-  it('reject khi proposal đã APPROVED', async () => {
+  it('Phê duyệt bị chặn: đề xuất Niên hạn đã được duyệt trước đó → báo đã phê duyệt', async () => {
     const proposal = makeProposal({
       id: 'p-nh-app',
       loai: PROPOSAL_TYPES.NIEN_HAN,
       status: PROPOSAL_STATUS.APPROVED,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
 
@@ -123,7 +123,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
     );
   });
 
-  it('reject HANG_NHI khi quân nhân chưa có HANG_BA', async () => {
+  it('Phê duyệt bị chặn: đề xuất HCCSVV hạng Nhì nhưng quân nhân chưa có hạng Ba → buộc nhận hạng Ba trước', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1' });
     const personnel = makePersonnel({
       unit: cqdv,
@@ -136,7 +136,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_nien_han: [buildItem(personnel.id, DANH_HIEU_HCCSVV.HANG_NHI)],
     });
@@ -161,7 +161,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
     expect(prismaMock.khenThuongHCCSVV.upsert).not.toHaveBeenCalled();
   });
 
-  it('reject HANG_NHI khi HANG_BA cùng năm — phải sau năm', async () => {
+  it('Phê duyệt bị chặn: đề xuất HCCSVV hạng Nhì cùng năm nhận hạng Ba → hạng Nhì phải sau năm nhận hạng Ba', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-2' });
     const personnel = makePersonnel({
       unit: cqdv,
@@ -174,7 +174,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_nien_han: [buildItem(personnel.id, DANH_HIEU_HCCSVV.HANG_NHI)],
     });
@@ -201,7 +201,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
     expect(prismaMock.khenThuongHCCSVV.upsert).not.toHaveBeenCalled();
   });
 
-  it('duyệt thành công HANG_NHAT đầy đủ tuần tự', async () => {
+  it('Phê duyệt thông thường: đề xuất HCCSVV hạng Nhất khi đã có hạng Ba rồi hạng Nhì đúng tuần tự → tạo khen thưởng', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-3' });
     const personnel = makePersonnel({
       unit: cqdv,
@@ -214,7 +214,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2025,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_nien_han: [buildItem(personnel.id, DANH_HIEU_HCCSVV.HANG_NHAT, { nam_nhan: 2025 })],
     });
@@ -242,14 +242,14 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
     expect(prismaMock.khenThuongHCCSVV.upsert).toHaveBeenCalledTimes(1);
   });
 
-  it('reject duplicate — đã có HCCSVV cùng hạng', async () => {
+  it('Phê duyệt bị chặn: quân nhân đã có HCCSVV cùng hạng → báo trùng', async () => {
     const personnel = makePersonnel({ id: 'qn-dup', ho_ten: 'Trần B' });
     const proposal = makeProposal({
       id: 'p-nh-dup',
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [buildItem(personnel.id, DANH_HIEU_HCCSVV.HANG_BA)],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -268,7 +268,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
     );
   });
 
-  it('regression: duplicate check exclude chính proposal đang duyệt (không self-match)', async () => {
+  it('Phê duyệt HCCSVV: bộ lọc chống trùng bỏ qua chính đề xuất đang duyệt → không tự báo trùng oan, vẫn duyệt được', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-self-nh' });
     const personnel = makePersonnel({
       unit: cqdv,
@@ -281,7 +281,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_nien_han: [buildItem(personnel.id, DANH_HIEU_HCCSVV.HANG_BA)],
     });
@@ -315,7 +315,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
     expect(dupCall![0].where.id).toEqual({ not: proposal.id });
   });
 
-  it('approve transaction rollback: missing personnel_id aggregates into ValidationError', async () => {
+  it('Phê duyệt bị chặn: một dòng thiếu thông tin quân nhân → hủy toàn bộ và gộp lý do lỗi', async () => {
     const personnel = makePersonnel({
       id: 'qn-msg-nh',
       ho_ten: 'QN MSG NIEN HAN',
@@ -326,7 +326,7 @@ describe('approveProposal — NIEN_HAN (HCCSVV)', () => {
       loai: PROPOSAL_TYPES.NIEN_HAN,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [
         buildItem(personnel.id, DANH_HIEU_HCCSVV.HANG_BA, { so_quyet_dinh: 'QD-NH-MSG-OK' }),
         {

@@ -33,62 +33,46 @@ class BangDeXuat {
 }
 
 interface ProposalStrategy {
-    LoaiDeXuat type = null;
+    LoaiDeXuat type;
     Object buildSubmitPayload(Object[] titleData, Object ctx);
-    String[] validateApprove(Object editedData, Object ctx);
     void importInTransaction(Object editedData, Object ctx, Object decisions, Object pdf, Object acc, Object tx);
-    String buildSuccessMessage(Object acc);
 }
 
 class CaNhanHangNamStrategy implements ProposalStrategy {
     public Object buildSubmitPayload(Object[] titleData, Object ctx) { return null; }
-    public String[] validateApprove(Object editedData, Object ctx) { return null; }
     public void importInTransaction(Object editedData, Object ctx, Object decisions, Object pdf, Object acc, Object tx) { }
-    public String buildSuccessMessage(Object acc) { return null; }
 }
 
 class DonViHangNamStrategy implements ProposalStrategy {
     public Object buildSubmitPayload(Object[] titleData, Object ctx) { return null; }
-    public String[] validateApprove(Object editedData, Object ctx) { return null; }
     public void importInTransaction(Object editedData, Object ctx, Object decisions, Object pdf, Object acc, Object tx) { }
-    public String buildSuccessMessage(Object acc) { return null; }
 }
 
 class HccsvvStrategy implements ProposalStrategy {
     public Object buildSubmitPayload(Object[] titleData, Object ctx) { return null; }
-    public String[] validateApprove(Object editedData, Object ctx) { return null; }
     public void importInTransaction(Object editedData, Object ctx, Object decisions, Object pdf, Object acc, Object tx) { }
-    public String buildSuccessMessage(Object acc) { return null; }
 }
 
 class HcbvtqStrategy implements ProposalStrategy {
     public Object buildSubmitPayload(Object[] titleData, Object ctx) { return null; }
-    public String[] validateApprove(Object editedData, Object ctx) { return null; }
     public void importInTransaction(Object editedData, Object ctx, Object decisions, Object pdf, Object acc, Object tx) { }
-    public String buildSuccessMessage(Object acc) { return null; }
 }
 
 class HcqkqtStrategy implements ProposalStrategy {
     private SingleMedalImporter singleMedalImporter;
     public Object buildSubmitPayload(Object[] titleData, Object ctx) { return null; }
-    public String[] validateApprove(Object editedData, Object ctx) { return null; }
     public void importInTransaction(Object editedData, Object ctx, Object decisions, Object pdf, Object acc, Object tx) { }
-    public String buildSuccessMessage(Object acc) { return null; }
 }
 
 class KncStrategy implements ProposalStrategy {
     private SingleMedalImporter singleMedalImporter;
     public Object buildSubmitPayload(Object[] titleData, Object ctx) { return null; }
-    public String[] validateApprove(Object editedData, Object ctx) { return null; }
     public void importInTransaction(Object editedData, Object ctx, Object decisions, Object pdf, Object acc, Object tx) { }
-    public String buildSuccessMessage(Object acc) { return null; }
 }
 
 class NckhStrategy implements ProposalStrategy {
     public Object buildSubmitPayload(Object[] titleData, Object ctx) { return null; }
-    public String[] validateApprove(Object editedData, Object ctx) { return null; }
     public void importInTransaction(Object editedData, Object ctx, Object decisions, Object pdf, Object acc, Object tx) { }
-    public String buildSuccessMessage(Object acc) { return null; }
 }
 
 class SingleMedalImporter {
@@ -100,13 +84,14 @@ class ProposalStrategyRegistry {
 }
 
 class ProposalRepository {
-    private BangDeXuat bangDeXuat;
     public BangDeXuat findById(String id) { return null; }
-    public BangDeXuat count(Object filter) { return null; }
-    public BangDeXuat groupByStatus() { return null; }
+    public Object groupByLoaiDeXuat(Object where) { return null; }
+    public Object groupByStatus(Object where) { return null; }
+    public int count(Object where) { return 0; }
     public BangDeXuat create(Object data) { return null; }
     public BangDeXuat update(String id, Object data) { return null; }
-    public void deleteMany(Object filter) { }
+    public void updateMany(Object where, Object data) { }
+    public void deleteMany(Object where) { }
     public void delete(String id) { }
 }
 
@@ -114,12 +99,20 @@ class ProposalService {
     private ProposalStrategyRegistry registry;
     private ProposalRepository proposalRepository;
     public BangDeXuat submitProposal(Object payload, Object ctx) { return null; }
-    public BangDeXuat getProposals(Object filter, String role, Object scope) { return null; }
+    public BangDeXuat[] getProposals(Object filter, String role, Object scope) { return null; }
     public BangDeXuat getProposalById(String id) { return null; }
     public BangDeXuat approveProposal(String id, Object editedData, String adminId, Object decisions, Object pdf) { return null; }
     public BangDeXuat rejectProposal(String id, String reason, String adminId) { return null; }
     public void deleteProposal(String id, String userId, String role) { }
+    public Object getPdfFile(String id, String loai) { return null; }
+    public Object getAllAwards(Object filter) { return null; }
+    public Object exportAllAwardsExcel(Object filter) { return null; }
+    public Object getAwardsStatistics(Object filter) { return null; }
+    public Object getUserWithUnit(String userId) { return null; }
     public Object checkDuplicateAward(Object ctx) { return null; }
+    public Object checkDuplicateUnitAward(Object ctx) { return null; }
+    public Object checkDuplicateBatch(Object ctx) { return null; }
+    public Object checkDuplicateUnitBatch(Object ctx) { return null; }
 }
 
 class ProposalController {
@@ -128,8 +121,14 @@ class ProposalController {
     public void getProposals() { }
     public void getProposalById() { }
     public void approveProposal() { }
+    public void getPdfFile() { }
     public void rejectProposal() { }
-    public void deleteProposal() { }
-    public void checkDuplicateAward() { }
     public void getAllAwards() { }
+    public void exportAllAwardsExcel() { }
+    public void deleteProposal() { }
+    public void getAwardsStatistics() { }
+    public void checkDuplicateAward() { }
+    public void checkDuplicateUnitAward() { }
+    public void checkDuplicateBatch() { }
+    public void checkDuplicateUnitBatch() { }
 }

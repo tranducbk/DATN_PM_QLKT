@@ -19,6 +19,8 @@ import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/http/apiClient';
 import { calculateTotalMonths } from './serviceDuration';
 import { usePersonnelList } from './usePersonnelList';
+import { StepGuide } from './StepGuide';
+import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
 import {
   sttColumn,
   hoTenWithUnitColumn,
@@ -440,20 +442,15 @@ export function Step2SelectPersonnelHCQKQT({
 
   return (
     <div>
-      <Alert
-        message={`Bước 2: Lựa chọn quân nhân - ${AWARD_TAB_LABELS.HCQKQT}`}
-        description={
-          <div>
-            <p>1. Chọn năm và tháng đề xuất để hệ thống tính điều kiện phục vụ theo đúng kỳ xét.</p>
-            <p>2. Lựa chọn quân nhân đủ điều kiện từ danh sách.</p>
-            <p>3. Đối chiếu thông tin thời gian phục vụ trước khi xác nhận.</p>
-            <p>4. Hoàn tất lựa chọn, nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu.</p>
-          </div>
-        }
-        type="info"
-        showIcon
+      <StepGuide
+        title={stepGuideTitle(2, 'Lựa chọn quân nhân', AWARD_TAB_LABELS.HCQKQT)}
         icon={<TrophyOutlined />}
-        style={{ marginBottom: 24 }}
+        steps={[
+          GUIDE_LINES.pickYearMonth,
+          GUIDE_LINES.selectEligible,
+          'Đối chiếu thông tin thời gian phục vụ trước khi xác nhận.',
+          GUIDE_LINES.nextToTitles,
+        ]}
       />
 
       {/* Upload Excel Section */}

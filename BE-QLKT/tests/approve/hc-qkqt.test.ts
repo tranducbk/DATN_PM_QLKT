@@ -30,8 +30,8 @@ function buildItem(personnelId: string, override: Record<string, unknown> = {}) 
   };
 }
 
-describe('approveProposal — HC_QKQT', () => {
-  it('duyệt thành công khi đủ 25 năm', async () => {
+describe('Phê duyệt đề xuất HC QKQT', () => {
+  it('Phê duyệt thông thường: quân nhân đủ 25 năm phục vụ → tạo HC QKQT, đề xuất chuyển APPROVED', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1' });
     const personnel = makePersonnel({
       unit: cqdv,
@@ -44,7 +44,7 @@ describe('approveProposal — HC_QKQT', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_nien_han: [buildItem(personnel.id)],
     });
@@ -70,7 +70,7 @@ describe('approveProposal — HC_QKQT', () => {
     expect(prismaMock.bangDeXuat.updateMany.mock.calls[0][0].data.status).toBe(PROPOSAL_STATUS.APPROVED);
   });
 
-  it('reject khi chưa đủ 25 năm', async () => {
+  it('Phê duyệt bị chặn: quân nhân chưa đủ 25 năm phục vụ → chưa đủ điều kiện HC QKQT', async () => {
     const personnel = makePersonnel({
       id: 'qn-short',
       ho_ten: 'Trần B',
@@ -81,7 +81,7 @@ describe('approveProposal — HC_QKQT', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [buildItem(personnel.id)],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -101,7 +101,7 @@ describe('approveProposal — HC_QKQT', () => {
     expect(prismaMock.huanChuongQuanKyQuyetThang.create).not.toHaveBeenCalled();
   });
 
-  it('reject khi thiếu ngay_nhap_ngu', async () => {
+  it('Phê duyệt bị chặn: quân nhân thiếu ngày nhập ngũ → không tính được thời gian phục vụ, chưa đủ điều kiện', async () => {
     const personnel = makePersonnel({
       id: 'qn-no-nn',
       ho_ten: 'Lê C',
@@ -112,7 +112,7 @@ describe('approveProposal — HC_QKQT', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [buildItem(personnel.id)],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -129,13 +129,13 @@ describe('approveProposal — HC_QKQT', () => {
     expect(err.message).toContain(HCQKQT_MISSING_NHAP_NGU(personnel.ho_ten));
   });
 
-  it('reject khi proposal thiếu tháng', async () => {
+  it('Phê duyệt bị chặn: đề xuất HC QKQT thiếu tháng → báo lỗi thiếu tháng', async () => {
     const proposal = makeProposal({
       id: 'p-hcqkqt-no-thang',
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: null,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -147,7 +147,7 @@ describe('approveProposal — HC_QKQT', () => {
     );
   });
 
-  it('reject duplicate — quân nhân đã có HC_QKQT', async () => {
+  it('Phê duyệt bị chặn: quân nhân đã có HC QKQT trên hệ thống → báo trùng', async () => {
     const personnel = makePersonnel({
       id: 'qn-dup',
       ho_ten: 'Phạm D',
@@ -158,7 +158,7 @@ describe('approveProposal — HC_QKQT', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [buildItem(personnel.id)],
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
@@ -176,7 +176,7 @@ describe('approveProposal — HC_QKQT', () => {
     );
   });
 
-  it('regression: duplicate check exclude chính proposal đang duyệt (không self-match)', async () => {
+  it('Phê duyệt HC QKQT: bộ lọc chống trùng bỏ qua chính đề xuất đang duyệt → không tự báo trùng oan, vẫn duyệt được', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-self-hcqkqt' });
     const personnel = makePersonnel({
       unit: cqdv,
@@ -189,7 +189,7 @@ describe('approveProposal — HC_QKQT', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_nien_han: [buildItem(personnel.id)],
     });

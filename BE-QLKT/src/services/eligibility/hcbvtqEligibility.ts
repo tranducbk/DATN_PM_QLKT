@@ -40,20 +40,20 @@ import { positionHistoryRepository } from '../../repositories/positionHistory.re
  * ════════════════════════════════════════════════════════════════════════════
  */
 import {
-  CONG_HIEN_BASE_REQUIRED_MONTHS,
-  CONG_HIEN_FEMALE_REQUIRED_MONTHS,
-  CONG_HIEN_HE_SO_GROUPS,
+  CONTRIBUTION_BASE_REQUIRED_MONTHS,
+  CONTRIBUTION_FEMALE_REQUIRED_MONTHS,
   DANH_HIEU_HCBVTQ,
   HCBVTQ_RANK_KEYS,
-  type CongHienHeSoGroup,
+  cumulativeMonthsForHcbvtqRank,
+  type ContributionCoefficientGroup,
 } from '../../constants/danhHieu.constants';
 import { GENDER } from '../../constants/gender.constants';
 import {
   aggregatePositionMonthsByGroup,
   type PositionMonthsByGroup,
-} from './congHienMonthsAggregator';
+} from './contributionMonthsAggregator';
 
-export type HcbvtqRank = (typeof HCBVTQ_RANK_KEYS)[keyof typeof HCBVTQ_RANK_KEYS];
+type HcbvtqRank = (typeof HCBVTQ_RANK_KEYS)[keyof typeof HCBVTQ_RANK_KEYS];
 
 export interface HCBVTQRankCheckResult {
   rank: HcbvtqRank | null;
@@ -63,7 +63,7 @@ export interface HCBVTQRankCheckResult {
   requiredMonths: number;
 }
 
-export interface HCBVTQEvaluationContext {
+interface HCBVTQEvaluationContext {
   monthsByPersonnel: Map<string, PositionMonthsByGroup>;
   genderByPersonnel: Map<string, string | null>;
   hoTenByPersonnel: Map<string, string>;
@@ -74,10 +74,10 @@ export interface HCBVTQEvaluationContext {
  * @param gioiTinh - Personnel gender (GENDER.MALE / GENDER.FEMALE / null)
  * @returns 80 months for female, 120 months otherwise
  */
-export function requiredCongHienMonths(gioiTinh: string | null | undefined): number {
+export function requiredContributionMonths(gioiTinh: string | null | undefined): number {
   return gioiTinh === GENDER.FEMALE
-    ? CONG_HIEN_FEMALE_REQUIRED_MONTHS
-    : CONG_HIEN_BASE_REQUIRED_MONTHS;
+    ? CONTRIBUTION_FEMALE_REQUIRED_MONTHS
+    : CONTRIBUTION_BASE_REQUIRED_MONTHS;
 }
 
 /**
@@ -160,7 +160,7 @@ export function classifyHCBVTQRank(danhHieu: string | null | undefined): {
 
 /**
  * Picks the cumulative month total for a given HCBVTQ rank.
- * HANG_NHAT only counts 0.9-1.0; HANG_NHI counts 0.8 + 0.9-1.0; HANG_BA counts all.
+ * Delegates to the shared group-to-rank rule so every eligibility path stays in sync.
  * @param months - Months by hệ số group
  * @param rank - HCBVTQ rank key
  * @returns Cumulative months relevant for the rank
@@ -169,12 +169,7 @@ export function cumulativeMonthsForRank(
   months: PositionMonthsByGroup,
   rank: HcbvtqRank
 ): number {
-  const m07 = months[CONG_HIEN_HE_SO_GROUPS.LEVEL_07] ?? 0;
-  const m08 = months[CONG_HIEN_HE_SO_GROUPS.LEVEL_08] ?? 0;
-  const m0910 = months[CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10] ?? 0;
-  if (rank === HCBVTQ_RANK_KEYS.HANG_NHAT) return m0910;
-  if (rank === HCBVTQ_RANK_KEYS.HANG_NHI) return m08 + m0910;
-  return m07 + m08 + m0910;
+  return cumulativeMonthsForHcbvtqRank(months, rank);
 }
 
 /**
@@ -190,7 +185,7 @@ export function evaluateHCBVTQRank(
   months: PositionMonthsByGroup,
   gioiTinh: string | null | undefined
 ): HCBVTQRankCheckResult {
-  const requiredMonths = requiredCongHienMonths(gioiTinh);
+  const requiredMonths = requiredContributionMonths(gioiTinh);
   const { rank, rankName } = classifyHCBVTQRank(danhHieu);
   if (!rank) {
     return { rank: null, rankName: '', eligible: false, totalMonths: 0, requiredMonths };
@@ -215,7 +210,7 @@ export function evaluateHCBVTQRank(
 export function getMonthsByGroup(
   ctx: HCBVTQEvaluationContext,
   personnelId: string,
-  group: CongHienHeSoGroup
+  group: ContributionCoefficientGroup
 ): number {
   return ctx.monthsByPersonnel.get(personnelId)?.[group] ?? 0;
 }

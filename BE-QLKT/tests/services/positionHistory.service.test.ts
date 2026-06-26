@@ -32,8 +32,8 @@ function makePositionStub(heSo = 0.5) {
   return { he_so_chuc_vu: heSo };
 }
 
-describe('positionHistory.service - createPositionHistory', () => {
-  it('tạo record mới với chức vụ + ngày bắt đầu, snapshot hệ số chức vụ', async () => {
+describe('Lịch sử chức vụ: thêm dòng lịch sử', () => {
+  it('Lịch sử chức vụ: thêm dòng có chức vụ và ngày bắt đầu → chụp (snapshot) hệ số chức vụ, tính số tháng', async () => {
     // Cho: personnel & position tồn tại, chưa có lịch sử
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(makePersonnelStub());
     prismaMock.chucVu.findUnique.mockResolvedValueOnce(makePositionStub(0.7));
@@ -65,7 +65,7 @@ describe('positionHistory.service - createPositionHistory', () => {
     expect(result).toEqual(created);
   });
 
-  it('override hệ số chức vụ khi caller cung cấp he_so_chuc_vu', async () => {
+  it('Lịch sử chức vụ: người dùng tự nhập hệ số chức vụ → lưu đúng hệ số nhập tay, bỏ qua hệ số mặc định của chức vụ', async () => {
     // Cho: caller truyền he_so_chuc_vu tùy chỉnh (vd: bản ghi lịch sử)
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(makePersonnelStub());
     prismaMock.chucVu.findUnique.mockResolvedValueOnce(makePositionStub(0.5));
@@ -86,7 +86,7 @@ describe('positionHistory.service - createPositionHistory', () => {
     expect(createArgs.data.he_so_chuc_vu).toBe(0.9);
   });
 
-  it('tạo record với ngày kết thúc < ngày bắt đầu → ValidationError', async () => {
+  it('Lịch sử chức vụ: thêm dòng có ngày kết thúc trước ngày bắt đầu → bị chặn, không lưu', async () => {
     // Khi / Thì: validate trước khi gọi DB
     await expectError(
       positionHistoryService.createPositionHistory({
@@ -101,7 +101,7 @@ describe('positionHistory.service - createPositionHistory', () => {
     expect(prismaMock.lichSuChucVu.create).not.toHaveBeenCalled();
   });
 
-  it('thiếu personnel_id → ValidationError', async () => {
+  it('Lịch sử chức vụ: thêm dòng thiếu quân nhân → bị chặn', async () => {
     await expectError(
       positionHistoryService.createPositionHistory({
         personnel_id: '',
@@ -113,7 +113,7 @@ describe('positionHistory.service - createPositionHistory', () => {
     );
   });
 
-  it('thiếu chuc_vu_id → ValidationError', async () => {
+  it('Lịch sử chức vụ: thêm dòng thiếu chức vụ → bị chặn', async () => {
     await expectError(
       positionHistoryService.createPositionHistory({
         personnel_id: PERSONNEL_ID,
@@ -125,7 +125,7 @@ describe('positionHistory.service - createPositionHistory', () => {
     );
   });
 
-  it('thiếu ngày bắt đầu → ValidationError', async () => {
+  it('Lịch sử chức vụ: thêm dòng thiếu ngày bắt đầu → bị chặn', async () => {
     await expectError(
       positionHistoryService.createPositionHistory({
         personnel_id: PERSONNEL_ID,
@@ -137,7 +137,7 @@ describe('positionHistory.service - createPositionHistory', () => {
     );
   });
 
-  it('quân nhân không tồn tại → NotFoundError', async () => {
+  it('Lịch sử chức vụ: thêm dòng cho quân nhân không tồn tại → bị chặn', async () => {
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -151,7 +151,7 @@ describe('positionHistory.service - createPositionHistory', () => {
     );
   });
 
-  it('chức vụ không tồn tại → NotFoundError', async () => {
+  it('Lịch sử chức vụ: thêm dòng với chức vụ không tồn tại → bị chặn', async () => {
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(makePersonnelStub());
     prismaMock.chucVu.findUnique.mockResolvedValueOnce(null);
 
@@ -166,7 +166,7 @@ describe('positionHistory.service - createPositionHistory', () => {
     );
   });
 
-  it('tạo 2 record cùng QN có khoảng thời gian overlap → AppError 409', async () => {
+  it('Lịch sử chức vụ: thêm dòng chồng lấn thời gian với dòng đã có của cùng quân nhân → bị chặn (409), không lưu', async () => {
     // Cho: bản ghi đã đóng 2023-01-01 → 2023-12-31
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(makePersonnelStub());
     prismaMock.chucVu.findUnique.mockResolvedValueOnce(makePositionStub(0.5));
@@ -192,7 +192,7 @@ describe('positionHistory.service - createPositionHistory', () => {
     expect(prismaMock.lichSuChucVu.create).not.toHaveBeenCalled();
   });
 
-  it('tạo 2 record không overlap → success', async () => {
+  it('Lịch sử chức vụ: thêm dòng không chồng lấn thời gian (bắt đầu sau khi dòng cũ kết thúc) → lưu được', async () => {
     // Cho: bản ghi đã đóng 2022-01-01 → 2022-12-31
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(makePersonnelStub());
     prismaMock.chucVu.findUnique.mockResolvedValueOnce(makePositionStub(0.5));
@@ -218,8 +218,8 @@ describe('positionHistory.service - createPositionHistory', () => {
   });
 });
 
-describe('positionHistory.service - updatePositionHistory', () => {
-  it('update ngày kết thúc → tự recalc so_thang', async () => {
+describe('Lịch sử chức vụ: sửa dòng lịch sử', () => {
+  it('Lịch sử chức vụ: sửa ngày kết thúc → tự tính lại số tháng (15/1 → 15/12 = 11 tháng)', async () => {
     // Cho: bản ghi đã đóng tồn tại
     const existing = {
       id: 'lscv-1',
@@ -245,7 +245,31 @@ describe('positionHistory.service - updatePositionHistory', () => {
     expect(result.warning).toBeNull();
   });
 
-  it('update ngày bắt đầu sau ngày kết thúc → ValidationError', async () => {
+  it('Lịch sử chức vụ: kết thúc thiếu đúng 1 ngày (14 chưa tới mốc ngày 15) → số tháng giảm 1, không làm tròn lên', async () => {
+    const existing = {
+      id: 'lscv-day-edge',
+      quan_nhan_id: PERSONNEL_ID,
+      chuc_vu_id: CHUC_VU_ID,
+      he_so_chuc_vu: 0.5,
+      ngay_bat_dau: new Date('2023-01-15'),
+      ngay_ket_thuc: new Date('2023-06-15'),
+      so_thang: 5,
+    };
+    prismaMock.lichSuChucVu.findUnique.mockResolvedValueOnce(existing);
+    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce([]);
+    prismaMock.lichSuChucVu.update.mockResolvedValueOnce({ ...existing, so_thang: 10 });
+
+    // Khi: kết thúc 2023-12-14 — thiếu đúng 1 ngày so với mốc ngày 15
+    await positionHistoryService.updatePositionHistory(existing.id, {
+      ngay_ket_thuc: '2023-12-14',
+    });
+
+    // Thì: 15/1 → 14/12 = 10 tháng (không phải 11), vì ngày kết thúc < ngày bắt đầu
+    const updateArgs = prismaMock.lichSuChucVu.update.mock.calls[0][0];
+    expect(updateArgs.data.so_thang).toBe(10);
+  });
+
+  it('Lịch sử chức vụ: sửa ngày bắt đầu thành sau ngày kết thúc → bị chặn, không lưu', async () => {
     // Cho: bản ghi đã đóng tồn tại
     prismaMock.lichSuChucVu.findUnique.mockResolvedValueOnce({
       id: 'lscv-1',
@@ -268,7 +292,7 @@ describe('positionHistory.service - updatePositionHistory', () => {
     expect(prismaMock.lichSuChucVu.update).not.toHaveBeenCalled();
   });
 
-  it('update khoảng thời gian gây overlap với record khác → AppError 409', async () => {
+  it('Lịch sử chức vụ: sửa khoảng thời gian gây chồng lấn với dòng khác → bị chặn (409)', async () => {
     // Cho: bản ghi target + bản ghi anh em
     prismaMock.lichSuChucVu.findUnique.mockResolvedValueOnce({
       id: 'lscv-1',
@@ -297,7 +321,7 @@ describe('positionHistory.service - updatePositionHistory', () => {
     );
   });
 
-  it('update record không tồn tại → NotFoundError', async () => {
+  it('Lịch sử chức vụ: sửa dòng không tồn tại → bị chặn', async () => {
     prismaMock.lichSuChucVu.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -310,8 +334,8 @@ describe('positionHistory.service - updatePositionHistory', () => {
   });
 });
 
-describe('positionHistory.service - deletePositionHistory', () => {
-  it('xóa record → trả về quan_nhan_id để gọi recalc downstream', async () => {
+describe('Lịch sử chức vụ: xoá dòng lịch sử', () => {
+  it('Lịch sử chức vụ: xoá dòng đã đóng → trả về quân nhân để tính lại tổng số tháng', async () => {
     // Cho: bản ghi tồn tại
     const existing = {
       id: 'lscv-1',
@@ -334,7 +358,7 @@ describe('positionHistory.service - deletePositionHistory', () => {
     expect(result.message).toBe('Xóa lịch sử chức vụ thành công');
   });
 
-  it('xóa record không tồn tại → NotFoundError', async () => {
+  it('Lịch sử chức vụ: xoá dòng không tồn tại → bị chặn', async () => {
     prismaMock.lichSuChucVu.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -345,7 +369,7 @@ describe('positionHistory.service - deletePositionHistory', () => {
     expect(prismaMock.lichSuChucVu.delete).not.toHaveBeenCalled();
   });
 
-  it('xóa chức vụ hiện tại (ngay_ket_thuc = null) → ValidationError, không gọi delete', async () => {
+  it('Lịch sử chức vụ: xoá dòng chức vụ hiện tại (chưa kết thúc) → bị chặn, không xoá', async () => {
     const current = {
       id: 'lscv-current',
       quan_nhan_id: PERSONNEL_ID,
@@ -366,8 +390,8 @@ describe('positionHistory.service - deletePositionHistory', () => {
   });
 });
 
-describe('positionHistory.service - getPositionHistory', () => {
-  it('thiếu personnelId → ValidationError', async () => {
+describe('Lịch sử chức vụ: tra cứu lịch sử của quân nhân', () => {
+  it('Lịch sử chức vụ: tra cứu thiếu quân nhân → bị chặn', async () => {
     await expectError(
       positionHistoryService.getPositionHistory(''),
       ValidationError,
@@ -375,7 +399,7 @@ describe('positionHistory.service - getPositionHistory', () => {
     );
   });
 
-  it('quân nhân không tồn tại → NotFoundError', async () => {
+  it('Lịch sử chức vụ: tra cứu của quân nhân không tồn tại → bị chặn', async () => {
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -385,7 +409,7 @@ describe('positionHistory.service - getPositionHistory', () => {
     );
   });
 
-  it('lấy history sort theo ngay_bat_dau DESC, recompute so_thang cho record đang mở', async () => {
+  it('Lịch sử chức vụ: tra cứu → sắp xếp mới nhất trước, tính lại số tháng cho dòng đang mở', async () => {
     // Cho: 2 bản ghi — 1 đã đóng, 1 đang mở (không có ngay_ket_thuc)
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(makePersonnelStub());
     const openStart = new Date();
@@ -427,5 +451,55 @@ describe('positionHistory.service - getPositionHistory', () => {
     expect(openRecord?.so_thang).toBeLessThanOrEqual(6);
     const closedRecord = result.find(r => r.id === 'lscv-closed');
     expect(closedRecord?.so_thang).toBe(12);
+  });
+
+  it('Lịch sử chức vụ: hiển thị tên hiện hành khi chức vụ còn, dùng tên đã chụp (snapshot) khi chức vụ đã xoá', async () => {
+    prismaMock.quanNhan.findUnique.mockResolvedValueOnce(makePersonnelStub());
+    const records = [
+      {
+        id: 'lscv-live',
+        quan_nhan_id: PERSONNEL_ID,
+        chuc_vu_id: CHUC_VU_ID,
+        ten_chuc_vu: 'Tên cũ trong snapshot',
+        ten_don_vi_truc_thuoc: 'ĐV cũ trong snapshot',
+        ten_co_quan_don_vi: null,
+        ngay_bat_dau: new Date('2022-01-01'),
+        ngay_ket_thuc: new Date('2023-01-01'),
+        so_thang: 12,
+        ChucVu: {
+          ten_chuc_vu: 'Trưởng ban (live)',
+          CoQuanDonVi: null,
+          DonViTrucThuoc: {
+            ten_don_vi: 'Ban A (live)',
+            CoQuanDonVi: { ten_don_vi: 'Phòng X (live)' },
+          },
+        },
+      },
+      {
+        id: 'lscv-deleted',
+        quan_nhan_id: PERSONNEL_ID,
+        chuc_vu_id: null,
+        ten_chuc_vu: 'Trợ lý (snapshot)',
+        ten_don_vi_truc_thuoc: 'Ban B (snapshot)',
+        ten_co_quan_don_vi: 'Phòng Y (snapshot)',
+        ngay_bat_dau: new Date('2019-01-01'),
+        ngay_ket_thuc: new Date('2020-01-01'),
+        so_thang: 12,
+        ChucVu: null,
+      },
+    ];
+    prismaMock.lichSuChucVu.findMany.mockResolvedValueOnce(records);
+
+    const result = await positionHistoryService.getPositionHistory(PERSONNEL_ID);
+
+    const liveRow = result.find(r => r.id === 'lscv-live');
+    expect(liveRow?.ten_chuc_vu).toBe('Trưởng ban (live)');
+    expect(liveRow?.ten_don_vi_truc_thuoc).toBe('Ban A (live)');
+    expect(liveRow?.ten_co_quan_don_vi).toBe('Phòng X (live)');
+
+    const deletedRow = result.find(r => r.id === 'lscv-deleted');
+    expect(deletedRow?.ten_chuc_vu).toBe('Trợ lý (snapshot)');
+    expect(deletedRow?.ten_don_vi_truc_thuoc).toBe('Ban B (snapshot)');
+    expect(deletedRow?.ten_co_quan_don_vi).toBe('Phòng Y (snapshot)');
   });
 });

@@ -3,7 +3,7 @@
 import { Modal, Button, Descriptions, Tabs, Table, Tag, Typography, message } from 'antd';
 import { HistoryOutlined, DownloadOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import { previewFileWithApi } from '@/lib/file/filePreview';
+import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
 
 const { Text } = Typography;
@@ -65,12 +65,7 @@ export function PersonnelRewardHistoryModal({
       message.warning('Không có file quyết định');
       return;
     }
-    // Extract filename from path (uploads/decisions/filename.pdf -> filename.pdf)
-    const filename = filePath.split('/').pop() || 'quyet-dinh.pdf';
-    await previewFileWithApi(
-      `/api/annual-rewards/decision-files/${filename}`,
-      `${soQuyetDinh}.pdf`
-    );
+    await downloadDecisionFile(soQuyetDinh);
   };
 
   const cstdcsColumns: ColumnsType<any> = [

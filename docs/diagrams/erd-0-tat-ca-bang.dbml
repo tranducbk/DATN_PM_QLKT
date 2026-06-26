@@ -78,8 +78,11 @@ Table QuanNhan {
 Table LichSuChucVu {
   id varchar(30) [pk]
   quan_nhan_id varchar(30) [not null]
-  chuc_vu_id varchar(30) [not null]
+  chuc_vu_id varchar(30) [note: 'nullable — SetNull khi xóa chức vụ']
   he_so_chuc_vu float [not null, default: 0]
+  ten_chuc_vu varchar(255) [note: 'snapshot tên chức vụ']
+  ten_co_quan_don_vi varchar(255) [note: 'snapshot tên cơ quan đơn vị']
+  ten_don_vi_truc_thuoc varchar(255) [note: 'snapshot tên đơn vị trực thuộc']
   ngay_bat_dau date [not null]
   ngay_ket_thuc date
   so_thang int
@@ -105,7 +108,7 @@ Table BangDeXuat {
   id varchar(30) [pk]
   co_quan_don_vi_id varchar(30)
   don_vi_truc_thuoc_id varchar(30)
-  nguoi_de_xuat_id varchar(30) [not null]
+  nguoi_de_xuat_id varchar(30) [note: 'nullable — SetNull khi xóa tài khoản']
   loai_de_xuat varchar(20) [not null]
   nam int [not null]
   thang int
@@ -178,7 +181,6 @@ Table DanhHieuDonViHangNam {
   nhan_bkttcp boolean [not null, default: false]
   so_quyet_dinh_bkttcp varchar(100)
   ghi_chu_bkttcp text
-  status varchar(20) [not null, default: 'PENDING']
   nguoi_tao_id varchar(30) [not null]
   nguoi_duyet_id varchar(30)
   ngay_duyet timestamp
@@ -347,8 +349,8 @@ Table HoSoDonViHangNam {
   tong_dvqt int [not null, default: 0]
   tong_dvqt_json jsonb
   dvqt_lien_tuc int [not null, default: 0]
-  du_dieu_kien_bk_tong_cuc boolean [not null, default: false]
-  du_dieu_kien_bk_thu_tuong boolean [not null, default: false]
+  du_dieu_kien_bkbqp boolean [not null, default: false]
+  du_dieu_kien_bkttcp boolean [not null, default: false]
   goi_y text
   createdAt timestamp [not null]
   updatedAt timestamp [not null]
@@ -435,18 +437,37 @@ TableGroup "Hệ thống" {
   SystemSetting
 }
 
-// ───────────────────────── Quan hệ (Foreign Keys) ─────────────────────────
+// ───────────────────── Quan hệ chính (rút gọn) ─────────────────────
+// Bản tổng quan chỉ vẽ ~20 quan hệ CỐT LÕI cho gọn. Chi tiết khóa ngoại:
+//  - nhánh quyết định (số quyết định → FileQuyetDinh): xem erd-5-quyet-dinh
+//  - đầy đủ 47 khóa ngoại: xem database.dbml
 
 // Tổ chức / nhân sự
+Ref: DonViTrucThuoc.co_quan_don_vi_id > CoQuanDonVi.id
+Ref: ChucVu.co_quan_don_vi_id > CoQuanDonVi.id
+Ref: QuanNhan.chuc_vu_id > ChucVu.id
+Ref: QuanNhan.don_vi_truc_thuoc_id > DonViTrucThuoc.id
+Ref: LichSuChucVu.quan_nhan_id > QuanNhan.id
+Ref: TaiKhoan.quan_nhan_id > QuanNhan.id
 
 // Đề xuất
+Ref: BangDeXuat.nguoi_de_xuat_id > TaiKhoan.id
 
-// Khen thưởng cá nhân → quân nhân
+// Khen thưởng cá nhân & hồ sơ điều kiện → quân nhân
+Ref: DanhHieuHangNam.quan_nhan_id > QuanNhan.id
+Ref: ThanhTichKhoaHoc.quan_nhan_id > QuanNhan.id
+Ref: KhenThuongHCCSVV.quan_nhan_id > QuanNhan.id
+Ref: KhenThuongHCBVTQ.quan_nhan_id > QuanNhan.id
+Ref: HuanChuongQuanKyQuyetThang.quan_nhan_id > QuanNhan.id
+Ref: KyNiemChuongVSNXDQDNDVN.quan_nhan_id > QuanNhan.id
+Ref: KhenThuongDotXuat.quan_nhan_id > QuanNhan.id
+Ref: HoSoNienHan.quan_nhan_id > QuanNhan.id
+Ref: HoSoCongHien.quan_nhan_id > QuanNhan.id
+Ref: HoSoHangNam.quan_nhan_id > QuanNhan.id
 
-// Khen thưởng đơn vị
-
-// Hồ sơ điều kiện
-
-// Quyết định (so_quyet_dinh) — tham chiếu FileQuyetDinh.so_quyet_dinh
+// Khen thưởng & hồ sơ đơn vị → đơn vị
+Ref: DanhHieuDonViHangNam.don_vi_truc_thuoc_id > DonViTrucThuoc.id
+Ref: HoSoDonViHangNam.don_vi_truc_thuoc_id > DonViTrucThuoc.id
 
 // Hệ thống
+Ref: ThongBao.nguoi_nhan_id > TaiKhoan.id

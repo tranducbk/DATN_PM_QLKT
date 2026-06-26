@@ -1,5 +1,5 @@
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
-import { DANH_HIEU_DAC_BIET } from '../../../constants/danhHieu.constants';
+import { DANH_HIEU_DAC_BIET, getDanhHieuName } from '../../../constants/danhHieu.constants';
 import {
   batchEvaluateServiceYears,
   buildServiceYearsErrorMessage,
@@ -22,34 +22,8 @@ import {
   type NienHanInputItem,
 } from './nienHanPayloadHelper';
 
-/*
- * ════════════════════════════════════════════════════════════════════════════
- *  KNC STRATEGY — Kỷ niệm chương Vì Sự nghiệp Xây dựng QĐNDVN
- * ════════════════════════════════════════════════════════════════════════════
- *
- *  ĐIỀU KIỆN nhận:
- *    - Nam: ≥ 25 năm phục vụ.
- *    - Nữ: ≥ 20 năm phục vụ.
- *  → Khác HC_QKQT ở 1 điểm DUY NHẤT: ưu đãi 5 năm cho nữ giới.
- *
- *  TÍNH CHẤT:
- *    - LIFETIME — quân nhân chỉ nhận 1 lần (bảng kyNiemChuongVSNXDQDNDVN
- *      có unique index trên quan_nhan_id).
- *    - Duplicate check ở approve sẽ block nếu đã có record.
- *
- *  FLOW:
- *    Submit:   batchEvaluateServiceYears → check 25/20 năm theo gender →
- *              build payload data_nien_han với so_thang_phuc_vu.
- *    Approve:  reuse `singleMedalImporter` (template method) với
- *              decisionKey='KNC_VSNXD_QDNDVN' và callback upsert vào bảng
- *              kyNiemChuongVSNXDQDNDVN.
- *
- *  VÌ SAO DÙNG `data_nien_han` (KHÔNG phải `data_danh_hieu`):
- *  KNC + HC_QKQT + HCCSVV chia sẻ field này vì cùng cấu trúc dữ liệu
- *  (1 row = 1 personnel + 1 huân chương + năm/tháng nhận). Tiết kiệm
- *  cột DB và logic shared (xem `nienHanPayloadHelper`).
- * ════════════════════════════════════════════════════════════════════════════
- */
+const KNC_LABEL = getDanhHieuName(PROPOSAL_TYPES.KNC_VSNXD_QDNDVN);
+
 class KncStrategy implements ProposalStrategy {
   readonly type = PROPOSAL_TYPES.KNC_VSNXD_QDNDVN;
 
@@ -75,7 +49,7 @@ class KncStrategy implements ProposalStrategy {
     const invalidDanhHieus = danhHieus.filter(dh => dh !== PROPOSAL_TYPES.KNC_VSNXD_QDNDVN);
     if (invalidDanhHieus.length > 0) {
       errors.push(
-        `Loại đề xuất "Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN" chỉ cho phép danh hiệu KNC_VSNXD_QDNDVN. ` +
+        `Loại đề xuất "${KNC_LABEL}" chỉ cho phép danh hiệu KNC_VSNXD_QDNDVN. ` +
           `Các danh hiệu không hợp lệ: ${invalidDanhHieus.join(', ')}.`
       );
       return { errors, payload: { data_nien_han: dataNienHan } };
@@ -93,7 +67,7 @@ class KncStrategy implements ProposalStrategy {
         .filter((m): m is string => m !== null);
       if (lines.length > 0) {
         errors.push(
-          `Một số quân nhân chưa đủ điều kiện để đề xuất Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN:\n${lines.join('\n')}`
+          `Một số quân nhân chưa đủ điều kiện để đề xuất ${KNC_LABEL}:\n${lines.join('\n')}`
         );
       }
     }
@@ -102,13 +76,6 @@ class KncStrategy implements ProposalStrategy {
   }
 
   /** See HcQkqtStrategy — approve flow lives in approve.ts pipeline. */
-  async validateApprove(
-    _editedData: EditedProposalData,
-    _ctx: ProposalApproveContext
-  ): Promise<string[]> {
-    return [];
-  }
-
   async importInTransaction(
     editedData: EditedProposalData,
     ctx: ProposalApproveContext,
@@ -119,7 +86,7 @@ class KncStrategy implements ProposalStrategy {
   ): Promise<void> {
     const nienHanData = (editedData.data_nien_han ?? []) as ProposalNienHanItem[];
     await importSingleMedal(nienHanData, ctx, acc, prismaTx, {
-      medalLabel: 'Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN',
+      medalLabel: KNC_LABEL,
       logTag: 'KNC',
       decisionKey: DANH_HIEU_DAC_BIET.KNC_VSNXD_QDNDVN,
       upsert: async (tx, personnelId, writeData) => {
@@ -143,9 +110,6 @@ class KncStrategy implements ProposalStrategy {
     });
   }
 
-  buildSuccessMessage(acc: ImportAccumulator): string {
-    return `Đã phê duyệt Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN cho ${acc.affectedPersonnelIds.size} quân nhân`;
-  }
 }
 
 export const kncStrategy = new KncStrategy();

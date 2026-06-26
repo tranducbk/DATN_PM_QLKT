@@ -8,47 +8,7 @@ import { GENDER } from '../../constants/gender.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { calculateServiceMonths, formatServiceDuration } from '../../helpers/serviceYearsHelper';
 
-/*
- * ════════════════════════════════════════════════════════════════════════════
- *  SERVICE YEARS ELIGIBILITY — eligibility theo SỐ NĂM PHỤC VỤ
- *  (dùng chung cho HC_QKQT và KNC_VSNXD_QDNDVN)
- * ════════════════════════════════════════════════════════════════════════════
- *
- *  CẢ 2 LOẠI HUÂN CHƯƠNG đều xét trên cùng tiêu chí cơ bản:
- *  "Quân nhân đã phục vụ ≥ N năm trong quân ngũ" (lifetime, 1 lần).
- *
- *  NGƯỠNG (constants):
- *      HCQKQT_YEARS_REQUIRED = 25 năm  (Huân chương Quân kỳ Quyết thắng,
- *                                       sĩ quan — không phân biệt nam/nữ)
- *      KNC_YEARS_REQUIRED_NAM = 25 năm (Kỷ niệm chương vì sự nghiệp xây
- *                                       dựng QĐNDVN — nam giới)
- *      KNC_YEARS_REQUIRED_NU  = 20 năm (KNC — nữ giới, ưu đãi giới)
- *
- *  CÔNG THỨC:
- *      totalMonths = monthsBetween(ngay_nhap_ngu, ngay_xuat_ngu ?? refDate)
- *      eligible    = totalMonths >= requiredYears * 12
- *
- *      refDate = ngày tham chiếu (thường = ngày cuối tháng đề xuất).
- *      Quân nhân chưa xuất ngũ (ngay_xuat_ngu=null) → tính đến refDate.
- *      Quân nhân đã xuất ngũ → tính đến ngày xuất ngũ (đóng băng số tháng).
- *
- *  PHÂN BIỆT REASON CODE (cho i18n + format message):
- *      NOT_FOUND        → personnel không tồn tại trong DB (sai data)
- *      MISSING_GENDER   → KNC bắt buộc giới tính (vì threshold khác nhau);
- *                         HC_QKQT bỏ qua check này
- *      MISSING_NHAP_NGU → thiếu ngày nhập ngũ (không thể tính số tháng)
- *      NOT_ENOUGH_YEARS → service time < threshold
- *
- *  PURE FUNCTION DESIGN:
- *  evaluateServiceYears KHÔNG query DB — caller (strategy) phải load
- *  personnel + truyền vào. Lý do:
- *    - Test dễ (chỉ cần inject fixture).
- *    - Caller có thể batch load nhiều personnel cùng lúc (Promise.all
- *      hoặc findMany({in: [...]})) thay vì N+1 query trong loop.
- * ════════════════════════════════════════════════════════════════════════════
- */
-
-export type ServiceYearsProposalType = 'HC_QKQT' | 'KNC_VSNXD_QDNDVN';
+type ServiceYearsProposalType = 'HC_QKQT' | 'KNC_VSNXD_QDNDVN';
 
 /** Vietnamese display label per proposal type — used in unified error messages. */
 const SERVICE_YEARS_AWARD_LABEL: Record<ServiceYearsProposalType, string> = {
@@ -56,7 +16,12 @@ const SERVICE_YEARS_AWARD_LABEL: Record<ServiceYearsProposalType, string> = {
   KNC_VSNXD_QDNDVN: 'KNC VSNXD QĐNDVN',
 };
 
-export interface ServiceYearsPersonnel {
+// Personnel selected from the system can only be "not found" if deleted mid-flow (a race);
+// the CUID is not actionable for the operator, so guide them to reload instead of leaking it.
+export const SERVICE_YEARS_PERSONNEL_NOT_FOUND =
+  'Không tìm thấy thông tin một quân nhân (có thể đã bị xoá khỏi hệ thống) — vui lòng tải lại và thử lại.';
+
+interface ServiceYearsPersonnel {
   id: string;
   ho_ten: string;
   gioi_tinh?: string | null;
@@ -64,7 +29,7 @@ export interface ServiceYearsPersonnel {
   ngay_xuat_ngu: Date | null;
 }
 
-export type ServiceYearsFailureReason =
+type ServiceYearsFailureReason =
   | 'NOT_FOUND'
   | 'MISSING_GENDER'
   | 'MISSING_NHAP_NGU'
@@ -180,8 +145,8 @@ export function buildServiceYearsErrorMessage(
   proposalType: ServiceYearsProposalType
 ): string | null {
   if (result.eligible) return null;
-  const name = result.hoTen ?? result.personnelId;
-  if (result.reason === 'NOT_FOUND') return `${result.personnelId}: Không tìm thấy quân nhân`;
+  if (result.reason === 'NOT_FOUND') return SERVICE_YEARS_PERSONNEL_NOT_FOUND;
+  const name = result.hoTen ?? 'một quân nhân';
   if (result.reason === 'MISSING_GENDER') return `${name}: Chưa cập nhật thông tin giới tính`;
   if (result.reason === 'MISSING_NHAP_NGU') return `${name}: Chưa có thông tin ngày nhập ngũ`;
   if (result.reason === 'NOT_ENOUGH_YEARS') {

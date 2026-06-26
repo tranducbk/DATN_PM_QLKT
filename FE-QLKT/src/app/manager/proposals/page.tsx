@@ -8,7 +8,6 @@ import {
   Table,
   Button,
   Typography,
-  Breadcrumb,
   Space,
   message,
   Tooltip,
@@ -24,7 +23,7 @@ import {
 } from '@/constants/pagination.constants';
 import { formatDateTime } from '@/lib/utils';
 
-import { HomeOutlined, EyeOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EyeOutlined, PlusOutlined, DeleteOutlined } from '@ant-design/icons';
 import Link from 'next/link';
 import { apiClient } from '@/lib/http/apiClient';
 import {
@@ -35,6 +34,8 @@ import {
 } from '@/constants/proposal.constants';
 import { ProposalListFilterBar } from '@/components/proposals/ProposalListFilterBar';
 import { ProposalStatusTag } from '@/components/proposals/ProposalStatusTag';
+import { InfoNote } from '@/components/shared/InfoNote';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { useProposalListFilters } from '@/hooks/useProposalListFilters';
 import { buildProposalListTabItems } from '@/lib/proposal/proposalListTabs';
 
@@ -133,15 +134,7 @@ export default function ManagerProposalsPage() {
       key: 'createdAt',
       width: 140,
       align: 'center' as const,
-      render: (date: string) => {
-        const d = new Date(date);
-        const hours = String(d.getHours()).padStart(2, '0');
-        const minutes = String(d.getMinutes()).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        const month = String(d.getMonth() + 1).padStart(2, '0');
-        const year = d.getFullYear();
-        return `${hours}:${minutes} ${day}/${month}/${year}`;
-      },
+      render: (date: string) => formatDateTime(date),
     },
     {
       title: 'Loại đề xuất',
@@ -248,15 +241,7 @@ export default function ManagerProposalsPage() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Breadcrumb */}
-      <Breadcrumb>
-        <Breadcrumb.Item>
-          <Link href="/manager/dashboard">
-            <HomeOutlined />
-          </Link>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>Đề xuất khen thưởng</Breadcrumb.Item>
-      </Breadcrumb>
+      <PageBreadcrumb items={[{ title: 'Đề xuất khen thưởng' }]} />
 
       {/* Header */}
       <div className="flex items-center justify-between">
@@ -270,20 +255,20 @@ export default function ManagerProposalsPage() {
         </Link>
       </div>
 
-      {/* Info Card */}
-      <Card className="shadow-sm bg-blue-50 dark:bg-blue-900/20 border-blue-200">
-        <Space direction="vertical" size="small">
-          <Text strong>📋 Hướng dẫn:</Text>
-          <Text>• Tại đây bạn có thể theo dõi trạng thái các đề xuất đã gửi</Text>
-          <Text>
-            • Nếu đề xuất bị{' '}
+      <InfoNote
+        title="Hướng dẫn"
+        items={[
+          'Theo dõi trạng thái duyệt của các đề xuất bạn đã gửi.',
+          'Dùng các tab trạng thái để lọc nhanh danh sách đề xuất.',
+          <span key="reject">
+            Với đề xuất bị{' '}
             <Text type="danger" strong>
               từ chối
             </Text>
-            , bạn có thể xem lý do từ chối tại mục chi tiết đề xuất
-          </Text>
-        </Space>
-      </Card>
+            , mở trang chi tiết để xem lý do, rồi chỉnh sửa và gửi lại.
+          </span>,
+        ]}
+      />
 
       {/* Table */}
       <Card className="shadow-sm">

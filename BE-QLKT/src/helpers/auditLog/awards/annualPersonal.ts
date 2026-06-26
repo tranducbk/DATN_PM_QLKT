@@ -187,7 +187,7 @@ export const annualRewards: Record<
       failCount = result?.failed || result?.failCount || 0;
 
       if (successCount > 0 || failCount > 0) {
-        return `Import danh hiệu hằng năm từ file: ${fileName} (${successCount} thành công${
+        return `Nhập dữ liệu danh hiệu hằng năm từ file: ${fileName} (${successCount} thành công${
           failCount > 0 ? `, ${failCount} thất bại` : ''
         })`;
       }
@@ -196,6 +196,6 @@ export const annualRewards: Record<
       // best-effort — audit description must not throw
     }
 
-    return `Import danh hiệu hằng năm từ file: ${fileName}`;
+    return `Nhập dữ liệu danh hiệu hằng năm từ file: ${fileName}`;
   },
 };

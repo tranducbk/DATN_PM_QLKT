@@ -18,8 +18,6 @@ export const SETTING_DEFAULTS = {
   backup_retention_days: '15',
 } as const;
 
-export type SettingKey = keyof typeof SETTING_DEFAULTS;
-
 export const AWARD_TYPES = [
   'annual',
   'unit',
@@ -30,8 +28,10 @@ export const AWARD_TYPES = [
   'scientific',
 ] as const;
 
-export type AwardType = (typeof AWARD_TYPES)[number];
-
-export const SYSTEM_FEATURES = ['notify_import', 'delete_logs', 'view_errors_super_admin', 'view_errors_admin', 'view_errors_manager'] as const;
-
-export type SystemFeature = (typeof SYSTEM_FEATURES)[number];
+export const SYSTEM_FEATURES = [
+  'notify_import',
+  'delete_logs',
+  'view_errors_super_admin',
+  'view_errors_admin',
+  'view_errors_manager',
+] as const;

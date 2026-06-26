@@ -20,29 +20,28 @@ import { getApiErrorMessage } from '@/lib/http/apiError';
 import {
   FileTextOutlined,
   LockOutlined,
+  LogoutOutlined,
   UserOutlined,
   TrophyOutlined,
   CalendarOutlined,
   TeamOutlined,
   SafetyOutlined,
-  RocketOutlined,
   CheckCircleOutlined,
   ClockCircleOutlined,
-  ReloadOutlined,
-  BulbOutlined,
   ExperimentOutlined,
   SafetyCertificateOutlined,
 } from '@ant-design/icons';
-import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import { useState, useEffect } from 'react';
 import { apiClient } from '@/lib/http/apiClient';
 import { calculateServiceMonthsWithToday } from '@/lib/award/serviceTimeHelpers';
 import { GENDER } from '@/constants/gender.constants';
-import { formatDate, formatDateTime } from '@/lib/utils';
+import { formatDate, formatDateTime, formatHeSoChucVu } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { StatCard } from '@/components/dashboard/StatCard';
+import { QuickActions } from '@/components/dashboard/QuickActions';
 import { useAuth } from '@/contexts/AuthContext';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import { DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
@@ -67,7 +66,7 @@ const UserDashboardPieChart = dynamic(
 export default function UserDashboard() {
   const { theme } = useTheme();
   const isDark = theme === 'dark';
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, logout } = useAuth();
   const [displayName, setDisplayName] = useState('Quân nhân');
   const [personnelInfo, setPersonnelInfo] = useState<PersonnelDetail | null>(null);
   const [annualProfile, setAnnualProfile] = useState<AnnualProfile | null>(null);
@@ -105,7 +104,7 @@ export default function UserDashboard() {
           await Promise.all([
             apiClient.getPersonnelById(personnelId),
             apiClient.getAnnualProfile(personnelId, currentYear),
-            apiClient.getServiceProfile(personnelId),
+            apiClient.getTenureProfile(personnelId),
             apiClient.getContributionProfile(personnelId),
             apiClient.getAnnualRewardsByPersonnel(personnelId),
           ]);
@@ -178,6 +177,8 @@ export default function UserDashboard() {
         }`}
       >
         <div className="max-w-7xl mx-auto p-6 space-y-6">
+          <PageBreadcrumb items={[{ title: 'Tổng quan' }]} />
+
           {/* Hero Header with Avatar */}
           <Card
             style={{
@@ -362,16 +363,25 @@ export default function UserDashboard() {
                       ? 'Nữ'
                       : 'Chưa có dữ liệu'}
                 </Descriptions.Item>
-                <Descriptions.Item label="Đơn vị" labelStyle={{ fontWeight: 500 }}>
-                  {personnelInfo.DonViTrucThuoc?.ten_don_vi ||
-                    personnelInfo.CoQuanDonVi?.ten_don_vi ||
-                    'Chưa có dữ liệu'}
+                <Descriptions.Item label="Số điện thoại" labelStyle={{ fontWeight: 500 }}>
+                  {personnelInfo.so_dien_thoai || 'Chưa có dữ liệu'}
                 </Descriptions.Item>
                 <Descriptions.Item label="Cấp bậc" labelStyle={{ fontWeight: 500 }}>
                   {personnelInfo.cap_bac || 'Chưa có dữ liệu'}
                 </Descriptions.Item>
+                <Descriptions.Item label="Cơ quan đơn vị" labelStyle={{ fontWeight: 500 }}>
+                  {personnelInfo.DonViTrucThuoc?.CoQuanDonVi?.ten_don_vi ||
+                    personnelInfo.CoQuanDonVi?.ten_don_vi ||
+                    'Chưa có dữ liệu'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Đơn vị trực thuộc" labelStyle={{ fontWeight: 500 }}>
+                  {personnelInfo.DonViTrucThuoc?.ten_don_vi || 'Chưa có dữ liệu'}
+                </Descriptions.Item>
                 <Descriptions.Item label="Chức vụ" labelStyle={{ fontWeight: 500 }}>
                   {personnelInfo.ChucVu?.ten_chuc_vu || 'Chưa có dữ liệu'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Hệ số chức vụ" labelStyle={{ fontWeight: 500 }}>
+                  {formatHeSoChucVu(personnelInfo.ChucVu?.he_so_chuc_vu, 'Chưa có dữ liệu')}
                 </Descriptions.Item>
                 <Descriptions.Item label="Ngày nhập ngũ" labelStyle={{ fontWeight: 500 }}>
                   {personnelInfo.ngay_nhap_ngu
@@ -382,6 +392,22 @@ export default function UserDashboard() {
                   {personnelInfo.ngay_xuat_ngu
                     ? formatDate(personnelInfo.ngay_xuat_ngu)
                     : 'Chưa có dữ liệu'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Ngày vào Đảng" labelStyle={{ fontWeight: 500 }}>
+                  {personnelInfo.ngay_vao_dang
+                    ? formatDate(personnelInfo.ngay_vao_dang)
+                    : 'Chưa có dữ liệu'}
+                </Descriptions.Item>
+                <Descriptions.Item
+                  label="Ngày vào Đảng chính thức"
+                  labelStyle={{ fontWeight: 500 }}
+                >
+                  {personnelInfo.ngay_vao_dang_chinh_thuc
+                    ? formatDate(personnelInfo.ngay_vao_dang_chinh_thuc)
+                    : 'Chưa có dữ liệu'}
+                </Descriptions.Item>
+                <Descriptions.Item label="Số thẻ Đảng viên" labelStyle={{ fontWeight: 500 }}>
+                  {personnelInfo.so_the_dang_vien || 'Chưa có dữ liệu'}
                 </Descriptions.Item>
               </Descriptions>
             </Card>
@@ -408,7 +434,6 @@ export default function UserDashboard() {
                         description={annualProfile.goi_y}
                         type="info"
                         showIcon
-                        icon={<BulbOutlined />}
                         className={
                           isDark ? 'border-blue-700 bg-blue-900/30' : 'border-blue-200 bg-blue-50'
                         }
@@ -676,7 +701,6 @@ export default function UserDashboard() {
                         description={contributionProfile.goi_y}
                         type="info"
                         showIcon
-                        icon={<BulbOutlined />}
                         className={
                           isDark ? 'border-blue-700 bg-blue-900/30' : 'border-blue-200 bg-blue-50'
                         }
@@ -834,77 +858,18 @@ export default function UserDashboard() {
           </Row>
 
           {/* Quick Actions */}
-          <Card
-            title={
-              <Space>
-                <RocketOutlined className="text-blue-600" />
-                <span className="font-semibold">Thao tác nhanh</span>
-              </Space>
-            }
-            className="shadow-md border-0"
-          >
-            <Row gutter={[16, 16]}>
-              <Col xs={24} sm={12} md={8} className="flex">
-                <Link href="/user/profile" className="block h-full w-full">
-                  <Card
-                    hoverable
-                    className={`text-center h-full ${
-                      isDark
-                        ? 'bg-gradient-to-br from-blue-900/40 to-blue-800/40 border-blue-700'
-                        : 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200'
-                    }`}
-                  >
-                    <FileTextOutlined className="text-4xl text-blue-600 mb-3" />
-                    <Title level={5} className="!mb-1">
-                      Lịch sử chi tiết
-                    </Title>
-                    <Text type="secondary" className="text-sm">
-                      Xem đầy đủ thông tin hồ sơ
-                    </Text>
-                  </Card>
-                </Link>
-              </Col>
-              <Col xs={24} sm={12} md={8} className="flex">
-                <Link href="/user/change-password" className="block h-full w-full">
-                  <Card
-                    hoverable
-                    className={`text-center h-full ${
-                      isDark
-                        ? 'bg-gradient-to-br from-purple-900/40 to-purple-800/40 border-purple-700'
-                        : 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-200'
-                    }`}
-                  >
-                    <LockOutlined className="text-4xl text-purple-600 mb-3" />
-                    <Title level={5} className="!mb-1">
-                      Đổi mật khẩu
-                    </Title>
-                    <Text type="secondary" className="text-sm">
-                      Cập nhật mật khẩu bảo mật
-                    </Text>
-                  </Card>
-                </Link>
-              </Col>
-              <Col xs={24} sm={12} md={8} className="flex">
-                <Card
-                  hoverable
-                  className={`text-center h-full w-full cursor-pointer ${
-                    isDark
-                      ? 'bg-gradient-to-br from-green-900/40 to-green-800/40 border-green-700'
-                      : 'bg-gradient-to-br from-green-50 to-green-100 border-green-200'
-                  }`}
-                  onClick={() => window.location.reload()}
-                >
-                  <ReloadOutlined className="text-4xl text-green-600 mb-3" />
-                  <Title level={5} className="!mb-1">
-                    Làm mới dữ liệu
-                  </Title>
-                  <Text type="secondary" className="text-sm">
-                    Cập nhật thông tin mới nhất
-                  </Text>
-                </Card>
-              </Col>
-            </Row>
-          </Card>
+          <QuickActions
+            actions={[
+              {
+                href: '/user/profile',
+                icon: <FileTextOutlined />,
+                label: 'Lịch sử chi tiết',
+              },
+              { href: '/user/profile/edit', icon: <UserOutlined />, label: 'Thông tin cá nhân' },
+              { href: '/user/change-password', icon: <LockOutlined />, label: 'Đổi mật khẩu' },
+              { icon: <LogoutOutlined />, label: 'Đăng xuất', onClick: () => void logout() },
+            ]}
+          />
 
           {/* Footer Info */}
           <div className="text-center py-6">

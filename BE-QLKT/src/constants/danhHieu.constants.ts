@@ -1,25 +1,9 @@
 import type { ProposalType } from './proposalTypes.constants';
 
 /**
- * SYNC NOTICE — Core danh hieu codes are shared with `FE-QLKT/src/constants/danhHieu.constants.ts`.
- *
- * The following exports MUST stay value-identical between BE and FE:
- *   - DANH_HIEU_CA_NHAN_HANG_NAM, DANH_HIEU_DON_VI_HANG_NAM (key set; FE may omit BE-only unit aliases)
- *   - DANH_HIEU_HCCSVV, DANH_HIEU_HCBVTQ
- *   - DANH_HIEU_DAC_BIET
- *   - DANH_HIEU_MAP (display labels; full list)
- *   - CONG_HIEN_HE_SO_GROUPS, CONG_HIEN_HE_SO_RANGES
- *
- * Side-only exports (intentionally not shared):
- *   - BE-only: DANH_HIEU_NCKH (uses Vietnamese labels as values for Excel parsing),
- *              NCKH_LABEL_TO_CODE, resolveNckhCode, buildDanhHieuExcelOptions,
- *              resolveDanhHieuCode, HCBVTQ_RANK_KEYS, formatDanhHieuList
- *   - FE-only: THANH_TICH_KHOA_HOC (codes-as-values for FE enum-style),
- *              THANH_TICH_KHOA_HOC_SHORT_LABELS / FULL_LABELS,
- *              AWARD_TAB_LABELS, AWARD_TYPE_MAP, LOAI_KHEN_THUONG_OPTIONS,
- *              DANH_HIEU_OPTIONS, CONG_HIEN_BASE_REQUIRED_MONTHS
- *
- * When adding a NEW shared code (e.g. a new tier), update BOTH files in the same commit.
+ * Core danh hieu codes/labels are duplicated in `FE-QLKT/src/constants/danhHieu.constants.ts`
+ * and MUST stay value-identical. When adding or renaming a shared code, update BOTH files in the
+ * same commit. Each side also keeps local-only exports (Excel parsing here, UI options on FE).
  */
 
 export const DANH_HIEU_CA_NHAN_HANG_NAM = {
@@ -49,22 +33,22 @@ export const DANH_HIEU_HCBVTQ = {
   HANG_NHAT: 'HCBVTQ_HANG_NHAT',
 } as const;
 
-export const CONG_HIEN_HE_SO_GROUPS = {
+export const CONTRIBUTION_COEFFICIENT_GROUPS = {
   LEVEL_07: '0.7',
   LEVEL_08: '0.8',
   LEVEL_09_10: '0.9-1.0',
 } as const;
 
-export type CongHienHeSoGroup =
-  (typeof CONG_HIEN_HE_SO_GROUPS)[keyof typeof CONG_HIEN_HE_SO_GROUPS];
+export type ContributionCoefficientGroup =
+  (typeof CONTRIBUTION_COEFFICIENT_GROUPS)[keyof typeof CONTRIBUTION_COEFFICIENT_GROUPS];
 
-export const CONG_HIEN_HE_SO_RANGES: Record<
-  CongHienHeSoGroup,
+export const CONTRIBUTION_COEFFICIENT_RANGES: Record<
+  ContributionCoefficientGroup,
   { min: number; max: number; includeMax: boolean }
 > = {
-  [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: { min: 0.7, max: 0.8, includeMax: false },
-  [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: { min: 0.8, max: 0.9, includeMax: false },
-  [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: { min: 0.9, max: 1.0, includeMax: true },
+  [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07]: { min: 0.7, max: 0.8, includeMax: false },
+  [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08]: { min: 0.8, max: 0.9, includeMax: false },
+  [CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10]: { min: 0.9, max: 1.0, includeMax: true },
 };
 
 export const HCBVTQ_RANK_KEYS = {
@@ -74,6 +58,49 @@ export const HCBVTQ_RANK_KEYS = {
 } as const;
 
 export type HcbvtqRankKey = (typeof HCBVTQ_RANK_KEYS)[keyof typeof HCBVTQ_RANK_KEYS];
+
+// Coefficient groups ordered low to high. A new higher tier appends here and counts
+// toward every rank automatically — no rule code changes needed.
+const CONTRIBUTION_COEFFICIENT_GROUP_ORDER = [
+  CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07,
+  CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08,
+  CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10,
+] as const;
+
+// Highest to lowest — used when scanning for the highest rank a personnel qualifies for.
+export const HCBVTQ_RANKS_HIGH_TO_LOW = [
+  HCBVTQ_RANK_KEYS.HANG_NHAT,
+  HCBVTQ_RANK_KEYS.HANG_NHI,
+  HCBVTQ_RANK_KEYS.HANG_BA,
+] as const;
+
+// Lowest coefficient group counted toward each rank; a rank accumulates from its floor up.
+const HCBVTQ_RANK_MIN_GROUP: Record<HcbvtqRankKey, ContributionCoefficientGroup> = {
+  [HCBVTQ_RANK_KEYS.HANG_BA]: CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07,
+  [HCBVTQ_RANK_KEYS.HANG_NHI]: CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08,
+  [HCBVTQ_RANK_KEYS.HANG_NHAT]: CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10,
+};
+
+/**
+ * Sums qualifying months for an HCBVTQ rank: every coefficient group at or above the
+ * rank's floor. Single source for the group-to-rank rule shared by eligibility,
+ * profile recalc, import preview and the highest-rank guard.
+ * @param months - Months per coefficient group (partial allowed; missing groups count as 0)
+ * @param rank - HCBVTQ rank key
+ * @returns Cumulative qualifying months for the rank
+ */
+export function cumulativeMonthsForHcbvtqRank(
+  months: Partial<Record<ContributionCoefficientGroup, number>>,
+  rank: HcbvtqRankKey
+): number {
+  const floor = HCBVTQ_RANK_MIN_GROUP[rank];
+  const floorIndex = CONTRIBUTION_COEFFICIENT_GROUP_ORDER.indexOf(floor);
+  if (floorIndex < 0) return 0;
+  return CONTRIBUTION_COEFFICIENT_GROUP_ORDER.slice(floorIndex).reduce(
+    (sum, group) => sum + (months[group] ?? 0),
+    0
+  );
+}
 
 export const DANH_HIEU_DAC_BIET = {
   HC_QKQT: 'HC_QKQT',
@@ -86,7 +113,7 @@ export const DANH_HIEU_NCKH = {
 } as const;
 
 /** Maps full label back to DB code. */
-export const NCKH_LABEL_TO_CODE: Record<string, string> = Object.fromEntries(
+const NCKH_LABEL_TO_CODE: Record<string, string> = Object.fromEntries(
   Object.entries(DANH_HIEU_NCKH).map(([code, label]) => [label, code])
 );
 
@@ -138,7 +165,7 @@ export const LOAI_DE_XUAT_MAP: Record<ProposalType, string> = {
   NCKH: 'Thành tích Nghiên cứu khoa học',
 };
 
-export const DANH_HIEU_SHORT_MAP: Record<string, string> = {
+const DANH_HIEU_SHORT_MAP: Record<string, string> = {
   CSTDCS: 'Chiến sĩ thi đua cơ sở',
   CSTT: 'Chiến sĩ tiên tiến',
   HCCSVV_HANG_BA: 'HCCSVV hạng Ba',
@@ -199,7 +226,7 @@ export function buildDanhHieuExcelOptions(
 }
 
 /** Display fallback for a danh hieu / proposal type code that is null or empty. */
-export const UNKNOWN_LABEL = 'Chưa xác định';
+const UNKNOWN_LABEL = 'Chưa xác định';
 
 /**
  * Returns the display label for danh_hieu.
@@ -243,10 +270,10 @@ export const KNC_YEARS_REQUIRED_NAM = 25;
 export const KNC_YEARS_REQUIRED_NU = 20;
 
 /** Minimum service months for HCBVTQ baseline (male). */
-export const CONG_HIEN_BASE_REQUIRED_MONTHS = 120; // 10 years
+export const CONTRIBUTION_BASE_REQUIRED_MONTHS = 120; // 10 years
 /** Female requirement = 2/3 of male baseline. */
-export const CONG_HIEN_FEMALE_REQUIRED_MONTHS = Math.round(
-  CONG_HIEN_BASE_REQUIRED_MONTHS * (2 / 3)
+export const CONTRIBUTION_FEMALE_REQUIRED_MONTHS = Math.round(
+  CONTRIBUTION_BASE_REQUIRED_MONTHS * (2 / 3)
 );
 
 /** CSTDCS and CSTT are stored in the danh_hieu column. */

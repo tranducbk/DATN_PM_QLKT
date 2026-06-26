@@ -9,11 +9,14 @@ import {
   Space,
   message,
   Select,
+  TimePicker,
   Alert,
   Spin,
+  Popconfirm,
   ConfigProvider,
   theme,
 } from 'antd';
+import dayjs from 'dayjs';
 import {
   LockOutlined,
   ThunderboltOutlined,
@@ -22,7 +25,6 @@ import {
   ReloadOutlined,
   CheckCircleOutlined,
   CloseCircleOutlined,
-  DeleteOutlined,
   ToolOutlined,
   DatabaseOutlined,
 } from '@ant-design/icons';
@@ -32,26 +34,33 @@ import axiosInstance from '@/lib/http/axiosInstance';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import {
   DEV_ZONE_API,
-  DEV_SESSION_KEY,
-  DEV_SESSION_DURATION,
   CRON_PRESETS,
   BACKUP_CRON_PRESETS,
+  BACKUP_FREQUENCY_OPTIONS,
+  BACKUP_WEEKDAY_OPTIONS,
   AWARD_TYPE_OPTIONS,
   SYSTEM_FEATURE_OPTIONS,
 } from '@/constants/devZone.constants';
 import { formatDateTime } from '@/lib/utils';
+import type { DevStatus, BackupStatus } from './types';
+import type { BackupScheduleParts } from './helpers';
+import {
+  DEFAULT_RETENTION_DAYS,
+  DEFAULT_BACKUP_PARTS,
+  buildBackupCron,
+  parseBackupCron,
+  saveSession,
+  loadSession,
+  clearSession,
+} from './helpers';
 import './dev-zone.css';
 
-const DEFAULT_RETENTION_DAYS = 15;
-
 function FeatureRow({
-  icon,
   title,
   description,
   checked,
   onChange,
 }: {
-  icon: React.ReactNode;
   title: string;
   description: string;
   checked?: boolean;
@@ -60,7 +69,6 @@ function FeatureRow({
   return (
     <div className="dz-feature-row">
       <div className="dz-feature-info">
-        <span className="dz-feature-icon">{icon}</span>
         <div>
           <div className="dz-feature-label">{title}</div>
           <div className="dz-feature-desc">{description}</div>
@@ -76,60 +84,6 @@ function FeatureRow({
   );
 }
 
-interface DevStatus {
-  cron: {
-    enabled: boolean;
-    schedule: string;
-    lastRun: string | null;
-    lastResult: {
-      status: string;
-      time: string;
-      success?: number;
-      errors?: number;
-      message?: string;
-    } | null;
-  };
-  features: {
-    import_enabled: boolean;
-    template_enabled: boolean;
-  } & Record<string, boolean | undefined>;
-}
-
-interface BackupStatus {
-  enabled: boolean;
-  schedule: string;
-  retentionDays: number;
-  lastRun: string | null;
-  totalFiles: number;
-}
-
-function saveSession(pwd: string) {
-  sessionStorage.setItem(
-    DEV_SESSION_KEY,
-    JSON.stringify({ t: btoa(encodeURIComponent(pwd)), e: Date.now() + DEV_SESSION_DURATION }),
-  );
-}
-
-function loadSession(): string | null {
-  try {
-    const raw = sessionStorage.getItem(DEV_SESSION_KEY);
-    if (!raw) return null;
-    const { t, e } = JSON.parse(raw);
-    if (Date.now() > e) {
-      sessionStorage.removeItem(DEV_SESSION_KEY);
-      return null;
-    }
-    return decodeURIComponent(atob(t));
-  } catch {
-    sessionStorage.removeItem(DEV_SESSION_KEY);
-    return null;
-  }
-}
-
-function clearSession() {
-  sessionStorage.removeItem(DEV_SESSION_KEY);
-}
-
 export default function DevZonePage() {
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
@@ -143,10 +97,13 @@ export default function DevZonePage() {
   const [cronPreset, setCronPreset] = useState('');
   const [customCron, setCustomCron] = useState('');
   const [recalcLoading, setRecalcLoading] = useState(false);
+  const [recalcPersonnelId, setRecalcPersonnelId] = useState('');
+  const [recalcProfileLoading, setRecalcProfileLoading] = useState(false);
+  const [recalcAllProfileLoading, setRecalcAllProfileLoading] = useState(false);
 
   const [backupStatus, setBackupStatus] = useState<BackupStatus | null>(null);
   const [backupPreset, setBackupPreset] = useState('');
-  const [backupCustomCron, setBackupCustomCron] = useState('');
+  const [backupCustom, setBackupCustom] = useState<BackupScheduleParts>(DEFAULT_BACKUP_PARTS);
   const [backupRetention, setBackupRetention] = useState<number>(15);
   const [backupTriggerLoading, setBackupTriggerLoading] = useState(false);
 
@@ -164,7 +121,7 @@ export default function DevZonePage() {
           setBackupPreset(data.schedule);
         } else {
           setBackupPreset('custom');
-          setBackupCustomCron(data.schedule);
+          setBackupCustom(parseBackupCron(data.schedule));
         }
       }
     } catch {
@@ -273,6 +230,47 @@ export default function DevZonePage() {
     }
   };
 
+  const handleRecalculateProfile = async () => {
+    const id = recalcPersonnelId.trim();
+    if (!id) {
+      message.warning('Vui lòng nhập ID quân nhân');
+      return;
+    }
+    try {
+      setRecalcProfileLoading(true);
+      const res = await axiosInstance.post(
+        DEV_ZONE_API + '/recalculate-profile',
+        { personnel_id: id },
+        { headers: { 'x-dev-password': devPassword } },
+      );
+      if (res.data.success) {
+        message.success(res.data.message || 'Đã tính toán lại hồ sơ quân nhân');
+      }
+    } catch (err: unknown) {
+      message.error(getApiErrorMessage(err, 'Lỗi khi tính lại hồ sơ quân nhân'));
+    } finally {
+      setRecalcProfileLoading(false);
+    }
+  };
+
+  const handleRecalculateAllProfiles = async () => {
+    try {
+      setRecalcAllProfileLoading(true);
+      const res = await axiosInstance.post(
+        DEV_ZONE_API + '/recalculate-profile',
+        {},
+        { headers: { 'x-dev-password': devPassword } },
+      );
+      if (res.data.success) {
+        message.success(res.data.message || 'Đã tính toán lại hồ sơ tất cả quân nhân');
+      }
+    } catch (err: unknown) {
+      message.error(getApiErrorMessage(err, 'Lỗi khi tính lại hồ sơ quân nhân'));
+    } finally {
+      setRecalcAllProfileLoading(false);
+    }
+  };
+
   const handleUpdateCron = async (enabled?: boolean, schedule?: string) => {
     const prevEnabled = status?.cron.enabled;
     if (typeof enabled === 'boolean') {
@@ -316,6 +314,21 @@ export default function DevZonePage() {
       message.error(getApiErrorMessage(err, 'Sao lưu thất bại'));
     } finally {
       setBackupTriggerLoading(false);
+    }
+  };
+
+  const handleDeleteBackupFile = async (filename: string) => {
+    try {
+      const res = await axiosInstance.delete(
+        DEV_ZONE_API + '/backup/' + encodeURIComponent(filename),
+        { headers: { 'x-dev-password': devPassword } },
+      );
+      if (res.data.success) {
+        message.success('Đã xoá file sao lưu');
+        fetchBackupStatus(devPassword);
+      }
+    } catch (err: unknown) {
+      message.error(getApiErrorMessage(err, 'Xoá file sao lưu thất bại'));
     }
   };
 
@@ -364,11 +377,6 @@ export default function DevZonePage() {
   if (!authenticated) {
     return (
       <div className="dz-page">
-        <div className="dz-bg">
-          <div className="dz-orb dz-orb-1"></div>
-          <div className="dz-orb dz-orb-2"></div>
-        </div>
-
         <div className="dz-auth">
           <div className="dz-auth-card">
             <div className="dz-auth-logo">
@@ -409,24 +417,29 @@ export default function DevZonePage() {
     ((cronPreset !== 'custom' && cronPreset !== status.cron.schedule) ||
       (cronPreset === 'custom' && customCron && customCron !== status.cron.schedule));
 
+  const backupCustomCron = buildBackupCron(backupCustom);
+  const showBackupSaveBtn =
+    backupPreset &&
+    ((backupPreset !== 'custom' && backupPreset !== backupStatus?.schedule) ||
+      (backupPreset === 'custom' && backupCustomCron !== backupStatus?.schedule));
+
   // Dashboard
   return (
     <ConfigProvider
       theme={{
         algorithm: theme.darkAlgorithm,
         token: {
-          colorBgContainer: 'rgba(255,255,255,0.06)',
-          colorBorderSecondary: 'rgba(255,255,255,0.1)',
-          borderRadius: 12,
+          colorPrimary: '#3b82f6',
+          colorBgContainer: '#1a2540',
+          colorBgElevated: '#16213c',
+          colorBorder: '#26334d',
+          colorBorderSecondary: '#26334d',
+          colorText: '#e2e8f0',
+          borderRadius: 10,
         },
       }}
     >
       <div className="dz-page">
-        <div className="dz-bg">
-          <div className="dz-orb dz-orb-1"></div>
-          <div className="dz-orb dz-orb-2"></div>
-        </div>
-
         <div className="dz-dashboard">
           {/* Header */}
           <div className="dz-header">
@@ -527,7 +540,6 @@ export default function DevZonePage() {
               {/* Trigger */}
               <Button
                 type="primary"
-                icon={<ThunderboltOutlined />}
                 loading={triggerLoading}
                 onClick={handleTriggerCron}
                 block
@@ -572,7 +584,6 @@ export default function DevZonePage() {
               {AWARD_TYPE_OPTIONS.map(({ key, label, description }) => (
                 <FeatureRow
                   key={key}
-                  icon={<CloudUploadOutlined />}
                   title={label}
                   description={description}
                   checked={Boolean(status?.features?.[`allow_${key}`])}
@@ -590,7 +601,6 @@ export default function DevZonePage() {
               {SYSTEM_FEATURE_OPTIONS.map(({ key, label, description }) => (
                 <FeatureRow
                   key={key}
-                  icon={<ThunderboltOutlined />}
                   title={label}
                   description={description}
                   checked={Boolean(status?.features?.[`allow_${key}`])}
@@ -607,7 +617,6 @@ export default function DevZonePage() {
               </div>
               <div className="dz-util-row">
                 <div className="dz-util-info">
-                  <ReloadOutlined className="dz-feature-icon" />
                   <div>
                     <div className="dz-feature-label">Quân số đơn vị</div>
                     <div className="dz-feature-desc">Đồng bộ lại số lượng quân nhân từng đơn vị từ dữ liệu thực tế</div>
@@ -615,12 +624,58 @@ export default function DevZonePage() {
                 </div>
                 <Button
                   type="primary"
-                  icon={<ReloadOutlined />}
                   loading={recalcLoading}
                   onClick={handleRecalculateUnitCount}
                 >
                   {recalcLoading ? 'Đang tính...' : 'Tính lại'}
                 </Button>
+              </div>
+
+              <div className="dz-divider" />
+
+              <div>
+                <div className="dz-feature-label">Hồ sơ một quân nhân (theo ID)</div>
+                <div className="dz-feature-desc" style={{ marginBottom: 8 }}>
+                  Tính lại hồ sơ hằng năm, niên hạn và cống hiến của một quân nhân theo ID
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <Input
+                    placeholder="Nhập ID quân nhân"
+                    value={recalcPersonnelId}
+                    onChange={e => setRecalcPersonnelId(e.target.value)}
+                    onPressEnter={handleRecalculateProfile}
+                    style={{ flex: 1 }}
+                  />
+                  <Button
+                    type="primary"
+                    loading={recalcProfileLoading}
+                    onClick={handleRecalculateProfile}
+                  >
+                    Tính lại
+                  </Button>
+                </div>
+              </div>
+
+              <div className="dz-divider" />
+
+              <div className="dz-util-row">
+                <div className="dz-util-info">
+                  <div>
+                    <div className="dz-feature-label">Tất cả hồ sơ quân nhân</div>
+                    <div className="dz-feature-desc">Tính lại cả 3 loại hồ sơ cho toàn bộ quân nhân (có thể mất vài phút)</div>
+                  </div>
+                </div>
+                <Popconfirm
+                  title="Tính lại hồ sơ cho tất cả quân nhân?"
+                  description="Thao tác có thể mất vài phút với dữ liệu lớn."
+                  okText="Tính lại"
+                  cancelText="Huỷ"
+                  onConfirm={handleRecalculateAllProfiles}
+                >
+                  <Button type="primary" loading={recalcAllProfileLoading}>
+                    {recalcAllProfileLoading ? 'Đang tính...' : 'Tính lại tất cả'}
+                  </Button>
+                </Popconfirm>
               </div>
             </div>
 
@@ -629,7 +684,7 @@ export default function DevZonePage() {
               <div className="dz-card-title">
                 <DatabaseOutlined />
                 <span>Sao lưu dữ liệu</span>
-                <div style={{ marginLeft: 'auto', fontSize: 12, opacity: 0.6 }}>
+                <div style={{ marginLeft: 'auto', fontSize: 12, color: '#94a3b8' }}>
                   {backupStatus ? `${backupStatus.totalFiles} file` : ''}
                 </div>
               </div>
@@ -657,20 +712,65 @@ export default function DevZonePage() {
                     value={backupPreset}
                     onChange={v => {
                       setBackupPreset(v);
-                      if (v === 'custom') setBackupCustomCron(backupStatus?.schedule || '');
+                      if (v === 'custom') setBackupCustom(parseBackupCron(backupStatus?.schedule || ''));
                     }}
                     options={BACKUP_CRON_PRESETS.map(p => ({ value: p.value, label: p.label }))}
                   />
                   {backupPreset === 'custom' && (
-                    <Input
-                      placeholder="Cron expression (ví dụ: 0 3 * * *)"
-                      value={backupCustomCron}
-                      onChange={e => setBackupCustomCron(e.target.value)}
-                    />
+                    <div className="dz-backup-builder">
+                      <div className="dz-backup-row">
+                        <span className="dz-backup-row-label">Tần suất</span>
+                        <Select
+                          className="dz-backup-row-control"
+                          value={backupCustom.frequency}
+                          onChange={v =>
+                            setBackupCustom(prev => ({
+                              ...prev,
+                              frequency: v as BackupScheduleParts['frequency'],
+                            }))
+                          }
+                          options={BACKUP_FREQUENCY_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
+                        />
+                      </div>
+                      {backupCustom.frequency === 'weekly' && (
+                        <div className="dz-backup-row">
+                          <span className="dz-backup-row-label">Vào thứ</span>
+                          <Select
+                            className="dz-backup-row-control"
+                            value={backupCustom.dayOfWeek}
+                            onChange={v => setBackupCustom(prev => ({ ...prev, dayOfWeek: v }))}
+                            options={BACKUP_WEEKDAY_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
+                          />
+                        </div>
+                      )}
+                      {backupCustom.frequency === 'monthly' && (
+                        <div className="dz-backup-row">
+                          <span className="dz-backup-row-label">Vào ngày</span>
+                          <InputNumber
+                            className="dz-backup-row-control"
+                            min={1}
+                            max={28}
+                            value={backupCustom.dayOfMonth}
+                            onChange={v => setBackupCustom(prev => ({ ...prev, dayOfMonth: v ?? 1 }))}
+                          />
+                        </div>
+                      )}
+                      <div className="dz-backup-row">
+                        <span className="dz-backup-row-label">Vào lúc</span>
+                        <TimePicker
+                          className="dz-backup-row-control"
+                          format="HH:mm"
+                          allowClear={false}
+                          needConfirm={false}
+                          value={dayjs().hour(backupCustom.hour).minute(backupCustom.minute)}
+                          onChange={d =>
+                            d && setBackupCustom(prev => ({ ...prev, hour: d.hour(), minute: d.minute() }))
+                          }
+                        />
+                      </div>
+                    </div>
                   )}
-                  {backupPreset &&
-                    ((backupPreset !== 'custom' && backupPreset !== backupStatus?.schedule) ||
-                      (backupPreset === 'custom' && backupCustomCron && backupCustomCron !== backupStatus?.schedule)) && (
+                  {showBackupSaveBtn && (
                     <Space style={{ width: '100%' }} styles={{ item: { flex: 1 } }}>
                       <Button
                         block
@@ -681,7 +781,7 @@ export default function DevZonePage() {
                             setBackupPreset(saved);
                           } else {
                             setBackupPreset('custom');
-                            setBackupCustomCron(saved);
+                            setBackupCustom(parseBackupCron(saved));
                           }
                         }}
                       >
@@ -740,7 +840,6 @@ export default function DevZonePage() {
 
               <Button
                 type="primary"
-                icon={<DatabaseOutlined />}
                 loading={backupTriggerLoading}
                 onClick={handleTriggerBackup}
                 block
@@ -758,6 +857,39 @@ export default function DevZonePage() {
                   />
                 </div>
               )}
+
+              {backupStatus?.recentBackups && backupStatus.recentBackups.length > 0 && (
+                <div style={{ marginTop: 16 }}>
+                  <div className="dz-feature-label" style={{ marginBottom: 8 }}>
+                    File sao lưu hiện có ({backupStatus.totalFiles})
+                  </div>
+                  <Space direction="vertical" size={8} style={{ width: '100%' }}>
+                    {backupStatus.recentBackups.map(file => (
+                      <div key={file.filename} className="dz-util-row">
+                        <div className="dz-util-info">
+                          <div>
+                            <div className="dz-feature-label">{file.filename}</div>
+                            <div className="dz-feature-desc">
+                              {formatDateTime(file.createdAt)} · {file.sizeKB} KB ·{' '}
+                              {file.type === 'manual' ? 'Thủ công' : 'Tự động'}
+                            </div>
+                          </div>
+                        </div>
+                        <Popconfirm
+                          title="Xoá file sao lưu này?"
+                          okText="Xoá"
+                          cancelText="Huỷ"
+                          onConfirm={() => handleDeleteBackupFile(file.filename)}
+                        >
+                          <Button className="dz-delete-btn" danger>
+                            Xoá
+                          </Button>
+                        </Popconfirm>
+                      </div>
+                    ))}
+                  </Space>
+                </div>
+              )}
             </div>
 
             {/* Utilities */}
@@ -768,7 +900,6 @@ export default function DevZonePage() {
               </div>
               <div className="dz-util-row">
                 <div className="dz-util-info">
-                  <DeleteOutlined className="dz-feature-icon" />
                   <div>
                     <div className="dz-feature-label">Xoá localStorage</div>
                     <div className="dz-feature-desc">Xoá toàn bộ dữ liệu lưu trữ cục bộ trên trình duyệt</div>

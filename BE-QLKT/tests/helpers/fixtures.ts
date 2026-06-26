@@ -212,7 +212,6 @@ export interface UnitAnnualRecordShape {
   nhan_bkttcp: boolean;
   so_quyet_dinh_bkttcp: string | null;
   ghi_chu_bkttcp: string | null;
-  status: ProposalStatus;
 }
 
 export function makeUnitAnnualRecord(
@@ -235,7 +234,6 @@ export function makeUnitAnnualRecord(
     nhan_bkttcp: rest.nhan_bkttcp ?? false,
     so_quyet_dinh_bkttcp: rest.so_quyet_dinh_bkttcp ?? null,
     ghi_chu_bkttcp: rest.ghi_chu_bkttcp ?? null,
-    status: rest.status ?? PROPOSAL_STATUS.APPROVED,
   };
 }
 

@@ -1,37 +1,25 @@
 'use client';
 
 import { useState, useEffect, type ReactNode } from 'react';
-import {
-  StatCard,
-  getStatCardPalette,
-  type StatCardColor,
-} from '@/components/dashboard/StatCard';
+import { StatCard, getStatCardPalette, type StatCardColor } from '@/components/dashboard/StatCard';
+import { QuickActions, type QuickAction } from '@/components/dashboard/QuickActions';
 import dynamic from 'next/dynamic';
-import {
-  Card,
-  Tag,
-  Timeline,
-  Breadcrumb,
-  Typography,
-  ConfigProvider,
-  theme as antdTheme,
-  message,
-} from 'antd';
+import { Card, Tag, Timeline, Typography, ConfigProvider, theme as antdTheme, message } from 'antd';
 import {
   UserOutlined,
   UserAddOutlined,
+  ApartmentOutlined,
   SafetyOutlined,
   SettingOutlined,
   FileTextOutlined,
-  ArrowRightOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
 } from '@ant-design/icons';
-import Link from 'next/link';
 import { apiClient } from '@/lib/http/apiClient';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { useAuth } from '@/contexts/AuthContext';
 import { ROLE_LABELS } from '@/constants/roles.constants';
 import { formatDateTime } from '@/lib/utils';
@@ -43,9 +31,7 @@ const SuperAdminDashboardCharts = dynamic(
     ),
   {
     ssr: false,
-    loading: () => (
-      <LoadingState size="md" className="min-h-[520px]" text="Đang tải biểu đồ..." />
-    ),
+    loading: () => <LoadingState size="md" className="min-h-[520px]" text="Đang tải biểu đồ..." />,
   }
 );
 
@@ -90,7 +76,8 @@ export default function SuperAdminDashboard() {
         if (statisticsRes.success && statisticsRes.data) {
           const data = statisticsRes.data;
           const dailyActivity: Array<{ date: string; count: number }> = data.dailyActivity || [];
-          const newAccountsByDate: Array<{ date: string; count: number }> = data.newAccountsByDate || [];
+          const newAccountsByDate: Array<{ date: string; count: number }> =
+            data.newAccountsByDate || [];
           const recentActivity = dailyActivity.reduce((sum, item) => sum + (item.count || 0), 0);
           const newAccounts30d = newAccountsByDate.reduce(
             (sum, item) => sum + (item.count || 0),
@@ -158,38 +145,18 @@ export default function SuperAdminDashboard() {
     },
   ];
 
-  const quickActions = [
+  const quickActions: QuickAction[] = [
     {
-      title: 'Quản lý tài khoản',
-      description: 'Xem danh sách và quản lý tài khoản người dùng',
-      icon: UserOutlined,
-      iconColor: theme === 'dark' ? '#38bdf8' : '#0284c7',
-      bgColor: theme === 'dark' ? 'rgba(14, 165, 233, 0.2)' : '#e0f2fe',
-      link: '/super-admin/accounts',
+      href: '/super-admin/accounts',
+      icon: <UserOutlined />,
+      label: 'Quản lý tài khoản',
     },
+    { href: '/super-admin/accounts/create', icon: <UserAddOutlined />, label: 'Tạo tài khoản mới' },
+    { href: '/super-admin/system-logs', icon: <FileTextOutlined />, label: 'Nhật ký hệ thống' },
     {
-      title: 'Tạo tài khoản mới',
-      description: 'Thêm tài khoản và quân nhân mới vào hệ thống',
-      icon: UserAddOutlined,
-      iconColor: theme === 'dark' ? '#4ade80' : '#16a34a',
-      bgColor: theme === 'dark' ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7',
-      link: '/super-admin/accounts/create',
-    },
-    {
-      title: 'Nhật ký hệ thống',
-      description: 'Xem lịch sử hoạt động và thay đổi trong hệ thống',
-      icon: FileTextOutlined,
-      iconColor: theme === 'dark' ? '#c084fc' : '#9333ea',
-      bgColor: theme === 'dark' ? 'rgba(168, 85, 247, 0.2)' : '#f3e8ff',
-      link: '/super-admin/system-logs',
-    },
-    {
-      title: 'Cài đặt hệ thống',
-      description: 'Quản lý cấu hình và thiết lập hệ thống',
-      icon: SettingOutlined,
-      iconColor: theme === 'dark' ? '#fb923c' : '#ea580c',
-      bgColor: theme === 'dark' ? 'rgba(249, 115, 22, 0.2)' : '#fed7aa',
-      link: '/super-admin/dashboard',
+      href: '/super-admin/categories',
+      icon: <ApartmentOutlined />,
+      label: 'Quản lý cơ quan đơn vị',
     },
   ];
 
@@ -204,10 +171,7 @@ export default function SuperAdminDashboard() {
       }}
     >
       <div style={{ padding: '24px' }}>
-        {/* Breadcrumb */}
-        <Breadcrumb style={{ marginBottom: '24px' }}>
-          <Breadcrumb.Item>Dashboard</Breadcrumb.Item>
-        </Breadcrumb>
+        <PageBreadcrumb items={[{ title: 'Tổng quan' }]} />
 
         {/* Header */}
         <div style={{ marginBottom: '24px' }}>
@@ -258,67 +222,7 @@ export default function SuperAdminDashboard() {
         <SuperAdminDashboardCharts chartData={chartData} theme={theme} />
 
         {/* Quick Actions */}
-        <div>
-          <Title level={2} style={{ marginBottom: '16px' }}>
-            Thao tác nhanh
-          </Title>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-              gap: '16px',
-              marginBottom: '24px',
-              alignItems: 'stretch',
-            }}
-          >
-            {quickActions.map((action, index) => {
-              const IconComponent = action.icon;
-              return (
-                <Link key={index} href={action.link} style={{ display: 'block', height: '100%' }}>
-                  <Card
-                    hoverable
-                    className="transition-all duration-200 hover:-translate-y-1 hover:shadow-lg"
-                    style={{ cursor: 'pointer', height: '100%' }}
-                    styles={{ body: { height: '100%' } }}
-                  >
-                    <div
-                      style={{
-                        padding: '12px',
-                        backgroundColor: action.bgColor,
-                        borderRadius: '8px',
-                        width: 'fit-content',
-                        marginBottom: '16px',
-                      }}
-                    >
-                      <IconComponent style={{ fontSize: '24px', color: action.iconColor }} />
-                    </div>
-                    <Title level={4} style={{ marginBottom: '8px' }}>
-                      {action.title}
-                    </Title>
-                    <Text
-                      type="secondary"
-                      style={{ fontSize: '14px', display: 'block', marginBottom: '16px' }}
-                    >
-                      {action.description}
-                    </Text>
-                    <div
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '4px',
-                        color: '#0284c7',
-                        fontSize: '14px',
-                      }}
-                    >
-                      <span>Truy cập</span>
-                      <ArrowRightOutlined style={{ fontSize: '16px' }} />
-                    </div>
-                  </Card>
-                </Link>
-              );
-            })}
-          </div>
-        </div>
+        <QuickActions actions={quickActions} />
 
         {/* System Info */}
         <div

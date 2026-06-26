@@ -10,17 +10,10 @@ export interface JwtUser {
   don_vi_truc_thuoc_id?: string;
 }
 
-export interface UnitFilter {
-  don_vi_id: string;
-  isCoQuanDonVi: boolean;
-  personnelIds?: string[];
-}
-
 declare global {
   namespace Express {
     interface Request {
       user?: JwtUser;
-      unitFilter?: UnitFilter | null;
     }
   }
 }

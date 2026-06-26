@@ -44,6 +44,16 @@ export const updatePersonnel = z.object({
   don_vi_truc_thuoc_id: z.string().trim().nullable().optional(),
 });
 
+export const updateOwnProfile = z.object({
+  ho_ten: z.string().trim().min(1).max(100).optional(),
+  ngay_sinh: z.coerce.date().nullable().optional(),
+  so_dien_thoai: z.string().trim().nullable().optional(),
+  que_quan_2_cap: z.string().trim().nullable().optional(),
+  que_quan_3_cap: z.string().trim().nullable().optional(),
+  tru_quan: z.string().trim().nullable().optional(),
+  cho_o_hien_nay: z.string().trim().nullable().optional(),
+});
+
 export const listQuery = z.object({
   page: z.coerce.number().int().min(1).default(1),
   limit: z.coerce.number().int().min(1).default(20),

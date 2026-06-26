@@ -8,7 +8,7 @@ export type SystemLogStats = {
   update?: number;
 };
 
-export type SystemLogsResponse<T = unknown> = ApiResponse<T> & {
+type SystemLogsResponse<T = unknown> = ApiResponse<T> & {
   stats?: SystemLogStats;
 };
 
@@ -30,27 +30,9 @@ export async function getSystemLogActions(): Promise<ApiResponse> {
   }
 }
 
-export async function getSystemLogResources(): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.get('/api/system-logs/resources');
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
 export async function deleteSystemLogs(ids: string[]): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete('/api/system-logs', { data: { ids } });
-    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
-export async function deleteAllSystemLogs(): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.delete('/api/system-logs/all');
     return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };

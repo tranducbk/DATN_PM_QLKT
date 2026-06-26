@@ -21,6 +21,11 @@ import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import bcrypt from 'bcrypt';
 import { parseCCCD } from '../helpers/cccdHelper';
+import { notifyOnPersonnelDeleted, notifyOnSelfProfileUpdate } from '../helpers/notification';
+import { writeSystemLog } from '../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
+import { diffPersonnelChanges, formatPersonnelChanges } from '../helpers/profileFieldDiff';
 import { ROLES } from '../constants/roles.constants';
 import { PROPOSAL_STATUS } from '../constants/proposalStatus.constants';
 import {
@@ -37,59 +42,16 @@ import type { UpdatePersonnelInput } from './personnel/update';
 
 const HCBVTQ_LABEL = AWARD_LABELS[AWARD_SLUGS.CONTRIBUTION_MEDALS];
 
-/*
- * ════════════════════════════════════════════════════════════════════════════
- *  PERSONNEL SERVICE — quân nhân (QuanNhan) — core nghiệp vụ
- * ════════════════════════════════════════════════════════════════════════════
- *
- *  ENTITY trung tâm — TẤT CẢ khen thưởng đều ref tới QuanNhan.id qua FK.
- *
- *  CCCD = UNIQUE constraint (PII + business key):
- *  - 1 CCCD chỉ tồn tại 1 QuanNhan (mỗi công dân chỉ 1 căn cước).
- *  - Insert trùng CCCD → Prisma throw P2002 → service trả message
- *    "Quân nhân với CCCD này đã tồn tại".
- *  - parseCCCD chuẩn hoá pad zero trước khi check duplicate (tránh "123"
- *    và "000000000123" coi là 2 CCCD khác).
- *
- *  USERNAME = CCCD (default):
- *  - Khi admin tạo quân nhân, account.username AUTO = cccd.
- *  - Dễ nhớ + chống tạo trùng username (vì CCCD đã unique).
- *  - User đầu tiên login với password mặc định → buộc đổi.
- *
- *  UNIT ID dual field:
- *      QuanNhan có 2 field FK:
- *        co_quan_don_vi_id     (CQDV — cơ quan/đơn vị mẹ)
- *        don_vi_truc_thuoc_id  (DVTT — đơn vị trực thuộc)
- *      Chỉ 1 trong 2 được set (mutually exclusive — quân nhân thuộc CQDV
- *      hoặc DVTT, không cả hai). DVTT thuộc CQDV qua FK riêng.
- *
- *      Khi lấy "đơn vị của quân nhân" → DVTT ưu tiên hơn CQDV (DVTT là
- *      con cụ thể hơn, CQDV là cha):
- *        const donViId = qn.don_vi_truc_thuoc_id ?? qn.co_quan_don_vi_id;
- *
- *  SO_LUONG AUTO-MAINTAIN:
- *      CoQuanDonVi.so_luong + DonViTrucThuoc.so_luong = số quân nhân
- *      trong đơn vị (denormalized counter để query nhanh).
- *      Mỗi khi:
- *        - Tạo QuanNhan          → tăng so_luong của đơn vị tương ứng.
- *        - Xoá QuanNhan          → giảm so_luong.
- *        - Đổi đơn vị QuanNhan   → giảm đơn vị cũ + tăng đơn vị mới.
- *      Implementation: trong transaction để đảm bảo atomic.
- *      Pattern dùng `if/else` (KHÔNG 2 if riêng biệt) — xem CLAUDE.md
- *      mục Unit count để tránh đếm dư.
- *
- *  MANAGER UNIT FILTER:
- *  - getAllPersonnel với MANAGER role → filter chỉ trả quân nhân thuộc
- *    đơn vị manager mình. Logic ở `helpers/controllerHelper.ts`.
- *  - Manager CQDV thấy: chính mình + tất cả DVTT con + quân nhân DVTT.
- *  - Manager DVTT thấy: chỉ DVTT mình + quân nhân DVTT.
- *
- *  CASCADE DELETE chú ý:
- *  - Xoá QuanNhan → cascade delete TaiKhoan, DanhHieuHangNam, ... liên
- *    quan (FK onDelete: Cascade). RỦI RO: mất audit trail.
- *  - Tốt hơn: soft delete (flag `is_deleted`) — chưa implement.
- * ════════════════════════════════════════════════════════════════════════════
- */
+export interface UpdateOwnProfileData {
+  ho_ten?: string;
+  ngay_sinh?: Date | null;
+  so_dien_thoai?: string | null;
+  que_quan_2_cap?: string | null;
+  que_quan_3_cap?: string | null;
+  tru_quan?: string | null;
+  cho_o_hien_nay?: string | null;
+}
+
 class PersonnelService {
   parseCCCD(value) {
     return parseCCCD(value);
@@ -220,6 +182,44 @@ class PersonnelService {
   }
 
   /** Returns one personnel record by id. */
+  /**
+   * Updates the limited self-editable fields of the caller's own profile.
+   * @param quanNhanId - Personnel id resolved from the caller's token
+   * @param data - Whitelisted contact/biographical fields
+   * @returns Updated personnel record
+   */
+  async updateOwnProfile(
+    quanNhanId: string,
+    data: UpdateOwnProfileData,
+    actor: { actorId: string; actorRole: string }
+  ) {
+    const before = await quanNhanRepository.findById(quanNhanId);
+    const updated = await quanNhanRepository.update(quanNhanId, data);
+    const changes = diffPersonnelChanges(before, data);
+
+    if (changes.length > 0) {
+      void writeSystemLog({
+        userId: actor.actorId,
+        userRole: actor.actorRole,
+        action: AUDIT_ACTIONS.UPDATE,
+        resource: RESOURCE_SLUGS.PERSONNEL,
+        resourceId: quanNhanId,
+        description: `Cập nhật thông tin cá nhân: ${formatPersonnelChanges(changes)}`,
+      });
+      void notifyOnSelfProfileUpdate(
+        {
+          id: updated.id,
+          ho_ten: updated.ho_ten,
+          co_quan_don_vi_id: updated.co_quan_don_vi_id,
+          don_vi_truc_thuoc_id: updated.don_vi_truc_thuoc_id,
+        },
+        changes.map(change => change.label)
+      );
+    }
+
+    return updated;
+  }
+
   async getPersonnelById(id, userRole, userQuanNhanId) {
     const personnel = await quanNhanRepository.findByIdForDetail(String(id));
 
@@ -273,7 +273,7 @@ class PersonnelService {
     }
 
     const isCoQuanDonVi = !!coQuanDonVi;
-    let personnelData: Prisma.QuanNhanUncheckedCreateInput = {
+    const personnelData: Prisma.QuanNhanUncheckedCreateInput = {
       cccd,
       ho_ten: username,
       ngay_sinh: null,
@@ -289,20 +289,11 @@ class PersonnelService {
       personnelData.don_vi_truc_thuoc_id = unit_id;
     }
 
-    // Hash password NGOÀI transaction để giảm thời gian giữ lock (bcrypt chậm ~100ms,
-    // không nên giữ row-lock trong lúc băm).
+    // Hash password outside transaction to reduce lock duration.
     const defaultPassword = DEFAULT_PASSWORD || 'Hvkhqs@123';
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
-    // ─── TRANSACTION: tạo quân nhân (form "Thêm quân nhân" — CCCD nhập ngay) ───
-    // Đây là luồng cccd-first (username = CCCD), khác account.service (account-first,
-    // cccd điền sau). 4 thao tác nguyên tử, throw bất kỳ → Prisma rollback hết.
-    // SQL minh hoạ:
-    //   INSERT INTO "QuanNhan"     (cccd, ho_ten, chuc_vu_id, ngay_nhap_ngu, ...) VALUES ($cccd, $cccd, ...);
-    //   SELECT he_so_chuc_vu FROM "ChucVu" WHERE id = $position;   -- hệ số cho dòng lịch sử
-    //   INSERT INTO "LichSuChucVu" (quan_nhan_id, chuc_vu_id, he_so_chuc_vu, ngay_bat_dau) VALUES (...);
-    //   INSERT INTO "TaiKhoan"     (username, password_hash, role, quan_nhan_id) VALUES ($cccd, ...);
-    //   UPDATE "CoQuanDonVi" | "DonViTrucThuoc" SET so_luong = so_luong + 1 WHERE id = $unit;
+    // Wrap all writes in one transaction for consistency.
     const result = await prisma.$transaction(async prismaTx => {
       const newPersonnel = await quanNhanRepository.create(personnelData, prismaTx);
 
@@ -375,7 +366,7 @@ class PersonnelService {
    * Deletes personnel and all related records through cascade constraints.
    * Cascade covers accounts, histories, awards, and annual profile snapshots.
    */
-  async deletePersonnel(id, userRole, userQuanNhanId) {
+  async deletePersonnel(id, userRole, userQuanNhanId, adminUsername?: string) {
     const personnel = await quanNhanRepository.findByIdWithAccount(String(id));
 
     if (!personnel) {
@@ -420,13 +411,28 @@ class PersonnelService {
         try {
           await adjustUnitCount(prismaTx, unitId, isCoQuanDonVi, 'decrement');
         } catch (error) {
+          console.error('[deletePersonnel] adjustUnitCount failed', { unitId, error });
           throw new AppError(
-            `Không thể cập nhật số lượng quân nhân của đơn vị: ${error.message}`,
+            'Không thể cập nhật số lượng quân nhân của đơn vị, vui lòng thử lại.',
             500
           );
         }
       }
     });
+
+    try {
+      await notifyOnPersonnelDeleted(
+        {
+          id: String(id),
+          ho_ten: personnel.ho_ten,
+          co_quan_don_vi_id: personnel.co_quan_don_vi_id,
+          don_vi_truc_thuoc_id: personnel.don_vi_truc_thuoc_id,
+        },
+        adminUsername
+      );
+    } catch (error) {
+      console.error('[deletePersonnel] notifyOnPersonnelDeleted failed', error);
+    }
 
     return {
       message: 'Xóa quân nhân và toàn bộ dữ liệu liên quan thành công',

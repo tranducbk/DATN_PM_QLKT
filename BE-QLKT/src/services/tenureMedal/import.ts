@@ -1,3 +1,5 @@
+import { HCCSVV_TEMPLATE_COLUMNS } from '../../constants/awardExcel.constants';
+import { resolveTemplateColumns } from '../../helpers/excel/excelHelper';
 import { prisma } from '../../models';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { tenureMedalRepository } from '../../repositories/tenureMedal.repository';
@@ -6,7 +8,6 @@ import { proposalRepository } from '../../repositories/proposal.repository';
 import { loadWorkbook, getAndValidateWorksheet } from '../../helpers/excel/excelImportHelper';
 import {
   parseHeaderMap,
-  getHeaderCol,
   resolvePersonnelInfo,
   buildPendingKeys,
   validatePersonnelNameMatch,
@@ -66,15 +67,16 @@ export async function previewImport(buffer: Buffer) {
 
   const headerMap = parseHeaderMap(worksheet);
 
-  const idCol = getHeaderCol(headerMap, ['id', 'ma_quan_nhan', 'personnel_id']);
-  const hoTenCol = getHeaderCol(headerMap, ['ho_va_ten', 'ho_ten', 'hoten', 'hovaten', 'ten']);
-  const capBacCol = getHeaderCol(headerMap, ['cap_bac', 'capbac', 'cap_bc']);
-  const chucVuCol = getHeaderCol(headerMap, ['chuc_vu', 'chucvu', 'chc_vu']);
-  const namCol = getHeaderCol(headerMap, ['nam', 'year']);
-  const thangCol = getHeaderCol(headerMap, ['thang', 'month', 'tháng']);
-  const danhHieuCol = getHeaderCol(headerMap, ['danh_hieu', 'danhhieu', 'danh_hiu']);
-  const soQuyetDinhCol = getHeaderCol(headerMap, ['so_quyet_dinh', 'soquyetdinh', 'so_qd']);
-  const ghiChuCol = getHeaderCol(headerMap, ['ghi_chu', 'ghichu', 'ghi_ch']);
+  const cols = resolveTemplateColumns(headerMap, HCCSVV_TEMPLATE_COLUMNS);
+  const idCol = cols.id;
+  const hoTenCol = cols.ho_ten;
+  const capBacCol = cols.cap_bac;
+  const chucVuCol = cols.chuc_vu;
+  const namCol = cols.nam;
+  const thangCol = cols.thang;
+  const danhHieuCol = cols.danh_hieu;
+  const soQuyetDinhCol = cols.so_quyet_dinh;
+  const ghiChuCol = cols.ghi_chu;
 
   if (!idCol || !namCol || !danhHieuCol) {
     throw new ValidationError(

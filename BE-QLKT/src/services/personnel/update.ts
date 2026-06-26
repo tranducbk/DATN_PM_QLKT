@@ -14,7 +14,10 @@ import { NotFoundError, ValidationError, ForbiddenError } from '../../middleware
 import profileService from '../profile.service';
 import * as notificationHelper from '../../helpers/notification';
 import { writeSystemLog } from '../../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../../constants/auditActions.constants';
+import { logMessages } from '../../constants/logMessages.constants';
 import { adjustUnitCount } from './unitCount';
+import { diffPersonnelChanges } from '../../helpers/profileFieldDiff';
 
 type DateInput = Date | null;
 
@@ -354,9 +357,9 @@ export async function updatePersonnel(
     await profileService.recalculateAnnualProfile(id);
   } catch (recalcError) {
     void writeSystemLog({
-      action: 'ERROR',
+      action: AUDIT_ACTIONS.ERROR,
       resource: RESOURCE_SLUGS.PERSONNEL,
-      description: `Lỗi tính lại hồ sơ hằng năm quân nhân ${id}: ${recalcError}`,
+      description: logMessages.recalcPersonnelError(id, recalcError),
     });
   }
 
@@ -371,15 +374,18 @@ export async function updatePersonnel(
       );
     } catch (notifError) {
       void writeSystemLog({
-        action: 'ERROR',
+        action: AUDIT_ACTIONS.ERROR,
         resource: RESOURCE_SLUGS.PERSONNEL,
-        description: `Lỗi gửi thông báo chuyển đơn vị quân nhân ${id}: ${notifError}`,
+        description: logMessages.notifyError('chuyển đơn vị', `quân nhân ${id}`, notifError),
       });
     }
   }
 
+  const changes = diffPersonnelChanges(personnel, data);
+
   return {
     ...updatedPersonnel,
     unitTransferInfo,
+    changes,
   };
 }

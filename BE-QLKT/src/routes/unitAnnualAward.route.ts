@@ -1,18 +1,9 @@
-/*
- * UNIT ANNUAL AWARD ROUTE — danh hiệu đơn vị hàng năm.
- * /api/awards/units/annual — mount TRƯỚC /api/awards để tránh conflict.
- * Bao gồm: list, propose, approve, reject, upsert, recalculate, history.
- * Chuỗi đơn vị: ĐVQT → BKBQP đơn vị → BKTTCP đơn vị (xem unitAnnualAward/eligibility.ts).
- */
-
-import { Router, Request, Response } from 'express';
-import path from 'path';
-import fs from 'fs';
+import { Router } from 'express';
 import unitAnnualAwardController from '../controllers/unitAnnualAward.controller';
-import { verifyToken, requireManager, requireAdminOnly } from '../middlewares/auth';
+import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
-import { excelUpload as upload, decisionUploadDir as uploadDir } from '../configs/multer';
+import { excelUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { validate } from '../middlewares/validate';
@@ -28,7 +19,7 @@ const router = Router();
 router.get(
   '/',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(unitAnnualAwardValidation.listUnitAnnualAwardsQuery, 'query'),
   unitAnnualAwardController.list
 );
@@ -38,7 +29,7 @@ router.get(
  * @desc    Download Excel template for unit annual award import
  * @access  ADMIN, MANAGER
  */
-router.get('/template', verifyToken, requireManager, unitAnnualAwardController.getTemplate);
+router.get('/template', verifyToken, requireAdminOnly, unitAnnualAwardController.getTemplate);
 
 /**
  * @route   POST /api/unit-annual-awards/import/preview
@@ -74,7 +65,7 @@ router.post(
 router.get(
   '/export',
   verifyToken,
-  requireManager,
+  requireAdminOnly,
   validate(unitAnnualAwardValidation.exportUnitAnnualAwardsQuery, 'query'),
   unitAnnualAwardController.exportToExcel
 );
@@ -87,7 +78,7 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(unitAnnualAwardValidation.getUnitAnnualAwardsStatisticsQuery, 'query'),
   unitAnnualAwardController.getStatistics
 );
@@ -97,12 +88,7 @@ router.get(
  * @desc    List all award history for a unit
  * @access  ADMIN, MANAGER
  */
-router.get(
-  '/history',
-  verifyToken,
-  requireManager,
-  unitAnnualAwardController.getUnitAnnualAwards
-);
+router.get('/history', verifyToken, requireAdminOrManager, unitAnnualAwardController.getUnitAnnualAwards);
 
 /**
  * @route   GET /api/unit-annual-awards/profile/:don_vi_id
@@ -112,7 +98,7 @@ router.get(
 router.get(
   '/profile/:don_vi_id',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   unitAnnualAwardController.getUnitAnnualProfile
 );
 
@@ -121,14 +107,14 @@ router.get(
  * @desc    Get unit annual award details by ID
  * @access  ADMIN, MANAGER
  */
-router.get('/:id', verifyToken, requireManager, unitAnnualAwardController.getById);
+router.get('/:id', verifyToken, requireAdminOrManager, unitAnnualAwardController.getById);
 
 /**
  * @route   POST /api/unit-annual-awards
- * @desc    Create a unit annual award (direct entry of an already-approved award)
+ * @desc    Create a unit annual award (admin direct entry of a granted award)
  * @access  ADMIN only
  */
-// Direct entry writes status APPROVED, bypassing propose->approve — restricted to ADMIN
+// Admin direct entry — award is granted immediately, restricted to ADMIN
 router.post(
   '/',
   verifyToken,
@@ -145,7 +131,7 @@ router.post(
 
 /**
  * @route   PUT /api/unit-annual-awards/:id
- * @desc    Update a unit annual award (direct entry of an already-approved award)
+ * @desc    Update a unit annual award (admin direct entry of a granted award)
  * @access  ADMIN only
  */
 router.put(
@@ -170,7 +156,7 @@ router.put(
 router.delete(
   '/:id',
   verifyToken,
-  requireManager,
+  requireAdminOnly,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
@@ -181,61 +167,6 @@ router.delete(
 );
 
 /**
- * @route   POST /api/unit-annual-awards/propose
- * @desc    Submit a unit annual award proposal
- * @access  ADMIN, MANAGER
- */
-router.post(
-  '/propose',
-  verifyToken,
-  requireManager,
-  validate(unitAnnualAwardValidation.proposeUnitAnnualAward),
-  auditLog({
-    action: AUDIT_ACTIONS.PROPOSE,
-    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'PROPOSE'),
-    getResourceId: () => null,
-  }),
-  unitAnnualAwardController.propose
-);
-
-/**
- * @route   POST /api/unit-annual-awards/:id/approve
- * @desc    Approve a unit annual award proposal
- * @access  ADMIN
- */
-router.post(
-  '/:id/approve',
-  verifyToken,
-  requireAdminOnly,
-  auditLog({
-    action: AUDIT_ACTIONS.APPROVE,
-    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'APPROVE'),
-    getResourceId: getResourceId.fromParams('id'),
-  }),
-  unitAnnualAwardController.approve
-);
-
-/**
- * @route   POST /api/unit-annual-awards/:id/reject
- * @desc    Reject a unit annual award proposal
- * @access  ADMIN
- */
-router.post(
-  '/:id/reject',
-  verifyToken,
-  requireAdminOnly,
-  auditLog({
-    action: AUDIT_ACTIONS.REJECT,
-    resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
-    getDescription: getLogDescription(AWARD_SLUGS.UNIT_ANNUAL_AWARDS, 'REJECT'),
-    getResourceId: getResourceId.fromParams('id'),
-  }),
-  unitAnnualAwardController.reject
-);
-
-/**
  * @route   POST /api/unit-annual-awards/recalculate
  * @desc    Recalculate unit annual awards
  * @access  ADMIN, MANAGER
@@ -243,7 +174,7 @@ router.post(
 router.post(
   '/recalculate',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   auditLog({
     action: AUDIT_ACTIONS.RECALCULATE,
     resource: AWARD_SLUGS.UNIT_ANNUAL_AWARDS,
@@ -251,36 +182,6 @@ router.post(
     getResourceId: () => null,
   }),
   unitAnnualAwardController.recalculate
-);
-
-/**
- * @route   POST /api/unit-annual-awards/decision-files/:id/upload
- * @desc    Serve the decision PDF file for a unit annual award
- * @access  ADMIN
- */
-router.get(
-  '/decision-files/:filename',
-  verifyToken,
-  requireAdminOnly,
-  (req: Request, res: Response) => {
-    try {
-      const filename = path.basename(String(req.params.filename ?? ''));
-      const filePath = path.join(uploadDir, filename);
-
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({
-          success: false,
-          message: 'File không tồn tại',
-        });
-      }
-
-      res.setHeader('Content-Type', 'application/pdf');
-      res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-      res.sendFile(filePath);
-    } catch (error) {
-      res.status(500).json({ success: false, message: 'Không thể tải file' });
-    }
-  }
 );
 
 export default router;

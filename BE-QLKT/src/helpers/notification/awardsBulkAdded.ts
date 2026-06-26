@@ -35,7 +35,12 @@ import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { getAwardLabelByProposalType } from '../../constants/awardResource.constants';
 import { accountRepository } from '../../repositories/account.repository';
 import { notificationRepository } from '../../repositories/notification.repository';
-import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
+import { NOTIFICATION_TITLES } from '../../constants/notificationMessages.constants';
+import {
+  coQuanDonViRepository,
+  donViTrucThuocRepository,
+} from '../../repositories/unit.repository';
+import { resolveDanhHieuFromRecord } from '../../constants/danhHieu.constants';
 
 interface NotificationInput {
   nguoi_nhan_id: string;
@@ -183,7 +188,7 @@ export async function notifyOnBulkAwardAdded(
           nguoi_nhan_id: account.id,
           recipient_role: account.role,
           type: NOTIFICATION_TYPES.AWARD_ADDED,
-          title: 'Bạn đã nhận khen thưởng',
+          title: NOTIFICATION_TITLES.AWARD_RECEIVED,
           message: message,
           resource: RESOURCE_TYPES.AWARDS,
           tai_nguyen_id: personnel.id,
@@ -209,7 +214,7 @@ export async function notifyOnBulkAwardAdded(
                 nguoi_nhan_id: manager.id,
                 recipient_role: manager.role,
                 type: NOTIFICATION_TYPES.AWARD_ADDED,
-                title: 'Khen thưởng mới đã được thêm',
+                title: NOTIFICATION_TITLES.AWARD_ADDED,
                 message: `${adminDisplayName} đã thêm ${awardTypeName}${
                   nam ? ` năm ${nam}` : ''
                 } cho quân nhân trong đơn vị của bạn`,
@@ -250,10 +255,9 @@ export async function notifyOnBulkAwardAdded(
           where: {
             role: ROLES.MANAGER,
             QuanNhan: {
-              OR: [
-                { co_quan_don_vi_id: coQuanDonViId },
-                { don_vi_truc_thuoc_id: donVi.id },
-              ].filter(Boolean),
+              OR: [{ co_quan_don_vi_id: coQuanDonViId }, { don_vi_truc_thuoc_id: donVi.id }].filter(
+                Boolean
+              ),
             },
           },
           select: {
@@ -272,7 +276,7 @@ export async function notifyOnBulkAwardAdded(
             nguoi_nhan_id: manager.id,
             recipient_role: manager.role,
             type: NOTIFICATION_TYPES.AWARD_ADDED,
-            title: 'Đơn vị của bạn đã nhận khen thưởng',
+            title: NOTIFICATION_TITLES.UNIT_AWARD_RECEIVED,
             message: `${adminDisplayName} đã thêm ${danhHieu || awardTypeName}${
               nam ? ` năm ${nam}` : ''
             } cho đơn vị ${donVi.ten_don_vi}`,
@@ -292,6 +296,85 @@ export async function notifyOnBulkAwardAdded(
     return notifications.length;
   } catch (error) {
     console.error('NotificationAwards.notifyOnBulkAwardAdded failed', { error });
+    return 0;
+  }
+}
+
+interface UnitAwardRecord {
+  co_quan_don_vi_id?: string | null;
+  don_vi_truc_thuoc_id?: string | null;
+  CoQuanDonVi?: { ten_don_vi?: string | null } | null;
+  DonViTrucThuoc?: { ten_don_vi?: string | null } | null;
+  nam?: number | null;
+  danh_hieu?: string | null;
+  nhan_bkbqp?: boolean;
+  nhan_bkttcp?: boolean;
+}
+
+/**
+ * Notifies the managers of a unit when one of its annual awards is deleted (symmetric
+ * with the add notification).
+ * @param record - Deleted unit award row (with CoQuanDonVi/DonViTrucThuoc relations)
+ * @param awardType - The specific danh hieu removed; falls back to the record's flags/danh_hieu
+ * @param adminUsername - Username of the admin performing the deletion
+ * @returns Number of notifications dispatched
+ */
+export async function notifyOnUnitAwardDeleted(
+  record: UnitAwardRecord,
+  awardType: string | null,
+  adminUsername: string
+): Promise<number> {
+  try {
+    const unitId = record.co_quan_don_vi_id || record.don_vi_truc_thuoc_id;
+    if (!unitId) return 0;
+
+    // Managers sit at the CQDV level; for a DVTT award resolve its parent CQDV.
+    let coQuanDonViId = record.co_quan_don_vi_id ?? null;
+    if (!coQuanDonViId && record.don_vi_truc_thuoc_id) {
+      const parent = await donViTrucThuocRepository.findCoQuanDonViIdById(
+        record.don_vi_truc_thuoc_id
+      );
+      coQuanDonViId = parent?.co_quan_don_vi_id ?? null;
+    }
+
+    const orConditions: Array<{ co_quan_don_vi_id: string } | { don_vi_truc_thuoc_id: string }> =
+      [];
+    if (coQuanDonViId) orConditions.push({ co_quan_don_vi_id: coQuanDonViId });
+    if (record.don_vi_truc_thuoc_id) {
+      orConditions.push({ don_vi_truc_thuoc_id: record.don_vi_truc_thuoc_id });
+    }
+    if (orConditions.length === 0) return 0;
+
+    const managers = await accountRepository.findManyRaw({
+      where: { role: ROLES.MANAGER, QuanNhan: { OR: orConditions } },
+      select: { id: true, role: true },
+    });
+    if (managers.length === 0) return 0;
+
+    const adminDisplayName = await getDisplayName(adminUsername);
+    const danhHieu = awardType || resolveDanhHieuFromRecord(record) || '';
+    const awardText = danhHieu ? getDanhHieuName(danhHieu) : 'khen thưởng';
+    const tenDonVi =
+      record.CoQuanDonVi?.ten_don_vi || record.DonViTrucThuoc?.ten_don_vi || 'một đơn vị';
+    const namText = record.nam ? ` năm ${record.nam}` : '';
+    const message = `${adminDisplayName} đã xóa ${awardText}${namText} của đơn vị ${tenDonVi}`;
+
+    const notifications: NotificationInput[] = managers.map(manager => ({
+      nguoi_nhan_id: manager.id,
+      recipient_role: manager.role,
+      type: NOTIFICATION_TYPES.AWARD_DELETED,
+      title: NOTIFICATION_TITLES.UNIT_AWARD_DELETED,
+      message,
+      resource: RESOURCE_TYPES.AWARDS,
+      tai_nguyen_id: unitId,
+      link: `/manager/awards?don_vi_id=${unitId}${record.nam ? `&nam=${record.nam}` : ''}`,
+    }));
+
+    await notificationRepository.createMany(notifications);
+    notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
+    return notifications.length;
+  } catch (error) {
+    console.error('NotificationAwards.notifyOnUnitAwardDeleted failed', { error });
     return 0;
   }
 }

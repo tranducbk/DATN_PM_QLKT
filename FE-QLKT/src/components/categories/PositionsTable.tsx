@@ -34,7 +34,11 @@ export function PositionsTable({ positions, onEdit, onRefresh }: PositionsTableP
     try {
       setLoading(true);
       setDeletingId(id);
-      await apiClient.deletePosition(id);
+      const result = await apiClient.deletePosition(id);
+      if (!result.success) {
+        message.error(result.message || 'Có lỗi xảy ra khi xóa');
+        return;
+      }
       message.success('Xóa chức vụ thành công');
       onRefresh?.();
     } catch (error) {

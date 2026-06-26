@@ -132,8 +132,8 @@ function callSubmitHcqkqt(personnelId: string, managerId: string, nam = 2024, th
   );
 }
 
-describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (gender boundary)', () => {
-  it('QN nữ phục vụ đúng 20 năm → submit thành công', async () => {
+describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (mốc thâm niên theo giới tính)', () => {
+  it('Gửi đề xuất: quân nhân nữ phục vụ đúng 20 năm (mốc tối thiểu của nữ) → gửi KNC thành công', async () => {
     // Given: QN nữ nhập ngũ đúng 20 năm trước ngày đề xuất
     const target = makePersonnel({ id: 'qn-nu-20', ho_ten: 'Nguyễn Thị Hai' });
     const ngayNhapNgu = new Date('2004-06-30');
@@ -150,7 +150,7 @@ describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (gender boundary)', (
     });
   });
 
-  it('QN nữ 19 năm → submit reject với reason exact', async () => {
+  it('Gửi đề xuất bị chặn: quân nhân nữ phục vụ 19 năm (thiếu mốc 20 năm) → từ chối với lý do cụ thể', async () => {
     // Given: QN nữ thiếu chút để đạt mốc 20 năm (xuat_ngu pin để ổn định)
     const target = makePersonnel({ id: 'qn-nu-19', ho_ten: 'Trần Thị Ba' });
     const ngayNhapNgu = new Date('2005-06-30');
@@ -171,7 +171,7 @@ describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (gender boundary)', (
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('QN nam phục vụ 24 năm → submit reject với reason exact (yêu cầu 25 năm)', async () => {
+  it('Gửi đề xuất bị chặn: quân nhân nam phục vụ 24 năm (nam yêu cầu 25 năm) → từ chối với lý do cụ thể', async () => {
     // Given: QN nam thiếu mốc 25 năm
     const target = makePersonnel({ id: 'qn-nam-24', ho_ten: 'Lê Văn Bốn' });
     const ngayNhapNgu = new Date('2000-06-30');
@@ -191,7 +191,7 @@ describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (gender boundary)', (
     );
   });
 
-  it('QN nam phục vụ 25 năm → submit thành công', async () => {
+  it('Gửi đề xuất: quân nhân nam phục vụ 25 năm (mốc tối thiểu của nam) → gửi KNC thành công', async () => {
     // Given: QN nam đạt mốc 25 năm
     const target = makePersonnel({ id: 'qn-nam-25', ho_ten: 'Phạm Văn Năm' });
     const ngayNhapNgu = new Date('1999-06-30');
@@ -208,7 +208,7 @@ describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (gender boundary)', (
     });
   });
 
-  it('QN gioi_tinh = null → reject với "Chưa cập nhật thông tin giới tính"', async () => {
+  it('Gửi đề xuất bị chặn: quân nhân chưa có giới tính → từ chối "Chưa cập nhật thông tin giới tính"', async () => {
     // Given: QN thiếu giới tính — pre-validation KNC phải bắt được
     const target = makePersonnel({ id: 'qn-no-gender', ho_ten: 'Hoàng Văn Sáu' });
     const ngayNhapNgu = new Date('1995-01-01');
@@ -226,7 +226,7 @@ describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (gender boundary)', (
     );
   });
 
-  it('QN có ngay_xuat_ngu sớm → tính tới ngày xuất ngũ, không phải refDate', async () => {
+  it('Gửi đề xuất bị chặn: quân nhân nam xuất ngũ sớm năm 2020 (19 năm) → tính thâm niên tới ngày xuất ngũ, không tính tới hiện tại, từ chối', async () => {
     // Given: QN nam xuất ngũ 2020 với 19 năm phục vụ — KHÔNG tính tới hôm nay
     const target = makePersonnel({ id: 'qn-xn', ho_ten: 'Đỗ Văn Bảy' });
     const ngayNhapNgu = new Date('2001-06-30');
@@ -247,8 +247,8 @@ describe('Chuyên gia khen thưởng — KNC VSNXD QĐNDVN (gender boundary)', (
   });
 });
 
-describe('Chuyên gia khen thưởng — HCQKQT 25 năm boundary', () => {
-  it('Submit fail khi 24 năm 11 tháng', async () => {
+describe('Chuyên gia khen thưởng — HC QKQT mốc biên 25 năm', () => {
+  it('Gửi đề xuất bị chặn: quân nhân phục vụ 24 năm 11 tháng (thiếu 1 tháng) → từ chối HC QKQT', async () => {
     // Given: QN nam thiếu chút để đạt mốc 25 năm
     const target = makePersonnel({ id: 'qn-hc-24-11', ho_ten: 'Nguyễn Văn Tám' });
     const account = makeAdmin({ id: 'acc-hc-1' });
@@ -288,7 +288,7 @@ describe('Chuyên gia khen thưởng — HCQKQT 25 năm boundary', () => {
     );
   });
 
-  it('Approve với QN 24 năm 11 tháng → reject với reason exact dùng formatServiceDuration', async () => {
+  it('Phê duyệt bị chặn: duyệt HC QKQT cho quân nhân phục vụ 24 năm 11 tháng → kiểm tra lại điều kiện và từ chối', async () => {
     // Given: đề xuất HCQKQT bypass FE; approve phải re-validate điều kiện
     const target = makePersonnel({ id: 'qn-hc-approve' });
     const proposal = makeProposal({
@@ -296,7 +296,7 @@ describe('Chuyên gia khen thưởng — HCQKQT 25 năm boundary', () => {
       loai: PROPOSAL_TYPES.HC_QKQT,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [
         {
           personnel_id: target.id,
@@ -331,8 +331,8 @@ describe('Chuyên gia khen thưởng — HCQKQT 25 năm boundary', () => {
   });
 });
 
-describe('Chuyên gia khen thưởng — chuỗi BKBQP/CSTDTQ exact reasons', () => {
-  it('CSTDCS năm 2022 + 2023 + NCKH đủ → eligible BKBQP với reason "Đủ điều kiện"', async () => {
+describe('Chuyên gia khen thưởng — chuỗi danh hiệu BKBQP/CSTDTQ/BKTTCP', () => {
+  it('Xét điều kiện BKBQP: 2 năm CSTDCS liên tục (2022, 2023) + NCKH đủ → đủ điều kiện', async () => {
     // Given: chuỗi CSTDCS liên tục 2 năm tối thiểu kèm NCKH đủ
     const personnelId = 'qn-real-bk-2y';
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -356,7 +356,7 @@ describe('Chuyên gia khen thưởng — chuỗi BKBQP/CSTDTQ exact reasons', ()
     expect(result.reason).toBe(eligibilityReasons.bkbqpEligible);
   });
 
-  it('3y CSTDCS + 1 BKBQP TRONG streak → eligible CSTDTQ với reason exact', async () => {
+  it('Xét điều kiện CSTDTQ: 3 năm CSTDCS liên tục + 1 BKBQP trong chuỗi → đủ điều kiện', async () => {
     // Given: CSTDCS liên tục 3 năm, flag BKBQP ở năm thứ 2 của chuỗi
     const personnelId = 'qn-real-cs-3y';
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(
@@ -381,7 +381,7 @@ describe('Chuyên gia khen thưởng — chuỗi BKBQP/CSTDTQ exact reasons', ()
     expect(result.reason).toBe(eligibilityReasons.cstdtqEligible);
   });
 
-  it('13 năm CSTDCS không "chưa hỗ trợ" — phải bám exact full reason', async () => {
+  it('Xét điều kiện BKTTCP: 13 năm CSTDCS liên tục nhưng thiếu BKBQP/CSTDTQ → chưa đủ điều kiện với lý do đầy đủ', async () => {
     // Given: 13 năm CSTDCS liên tục (không flag chuỗi) — không chia hết 7 và không bằng 7
     const personnelId = 'qn-real-13y';
     const dh: AnnualRow[] = [];
@@ -404,8 +404,8 @@ describe('Chuyên gia khen thưởng — chuỗi BKBQP/CSTDTQ exact reasons', ()
   });
 });
 
-describe('Chuyên gia khen thưởng — duplicate one-time awards (HC_QKQT)', () => {
-  it('QN đã có HC_QKQT → submit lại reject với message exact', async () => {
+describe('Chuyên gia khen thưởng — trùng khen thưởng chỉ trao một lần (HC QKQT)', () => {
+  it('Phê duyệt bị chặn: quân nhân đã có HC QKQT (năm 2018) → duyệt đề xuất HC QKQT mới bị chặn vì trùng', async () => {
     // Given: đã có record HC_QKQT trong DB
     const target = makePersonnel({ id: 'qn-existing-hc' });
     const account = makeAdmin({ id: 'acc-hc-dup' });

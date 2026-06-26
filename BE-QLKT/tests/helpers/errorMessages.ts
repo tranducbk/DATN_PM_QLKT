@@ -69,8 +69,8 @@ export function duplicateActualUnitMessage(danhHieuName: string, nam: number): s
   return `Đơn vị đã có danh hiệu ${danhHieuName} năm ${nam} trên hệ thống`;
 }
 
-export const HCQKQT_NOT_FOUND_PERSONNEL = (personnelId: string) =>
-  `${personnelId}: Không tìm thấy quân nhân`;
+export const HCQKQT_NOT_FOUND_PERSONNEL =
+  'Không tìm thấy thông tin một quân nhân (có thể đã bị xoá khỏi hệ thống) — vui lòng tải lại và thử lại.';
 
 export const HCQKQT_MISSING_NHAP_NGU = (hoTen: string) =>
   `${hoTen}: Chưa có thông tin ngày nhập ngũ`;
@@ -390,8 +390,8 @@ export const suggestionMessages = {
  * Personnel-state-during-flow builders. Cover messages surfaced when a personnel
  * or account row mutates between submit and approve.
  */
-export const PERSONNEL_STATE_HCQKQT_NOT_FOUND = (personnelId: string) =>
-  `${personnelId}: Không tìm thấy quân nhân`;
+export const PERSONNEL_STATE_HCQKQT_NOT_FOUND =
+  'Không tìm thấy thông tin một quân nhân (có thể đã bị xoá khỏi hệ thống) — vui lòng tải lại và thử lại.';
 export const PERSONNEL_STATE_HCQKQT_MISSING_NHAP_NGU = (hoTen: string) =>
   `${hoTen}: Chưa có thông tin ngày nhập ngũ`;
 

@@ -7,7 +7,6 @@ import {
   Table,
   Typography,
   Tag,
-  Breadcrumb,
   Alert,
   message,
   ConfigProvider,
@@ -18,13 +17,18 @@ import {
   Empty,
 } from 'antd';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
-import { TrophyOutlined, UserOutlined, SafetyOutlined, HomeOutlined } from '@ant-design/icons';
-import Link from 'next/link';
+import {
+  TrophyOutlined,
+  UserOutlined,
+  SafetyOutlined,
+  InfoCircleOutlined,
+} from '@ant-design/icons';
 import { apiClient } from '@/lib/http/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { MedalProgressCard } from '@/components/personnel/MedalProgressCard';
 import { AnnualTitleTimeline } from '@/components/profile/AnnualTitleTimeline';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
@@ -117,7 +121,7 @@ export default function UserProfilePage() {
           apiClient.getPersonnelScientificAchievements(user.quan_nhan_id),
           apiClient.getPositionHistory(user.quan_nhan_id),
           apiClient.getAdhocAwardsByPersonnel(user.quan_nhan_id),
-          apiClient.getServiceProfile(user.quan_nhan_id),
+          apiClient.getTenureProfile(user.quan_nhan_id),
           apiClient.getAnnualProfile(user.quan_nhan_id, currentYear),
           apiClient.getContributionProfile(user.quan_nhan_id),
           apiClient.getMilitaryFlagByPersonnel(user.quan_nhan_id),
@@ -265,7 +269,8 @@ export default function UserProfilePage() {
                     <>
                       <Divider className="my-4" />
                       <Card size="small" className="bg-blue-50 dark:bg-gray-800">
-                        <Text strong>💡 Gợi ý: </Text>
+                        <InfoCircleOutlined className="text-blue-500 mr-1.5" />
+                        <Text strong>Gợi ý: </Text>
                         <Text>{serviceProfile.goi_y}</Text>
                       </Card>
                     </>
@@ -324,9 +329,6 @@ export default function UserProfilePage() {
                     <Statistic
                       title="Tháng tích lũy 0.7"
                       value={formatYearsAndMonths(contributionProfile?.months_07)}
-                      valueRender={node => (
-                        <span className="text-green-700 dark:text-emerald-300">{node}</span>
-                      )}
                     />
                   </Card>
                 </Col>
@@ -335,9 +337,6 @@ export default function UserProfilePage() {
                     <Statistic
                       title="Tháng tích lũy 0.8"
                       value={formatYearsAndMonths(contributionProfile?.months_08)}
-                      valueRender={node => (
-                        <span className="text-green-700 dark:text-emerald-300">{node}</span>
-                      )}
                     />
                   </Card>
                 </Col>
@@ -346,9 +345,6 @@ export default function UserProfilePage() {
                     <Statistic
                       title="Tháng tích lũy 0.9-1.0"
                       value={formatYearsAndMonths(contributionProfile?.months_0910)}
-                      valueRender={node => (
-                        <span className="text-green-700 dark:text-emerald-300">{node}</span>
-                      )}
                     />
                   </Card>
                 </Col>
@@ -413,9 +409,6 @@ export default function UserProfilePage() {
                             : annualProfile.tong_cstdcs || 0
                         }
                         suffix="năm"
-                        valueRender={node => (
-                          <span className="text-blue-500 dark:text-blue-400">{node}</span>
-                        )}
                       />
                     </Card>
                   </Col>
@@ -425,7 +418,6 @@ export default function UserProfilePage() {
                         title="CSTDCS liên tục"
                         value={annualProfile.cstdcs_lien_tuc || 0}
                         suffix="năm"
-                        valueStyle={{ color: '#13c2c2' }}
                       />
                     </Card>
                   </Col>
@@ -439,7 +431,6 @@ export default function UserProfilePage() {
                             : annualProfile.tong_nckh || 0
                         }
                         suffix=""
-                        valueStyle={{ color: '#722ed1' }}
                       />
                     </Card>
                   </Col>
@@ -502,7 +493,8 @@ export default function UserProfilePage() {
                 <>
                   <Divider className="my-4" />
                   <Card size="small" className="bg-blue-50 dark:bg-gray-800">
-                    <Text strong>💡 Gợi ý: </Text>
+                    <InfoCircleOutlined className="text-blue-500 mr-1.5" />
+                    <Text strong>Gợi ý: </Text>
                     <Text style={{ whiteSpace: 'pre-wrap' }}>{annualProfile.goi_y}</Text>
                   </Card>
                 </>
@@ -624,19 +616,7 @@ export default function UserProfilePage() {
   return (
     <ConfigProvider theme={getAntdThemeConfig(isDark)}>
       <div className="p-6 space-y-6">
-        {/* Breadcrumb */}
-        <Breadcrumb
-          items={[
-            {
-              title: (
-                <Link href="/user/dashboard">
-                  <HomeOutlined />
-                </Link>
-              ),
-            },
-            { title: 'Hồ sơ của tôi' },
-          ]}
-        />
+        <PageBreadcrumb items={[{ title: 'Hồ sơ của tôi' }]} />
 
         {/* Header Card */}
         <Card className="shadow-sm">

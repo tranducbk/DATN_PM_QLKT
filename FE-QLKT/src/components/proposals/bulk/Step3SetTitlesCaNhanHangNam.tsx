@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Table,
   Select,
-  Alert,
   Typography,
   Space,
   message,
@@ -23,7 +22,13 @@ import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants'
 import { formatDate } from '@/lib/utils';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
-import { DANH_HIEU_CA_NHAN_HANG_NAM, getDanhHieuName } from '@/constants/danhHieu.constants';
+import {
+  DANH_HIEU_CA_NHAN_HANG_NAM,
+  getDanhHieuName,
+  AWARD_TAB_LABELS,
+} from '@/constants/danhHieu.constants';
+import { StepGuide } from './StepGuide';
+import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
 
 const { Text } = Typography;
 
@@ -515,26 +520,18 @@ export function Step3SetTitlesCaNhanHangNam({
 
   return (
     <div>
-      <Alert
-        message="Bước 3: Thiết lập danh hiệu - Cá nhân hằng năm"
-        description={
-          <div>
-            <p>
-              1. Thiết lập danh hiệu cho từng quân nhân đã chọn (
-              <strong>{personnel.length}</strong> quân nhân)
-            </p>
-            <p>
-              2. Quy tắc nghiệp vụ: không đề xuất CSTDCS/CSTT cùng BKBQP/CSTDTQ/BKTTCP trong cùng
-              một hồ sơ; BKBQP/CSTDTQ/BKTTCP có thể đi cùng nhau.
-            </p>
-            <p>3. Đảm bảo tất cả quân nhân đã có danh hiệu trước khi chuyển bước.</p>
-            <p>4. Hoàn tất khai báo, nhấn &quot;Tiếp tục&quot; để sang bước đính kèm tệp.</p>
-          </div>
-        }
-        type="info"
-        showIcon
+      <StepGuide
+        title={stepGuideTitle(3, 'Thiết lập danh hiệu', AWARD_TAB_LABELS.CNHN)}
         icon={<EditOutlined />}
-        style={{ marginBottom: 24 }}
+        steps={[
+          <span key="0">
+            Thiết lập danh hiệu cho từng quân nhân đã chọn (<strong>{personnel.length}</strong> quân
+            nhân).
+          </span>,
+          'Quy tắc nghiệp vụ: không đề xuất CSTDCS/CSTT cùng BKBQP/CSTDTQ/BKTTCP trong cùng một hồ sơ; BKBQP/CSTDTQ/BKTTCP có thể đi cùng nhau.',
+          GUIDE_LINES.allHaveTitle,
+          GUIDE_LINES.nextToAttach,
+        ]}
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
@@ -709,11 +706,7 @@ export function Step3SetTitlesCaNhanHangNam({
               },
               {
                 key: 'nckh',
-                label: `NCKH (${
-                  Array.isArray(selectedAnnualProfile.tong_nckh)
-                    ? selectedAnnualProfile.tong_nckh.length
-                    : 0
-                })`,
+                label: `NCKH (${selectedAnnualProfile.tong_nckh})`,
                 children: (
                   <div>
                     {selectedAnnualProfile.tong_nckh > 0 ? (

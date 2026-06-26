@@ -1,7 +1,11 @@
 import type { Prisma } from '../../../generated/prisma';
 import { danhHieuDonViHangNamRepository } from '../../../repositories/danhHieu.repository';
-import { coQuanDonViRepository, donViTrucThuocRepository } from '../../../repositories/unit.repository';
+import {
+  coQuanDonViRepository,
+  donViTrucThuocRepository,
+} from '../../../repositories/unit.repository';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
+import { UNIT_TYPE } from '../../../constants/unitType.constants';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
   DANH_HIEU_DON_VI_HANG_NAM,
@@ -16,7 +20,6 @@ import {
   INVALID_DANH_HIEU_ERROR,
   MIXED_DON_VI_HANG_NAM_ERROR,
 } from '../validation';
-import { PROPOSAL_STATUS } from '../../../constants/proposalStatus.constants';
 import type { EditedProposalData, ProposalDanhHieuItem } from '../../../types/proposal';
 import type {
   ProposalStrategy,
@@ -58,13 +61,13 @@ async function buildDonViPayload(
       let donViInfo: { id: string; ten_don_vi: string; ma_don_vi: string } | null = null;
       let coQuanDonViCha: { id: string; ten_don_vi: string; ma_don_vi: string } | null = null;
 
-      if (item.don_vi_type === 'CO_QUAN_DON_VI' && item.don_vi_id) {
+      if (item.don_vi_type === UNIT_TYPE.CO_QUAN_DON_VI && item.don_vi_id) {
         const donVi = await coQuanDonViRepository.findUniqueRaw({
           where: { id: item.don_vi_id },
           select: { id: true, ten_don_vi: true, ma_don_vi: true },
         });
         donViInfo = donVi;
-      } else if (item.don_vi_type === 'DON_VI_TRUC_THUOC' && item.don_vi_id) {
+      } else if (item.don_vi_type === UNIT_TYPE.DON_VI_TRUC_THUOC && item.don_vi_id) {
         const donVi = await donViTrucThuocRepository.findUniqueRaw({
           where: { id: item.don_vi_id },
           include: {
@@ -170,7 +173,9 @@ class DonViHangNamStrategy implements ProposalStrategy {
       ([DANH_HIEU_DON_VI_HANG_NAM.DVQT, DANH_HIEU_DON_VI_HANG_NAM.DVTT] as string[]).includes(dh)
     );
     const hasBangKhenDonVi = selectedDanhHieu.some(dh =>
-      ([DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP] as string[]).includes(dh)
+      ([DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP, DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP] as string[]).includes(
+        dh
+      )
     );
     if (hasDanhHieuDonVi && hasBangKhenDonVi) {
       errors.push(MIXED_DON_VI_HANG_NAM_ERROR);
@@ -180,9 +185,14 @@ class DonViHangNamStrategy implements ProposalStrategy {
     const duplicateUnitErrors: string[] = [];
     for (const item of dataDanhHieu) {
       if (!item.don_vi_id || !item.danh_hieu) continue;
-      const result = await checkDuplicateUnitAward(item.don_vi_id, ctx.nam, item.danh_hieu, this.type);
+      const result = await checkDuplicateUnitAward(
+        item.don_vi_id,
+        ctx.nam,
+        item.danh_hieu,
+        this.type
+      );
       if (result.exists) {
-        const tenDonVi = item.ten_don_vi || item.don_vi_id;
+        const tenDonVi = item.ten_don_vi || 'Một đơn vị';
         duplicateUnitErrors.push(`${tenDonVi}: ${result.message}`);
       }
     }
@@ -203,7 +213,7 @@ class DonViHangNamStrategy implements ProposalStrategy {
         item.danh_hieu
       );
       if (!eligibility.eligible) {
-        const tenDonVi = item.ten_don_vi || item.don_vi_id;
+        const tenDonVi = item.ten_don_vi || 'Một đơn vị';
         unitEligibilityErrors.push(`${tenDonVi}: ${eligibility.reason}`);
       }
     }
@@ -215,13 +225,6 @@ class DonViHangNamStrategy implements ProposalStrategy {
   }
 
   /** Approve flow still owned by legacy approve.ts pipeline. */
-  async validateApprove(
-    _editedData: EditedProposalData,
-    _ctx: ProposalApproveContext
-  ): Promise<string[]> {
-    return [];
-  }
-
   async importInTransaction(
     editedData: EditedProposalData,
     ctx: ProposalApproveContext,
@@ -241,8 +244,9 @@ class DonViHangNamStrategy implements ProposalStrategy {
           acc.errors.push('Thiếu thông tin đơn vị khi lưu danh hiệu.');
           continue;
         }
-        const coQuanDonViId = item.don_vi_type === 'CO_QUAN_DON_VI' ? item.don_vi_id : null;
-        const donViTrucThuocId = item.don_vi_type === 'DON_VI_TRUC_THUOC' ? item.don_vi_id : null;
+        const coQuanDonViId = item.don_vi_type === UNIT_TYPE.CO_QUAN_DON_VI ? item.don_vi_id : null;
+        const donViTrucThuocId =
+          item.don_vi_type === UNIT_TYPE.DON_VI_TRUC_THUOC ? item.don_vi_id : null;
         const namValue =
           typeof item.nam === 'string' ? parseInt(item.nam, 10) : (item.nam as number);
         if (!item.danh_hieu || item.danh_hieu.trim() === '') continue;
@@ -251,8 +255,7 @@ class DonViHangNamStrategy implements ProposalStrategy {
         const soQuyetDinh = item.so_quyet_dinh || decisionInfo.so_quyet_dinh || null;
 
         const isBkbqp = item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP || !!item.nhan_bkbqp;
-        const isBkttcp =
-          item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP || !!item.nhan_bkttcp;
+        const isBkttcp = item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP || !!item.nhan_bkttcp;
         // Unit BKBQP/BKTTCP proposals carry the decision in `so_quyet_dinh` (not the `_bkbqp/_bkttcp`
         // variants used by personal items), so fall back to it when the item's danh_hieu IS the chain code.
         const soQuyetDinhBKBQP =
@@ -272,9 +275,12 @@ class DonViHangNamStrategy implements ProposalStrategy {
           ],
         };
 
-        const existingAward = await danhHieuDonViHangNamRepository.findFirst({
-          where: whereCondition,
-        }, prismaTx);
+        const existingAward = await danhHieuDonViHangNamRepository.findFirst(
+          {
+            where: whereCondition,
+          },
+          prismaTx
+        );
         const data: Record<string, unknown> = {};
         if (
           item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVQT ||
@@ -291,16 +297,18 @@ class DonViHangNamStrategy implements ProposalStrategy {
           data.nhan_bkttcp = true;
           data.so_quyet_dinh_bkttcp = soQuyetDinhBKTTCP;
         }
-        data.status = PROPOSAL_STATUS.APPROVED;
         data.nguoi_duyet_id = adminId;
         data.ngay_duyet = new Date();
         data.ghi_chu = item.ghi_chu || null;
 
         if (existingAward) {
-          await danhHieuDonViHangNamRepository.updateRaw({
-            where: { id: existingAward.id },
-            data,
-          }, prismaTx);
+          await danhHieuDonViHangNamRepository.updateRaw(
+            {
+              where: { id: existingAward.id },
+              data,
+            },
+            prismaTx
+          );
         } else {
           const isMainAward =
             item.danh_hieu === DANH_HIEU_DON_VI_HANG_NAM.DVQT ||
@@ -315,7 +323,6 @@ class DonViHangNamStrategy implements ProposalStrategy {
             so_quyet_dinh_bkbqp: isBkbqp ? soQuyetDinhBKBQP : null,
             nhan_bkttcp: isBkttcp,
             so_quyet_dinh_bkttcp: isBkttcp ? soQuyetDinhBKTTCP : null,
-            status: PROPOSAL_STATUS.APPROVED,
             nguoi_tao_id: adminId,
             nguoi_duyet_id: adminId,
             ngay_duyet: new Date(),
@@ -336,9 +343,6 @@ class DonViHangNamStrategy implements ProposalStrategy {
     }
   }
 
-  buildSuccessMessage(acc: ImportAccumulator): string {
-    return `Đã phê duyệt danh hiệu đơn vị hằng năm cho ${acc.affectedUnitIds.size} đơn vị`;
-  }
 }
 
 export const donViHangNamStrategy = new DonViHangNamStrategy();

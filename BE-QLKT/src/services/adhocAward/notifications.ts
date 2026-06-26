@@ -31,6 +31,10 @@ import { notificationRepository } from '../../repositories/notification.reposito
 import { getDisplayName } from '../../helpers/notification/helpers';
 import { NOTIFICATION_TYPES, RESOURCE_TYPES } from '../../constants/notificationTypes.constants';
 import { ROLES } from '../../constants/roles.constants';
+import {
+  NOTIFICATION_TITLES,
+  notificationMessages,
+} from '../../constants/notificationMessages.constants';
 import { ADHOC_TYPE } from '../../constants/adhocType.constants';
 import { emitNotificationToUser } from '../../utils/socketService';
 
@@ -100,8 +104,14 @@ export async function notifyOnAdhocAwardCreated(
           nguoi_nhan_id: manager.id,
           recipient_role: manager.role,
           type: NOTIFICATION_TYPES.AWARD_ADDED,
-          title: 'Khen thưởng đột xuất mới',
-          message: `${adminDisplayName} đã thêm khen thưởng đột xuất "${awardName}" năm ${year} cho quân nhân ${personnel.ho_ten}`,
+          title: NOTIFICATION_TITLES.AWARD_ADDED,
+          message: notificationMessages.adhocAward(
+            adminDisplayName,
+            'thêm',
+            awardName,
+            year,
+            `quân nhân ${personnel.ho_ten || 'một quân nhân'}`
+          ),
           resource: RESOURCE_TYPES.AWARDS,
           tai_nguyen_id: adhocAward.id as string,
           link: `/manager/adhoc-awards`,
@@ -121,7 +131,7 @@ export async function notifyOnAdhocAwardCreated(
         nguoi_nhan_id: personnelAccount.id,
         recipient_role: personnelAccount.role,
         type: NOTIFICATION_TYPES.AWARD_ADDED,
-        title: 'Bạn được khen thưởng đột xuất',
+        title: NOTIFICATION_TITLES.AWARD_RECEIVED,
         message: `Bạn được khen thưởng "${awardName}" năm ${year}`,
         resource: RESOURCE_TYPES.AWARDS,
         tai_nguyen_id: adhocAward.id as string,
@@ -145,8 +155,14 @@ export async function notifyOnAdhocAwardCreated(
           nguoi_nhan_id: manager.id,
           recipient_role: manager.role,
           type: NOTIFICATION_TYPES.AWARD_ADDED,
-          title: 'Đơn vị được khen thưởng đột xuất',
-          message: `${adminDisplayName} đã thêm khen thưởng đột xuất "${awardName}" năm ${year} cho đơn vị ${unitName}`,
+          title: NOTIFICATION_TITLES.UNIT_AWARD_RECEIVED,
+          message: notificationMessages.adhocAward(
+            adminDisplayName,
+            'thêm',
+            awardName,
+            year,
+            `đơn vị ${unitName || 'một đơn vị'}`
+          ),
           resource: RESOURCE_TYPES.AWARDS,
           tai_nguyen_id: adhocAward.id as string,
           link: `/manager/adhoc-awards`,
@@ -170,10 +186,14 @@ export async function notifyOnAdhocAwardCreated(
             nguoi_nhan_id: manager.id,
             recipient_role: manager.role,
             type: NOTIFICATION_TYPES.AWARD_ADDED,
-            title: 'Đơn vị trực thuộc được khen thưởng đột xuất',
-            message: `${adminDisplayName} đã thêm khen thưởng đột xuất "${awardName}" năm ${year} cho đơn vị ${unitName}${
-              parentUnitName ? ` (thuộc ${parentUnitName})` : ''
-            }`,
+            title: NOTIFICATION_TITLES.SUBUNIT_AWARD_RECEIVED,
+            message: notificationMessages.adhocAward(
+              adminDisplayName,
+              'thêm',
+              awardName,
+              year,
+              `đơn vị ${unitName || 'một đơn vị'}${parentUnitName ? ` (thuộc ${parentUnitName})` : ''}`
+            ),
             resource: RESOURCE_TYPES.AWARDS,
             tai_nguyen_id: adhocAward.id as string,
             link: `/manager/adhoc-awards`,
@@ -214,8 +234,14 @@ export async function notifyOnAdhocAwardUpdated(
           nguoi_nhan_id: manager.id,
           recipient_role: manager.role,
           type: NOTIFICATION_TYPES.AWARD_UPDATED,
-          title: 'Khen thưởng đột xuất đã được cập nhật',
-          message: `${adminDisplayName} đã cập nhật khen thưởng đột xuất "${awardName}" năm ${year} của quân nhân ${personnel.ho_ten}`,
+          title: NOTIFICATION_TITLES.AWARD_UPDATED,
+          message: notificationMessages.adhocAward(
+            adminDisplayName,
+            'cập nhật',
+            awardName,
+            year,
+            `quân nhân ${personnel.ho_ten || 'một quân nhân'}`
+          ),
           resource: RESOURCE_TYPES.AWARDS,
           tai_nguyen_id: adhocAward.id as string,
           link: `/manager/adhoc-awards`,
@@ -233,7 +259,7 @@ export async function notifyOnAdhocAwardUpdated(
         nguoi_nhan_id: personnelAccount.id,
         recipient_role: personnelAccount.role,
         type: NOTIFICATION_TYPES.AWARD_UPDATED,
-        title: 'Khen thưởng của bạn đã được cập nhật',
+        title: NOTIFICATION_TITLES.AWARD_UPDATED_RECIPIENT,
         message: `Khen thưởng đột xuất "${awardName}" năm ${year} của bạn đã được cập nhật`,
         resource: RESOURCE_TYPES.AWARDS,
         tai_nguyen_id: adhocAward.id as string,
@@ -253,8 +279,14 @@ export async function notifyOnAdhocAwardUpdated(
           nguoi_nhan_id: manager.id,
           recipient_role: manager.role,
           type: NOTIFICATION_TYPES.AWARD_UPDATED,
-          title: 'Khen thưởng đơn vị đã được cập nhật',
-          message: `${adminDisplayName} đã cập nhật khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}`,
+          title: NOTIFICATION_TITLES.AWARD_UPDATED,
+          message: notificationMessages.adhocAward(
+            adminDisplayName,
+            'cập nhật',
+            awardName,
+            year,
+            `đơn vị ${unitName || 'một đơn vị'}`
+          ),
           resource: RESOURCE_TYPES.AWARDS,
           tai_nguyen_id: adhocAward.id as string,
           link: `/manager/adhoc-awards`,
@@ -276,10 +308,14 @@ export async function notifyOnAdhocAwardUpdated(
             nguoi_nhan_id: manager.id,
             recipient_role: manager.role,
             type: NOTIFICATION_TYPES.AWARD_UPDATED,
-            title: 'Khen thưởng đơn vị trực thuộc đã được cập nhật',
-            message: `${adminDisplayName} đã cập nhật khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}${
-              parentUnitName ? ` (thuộc ${parentUnitName})` : ''
-            }`,
+            title: NOTIFICATION_TITLES.AWARD_UPDATED,
+            message: notificationMessages.adhocAward(
+              adminDisplayName,
+              'cập nhật',
+              awardName,
+              year,
+              `đơn vị ${unitName || 'một đơn vị'}${parentUnitName ? ` (thuộc ${parentUnitName})` : ''}`
+            ),
             resource: RESOURCE_TYPES.AWARDS,
             tai_nguyen_id: adhocAward.id as string,
             link: `/manager/adhoc-awards`,
@@ -322,8 +358,14 @@ export async function notifyOnAdhocAwardDeleted(
           nguoi_nhan_id: manager.id,
           recipient_role: manager.role,
           type: NOTIFICATION_TYPES.AWARD_DELETED,
-          title: 'Khen thưởng đột xuất đã bị xóa',
-          message: `${adminDisplayName} đã xóa khen thưởng đột xuất "${awardName}" năm ${year} của quân nhân ${personnel.ho_ten}`,
+          title: NOTIFICATION_TITLES.AWARD_DELETED,
+          message: notificationMessages.adhocAward(
+            adminDisplayName,
+            'xóa',
+            awardName,
+            year,
+            `quân nhân ${personnel.ho_ten || 'một quân nhân'}`
+          ),
           resource: RESOURCE_TYPES.AWARDS,
           tai_nguyen_id: personnel.id as string,
           link: `/manager/adhoc-awards`,
@@ -341,7 +383,7 @@ export async function notifyOnAdhocAwardDeleted(
         nguoi_nhan_id: personnelAccount.id,
         recipient_role: personnelAccount.role,
         type: NOTIFICATION_TYPES.AWARD_DELETED,
-        title: 'Khen thưởng của bạn đã bị xóa',
+        title: NOTIFICATION_TITLES.AWARD_DELETED_RECIPIENT,
         message: `Khen thưởng đột xuất "${awardName}" năm ${year} của bạn đã bị xóa khỏi hệ thống`,
         resource: RESOURCE_TYPES.AWARDS,
         tai_nguyen_id: personnel.id as string,
@@ -361,8 +403,14 @@ export async function notifyOnAdhocAwardDeleted(
           nguoi_nhan_id: manager.id,
           recipient_role: manager.role,
           type: NOTIFICATION_TYPES.AWARD_DELETED,
-          title: 'Khen thưởng đơn vị đã bị xóa',
-          message: `${adminDisplayName} đã xóa khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}`,
+          title: NOTIFICATION_TITLES.AWARD_DELETED,
+          message: notificationMessages.adhocAward(
+            adminDisplayName,
+            'xóa',
+            awardName,
+            year,
+            `đơn vị ${unitName || 'một đơn vị'}`
+          ),
           resource: RESOURCE_TYPES.AWARDS,
           tai_nguyen_id: adhocAward.co_quan_don_vi_id as string,
           link: `/manager/adhoc-awards`,
@@ -384,10 +432,14 @@ export async function notifyOnAdhocAwardDeleted(
             nguoi_nhan_id: manager.id,
             recipient_role: manager.role,
             type: NOTIFICATION_TYPES.AWARD_DELETED,
-            title: 'Khen thưởng đơn vị trực thuộc đã bị xóa',
-            message: `${adminDisplayName} đã xóa khen thưởng đột xuất "${awardName}" năm ${year} của đơn vị ${unitName}${
-              parentUnitName ? ` (thuộc ${parentUnitName})` : ''
-            }`,
+            title: NOTIFICATION_TITLES.AWARD_DELETED,
+            message: notificationMessages.adhocAward(
+              adminDisplayName,
+              'xóa',
+              awardName,
+              year,
+              `đơn vị ${unitName || 'một đơn vị'}${parentUnitName ? ` (thuộc ${parentUnitName})` : ''}`
+            ),
             resource: RESOURCE_TYPES.AWARDS,
             tai_nguyen_id: adhocAward.don_vi_truc_thuoc_id as string,
             link: `/manager/adhoc-awards`,

@@ -87,7 +87,7 @@ class AccountController {
   getAccountById = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const { id } = params;
-    const result = await accountService.getAccountById(id);
+    const result = await accountService.getAccountById(id, req.user?.role);
     return ResponseHelper.success(res, {
       data: result,
       message: 'Lấy chi tiết tài khoản thành công',

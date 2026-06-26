@@ -1,6 +1,7 @@
 import axiosInstance from '@/lib/http/axiosInstance';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import type { ApiResponse } from '@/lib/types/common';
+import { createPreviewImport, createConfirmImport } from './importFactory';
 
 export async function getAnnualRewards(params?: {
   page?: number;
@@ -96,30 +97,6 @@ export async function exportAnnualRewards(params?: {
   }
 }
 
-export async function createAnnualReward(
-  personnelId: string,
-  body: Record<string, unknown>
-): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.post(`/api/personnel/${personnelId}/annual-rewards`, body);
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
-export async function updateAnnualReward(
-  id: string,
-  body: Record<string, unknown>
-): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.put(`/api/annual-rewards/${id}`, body);
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
 export async function deleteAnnualReward(id: string, awardType?: string): Promise<ApiResponse> {
   try {
     const url = awardType
@@ -208,26 +185,6 @@ export async function bulkCreateAnnualRewards(body: {
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
-}
-
-/** Create a preview-import function for a given endpoint. */
-function createPreviewImport(url: string) {
-  return async (file: File): Promise<ApiResponse> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await axiosInstance.post(url, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return res.data;
-  };
-}
-
-/** Create a confirm-import function for a given endpoint. */
-function createConfirmImport(url: string) {
-  return async (items: unknown[]): Promise<ApiResponse> => {
-    const res = await axiosInstance.post(url, { items });
-    return res.data;
-  };
 }
 
 export const previewAnnualRewardsImport = createPreviewImport('/api/annual-rewards/import/preview');

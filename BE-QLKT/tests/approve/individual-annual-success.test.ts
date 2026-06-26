@@ -31,8 +31,8 @@ afterEach(() => {
 
 const ADMIN_ID = 'acc-admin-1';
 
-describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
-  it('duyệt thành công với CSTDCS (CQDV) → status APPROVED + upsert đúng dữ liệu', async () => {
+describe('Phê duyệt đề xuất cá nhân hằng năm (luồng thành công)', () => {
+  it('Phê duyệt thông thường: đề xuất CSTDCS (CQDV) → tạo (hoặc cập nhật) bản ghi khen thưởng, đề xuất chuyển APPROVED', async () => {
     // Given: đề xuất CA_NHAN_HANG_NAM có 1 item CSTDCS, không trùng
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1' });
     const personnel = makePersonnel({ unit: cqdv, id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
@@ -47,7 +47,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       status: PROPOSAL_STATUS.PENDING,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -102,7 +102,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
     expect(result.affectedPersonnelIds).toContain(personnel.id);
   });
 
-  it('duyệt thành công với BKBQP (DVTT) → upsert set nhan_bkbqp: true', async () => {
+  it('Phê duyệt thông thường: đề xuất BKBQP (DVTT) → bản ghi đánh dấu nhan_bkbqp = true', async () => {
     // Given: đề xuất chỉ chứa 1 item BKBQP chain từ đơn vị DVTT
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-1', parentId: 'cqdv-parent' });
     const personnel = makePersonnel({ unit: dvtt, id: 'qn-2' });
@@ -115,7 +115,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       id: 'prop-2',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: dvtt,
       data_danh_hieu: [item],
     });
@@ -147,7 +147,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
     expect(upsertArgs.create.danh_hieu).toBeUndefined();
   });
 
-  it('duyệt thành công CSTT (DVTT variant) — verify don_vi_truc_thuoc_id resolved', async () => {
+  it('Phê duyệt thông thường: đề xuất CSTT từ đơn vị trực thuộc (DVTT) → tạo khen thưởng, xác định đúng đơn vị trực thuộc', async () => {
     // Given: đề xuất từ DVTT chỉ có 1 item CSTT
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-2', parentId: 'cqdv-parent-2' });
     const personnel = makePersonnel({ unit: dvtt, id: 'qn-cstt' });
@@ -160,7 +160,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       id: 'prop-dvtt-1',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: dvtt,
       data_danh_hieu: [item],
     });
@@ -192,7 +192,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
     expect(upsertArgs.create.danh_hieu).toBe(DANH_HIEU_CA_NHAN_HANG_NAM.CSTT);
   });
 
-  it('approve thành công khi đầy đủ so_quyet_dinh (top-level decisions map)', async () => {
+  it('Phê duyệt kèm quyết định: admin nhập số quyết định tại bước duyệt → áp vào khen thưởng và chuyển APPROVED', async () => {
     const personnel = makePersonnel({ id: 'qn-full-qd', ho_ten: 'QN Đầy Đủ' });
     const item = makeProposalItemCaNhan({
       personnel_id: personnel.id,
@@ -203,7 +203,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       id: 'prop-full-qd',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 
@@ -236,7 +236,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
     expect(prismaMock.danhHieuHangNam.upsert).toHaveBeenCalledTimes(1);
   });
 
-  it('item CSTDCS kèm flag BKBQP — upsert lưu cả CSTDCS lẫn BKBQP', async () => {
+  it('Phê duyệt thông thường: đề xuất CSTDCS kèm cờ BKBQP → lưu cả CSTDCS lẫn BKBQP, không bỏ sót BKBQP', async () => {
     // Validation và upsert giờ thống nhất dùng resolved chain values, nên mixed item
     // (CSTDCS + nhan_bkbqp) persist được cả hai field — không drop BKBQP nữa.
     const personnel = makePersonnel({ id: 'qn-combo-ok', ho_ten: 'QN Combo Đủ' });
@@ -254,7 +254,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       id: 'prop-combo-ok',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 
@@ -289,7 +289,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
     expect(prismaMock.bangDeXuat.updateMany.mock.calls[0][0].data.status).toBe(PROPOSAL_STATUS.APPROVED);
   });
 
-  it('field isolation — item BKBQP-only chỉ lưu so_quyet_dinh_bkbqp, các field khác không bị contaminate', async () => {
+  it('Phê duyệt thông thường: đề xuất chỉ có BKBQP → chỉ lưu đúng số quyết định BKBQP, không ghi nhầm sang CSTDCS/CSTDTQ/BKTTCP', async () => {
     // Given: item BKBQP chỉ có so_quyet_dinh_bkbqp. Sau approve, upsert.create
     // KHÔNG được mang so_quyet_dinh / so_quyet_dinh_cstdtq / so_quyet_dinh_bkttcp.
     const personnel = makePersonnel({ id: 'qn-iso-bk', ho_ten: 'QN Iso BK' });
@@ -305,7 +305,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       id: 'prop-iso-bk',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [item],
     });
 
@@ -340,7 +340,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
     expect(upsertArgs.create.nhan_bkttcp).toBeUndefined();
   });
 
-  it('regression: duplicate check exclude chính proposal đang duyệt (không self-match)', async () => {
+  it('Phê duyệt cá nhân hằng năm: bộ lọc chống trùng bỏ qua chính đề xuất đang duyệt → không tự báo trùng oan, vẫn duyệt được', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-self-cn' });
     const personnel = makePersonnel({ unit: cqdv, id: 'qn-self-cn', ho_ten: 'Nguyễn Self CN' });
     const item = makeProposalItemCaNhan({
@@ -354,7 +354,7 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       status: PROPOSAL_STATUS.PENDING,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -385,13 +385,13 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
     expect(dupCall![0].where.id).toEqual({ not: proposal.id });
   });
 
-  it('edge case: data_danh_hieu rỗng → bỏ qua mixed-group check, vẫn approve', async () => {
+  it('Phê duyệt thông thường: đề xuất cá nhân hằng năm không có dòng danh hiệu nào → bỏ qua kiểm tra nhóm trộn, vẫn chuyển APPROVED', async () => {
     // Given: đề xuất CA_NHAN_HANG_NAM rỗng — không có item để import
     const proposal = makeProposal({
       id: 'prop-empty',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [],
     });
 
@@ -408,13 +408,13 @@ describe('approveProposal — CA_NHAN_HANG_NAM (success paths)', () => {
     expect(result.affectedPersonnelIds).toEqual([]);
   });
 
-  it('approve transaction rollback: missing personnel aggregates into ValidationError', async () => {
+  it('Phê duyệt bị chặn: một dòng không tìm thấy quân nhân → hủy toàn bộ và gộp lý do lỗi', async () => {
     const personnel = makePersonnel({ id: 'qn-msg-ok', ho_ten: 'QN Message OK' });
     const proposal = makeProposal({
       id: 'prop-msg-ca-nhan',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_danh_hieu: [
         makeProposalItemCaNhan({
           personnel_id: personnel.id,

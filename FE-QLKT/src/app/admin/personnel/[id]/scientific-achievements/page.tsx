@@ -3,11 +3,12 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
-import { Card, Button, Table, Space, Typography, Breadcrumb, message, Empty } from 'antd';
+import { Card, Button, Table, Space, Typography, message, Empty } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
-import { LeftOutlined, HomeOutlined } from '@ant-design/icons';
+import { LeftOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/http/apiClient';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { THANH_TICH_KHOA_HOC_SHORT_LABELS } from '@/constants/danhHieu.constants';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
@@ -105,21 +106,13 @@ export default function ScientificAchievementsPage() {
 
   return (
     <div style={{ padding: '24px' }}>
-      {/* Breadcrumb */}
-      <Breadcrumb style={{ marginBottom: 24 }}>
-        <Breadcrumb.Item>
-          <Link href="/admin/dashboard">
-            <HomeOutlined />
-          </Link>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>
-          <Link href="/admin/personnel">Quân nhân</Link>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>
-          <Link href={`/admin/personnel/${personnelId}`}>{personnel?.ho_ten}</Link>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>Thành tích Nghiên cứu khoa học</Breadcrumb.Item>
-      </Breadcrumb>
+      <PageBreadcrumb
+        items={[
+          { title: 'Quân nhân', href: '/admin/personnel' },
+          { title: personnel?.ho_ten, href: `/admin/personnel/${personnelId}` },
+          { title: 'Thành tích Nghiên cứu khoa học' },
+        ]}
+      />
 
       {/* Header */}
       <div

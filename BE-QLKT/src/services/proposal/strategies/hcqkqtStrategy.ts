@@ -1,5 +1,9 @@
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
-import { HCQKQT_YEARS_REQUIRED, DANH_HIEU_DAC_BIET } from '../../../constants/danhHieu.constants';
+import {
+  HCQKQT_YEARS_REQUIRED,
+  DANH_HIEU_DAC_BIET,
+  getDanhHieuName,
+} from '../../../constants/danhHieu.constants';
 import {
   batchEvaluateServiceYears,
   buildServiceYearsErrorMessage,
@@ -96,13 +100,6 @@ class HcqkqtStrategy implements ProposalStrategy {
     return { errors, payload: { data_nien_han: dataNienHan } };
   }
 
-  async validateApprove(
-    _editedData: EditedProposalData,
-    _ctx: ProposalApproveContext
-  ): Promise<string[]> {
-    return [];
-  }
-
   async importInTransaction(
     editedData: EditedProposalData,
     ctx: ProposalApproveContext,
@@ -113,7 +110,7 @@ class HcqkqtStrategy implements ProposalStrategy {
   ): Promise<void> {
     const nienHanData = (editedData.data_nien_han ?? []) as ProposalNienHanItem[];
     await importSingleMedal(nienHanData, ctx, acc, prismaTx, {
-      medalLabel: 'Huân chương Quân kỳ quyết thắng',
+      medalLabel: getDanhHieuName(DANH_HIEU_DAC_BIET.HC_QKQT),
       logTag: 'HC_QKQT',
       decisionKey: DANH_HIEU_DAC_BIET.HC_QKQT,
       upsert: async (tx, personnelId, writeData) => {
@@ -137,9 +134,6 @@ class HcqkqtStrategy implements ProposalStrategy {
     });
   }
 
-  buildSuccessMessage(acc: ImportAccumulator): string {
-    return `Đã phê duyệt Huy chương Quân kỳ quyết thắng cho ${acc.affectedPersonnelIds.size} quân nhân`;
-  }
 }
 
 export const hcqkqtStrategy = new HcqkqtStrategy();

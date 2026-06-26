@@ -7,7 +7,6 @@ import {
   Input,
   Button,
   Typography,
-  Breadcrumb,
   message,
   Space,
   Alert,
@@ -19,12 +18,11 @@ import { getApiErrorMessage } from '@/lib/http/apiError';
 import {
   LockOutlined,
   SafetyOutlined,
-  DashboardOutlined,
   CheckCircleOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
-import Link from 'next/link';
 import { apiClient } from '@/lib/http/apiClient';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { useTheme } from '@/components/ThemeProvider';
 import { useAuth } from '@/contexts/AuthContext';
 import { PasswordStrengthIndicator } from '@/components/auth/PasswordStrengthIndicator';
@@ -74,14 +72,7 @@ export function ChangePasswordView({ dashboardHref }: ChangePasswordViewProps) {
       }}
     >
       <div className="space-y-6 p-6">
-        <Breadcrumb style={{ marginBottom: '24px' }}>
-          <Breadcrumb.Item>
-            <Link href={dashboardHref}>
-              <DashboardOutlined />
-            </Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>Đổi mật khẩu</Breadcrumb.Item>
-        </Breadcrumb>
+        <PageBreadcrumb items={[{ title: 'Đổi mật khẩu' }]} />
 
         <div style={{ marginBottom: '32px' }}>
           <Title

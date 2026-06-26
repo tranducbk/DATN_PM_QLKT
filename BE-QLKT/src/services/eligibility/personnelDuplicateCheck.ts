@@ -1,12 +1,12 @@
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { checkDuplicateAward } from '../proposal/validation';
 
-export interface PersonnelDuplicateCheckItem {
+interface PersonnelDuplicateCheckItem {
   personnel_id?: string | null;
   danh_hieu?: string | null;
 }
 
-export interface CollectPersonnelDuplicateOptions {
+interface CollectPersonnelDuplicateOptions {
   /** When non-null, restricts the pending lookup to that proposal status. */
   status?: string | null;
   /** Excludes a proposal id from the pending lookup (used during edit/approve). */
@@ -60,7 +60,7 @@ export async function collectPersonnelDuplicateErrors(
         excludeProposalId
       ).then(r => {
         if (!r.exists) return null;
-        const hoTen = hoTenMap!.get(item.personnel_id) || item.personnel_id;
+        const hoTen = hoTenMap!.get(item.personnel_id) || 'một quân nhân';
         return `${hoTen}: ${r.message}`;
       })
     )

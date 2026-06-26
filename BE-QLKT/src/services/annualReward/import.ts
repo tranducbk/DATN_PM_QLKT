@@ -25,6 +25,7 @@ import { ValidationError } from '../../middlewares/errorHandler';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.ANNUAL_REWARDS];
 import { writeSystemLog } from '../../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../../constants/auditActions.constants';
 import { validateDecisionNumbers } from '../eligibility/decisionNumberValidation';
 import {
   parseBooleanValue,
@@ -42,39 +43,11 @@ import type {
   ConfirmImportItem,
 } from './types';
 
-/*
- * ════════════════════════════════════════════════════════════════════════════
- *  ANNUAL REWARD IMPORT — 2 flow: PREVIEW (chỉ validate) + CONFIRM (ghi DB)
- * ════════════════════════════════════════════════════════════════════════════
- *
- *  Vì sao tách 2 bước? Import hàng loạt rủi ro cao — tách để admin THẤY TRƯỚC kết
- *  quả validate (dòng nào hợp lệ/lỗi vì sao) rồi mới chọn dòng để ghi:
- *
- *   • previewImport(buffer): đọc file → validate TỪNG dòng → trả {valid[], errors[]}.
- *     KHÔNG ghi DB. FE lưu kết quả vào sessionStorage, render bảng review.
- *   • confirmImport(validItems): nhận lại dòng admin đã chọn → RE-VALIDATE (dữ liệu
- *     có thể đổi giữa 2 bước) → ghi trong transaction (all-or-nothing).
- *   • importFromExcelBuffer(buffer): đường import 1-bước (validate + ghi luôn),
- *     dùng cho luồng cũ/không cần review.
- *
- *  Cả 3 dùng chung resolveAnnualRewardImportContext để parse + batch-query 1 lần.
- *  THỨ TỰ validate (preview): file rỗng → cờ chuỗi → thiếu field → ID có thật →
- *  tên khớp → năm hợp lệ → danh hiệu hợp lệ → số QĐ tồn tại → trùng trong file →
- *  trùng DB → đang chờ duyệt. Mỗi lỗi `continue` sang dòng kế (gom hết lỗi, không
- *  dừng ở lỗi đầu) để admin sửa 1 lần.
- * ════════════════════════════════════════════════════════════════════════════
- */
-
-async function resolveAnnualRewardImportContext(buffer: Buffer): Promise<AnnualRewardImportContext> {
+async function resolveAnnualRewardImportContext(
+  buffer: Buffer
+): Promise<AnnualRewardImportContext> {
   const parsed = await parseAnnualRewardImport(buffer);
 
-  // Batch query (tránh N+1): gom id từ file rồi 2 query song song theo `IN (...)`,
-  // thay vì query từng dòng. SQL minh hoạ:
-  //   SELECT q.*, c.ten_chuc_vu FROM "QuanNhan" q
-  //     LEFT JOIN "ChucVu" c ON q.chuc_vu_id = c.id
-  //     WHERE q.id IN ('id1','id2', ...);            -- quân nhân có trong file
-  //   SELECT * FROM "DanhHieuHangNam"
-  //     WHERE quan_nhan_id IN ('id1','id2', ...);     -- danh hiệu đã có (đối chiếu trùng năm)
   const [personnelList, existingRewards] = await Promise.all([
     quanNhanRepository.findManyRaw({
       where: { id: { in: parsed.personnelIds } },
@@ -255,14 +228,6 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
     });
   }
 
-  // ─── TRANSACTION CONFIRM IMPORT: ghi cả lô trong 1 transaction ───
-  // Lặp từng dòng đã validate: chưa có (key quan_nhan_id+nam) → INSERT, đã có → UPDATE.
-  // Bọc transaction để cả file import "tất cả hoặc không gì" — lỗi giữa chừng không
-  // để lại nửa danh sách (rollback hết). SQL minh hoạ mỗi dòng:
-  //   -- dòng mới:
-  //   INSERT INTO "DanhHieuHangNam" (quan_nhan_id, nam, danh_hieu, cap_bac, ...) VALUES (...);
-  //   -- dòng đã tồn tại (cùng quan_nhan_id + nam):
-  //   UPDATE "DanhHieuHangNam" SET danh_hieu = $dh, cap_bac = $cb, ... WHERE id = $existingId;
   const { created, updated } = await prisma.$transaction(
     async prismaTx => {
       const txCreated: string[] = [];
@@ -284,33 +249,39 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
         const existing = existingRewardByKey.get(`${personnel.id}_${nam}`) ?? null;
 
         if (!existing) {
-          const createdReward = await danhHieuHangNamRepository.createRaw({
-            data: {
-              quan_nhan_id: personnel.id,
-              nam,
-              danh_hieu,
-              cap_bac: cap_bac || null,
-              chuc_vu: chuc_vu || null,
-              ghi_chu: ghi_chu || null,
-              nhan_bkbqp: nhan_bkbqp || false,
-              nhan_cstdtq: nhan_cstdtq || false,
-              nhan_bkttcp: nhan_bkttcp || false,
+          const createdReward = await danhHieuHangNamRepository.createRaw(
+            {
+              data: {
+                quan_nhan_id: personnel.id,
+                nam,
+                danh_hieu,
+                cap_bac: cap_bac || null,
+                chuc_vu: chuc_vu || null,
+                ghi_chu: ghi_chu || null,
+                nhan_bkbqp: nhan_bkbqp || false,
+                nhan_cstdtq: nhan_cstdtq || false,
+                nhan_bkttcp: nhan_bkttcp || false,
+              },
             },
-          }, prismaTx);
+            prismaTx
+          );
           txCreated.push(createdReward.id);
         } else {
-          await danhHieuHangNamRepository.updateRaw({
-            where: { id: existing.id },
-            data: {
-              danh_hieu,
-              cap_bac: cap_bac !== undefined ? cap_bac : existing.cap_bac,
-              chuc_vu: chuc_vu !== undefined ? chuc_vu : existing.chuc_vu,
-              ghi_chu: ghi_chu !== undefined ? ghi_chu : existing.ghi_chu,
-              nhan_bkbqp: nhan_bkbqp || existing.nhan_bkbqp,
-              nhan_cstdtq: nhan_cstdtq || existing.nhan_cstdtq,
-              nhan_bkttcp: nhan_bkttcp || existing.nhan_bkttcp,
+          await danhHieuHangNamRepository.updateRaw(
+            {
+              where: { id: existing.id },
+              data: {
+                danh_hieu,
+                cap_bac: cap_bac !== undefined ? cap_bac : existing.cap_bac,
+                chuc_vu: chuc_vu !== undefined ? chuc_vu : existing.chuc_vu,
+                ghi_chu: ghi_chu !== undefined ? ghi_chu : existing.ghi_chu,
+                nhan_bkbqp: nhan_bkbqp || existing.nhan_bkbqp,
+                nhan_cstdtq: nhan_cstdtq || existing.nhan_cstdtq,
+                nhan_bkttcp: nhan_bkttcp || existing.nhan_bkttcp,
+              },
             },
-          }, prismaTx);
+            prismaTx
+          );
           txUpdated.push(existing.id);
         }
 
@@ -344,9 +315,9 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
 
   const imported = created.length + updated.length;
   void writeSystemLog({
-    action: 'IMPORT',
+    action: AUDIT_ACTIONS.IMPORT,
     resource: AWARD_SLUGS.ANNUAL_REWARDS,
-    description: `[Import ${AWARD_LABEL}] Hoàn tất: ${imported}/${total} thành công, ${errors.length} lỗi`,
+    description: `Nhập dữ liệu ${AWARD_LABEL} hoàn tất: ${imported}/${total} thành công, ${errors.length} lỗi`,
     payload: errors.length > 0 ? { errors: errors.slice(0, 10) } : null,
   });
 
@@ -434,9 +405,6 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
 
     total++;
 
-    // Cờ chuỗi BKBQP/CSTDTQ/BKTTCP cố ý KHÔNG cho import qua Excel — chúng cần số
-    // QĐ riêng + ràng buộc điều kiện chuỗi phức tạp, bắt nhập trên màn hình để
-    // validate đúng. Phát hiện cờ bật trong file → báo lỗi dòng đó ngay.
     if (parseBooleanValue(bkbqpRaw)) {
       errors.push({
         row: rowNumber,
@@ -670,7 +638,14 @@ export async function confirmImport(
         quan_nhan_id: { in: personnelIds },
         nam: { in: uniqueYears },
       },
-      select: { quan_nhan_id: true, nam: true, danh_hieu: true, nhan_bkbqp: true, nhan_cstdtq: true, nhan_bkttcp: true },
+      select: {
+        quan_nhan_id: true,
+        nam: true,
+        danh_hieu: true,
+        nhan_bkbqp: true,
+        nhan_cstdtq: true,
+        nhan_bkttcp: true,
+      },
     }),
     quanNhanRepository.findManyRaw({
       where: { id: { in: personnelIds } },
@@ -684,13 +659,12 @@ export async function confirmImport(
     'data_danh_hieu',
     (item, proposal) => (item.personnel_id ? `${item.personnel_id}_${proposal.nam}` : null)
   );
-  // RE-VALIDATE ở confirm (không tin dữ liệu preview): giữa lúc admin xem preview
-  // và bấm xác nhận, người khác có thể đã tạo đề xuất chờ duyệt cho cùng quân
-  // nhân+năm → chặn ghi đè. Gom hết xung đột rồi throw 1 lần (không ghi nửa vời).
   const pendingConflicts: string[] = [];
   for (const item of validItems) {
     if (pendingKeys.has(`${item.personnel_id}_${item.nam}`)) {
-      pendingConflicts.push(`${hoTenMap.get(item.personnel_id) || item.ho_ten || item.personnel_id} năm ${item.nam}: đang có đề xuất chờ duyệt`);
+      pendingConflicts.push(
+        `${hoTenMap.get(item.personnel_id) || item.ho_ten || 'một quân nhân'} năm ${item.nam}: đang có đề xuất chờ duyệt`
+      );
     }
   }
   if (pendingConflicts.length > 0) {
@@ -704,7 +678,7 @@ export async function confirmImport(
     if (!existing) continue;
     // Only conflict when existing has a different base title (CSTDCS vs CSTT)
     if (existing.danh_hieu && existing.danh_hieu !== item.danh_hieu) {
-      const hoTen = hoTenMap.get(item.personnel_id) || item.ho_ten || item.personnel_id;
+      const hoTen = hoTenMap.get(item.personnel_id) || item.ho_ten || 'một quân nhân';
       conflicts.push(
         `${hoTen} năm ${item.nam}: đã có ${getDanhHieuName(existing.danh_hieu)}, không thể ghi đè bằng ${getDanhHieuName(item.danh_hieu)}`
       );
@@ -734,7 +708,7 @@ export async function confirmImport(
       },
       {
         entityType: 'personal',
-        entityName: hoTenMap.get(item.personnel_id) || item.ho_ten || item.personnel_id,
+        entityName: hoTenMap.get(item.personnel_id) || item.ho_ten || 'một quân nhân',
       }
     );
     decisionErrors.push(...errs);
@@ -743,20 +717,14 @@ export async function confirmImport(
     throw new ValidationError(decisionErrors.join('\n'));
   }
 
-  // Ghi cả lô trong 1 transaction (all-or-nothing). upsertRaw theo unique key
-  // (quan_nhan_id, nam): chưa có → create, đã có → update. Mỗi item suy ra cờ
-  // chuỗi từ danh_hieu (BKBQP/CSTDTQ/BKTTCP) và spread điều kiện số QĐ tương ứng;
-  // danh hiệu dạng "bằng khen" thì danh_hieu lưu null (chỉ set cờ + số QĐ riêng).
   return await prisma.$transaction(
     async prismaTx => {
       const results: DanhHieuHangNam[] = [];
       for (const item of validItems) {
         const isBangKhen = DANH_HIEU_CA_NHAN_BANG_KHEN.has(item.danh_hieu);
         const nhanBKBQP = item.nhan_bkbqp || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP;
-        const nhanCSTDTQ =
-          item.nhan_cstdtq || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ;
-        const nhanBKTTCP =
-          item.nhan_bkttcp || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP;
+        const nhanCSTDTQ = item.nhan_cstdtq || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ;
+        const nhanBKTTCP = item.nhan_bkttcp || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP;
         const finalDanhHieu = isBangKhen ? null : item.danh_hieu;
 
         const sharedData = {
@@ -781,24 +749,27 @@ export async function confirmImport(
           }),
         };
 
-        const result = await danhHieuHangNamRepository.upsertRaw({
-          where: {
-            quan_nhan_id_nam: {
+        const result = await danhHieuHangNamRepository.upsertRaw(
+          {
+            where: {
+              quan_nhan_id_nam: {
+                quan_nhan_id: item.personnel_id,
+                nam: item.nam,
+              },
+            },
+            update: {
+              danh_hieu: finalDanhHieu,
+              ...sharedData,
+            },
+            create: {
               quan_nhan_id: item.personnel_id,
               nam: item.nam,
+              danh_hieu: finalDanhHieu,
+              ...sharedData,
             },
           },
-          update: {
-            danh_hieu: finalDanhHieu,
-            ...sharedData,
-          },
-          create: {
-            quan_nhan_id: item.personnel_id,
-            nam: item.nam,
-            danh_hieu: finalDanhHieu,
-            ...sharedData,
-          },
-        }, prismaTx);
+          prismaTx
+        );
         results.push(result);
       }
       return { imported: results.length, data: results };

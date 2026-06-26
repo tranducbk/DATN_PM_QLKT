@@ -10,12 +10,18 @@ import { ROLES } from '../constants/roles.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
-import { parsePersonnelIdsFromQuery, getManagerUnitFilter, getAdminUsername } from '../helpers/controllerHelper';
+import {
+  parsePersonnelIdsFromQuery,
+  getManagerUnitFilter,
+  getAdminUsername,
+  logImportPreview,
+} from '../helpers/controllerHelper';
 import { parsePagination } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { logMessages } from '../constants/logMessages.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
-import { notifyOnImport } from '../helpers/notification';
+import { safeNotifyImport } from '../helpers/notification';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.CONTRIBUTION_MEDALS];
 
@@ -61,7 +67,7 @@ interface IdParams {
   id?: string;
 }
 
-class ContributionAwardController {
+class ContributionMedalController {
   getTemplate = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetTemplateQuery;
     const personnelIds = parsePersonnelIdsFromQuery(query);
@@ -71,9 +77,9 @@ class ContributionAwardController {
         Object.assign(repeatMap, JSON.parse(query.repeat_map));
       } catch (e) {
         void writeSystemLog({
-          action: 'ERROR',
+          action: AUDIT_ACTIONS.ERROR,
           resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,
-          description: `Dữ liệu repeat_map (${AWARD_LABEL}) không hợp lệ: ${e}`,
+          description: logMessages.invalidRepeatMap(AWARD_LABEL, e),
         });
       }
     }
@@ -90,23 +96,17 @@ class ContributionAwardController {
   });
 
   previewImport = catchAsync(async (req: Request, res: Response) => {
-    const user = req.user!;
     const file = req.file;
     if (!file) return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
 
     const result = await contributionAwardService.previewImport(file.buffer);
-    await writeSystemLog({
-      userId: user.id,
-      userRole: user.role,
-      action: AUDIT_ACTIONS.IMPORT_PREVIEW,
-      resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,
-      description: `Tải lên file "${Buffer.from(file.originalname, 'latin1').toString('utf8')}" để xem trước ${AWARD_LABEL}: ${result.valid?.length ?? 0} hợp lệ, ${result.errors?.length ?? 0} lỗi`,
-      payload: {
-        filename: Buffer.from(file.originalname, 'latin1').toString('utf8'),
-        total: result.total,
-        errors: result.errors?.length ?? 0,
-      },
-    });
+    await logImportPreview(
+      req,
+      AWARD_SLUGS.CONTRIBUTION_MEDALS,
+      AWARD_LABEL,
+      file.originalname,
+      result
+    );
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
@@ -123,11 +123,11 @@ class ContributionAwardController {
       userRole: user.role,
       action: AUDIT_ACTIONS.IMPORT,
       resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,
-      description: `Nhập dữ liệu ${AWARD_LABEL} thành công: ${result.imported ?? items.length} bản ghi`,
+      description: logMessages.importSuccess(AWARD_LABEL, result.imported ?? items.length),
       payload: { imported: result.imported ?? items.length },
     });
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
-    notifyOnImport(user.id, AWARD_SLUGS.CONTRIBUTION_MEDALS, result.imported ?? items.length, personnelIds).catch((e) => { console.error('[contribution-awards] notifyOnImport failed:', e); });
+    safeNotifyImport(user.id, AWARD_SLUGS.CONTRIBUTION_MEDALS, result.imported ?? items.length, personnelIds);
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
@@ -209,4 +209,4 @@ class ContributionAwardController {
   });
 }
 
-export default new ContributionAwardController();
+export default new ContributionMedalController();

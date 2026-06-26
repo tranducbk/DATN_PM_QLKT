@@ -46,30 +46,6 @@ import { MAX_EXCEL_ROWS } from '../../constants/excel.constants';
 
 type CellValue = string | number | null | undefined;
 
-export interface PreviewItem {
-  row_number: number;
-  errors: string[];
-}
-
-export interface PreviewResult<T> {
-  valid: T[];
-  invalid: T[];
-  summary: {
-    total: number;
-    valid: number;
-    invalid: number;
-  };
-}
-
-export interface PersonnelInfo {
-  id: string;
-  ho_ten: string;
-  gioi_tinh: string | null;
-  ngay_sinh: Date | null;
-  ngay_nhap_ngu: Date | null;
-  cap_bac: string | null;
-}
-
 /**
  * Load an Excel workbook from a Buffer.
  * @param buffer - Raw file buffer

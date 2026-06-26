@@ -1,9 +1,12 @@
 import { Router } from 'express';
 import proposalController from '../controllers/proposal.controller';
-import { verifyToken, checkRole, requireManager, requireAdminOnly } from '../middlewares/auth';
+import {
+  verifyToken,
+  requireAdminOnly,
+  requireAdminOrManager,
+} from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
-import { ROLES } from '../constants/roles.constants';
 import { writeLimiter } from '../configs/rateLimiter';
 import { documentUpload as upload } from '../configs/multer';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
@@ -19,7 +22,7 @@ const router = Router();
 router.post(
   '/',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   writeLimiter,
   upload.fields([
     { name: 'attached_files' }, // No file count limit
@@ -41,7 +44,7 @@ router.post(
 router.get(
   '/check-duplicate',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   proposalController.checkDuplicateAward
 );
 
@@ -53,7 +56,7 @@ router.get(
 router.get(
   '/check-duplicate-unit',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   proposalController.checkDuplicateUnitAward
 );
 
@@ -65,7 +68,7 @@ router.get(
 router.post(
   '/check-duplicate-batch',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   proposalController.checkDuplicateBatch
 );
 
@@ -77,7 +80,7 @@ router.post(
 router.post(
   '/check-duplicate-unit-batch',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   proposalController.checkDuplicateUnitBatch
 );
 
@@ -89,7 +92,7 @@ router.post(
 router.get(
   '/',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   proposalController.getProposals
 );
 
@@ -101,7 +104,7 @@ router.get(
 router.get(
   '/:id',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   proposalController.getProposalById
 );
 
@@ -159,7 +162,7 @@ router.post(
 router.get(
   '/uploads/:filename',
   verifyToken,
-  checkRole([ROLES.MANAGER, ROLES.ADMIN, ROLES.USER]),
+  requireAdminOrManager,
   proposalController.getPdfFile
 );
 
@@ -171,7 +174,7 @@ router.get(
 router.delete(
   '/:id',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   auditLog({
     action: AUDIT_ACTIONS.DELETE,
     resource: RESOURCE_SLUGS.PROPOSALS,

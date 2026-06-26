@@ -2,6 +2,7 @@ import { danhHieuDonViHangNamRepository } from '../../repositories/danhHieu.repo
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
 import { proposalRepository } from '../../repositories/proposal.repository';
 import { writeSystemLog } from '../../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../../constants/auditActions.constants';
 import {
   getDanhHieuName,
   DANH_HIEU_CA_NHAN_HANG_NAM,
@@ -13,15 +14,8 @@ import { PROPOSAL_TYPES, type ProposalType } from '../../constants/proposalTypes
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { RESOURCE_SLUGS } from '../../constants/resourceSlugs.constants';
 import { ValidationError } from '../../middlewares/errorHandler';
-import {
-  getProposalDataField,
-  isOneTimeProposalType,
-} from '../proposal/proposalTypeConfig';
-import {
-  AWARD_TABLE_QUERIES,
-  DUPLICATE_STRATEGY,
-  SERVICE_YEAR_CHECKS,
-} from './dispatchTables';
+import { getProposalDataField, isOneTimeProposalType } from '../proposal/proposalTypeConfig';
+import { AWARD_TABLE_QUERIES, DUPLICATE_STRATEGY, SERVICE_YEAR_CHECKS } from './dispatchTables';
 import type { TitleDataItem } from './types';
 
 function getAwardTableQuery(type: string, personnelIds: string[], nam: number) {
@@ -69,7 +63,8 @@ export async function checkDuplicateAwards(
   const pendingKeys = new Set<string>();
   const pendingByPersonnel = new Set<string>();
   for (const p of pendingProposals) {
-    const data = ((p as Record<string, unknown>)[dataField] as Array<Record<string, unknown>>) || [];
+    const data =
+      ((p as Record<string, unknown>)[dataField] as Array<Record<string, unknown>>) || [];
     for (const d of data) {
       if (d.personnel_id) {
         pendingKeys.add(`${d.personnel_id}_${d.danh_hieu || ''}`);
@@ -82,7 +77,7 @@ export async function checkDuplicateAwards(
   const strategy = DUPLICATE_STRATEGY[type as ProposalType];
 
   for (const item of items) {
-    const hoTen = personnelMap.get(item.personnel_id) || item.personnel_id;
+    const hoTen = personnelMap.get(item.personnel_id) || 'một quân nhân';
     const key = `${item.personnel_id}_${item.danh_hieu}`;
 
     if (strategy) {
@@ -129,14 +124,20 @@ export async function checkDuplicateUnitAwards(
           { don_vi_truc_thuoc_id: { in: unitIds }, nam },
         ],
       },
-      select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true, danh_hieu: true, nhan_bkbqp: true, nhan_bkttcp: true },
+      select: {
+        co_quan_don_vi_id: true,
+        don_vi_truc_thuoc_id: true,
+        danh_hieu: true,
+        nhan_bkbqp: true,
+        nhan_bkttcp: true,
+      },
     }),
     proposalRepository.findManyRaw({
       where: { loai_de_xuat: PROPOSAL_TYPES.DON_VI_HANG_NAM, nam, status: PROPOSAL_STATUS.PENDING },
     }),
   ]);
 
-  const awardMap = new Map<string, typeof existingAwards[number]>();
+  const awardMap = new Map<string, (typeof existingAwards)[number]>();
   for (const a of existingAwards) {
     if (a.co_quan_don_vi_id) awardMap.set(a.co_quan_don_vi_id, a);
     if (a.don_vi_truc_thuoc_id) awardMap.set(a.don_vi_truc_thuoc_id, a);
@@ -144,7 +145,8 @@ export async function checkDuplicateUnitAwards(
 
   const pendingKeys = new Set<string>();
   for (const p of pendingProposals) {
-    const data = ((p as Record<string, unknown>).data_danh_hieu as Array<Record<string, unknown>>) || [];
+    const data =
+      ((p as Record<string, unknown>).data_danh_hieu as Array<Record<string, unknown>>) || [];
     for (const d of data) {
       if (d.don_vi_id && d.danh_hieu) pendingKeys.add(`${d.don_vi_id}_${d.danh_hieu}`);
     }
@@ -219,9 +221,9 @@ export function throwValidationErrors(
 ): never {
   void writeSystemLog({
     userId: adminId,
-    action: 'ERROR',
+    action: AUDIT_ACTIONS.ERROR,
     resource: RESOURCE_SLUGS.AWARDS,
-    description: `[Thêm khen thưởng đồng loạt] ${LOAI_DE_XUAT_MAP[type as keyof typeof LOAI_DE_XUAT_MAP] || type} năm ${nam} — Validation thất bại: ${errors.join('; ')}`,
+    description: `Thêm khen thưởng đồng loạt ${LOAI_DE_XUAT_MAP[type as keyof typeof LOAI_DE_XUAT_MAP] || type} năm ${nam}, kiểm tra dữ liệu thất bại: ${errors.join('; ')}`,
   });
   throw new ValidationError(`Phát hiện lỗi validation:\n${errors.join('\n')}`);
 }

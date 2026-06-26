@@ -14,8 +14,8 @@ afterEach(() => {
   jest.restoreAllMocks();
 });
 
-describe('annualReward.service - createAnnualReward', () => {
-  it('tạo mới khi chưa có record (CQDV)', async () => {
+describe('Trao khen thưởng hằng năm: tạo (hoặc cập nhật) bản ghi khen thưởng cá nhân', () => {
+  it('Trao khen thưởng hằng năm: CSTDCS năm 2024 cho quân nhân ở CQDV, chưa có bản ghi → tạo mới với đúng số quyết định', async () => {
     // Cho: personnel CQDV chưa có record annual cho năm đó
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1' });
     const personnel = makePersonnel({ unit: cqdv, id: 'qn-1', ho_ten: 'Nguyễn Văn A' });
@@ -52,7 +52,7 @@ describe('annualReward.service - createAnnualReward', () => {
     });
   });
 
-  it('tạo mới khi chưa có record (DVTT)', async () => {
+  it('Trao khen thưởng hằng năm: CSTT năm 2024 cho quân nhân ở ĐVTT, chưa có bản ghi → tạo mới giống đường CQDV', async () => {
     // Cho: personnel DVTT chưa có record
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-1', parentId: 'cqdv-parent' });
     const personnel = makePersonnel({ unit: dvtt, id: 'qn-2' });
@@ -81,7 +81,7 @@ describe('annualReward.service - createAnnualReward', () => {
     expect(createArgs.data.danh_hieu).toBe(DANH_HIEU_CA_NHAN_HANG_NAM.CSTT);
   });
 
-  it('merge cờ BKBQP vào record CSTDCS đã có', async () => {
+  it('Trao khen thưởng hằng năm: đã có CSTDCS năm 2024, thêm BKBQP → cập nhật bản ghi cũ, lưu riêng số quyết định và ghi chú BKBQP', async () => {
     // Cho: đã có row CSTDCS năm đó, request thêm cờ BKBQP
     const personnel = makePersonnel({ id: 'qn-3' });
     const existing = makeAnnualRecord({
@@ -119,7 +119,7 @@ describe('annualReward.service - createAnnualReward', () => {
     expect(updateArgs.data.danh_hieu).toBeUndefined();
   });
 
-  it('merge cờ CSTDTQ vào record có sẵn', async () => {
+  it('Trao khen thưởng hằng năm: thêm CSTDTQ vào bản ghi có sẵn → cập nhật cờ và số quyết định CSTDTQ', async () => {
     const personnel = makePersonnel({ id: 'qn-4' });
     const existing = makeAnnualRecord({
       personnelId: personnel.id,
@@ -147,7 +147,7 @@ describe('annualReward.service - createAnnualReward', () => {
     });
   });
 
-  it('merge cờ BKTTCP vào record có sẵn', async () => {
+  it('Trao khen thưởng hằng năm: thêm BKTTCP vào bản ghi có sẵn → cập nhật cờ và số quyết định BKTTCP', async () => {
     const personnel = makePersonnel({ id: 'qn-5' });
     const existing = makeAnnualRecord({
       personnelId: personnel.id,
@@ -173,7 +173,7 @@ describe('annualReward.service - createAnnualReward', () => {
     });
   });
 
-  it('reject thêm cờ BKBQP lần 2', async () => {
+  it('Trao khen thưởng hằng năm: năm 2024 đã có BKBQP, trao BKBQP lần 2 → từ chối "đã có BKBQP", không ghi DB', async () => {
     // Cho: record đã bật cờ BKBQP
     const personnel = makePersonnel({ id: 'qn-6' });
     const existing = makeAnnualRecord({
@@ -193,13 +193,13 @@ describe('annualReward.service - createAnnualReward', () => {
         nhan_bkbqp: true,
       }),
       ValidationError,
-      'Năm 2024 đã có Bằng khen Bộ Quốc phòng.'
+      'Năm 2024 đã có Bằng khen của Bộ trưởng Bộ Quốc phòng.'
     );
     expect(prismaMock.danhHieuHangNam.update).not.toHaveBeenCalled();
     expect(prismaMock.danhHieuHangNam.create).not.toHaveBeenCalled();
   });
 
-  it('reject thêm danh_hieu khi đã có (CSTDCS rồi → CSTT)', async () => {
+  it('Trao khen thưởng hằng năm: năm 2024 đã có CSTDCS, trao thêm CSTT → từ chối vì đã có danh hiệu năm đó', async () => {
     const personnel = makePersonnel({ id: 'qn-7' });
     const existing = makeAnnualRecord({
       personnelId: personnel.id,
@@ -221,7 +221,7 @@ describe('annualReward.service - createAnnualReward', () => {
     );
   });
 
-  it('reject `danh_hieu` ngoài DANH_HIEU_CA_NHAN_CO_BAN', async () => {
+  it('Trao khen thưởng hằng năm: danh hiệu cơ bản chỉ nhận CSTDCS/CSTT, gửi BKBQP → từ chối "danh hiệu không hợp lệ"', async () => {
     const personnel = makePersonnel({ id: 'qn-8' });
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
 
@@ -237,7 +237,7 @@ describe('annualReward.service - createAnnualReward', () => {
     expect(prismaMock.danhHieuHangNam.findFirst).not.toHaveBeenCalled();
   });
 
-  it('throw NotFoundError khi personnel không tồn tại', async () => {
+  it('Trao khen thưởng hằng năm: trao cho quân nhân không tồn tại → báo "Quân nhân không tồn tại"', async () => {
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -251,7 +251,7 @@ describe('annualReward.service - createAnnualReward', () => {
     );
   });
 
-  it('tạo BKBQP-only record cho QN chưa có CSTDCS → `danh_hieu: null, nhan_bkbqp: true`', async () => {
+  it('Trao khen thưởng hằng năm: trao riêng BKBQP cho quân nhân chưa có CSTDCS → tạo bản ghi chỉ bật cờ BKBQP, danh hiệu cơ bản để trống', async () => {
     const personnel = makePersonnel({ id: 'qn-9' });
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
     prismaMock.danhHieuHangNam.findFirst.mockResolvedValueOnce(null);
@@ -276,7 +276,7 @@ describe('annualReward.service - createAnnualReward', () => {
     expect(createArgs.data.so_quyet_dinh_bkbqp).toBe('QD-BK-1');
   });
 
-  it('ghi_chu tách biệt per cờ (ghi_chu, ghi_chu_bkbqp, ghi_chu_cstdtq, ghi_chu_bkttcp)', async () => {
+  it('Trao khen thưởng hằng năm: ghi chú khi thêm BKBQP chỉ lưu vào ghi chú riêng của BKBQP, không lẫn sang CSTDCS/CSTDTQ/BKTTCP', async () => {
     // Cho: record không cờ, request thêm BKBQP kèm ghi chú
     const personnel = makePersonnel({ id: 'qn-10' });
     const existing = makeAnnualRecord({
@@ -304,7 +304,7 @@ describe('annualReward.service - createAnnualReward', () => {
     expect(data.ghi_chu_bkttcp).toBeUndefined();
   });
 
-  it('so_quyet_dinh tách biệt đúng field per cờ', async () => {
+  it('Trao khen thưởng hằng năm: trao riêng CSTDTQ → chỉ lưu đúng số quyết định CSTDTQ, các số quyết định khác để trống', async () => {
     // Cho: personnel mới, request tạo record chỉ với cờ CSTDTQ
     const personnel = makePersonnel({ id: 'qn-11' });
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
@@ -333,8 +333,8 @@ describe('annualReward.service - createAnnualReward', () => {
   });
 });
 
-describe('annualReward.service - bulkCreateAnnualRewards', () => {
-  it('1 success + 1 đã có → trả `{success: 1, errors: 1, details}`', async () => {
+describe('Trao khen thưởng hằng năm hàng loạt cho nhiều quân nhân', () => {
+  it('Trao hàng loạt: 2 quân nhân, 1 người đã có danh hiệu năm 2024 → 1 trao được, 1 báo lỗi đã có', async () => {
     // Cho: 2 personnel, 1 đã có reward conflict với target
     const personnelA = makePersonnel({ id: 'qn-A' });
     const personnelB = makePersonnel({ id: 'qn-B' });
@@ -376,7 +376,7 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
     );
   });
 
-  it('tất cả thành công → `success: N`', async () => {
+  it('Trao hàng loạt: cả 2 quân nhân đều hợp lệ → trao thành công cho cả 2, không lỗi', async () => {
     const a = makePersonnel({ id: 'qn-S1' });
     const b = makePersonnel({ id: 'qn-S2' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([a, b]);
@@ -397,7 +397,7 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
     expect(result.errors).toBe(0);
   });
 
-  it('bulk BKBQP cho QN chưa có CSTDCS → record `danh_hieu: null`', async () => {
+  it('Trao hàng loạt: BKBQP cho quân nhân chưa có CSTDCS → tạo bản ghi chỉ bật cờ BKBQP, danh hiệu cơ bản để trống', async () => {
     // Cho: bulk BKBQP cho personnel chưa có record annual
     const a = makePersonnel({ id: 'qn-BK1' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([a]);
@@ -427,7 +427,7 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
     expect(createArgs.data.so_quyet_dinh_bkbqp).toBe('QD-BK');
   });
 
-  it('reject `danh_hieu` ngoài allowedDanhHieu', async () => {
+  it('Trao hàng loạt: gửi danh hiệu ngoài danh sách cho phép → từ chối "danh hiệu không hợp lệ"', async () => {
     await expectError(
       annualRewardService.bulkCreateAnnualRewards({
         personnel_ids: ['qn-x'],
@@ -439,7 +439,7 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
     );
   });
 
-  it('reject khi quân nhân đang có pending proposal cùng danh hiệu', async () => {
+  it('Trao hàng loạt: quân nhân đang có đề xuất chờ duyệt cùng danh hiệu, cùng năm → chặn trao, báo đã có đề xuất', async () => {
     // Cho: personnel chưa có award nhưng có pending proposal cùng năm và danh_hieu
     const a = makePersonnel({ id: 'qn-P1' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([a]);
@@ -469,7 +469,7 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
     expect(prismaMock.danhHieuHangNam.create).not.toHaveBeenCalled();
   });
 
-  it('reject bulk BKBQP khi pending proposal có nhan_bkbqp=true dù danh_hieu khác', async () => {
+  it('Trao hàng loạt: trao BKBQP nhưng đề xuất chờ duyệt đã có cờ BKBQP (dù danh hiệu cơ bản khác) → chặn trao', async () => {
     const personnel = makePersonnel({ id: 'qn-P-bkbqp-flag' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([personnel]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -503,7 +503,7 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
     expect(prismaMock.danhHieuHangNam.create).not.toHaveBeenCalled();
   });
 
-  it('bulk BKBQP thiếu điều kiện NCKH -> reject theo eligibility reason', async () => {
+  it('Trao hàng loạt: BKBQP nhưng quân nhân thiếu NCKH → chặn trao theo lý do xét điều kiện', async () => {
     const personnel = makePersonnel({ id: 'qn-bulk-elig-bkbqp', ho_ten: 'QN Bulk BKBQP' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([personnel]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -529,7 +529,7 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
     expect(prismaMock.danhHieuHangNam.create).not.toHaveBeenCalled();
   });
 
-  it('bulk CSTDTQ thiếu điều kiện NCKH -> reject theo eligibility reason', async () => {
+  it('Trao hàng loạt: CSTDTQ nhưng quân nhân thiếu NCKH → chặn trao theo lý do xét điều kiện', async () => {
     const personnel = makePersonnel({ id: 'qn-bulk-elig-cstdtq', ho_ten: 'QN Bulk CSTDTQ' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([personnel]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -555,7 +555,7 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
     expect(prismaMock.danhHieuHangNam.create).not.toHaveBeenCalled();
   });
 
-  it('bulk BKTTCP thiếu điều kiện NCKH -> reject theo eligibility reason', async () => {
+  it('Trao hàng loạt: BKTTCP nhưng quân nhân thiếu NCKH → chặn trao theo lý do xét điều kiện', async () => {
     const personnel = makePersonnel({ id: 'qn-bulk-elig-bkttcp', ho_ten: 'QN Bulk BKTTCP' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([personnel]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -581,7 +581,7 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
     expect(prismaMock.danhHieuHangNam.create).not.toHaveBeenCalled();
   });
 
-  it('bulk chain awards gọi eligibility theo từng quân nhân trước khi ghi DB', async () => {
+  it('Trao hàng loạt: chuỗi danh hiệu được xét điều kiện riêng cho từng quân nhân trước khi ghi DB', async () => {
     const p1 = makePersonnel({ id: 'qn-elig-1', ho_ten: 'QN Elig 1' });
     const p2 = makePersonnel({ id: 'qn-elig-2', ho_ten: 'QN Elig 2' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1, p2]);
@@ -623,8 +623,8 @@ describe('annualReward.service - bulkCreateAnnualRewards', () => {
   });
 });
 
-describe('annualReward.service - decision-number validation', () => {
-  it('createAnnualReward CSTDCS thiếu so_quyet_dinh → reject', async () => {
+describe('Trao khen thưởng hằng năm: bắt buộc có số quyết định', () => {
+  it('Trao khen thưởng hằng năm: trao CSTDCS mà thiếu số quyết định → từ chối, không ghi DB', async () => {
     const personnel = makePersonnel({ id: 'qn-dec-1', ho_ten: 'Nguyễn Văn QĐ' });
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
     prismaMock.danhHieuHangNam.findFirst.mockResolvedValueOnce(null);
@@ -641,7 +641,7 @@ describe('annualReward.service - decision-number validation', () => {
     expect(prismaMock.danhHieuHangNam.create).not.toHaveBeenCalled();
   });
 
-  it('createAnnualReward BKBQP-only thiếu so_quyet_dinh_bkbqp → reject', async () => {
+  it('Trao khen thưởng hằng năm: trao riêng BKBQP mà thiếu số quyết định BKBQP → từ chối, không ghi DB', async () => {
     const personnel = makePersonnel({ id: 'qn-dec-2', ho_ten: 'Trần Văn Bk' });
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
     prismaMock.danhHieuHangNam.findFirst.mockResolvedValueOnce(null);
@@ -658,7 +658,7 @@ describe('annualReward.service - decision-number validation', () => {
     expect(prismaMock.danhHieuHangNam.create).not.toHaveBeenCalled();
   });
 
-  it('createAnnualReward CSTDTQ thiếu so_quyet_dinh_cstdtq → reject', async () => {
+  it('Trao khen thưởng hằng năm: trao CSTDTQ mà thiếu số quyết định CSTDTQ → từ chối', async () => {
     const personnel = makePersonnel({ id: 'qn-dec-3', ho_ten: 'Lê Văn Tq' });
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
     prismaMock.danhHieuHangNam.findFirst.mockResolvedValueOnce(null);
@@ -674,7 +674,7 @@ describe('annualReward.service - decision-number validation', () => {
     );
   });
 
-  it('createAnnualReward BKTTCP thiếu so_quyet_dinh_bkttcp → reject', async () => {
+  it('Trao khen thưởng hằng năm: trao BKTTCP mà thiếu số quyết định BKTTCP → từ chối', async () => {
     const personnel = makePersonnel({ id: 'qn-dec-4', ho_ten: 'Phạm Văn Tt' });
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
     prismaMock.danhHieuHangNam.findFirst.mockResolvedValueOnce(null);
@@ -690,7 +690,7 @@ describe('annualReward.service - decision-number validation', () => {
     );
   });
 
-  it('createAnnualReward merge BKBQP vào record CSTDCS thiếu so_quyet_dinh_bkbqp → reject', async () => {
+  it('Trao khen thưởng hằng năm: thêm BKBQP vào bản ghi CSTDCS có sẵn nhưng thiếu số quyết định BKBQP → từ chối, không cập nhật', async () => {
     const personnel = makePersonnel({ id: 'qn-dec-5', ho_ten: 'Hoàng Văn Merge' });
     const existing = makeAnnualRecord({
       personnelId: personnel.id,
@@ -713,7 +713,7 @@ describe('annualReward.service - decision-number validation', () => {
     expect(prismaMock.danhHieuHangNam.update).not.toHaveBeenCalled();
   });
 
-  it('createAnnualReward đầy đủ so_quyet_dinh → success', async () => {
+  it('Trao khen thưởng hằng năm: trao CSTDCS có đủ số quyết định → tạo khen thưởng thành công', async () => {
     const personnel = makePersonnel({ id: 'qn-dec-ok' });
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce(personnel);
     prismaMock.danhHieuHangNam.findFirst.mockResolvedValueOnce(null);
@@ -735,7 +735,7 @@ describe('annualReward.service - decision-number validation', () => {
     expect(result).toEqual(created);
   });
 
-  it('bulkCreateAnnualRewards 1 row đủ + 1 row thiếu so_quyet_dinh → success: 1, errors: 1', async () => {
+  it('Trao hàng loạt: 1 quân nhân đủ số quyết định + 1 quân nhân thiếu → 1 trao được, 1 báo lỗi thiếu số quyết định', async () => {
     const ok = makePersonnel({ id: 'qn-bulk-ok', ho_ten: 'QN Đủ' });
     const missing = makePersonnel({ id: 'qn-bulk-missing', ho_ten: 'QN Thiếu' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([ok, missing]);
@@ -770,8 +770,8 @@ describe('annualReward.service - decision-number validation', () => {
   });
 });
 
-describe('annualReward.service - deleteAnnualReward (granular)', () => {
-  it('xóa CSTDCS khi record còn BKBQP → update danh_hieu/so_quyet_dinh/ghi_chu = null', async () => {
+describe('Trao khen thưởng hằng năm: gỡ bỏ từng danh hiệu trên bản ghi', () => {
+  it('Gỡ khen thưởng hằng năm: bản ghi có cả CSTDCS và BKBQP, gỡ CSTDCS → chỉ xóa CSTDCS, giữ lại BKBQP, không xóa cả bản ghi', async () => {
     // Cho: record giữ cả CSTDCS và BKBQP
     const personnel = makePersonnel({ id: 'qn-del-1' });
     const reward = makeAnnualRecord({
@@ -809,7 +809,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     expect(result.message).toContain(getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS));
   });
 
-  it('xóa BKBQP khi record còn CSTDCS → clear flags BKBQP, giữ CSTDCS', async () => {
+  it('Gỡ khen thưởng hằng năm: bản ghi còn CSTDCS, gỡ BKBQP → chỉ xóa BKBQP, giữ lại CSTDCS', async () => {
     const personnel = makePersonnel({ id: 'qn-del-2' });
     const reward = makeAnnualRecord({
       id: 'dhhn-mix-2',
@@ -835,7 +835,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     });
   });
 
-  it('xóa CSTDTQ khi còn BKBQP → clear cờ CSTDTQ', async () => {
+  it('Gỡ khen thưởng hằng năm: bản ghi còn BKBQP, gỡ CSTDTQ → chỉ xóa CSTDTQ', async () => {
     const personnel = makePersonnel({ id: 'qn-del-3' });
     const reward = makeAnnualRecord({
       id: 'dhhn-mix-3',
@@ -860,7 +860,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     });
   });
 
-  it('xóa BKTTCP khi còn BKBQP → clear cờ BKTTCP', async () => {
+  it('Gỡ khen thưởng hằng năm: bản ghi còn BKBQP, gỡ BKTTCP → chỉ xóa BKTTCP', async () => {
     const personnel = makePersonnel({ id: 'qn-del-4' });
     const reward = makeAnnualRecord({
       id: 'dhhn-mix-4',
@@ -885,7 +885,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     });
   });
 
-  it('xóa CSTDCS khi đó là danh hiệu duy nhất → xóa cả row', async () => {
+  it('Gỡ khen thưởng hằng năm: CSTDCS là danh hiệu duy nhất trên bản ghi, gỡ CSTDCS → xóa luôn cả bản ghi', async () => {
     const personnel = makePersonnel({ id: 'qn-del-5' });
     const reward = makeAnnualRecord({
       id: 'dhhn-only-cstdcs',
@@ -903,7 +903,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     expect(prismaMock.danhHieuHangNam.update).not.toHaveBeenCalled();
   });
 
-  it('xóa BKBQP khi đó là danh hiệu duy nhất → xóa cả row', async () => {
+  it('Gỡ khen thưởng hằng năm: BKBQP là danh hiệu duy nhất trên bản ghi, gỡ BKBQP → xóa luôn cả bản ghi', async () => {
     const personnel = makePersonnel({ id: 'qn-del-6' });
     const reward = makeAnnualRecord({
       id: 'dhhn-only-bkbqp',
@@ -921,7 +921,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     expect(prismaMock.danhHieuHangNam.update).not.toHaveBeenCalled();
   });
 
-  it('xóa CSTDCS khi record không có CSTDCS (chỉ có BKBQP) → ValidationError', async () => {
+  it('Gỡ khen thưởng hằng năm: bản ghi chỉ có BKBQP, yêu cầu gỡ CSTDCS → từ chối vì bản ghi không có CSTDCS', async () => {
     const personnel = makePersonnel({ id: 'qn-del-7' });
     const reward = makeAnnualRecord({
       id: 'dhhn-no-cstdcs',
@@ -941,7 +941,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     expect(prismaMock.danhHieuHangNam.update).not.toHaveBeenCalled();
   });
 
-  it('xóa với awardType không hợp lệ → ValidationError', async () => {
+  it('Gỡ khen thưởng hằng năm: loại danh hiệu cần gỡ không hợp lệ → từ chối "loại danh hiệu không hợp lệ"', async () => {
     const personnel = makePersonnel({ id: 'qn-del-8' });
     const reward = makeAnnualRecord({
       id: 'dhhn-bad-type',
@@ -959,7 +959,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     );
   });
 
-  it('xóa record không tồn tại → NotFoundError', async () => {
+  it('Gỡ khen thưởng hằng năm: bản ghi không tồn tại → báo không tìm thấy', async () => {
     prismaMock.danhHieuHangNam.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -968,7 +968,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     );
   });
 
-  it('xóa không truyền awardType → backward compat, xóa cả row', async () => {
+  it('Gỡ khen thưởng hằng năm: không nêu loại danh hiệu cần gỡ → xóa luôn cả bản ghi (tương thích cũ)', async () => {
     const personnel = makePersonnel({ id: 'qn-del-9' });
     const reward = makeAnnualRecord({
       id: 'dhhn-legacy',
@@ -989,7 +989,7 @@ describe('annualReward.service - deleteAnnualReward (granular)', () => {
     expect(result.message).toBe('Đã xóa Danh hiệu hằng năm.');
   });
 
-  it('gọi recalc profile sau khi xóa granular', async () => {
+  it('Gỡ khen thưởng hằng năm: sau khi gỡ một danh hiệu → tính lại hồ sơ của quân nhân đó', async () => {
     const profileMock = require('../../src/services/profile/annual')
       .safeRecalculateAnnualProfile as jest.Mock;
     profileMock.mockClear();

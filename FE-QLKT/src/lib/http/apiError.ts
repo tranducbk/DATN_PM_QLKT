@@ -49,8 +49,8 @@ export function getApiErrorMessage(error: unknown, fallback = 'Đã xảy ra l�
 }
 
 /**
- * Extract retry-after seconds from a 429 axios error. Null nếu không phải 429
- * hoặc không có header `retry-after`.
+ * Extracts retry-after seconds from a 429 axios error. Null when it is not a 429
+ * or has no `retry-after` header.
  */
 export function getRetryAfterSeconds(error: unknown): number | null {
   if (!error || typeof error !== 'object') return null;
@@ -62,7 +62,7 @@ export function getRetryAfterSeconds(error: unknown): number | null {
 }
 
 /**
- * Ghi lỗi API để dễ tra cứu theo ngữ cảnh.
+ * Logs an API error with context for easier debugging.
  * @param error - Giá trị từ `catch`
  * @param context - Ngữ cảnh log (vd. `MainLayout.loadNotifications`)
  * @returns void

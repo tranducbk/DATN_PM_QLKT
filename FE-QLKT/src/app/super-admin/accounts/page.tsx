@@ -12,7 +12,6 @@ import {
   Tag,
   Input,
   Select,
-  Breadcrumb,
   ConfigProvider,
   theme as antdTheme,
 } from 'antd';
@@ -26,18 +25,18 @@ import {
   DeleteOutlined,
   ReloadOutlined,
   SearchOutlined,
-  HomeOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { apiClient } from '@/lib/http/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { ROLES, getRoleInfo, roleSelectOptions } from '@/constants/roles.constants';
 import { useDebounce } from '@/hooks/useDebounce';
 import { formatDateTime } from '@/lib/utils';
 
 const { Title } = Typography;
 
-/** Dòng bảng tài khoản (API getAccounts). */
+/** Account table row (from getAccounts). */
 interface SuperAdminAccountRow {
   id: string;
   username: string;
@@ -135,7 +134,7 @@ export default function AccountsListPage() {
 
   useEffect(() => {
     fetchAccounts(1, pagination.pageSize, debouncedSearch, roleFilter);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- auto-search on keyword/role change
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch, roleFilter]);
 
   const columns: ColumnsType<SuperAdminAccountRow> = [
@@ -262,12 +261,7 @@ export default function AccountsListPage() {
       }}
     >
       <div className="space-y-4 p-6">
-        <Breadcrumb
-          items={[
-            { title: <Link href="/super-admin/dashboard"><HomeOutlined /></Link> },
-            { title: 'Tài khoản' },
-          ]}
-        />
+        <PageBreadcrumb items={[{ title: 'Tài khoản' }]} />
         <div className="flex justify-between items-center">
           <Title level={2} className="!mb-0">
             Quản lý tài khoản

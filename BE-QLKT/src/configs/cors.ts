@@ -49,7 +49,7 @@ const allowedOrigins: string[] = process.env.ALLOWED_ORIGINS
  * Allowlist loaded once from `ALLOWED_ORIGINS` (comma-separated) with localhost dev defaults.
  * @returns Parsed origin strings used by `allowCorsOrigin`
  */
-export function getAllowedOrigins(): string[] {
+function getAllowedOrigins(): string[] {
   return allowedOrigins;
 }
 

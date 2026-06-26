@@ -80,8 +80,8 @@ async function makeExcelBuffer(rows: Record<string, unknown>[]): Promise<Buffer>
   return Buffer.from(arrayBuffer as ArrayBuffer);
 }
 
-describe('Bulk dup — same personnel + same danh_hieu in one proposal payload', () => {
-  it('Submit CA_NHAN_HANG_NAM với 2 items trùng (qn-A, CSTDCS) → reject DUPLICATE_IN_PAYLOAD', async () => {
+describe('Trùng lặp trong cùng file: cùng quân nhân + cùng danh hiệu trong một đề xuất', () => {
+  it('Trùng lặp trong cùng file: đề xuất cá nhân hằng năm có 2 dòng CSTDCS cùng một quân nhân → từ chối, không tạo đề xuất', async () => {
     // Given: 2 item CSTDCS cùng quân nhân trong 1 proposal
     arrangeManager();
     const target = makePersonnel({ id: 'qn-dup-payload', ho_ten: 'Trùng A' });
@@ -106,8 +106,8 @@ describe('Bulk dup — same personnel + same danh_hieu in one proposal payload',
   });
 });
 
-describe('Bulk dup — duplicate personnel_ids in bulkCreateAnnualRewards', () => {
-  it('personnel_ids = [qn1, qn1, qn1] → service iterate 3 lần, mock create 3 lần (KHÔNG dedupe)', async () => {
+describe('Trùng lặp trong cùng file: một quân nhân lặp lại trong danh sách trao thưởng hàng loạt', () => {
+  it('Trùng lặp trong cùng file: trao thưởng hàng loạt với cùng một quân nhân 3 lần → hệ thống xử lý cả 3 (chưa khử trùng lặp)', async () => {
     // Pin: bulkCreateAnnualRewards.personnelIds duyệt nguyên xi; existingRewardMap
     // build 1 lần trước transaction nên các vòng lặp sau không thấy record vừa tạo
     // trong cùng loop.
@@ -155,8 +155,8 @@ describe('Bulk dup — duplicate personnel_ids in bulkCreateAnnualRewards', () =
   });
 });
 
-describe('Bulk dup — Excel rows referencing same personnel + nam', () => {
-  it('Preview: 2 row (qn-1, 2024) + (qn-1, 2024) → row thứ hai báo "Trùng lặp trong file"', async () => {
+describe('Trùng lặp trong cùng file: hai dòng Excel cùng quân nhân + cùng năm', () => {
+  it('Nhập Excel: 2 dòng cùng quân nhân + cùng năm 2024 → dòng thứ hai báo "Trùng lặp trong file"', async () => {
     const p1 = makePersonnel({ id: 'qn-excel-dup', ho_ten: 'Lê Excel' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([p1]);
     prismaMock.danhHieuHangNam.findMany.mockResolvedValueOnce([]);
@@ -197,8 +197,8 @@ describe('Bulk dup — Excel rows referencing same personnel + nam', () => {
   });
 });
 
-describe('Bulk dup — DON_VI_HANG_NAM duplicate units in payload', () => {
-  it('2 items cùng don_vi_id + cùng danh_hieu → reject DUPLICATE_IN_PAYLOAD', async () => {
+describe('Trùng lặp trong cùng file: cùng đơn vị xuất hiện hai lần trong đề xuất đơn vị hằng năm', () => {
+  it('Trùng lặp trong cùng file: 2 dòng cùng đơn vị + cùng danh hiệu ĐVQT trong một đề xuất → từ chối, không tạo đề xuất', async () => {
     // Given: cùng đơn vị + cùng danh hiệu ĐVQT xuất hiện 2 lần trong 1 proposal
     arrangeManager();
     prismaMock.coQuanDonVi.findUnique.mockResolvedValue({

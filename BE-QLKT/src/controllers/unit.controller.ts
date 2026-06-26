@@ -108,7 +108,14 @@ class UnitController {
       return ResponseHelper.badRequest(res, 'Thiếu id đơn vị');
     }
     const result = await unitService.deleteUnit(id);
-    return ResponseHelper.success(res, { message: result.message });
+    return ResponseHelper.success(res, {
+      data: {
+        ten_don_vi: result.ten_don_vi,
+        ma_don_vi: result.ma_don_vi,
+        co_quan_don_vi_id: result.co_quan_don_vi_id,
+      },
+      message: result.message,
+    });
   });
 
   getMyUnits = catchAsync(async (req: Request, res: Response) => {

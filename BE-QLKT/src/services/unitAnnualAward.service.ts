@@ -5,18 +5,6 @@ import * as importHelpers from './unitAnnualAward/import';
 import type { UnitAnnualAwardValidItem } from './unitAnnualAward/types';
 
 class UnitAnnualAwardService {
-  calculateContinuousYears(donViId, year) {
-    return eligibility.calculateContinuousYears(donViId, year);
-  }
-  countBKBQPInStreak(donViId, year, dvqtStreak?: number) {
-    return eligibility.countBKBQPInStreak(donViId, year, dvqtStreak);
-  }
-  calculateTotalDVQT(donViId, year) {
-    return eligibility.calculateTotalDVQT(donViId, year);
-  }
-  buildSuggestion(du_dieu_kien_bk_tong_cuc: boolean, du_dieu_kien_bk_thu_tuong: boolean) {
-    return eligibility.buildSuggestion(du_dieu_kien_bk_tong_cuc, du_dieu_kien_bk_thu_tuong);
-  }
   checkUnitAwardEligibility(donViId, year, danhHieu) {
     return eligibility.checkUnitAwardEligibility(donViId, year, danhHieu);
   }
@@ -27,15 +15,6 @@ class UnitAnnualAwardService {
     return eligibility.recalculate(args);
   }
 
-  propose(args) {
-    return crud.propose(args, this);
-  }
-  approve(id, args) {
-    return crud.approve(id, args, this);
-  }
-  reject(id, args) {
-    return crud.reject(id, args, this);
-  }
   list(args?) {
     return crud.list(args, this);
   }
@@ -56,6 +35,9 @@ class UnitAnnualAwardService {
   }
   getUnitAnnualAwards(donViId: string, userRole?: string, userQuanNhanId?: string | null) {
     return crud.getUnitAnnualAwards(donViId, userRole, userQuanNhanId);
+  }
+  assertUnitInScope(donViId: string, userRole?: string, userQuanNhanId?: string | null) {
+    return crud.assertUnitInScope(donViId, userRole, userQuanNhanId);
   }
 
   exportTemplate(unitIds?: string[], repeatMap?: Record<string, number>) {

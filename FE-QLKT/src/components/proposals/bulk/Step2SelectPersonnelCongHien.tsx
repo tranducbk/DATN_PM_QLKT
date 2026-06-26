@@ -21,6 +21,8 @@ import { isMissingGender } from '@/constants/gender.constants';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { ExcelImportSection } from './ExcelImportSection';
 import { usePersonnelList } from './usePersonnelList';
+import { StepGuide } from './StepGuide';
+import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
 import {
   sttColumn,
   hoTenWithUnitColumn,
@@ -544,20 +546,15 @@ export function Step2SelectPersonnelCongHien({
 
   return (
     <div>
-      <Alert
-        message={`Bước 2: Lựa chọn quân nhân - ${AWARD_TAB_LABELS.HCBVTQ}`}
-        description={
-          <div>
-            <p>1. Chọn năm đề xuất để hệ thống xác định điều kiện theo kỳ xét.</p>
-            <p>2. Lựa chọn quân nhân đủ điều kiện từ danh sách.</p>
-            <p>3. Kiểm tra cảnh báo điều kiện trước khi xác nhận lựa chọn.</p>
-            <p>4. Hoàn tất lựa chọn, nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu.</p>
-          </div>
-        }
-        type="info"
-        showIcon
+      <StepGuide
+        title={stepGuideTitle(2, 'Lựa chọn quân nhân', AWARD_TAB_LABELS.HCBVTQ)}
         icon={<TeamOutlined />}
-        style={{ marginBottom: 24 }}
+        steps={[
+          GUIDE_LINES.pickYear,
+          GUIDE_LINES.selectEligible,
+          GUIDE_LINES.checkWarning,
+          GUIDE_LINES.nextToTitles,
+        ]}
       />
 
       {/* Upload Excel Section */}

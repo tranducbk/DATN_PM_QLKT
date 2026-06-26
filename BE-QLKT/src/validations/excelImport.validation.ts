@@ -42,29 +42,43 @@ const wrapItemsSchema = <T extends z.ZodTypeAny>(itemSchema: T) =>
       .min(1, 'Danh sách phải có ít nhất 1 mục'),
   });
 
+const danhHieuField = z.string().trim().min(1, 'Danh hiệu là bắt buộc');
+
+// Must survive confirm validation — Zod strips unknown keys, dropping the month
+const thangField = z
+  .number({ message: 'Tháng là bắt buộc' })
+  .int('Tháng phải là số nguyên')
+  .min(1, 'Tháng phải từ 1 đến 12')
+  .max(12, 'Tháng phải từ 1 đến 12');
+
 const personnelWithDanhHieuSchema = wrapItemsSchema(
-  z.object({
-    ...personnelImportItemBase,
-    danh_hieu: z.string().trim().min(1, 'Danh hiệu là bắt buộc'),
-  })
+  z.object({ ...personnelImportItemBase, danh_hieu: danhHieuField })
 );
 
 const personnelBaseSchema = wrapItemsSchema(z.object({ ...personnelImportItemBase }));
 
-/** Annual reward. */
+const personnelWithDanhHieuAndThangSchema = wrapItemsSchema(
+  z.object({ ...personnelImportItemBase, danh_hieu: danhHieuField, thang: thangField })
+);
+
+const personnelWithThangSchema = wrapItemsSchema(
+  z.object({ ...personnelImportItemBase, thang: thangField })
+);
+
+/** Annual reward (yearly — no award month). */
 export const confirmImportAnnualReward = personnelWithDanhHieuSchema;
 
 /** Glorious Soldier Medal (HCCSVV). */
-export const confirmImportHccsvv = personnelWithDanhHieuSchema;
+export const confirmImportHccsvv = personnelWithDanhHieuAndThangSchema;
 
 /** Fatherland Defense Order (Contribution Award / HCBVTQ). */
-export const confirmImportContributionAward = personnelWithDanhHieuSchema;
+export const confirmImportContributionAward = personnelWithDanhHieuAndThangSchema;
 
 /** Determined-to-Win Military Flag Medal. */
-export const confirmImportMilitaryFlag = personnelBaseSchema;
+export const confirmImportMilitaryFlag = personnelWithThangSchema;
 
 /** Commemorative Medal for Building the Vietnam People's Army. */
-export const confirmImportCommemorativeMedal = personnelBaseSchema;
+export const confirmImportCommemorativeMedal = personnelWithThangSchema;
 
 /**
  * Scientific achievement.

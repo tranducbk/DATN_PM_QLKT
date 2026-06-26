@@ -3,19 +3,19 @@
 import { ROLES } from '@/constants/roles.constants';
 
 /** Pagination metadata returned by list APIs. */
-export type PaginationMeta = { total: number; page?: number; limit?: number; totalPages?: number };
+type PaginationMeta = { total: number; page?: number; limit?: number; totalPages?: number };
 
 /** Standard API response shape used across API modules. */
 export type ApiResponse<T = any> = { success: boolean; data?: T; message?: string; pagination?: PaginationMeta };
 
-export const USER_ROLE_VALUES = [
+const USER_ROLE_VALUES = [
   ROLES.SUPER_ADMIN,
   ROLES.ADMIN,
   ROLES.MANAGER,
   ROLES.USER,
 ] as const;
 
-/** Vai trò tài khoản — khớp BE / JWT */
+/** Account role — matches the BE / JWT value. */
 export type UserRole = (typeof USER_ROLE_VALUES)[number];
 
 /** Date input from API/forms: ISO string, Date, null, or undefined. */
@@ -24,7 +24,7 @@ export type DateInput = string | Date | null | undefined;
 /** Required date point (null is not allowed). */
 export type DatePoint = string | Date;
 
-/** Tài khoản trong danh sách / layout (payload tóm tắt từ API). */
+/** Account summary used in lists/layout (trimmed API payload). */
 export interface Account {
   id: string;
   username: string;

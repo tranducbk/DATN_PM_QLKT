@@ -7,7 +7,6 @@ import {
   Descriptions,
   Button,
   Typography,
-  Breadcrumb,
   Tag,
   Alert,
   Space,
@@ -18,7 +17,6 @@ import {
 import { getApiErrorMessage } from '@/lib/http/apiError';
 
 import {
-  HomeOutlined,
   ArrowLeftOutlined,
   ClockCircleOutlined,
   CheckCircleOutlined,
@@ -31,9 +29,15 @@ import Link from 'next/link';
 import { apiClient } from '@/lib/http/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
+import { InfoNote } from '@/components/shared/InfoNote';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { useTheme } from '@/components/ThemeProvider';
 import { getAntdTableThemeConfig } from '@/lib/antdTheme';
-import { DANH_HIEU_MAP, type CongHienHeSoGroup } from '@/constants/danhHieu.constants';
+import {
+  DANH_HIEU_MAP,
+  THANH_TICH_KHOA_HOC,
+  type ContributionCoefficientGroup,
+} from '@/constants/danhHieu.constants';
 import {
   PROPOSAL_REVIEW_CARD_TITLES,
   PROPOSAL_STATUS,
@@ -75,7 +79,7 @@ export default function ManagerProposalDetailPage() {
     if (proposalId) {
       fetchProposalDetail();
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only refetch when proposalId changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [proposalId]);
 
   const fetchProposalDetail = async () => {
@@ -162,7 +166,7 @@ export default function ManagerProposalDetailPage() {
 
   const renderContributionGroupDuration = (
     record: DanhHieuItem,
-    group: CongHienHeSoGroup,
+    group: ContributionCoefficientGroup,
     dataField: 'thoi_gian_nhom_0_7' | 'thoi_gian_nhom_0_8' | 'thoi_gian_nhom_0_9_1_0'
   ) => {
     const display = getDurationDisplay(record[dataField]);
@@ -231,18 +235,12 @@ export default function ManagerProposalDetailPage() {
   return (
     <ConfigProvider theme={getAntdTableThemeConfig(isDark)}>
       <div className="space-y-6 p-6">
-        {/* Breadcrumb */}
-        <Breadcrumb>
-          <Breadcrumb.Item>
-            <Link href="/manager/dashboard">
-              <HomeOutlined />
-            </Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <Link href="/manager/proposals">Đề xuất khen thưởng</Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>Chi tiết</Breadcrumb.Item>
-        </Breadcrumb>
+        <PageBreadcrumb
+          items={[
+            { title: 'Đề xuất khen thưởng', href: '/manager/proposals' },
+            { title: 'Chi tiết' },
+          ]}
+        />
 
         {/* Header */}
         <div className="flex items-center justify-between">
@@ -267,8 +265,7 @@ export default function ManagerProposalDetailPage() {
                 <br />
                 <br />
                 <Text type="secondary">
-                  💡 Bạn có thể tải file Excel về, chỉnh sửa theo lý do từ chối, sau đó tạo đề xuất
-                  mới.
+                  Bạn có thể tải file Excel về, chỉnh sửa theo lý do từ chối, sau đó tạo đề xuất mới.
                 </Text>
               </div>
             }
@@ -295,7 +292,7 @@ export default function ManagerProposalDetailPage() {
         {proposal.status === PROPOSAL_STATUS.PENDING && (
           <Alert
             message="Đề xuất đang chờ duyệt"
-            description="Đề xuất của bạn đang chờ Admin xem xét và phê duyệt."
+            description="Đề xuất của bạn đang chờ Cán bộ Phòng Chính trị xem xét và phê duyệt."
             type="info"
             showIcon
             icon={<ClockCircleOutlined />}
@@ -491,8 +488,8 @@ export default function ManagerProposalDetailPage() {
                   width: 150,
                   align: 'center',
                   render: text => (
-                    <Tag color={text === 'DTKH' ? 'blue' : 'green'}>
-                      {text === 'DTKH' ? 'ĐTKH' : 'SKKH'}
+                    <Tag color={text === THANH_TICH_KHOA_HOC.DTKH ? 'blue' : 'green'}>
+                      {text === THANH_TICH_KHOA_HOC.DTKH ? 'ĐTKH' : 'SKKH'}
                     </Tag>
                   ),
                 },
@@ -1137,27 +1134,23 @@ export default function ManagerProposalDetailPage() {
 
         {/* Action Buttons */}
         {proposal.status === PROPOSAL_STATUS.REJECTED && (
-          <Card className="shadow-sm bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200">
-            <Space direction="vertical" size="middle" style={{ width: '100%' }}>
-              <Title level={4} className="!mb-0">
-                Hướng dẫn tạo đề xuất mới
-              </Title>
-              <Text>
-                1. Nhấn nút &quot;Tạo đề xuất mới&quot; để tạo đề xuất mới
-                <br />
-                2. Điền thông tin đề xuất mới
-                <br />
-                3. Xem lại thông tin đề xuất mới
-                <br />
-                4. Nhấn nút &quot;Gửi đề xuất&quot; để gửi đề xuất mới
-              </Text>
-              <Link href="/manager/proposals/create">
-                <Button type="primary" size="large">
-                  Tạo đề xuất mới
-                </Button>
-              </Link>
-            </Space>
-          </Card>
+          <InfoNote
+            type="warning"
+            title="Tạo lại đề xuất"
+            description="Đề xuất đã bị từ chối. Bạn có thể điều chỉnh và gửi lại theo các bước sau:"
+            ordered
+            items={[
+              'Xem lý do từ chối ở phần trên để biết nội dung cần điều chỉnh.',
+              'Nhấn "Tạo đề xuất mới", điền và rà soát lại thông tin.',
+              'Gửi đề xuất để chờ phê duyệt.',
+            ]}
+          >
+            <Link href="/manager/proposals/create">
+              <Button type="primary" size="large" style={{ marginTop: 12 }}>
+                Tạo đề xuất mới
+              </Button>
+            </Link>
+          </InfoNote>
         )}
       </div>
     </ConfigProvider>

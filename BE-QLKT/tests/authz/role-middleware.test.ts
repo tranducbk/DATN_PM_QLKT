@@ -61,8 +61,8 @@ function invokeMiddleware(
   return { allowed, status: res.statusCode, body: res.body };
 }
 
-describe('requireSuperAdmin', () => {
-  it('SUPER_ADMIN → pass', () => {
+describe('Phân quyền: cổng chặn route chỉ dành cho SUPER_ADMIN', () => {
+  it('Phân quyền: SUPER_ADMIN truy cập route SUPER_ADMIN → cho qua', () => {
     const result = invokeMiddleware(requireSuperAdmin, ROLES.SUPER_ADMIN);
     expect(result.allowed).toBe(true);
   });
@@ -73,14 +73,14 @@ describe('requireSuperAdmin', () => {
     expect(result.status).toBe(403);
   });
 
-  it('no user (unauthenticated) → 401', () => {
+  it('Bảo mật: chưa đăng nhập (không có người dùng) → chặn với lỗi 401', () => {
     const result = invokeMiddleware(requireSuperAdmin);
     expect(result.allowed).toBe(false);
     expect(result.status).toBe(401);
   });
 });
 
-describe('requireAdmin (SA + ADMIN — shared system management)', () => {
+describe('Phân quyền: cổng chặn route quản trị hệ thống (SUPER_ADMIN và ADMIN)', () => {
   it.each([ROLES.SUPER_ADMIN, ROLES.ADMIN])('%s → pass', role => {
     const result = invokeMiddleware(requireAdmin, role);
     expect(result.allowed).toBe(true);
@@ -93,13 +93,13 @@ describe('requireAdmin (SA + ADMIN — shared system management)', () => {
   });
 });
 
-describe('requireAdminOnly (ADMIN only — business operations, excludes SA)', () => {
-  it('ADMIN → pass', () => {
+describe('Phân quyền: cổng chặn route nghiệp vụ chỉ dành riêng cho ADMIN (loại trừ SUPER_ADMIN)', () => {
+  it('Phân quyền: ADMIN truy cập route nghiệp vụ → cho qua', () => {
     const result = invokeMiddleware(requireAdminOnly, ROLES.ADMIN);
     expect(result.allowed).toBe(true);
   });
 
-  it('SUPER_ADMIN → 403 (SA does not run business ops)', () => {
+  it('Phân quyền: SUPER_ADMIN truy cập route nghiệp vụ riêng của ADMIN → bị chặn (403)', () => {
     const result = invokeMiddleware(requireAdminOnly, ROLES.SUPER_ADMIN);
     expect(result.allowed).toBe(false);
     expect(result.status).toBe(403);
@@ -112,13 +112,13 @@ describe('requireAdminOnly (ADMIN only — business operations, excludes SA)', (
   });
 });
 
-describe('requireManager (SA + ADMIN + MANAGER)', () => {
+describe('Phân quyền: cổng chặn route cấp quản lý (SUPER_ADMIN, ADMIN và MANAGER)', () => {
   it.each([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER])('%s → pass', role => {
     const result = invokeMiddleware(requireManager, role);
     expect(result.allowed).toBe(true);
   });
 
-  it('USER → 403', () => {
+  it('Phân quyền: USER truy cập route cấp quản lý → bị chặn (403)', () => {
     const result = invokeMiddleware(requireManager, ROLES.USER);
     expect(result.allowed).toBe(false);
     expect(result.status).toBe(403);

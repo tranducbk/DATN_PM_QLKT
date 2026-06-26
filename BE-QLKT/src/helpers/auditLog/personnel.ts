@@ -1,4 +1,3 @@
-import type { Prisma } from '../../generated/prisma';
 import { Request, Response } from 'express';
 import { normalizeParam } from '../paginationHelper';
 import { getDanhHieuName } from '../../constants/danhHieu.constants';
@@ -16,38 +15,32 @@ import {
 } from './constants';
 import type { ChucVuWithUnit } from './constants';
 import { positionHistoryRepository } from '../../repositories/positionHistory.repository';
-import { quanNhanRepository } from '../../repositories/quanNhan.repository';
-import { scientificAchievementRepository } from '../../repositories/scientificAchievement.repository';
-
-type ThanhTichKhoaHocWithHoTen = Prisma.ThanhTichKhoaHocGetPayload<{
-  include: { QuanNhan: { select: { ho_ten: true } } };
-}>;
+import { formatPersonnelChanges, PersonnelFieldChange } from '../profileFieldDiff';
 
 const personnel: Record<
   string,
   (req: Request, res: Response, responseData: unknown) => string | Promise<string>
 > = {
   CREATE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-    const cccd = req.body?.cccd || '';
-    const chucVuId = req.body?.chuc_vu_id || null;
-    const coQuanDonViId = req.body?.co_quan_don_vi_id || null;
-    const donViTrucThuocId = req.body?.don_vi_truc_thuoc_id || null;
-
-    let hoTen = req.body?.ho_ten || '';
-    let tenChucVu = '';
-    let tenDonVi = '';
-
     const parsedData = parseResponseData(responseData);
     const result = asRecord(parsedData?.data) || parsedData;
 
-    if (result) {
-      hoTen = (result.ho_ten as string) || hoTen;
+    // New personnel are created with a login username only (plus unit + position); the
+    // real profile (name, CCCD, ...) is filled in later via update — so log the username.
+    const username = (asRecord(result?.TaiKhoan)?.username as string) || FALLBACK.UNKNOWN;
 
-      const chucVu = asRecord(result.ChucVu) as ChucVuWithUnit | null;
-      if (chucVu) {
-        tenChucVu = (chucVu.ten_chuc_vu as string) || '';
-        tenDonVi = getUnitNameFromChucVu(chucVu);
-      }
+    let tenChucVu = '';
+    let tenDonVi = '';
+    const chucVuId = req.body?.chuc_vu_id || (result?.chuc_vu_id as string) || null;
+    const coQuanDonViId =
+      req.body?.co_quan_don_vi_id || (result?.co_quan_don_vi_id as string) || null;
+    const donViTrucThuocId =
+      req.body?.don_vi_truc_thuoc_id || (result?.don_vi_truc_thuoc_id as string) || null;
+
+    const chucVu = asRecord(result?.ChucVu) as ChucVuWithUnit | null;
+    if (chucVu) {
+      tenChucVu = (chucVu.ten_chuc_vu as string) || '';
+      tenDonVi = getUnitNameFromChucVu(chucVu);
     }
 
     if ((!tenChucVu && chucVuId) || (!tenDonVi && (coQuanDonViId || donViTrucThuocId))) {
@@ -55,32 +48,18 @@ const personnel: Record<
         if (!tenChucVu && chucVuId) {
           const positionInfo = await queryPositionInfo(chucVuId, prisma);
           tenChucVu = positionInfo.tenChucVu;
-          if (!tenDonVi) {
-            tenDonVi = positionInfo.tenDonVi;
-          }
+          if (!tenDonVi) tenDonVi = positionInfo.tenDonVi;
         }
         if (!tenDonVi) {
           const unitId = donViTrucThuocId || coQuanDonViId;
-          if (unitId) {
-            tenDonVi = await getUnitNameFromUnitId(unitId, prisma);
-          }
+          if (unitId) tenDonVi = await getUnitNameFromUnitId(unitId, prisma);
         }
       });
     }
 
-    if (!hoTen || hoTen === cccd) {
-      return `Tạo quân nhân mới với CCCD: ${cccd || FALLBACK.UNKNOWN}`;
-    }
-
-    let description = `Tạo quân nhân: ${hoTen}${cccd ? ` (CCCD: ${cccd})` : ''}`;
-
-    if (tenDonVi) {
-      description += `\n- Đơn vị: ${tenDonVi}`;
-    }
-    if (tenChucVu) {
-      description += `\n- Chức vụ: ${tenChucVu}`;
-    }
-
+    let description = `Tạo quân nhân mới (tên đăng nhập: ${username})`;
+    if (tenDonVi) description += `\n- Đơn vị: ${tenDonVi}`;
+    if (tenChucVu) description += `\n- Chức vụ: ${tenChucVu}`;
     return description;
   },
   UPDATE: (req: Request, res: Response, responseData: unknown): string => {
@@ -88,15 +67,17 @@ const personnel: Record<
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       const personnelData = data?.data || data;
       const hoTen = personnelData?.ho_ten || req.body?.ho_ten || FALLBACK.NO_NAME;
+      const changes = (personnelData?.changes as PersonnelFieldChange[] | undefined) || [];
+      const changeDetail = changes.length > 0 ? ` - Đổi: ${formatPersonnelChanges(changes)}` : '';
 
       if (personnelData?.unitTransferInfo) {
         const { oldUnit, newUnit } = personnelData.unitTransferInfo;
         const oldUnitName = oldUnit?.ten_don_vi || FALLBACK.NO_UNIT;
         const newUnitName = newUnit?.ten_don_vi || FALLBACK.NO_UNIT;
-        return `Chuyển đơn vị quân nhân: ${hoTen} từ "${oldUnitName}" sang "${newUnitName}"`;
+        return `Chuyển đơn vị quân nhân: ${hoTen} từ "${oldUnitName}" sang "${newUnitName}"${changeDetail}`;
       }
 
-      return `Cập nhật thông tin quân nhân: ${hoTen}`;
+      return `Cập nhật thông tin quân nhân: ${hoTen}${changeDetail}`;
     } catch (e) {
       console.error('AuditLogPersonnel.buildUpdateDescription failed', { error: e });
       const hoTen = req.body?.ho_ten || FALLBACK.NO_NAME;
@@ -128,13 +109,13 @@ const personnel: Record<
       failCount = result?.failed || result?.failCount || 0;
 
       if (successCount > 0 || failCount > 0) {
-        return `Import quân nhân từ file: ${fileName} (${successCount} thành công${
+        return `Nhập dữ liệu quân nhân từ file: ${fileName} (${successCount} thành công${
           failCount > 0 ? `, ${failCount} thất bại` : ''
         })`;
       }
     } catch {}
 
-    return `Import quân nhân từ file: ${fileName}`;
+    return `Nhập dữ liệu quân nhân từ file: ${fileName}`;
   },
   EXPORT: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     const filters: string[] = [];
@@ -146,13 +127,15 @@ const personnel: Record<
 
     const unitId = (req.query?.co_quan_don_vi_id || req.query?.unitId) as string | undefined;
     if (unitId) {
-      const unitName = await withPrisma(async (p) => getUnitNameFromUnitId(unitId, p));
+      const unitName = await withPrisma(async p => getUnitNameFromUnitId(unitId, p));
       filters.push(`Đơn vị: ${unitName || '(có lọc)'}`);
     }
 
-    const subUnitId = (req.query?.don_vi_truc_thuoc_id || req.query?.subUnitId) as string | undefined;
+    const subUnitId = (req.query?.don_vi_truc_thuoc_id || req.query?.subUnitId) as
+      | string
+      | undefined;
     if (subUnitId) {
-      const subUnitName = await withPrisma(async (p) => getUnitNameFromUnitId(subUnitId, p));
+      const subUnitName = await withPrisma(async p => getUnitNameFromUnitId(subUnitId, p));
       filters.push(`Đơn vị trực thuộc: ${subUnitName || '(có lọc)'}`);
     }
 
@@ -245,13 +228,16 @@ const positionHistory: Record<
 
     if ((!hoTen || !tenChucVu) && historyId) {
       await withPrisma(async prisma => {
-        const historyRecord = await positionHistoryRepository.findUniqueRaw({
-          where: { id: historyId as string },
-          select: {
-            quan_nhan_id: true,
-            chuc_vu_id: true,
+        const historyRecord = await positionHistoryRepository.findUniqueRaw(
+          {
+            where: { id: historyId as string },
+            select: {
+              quan_nhan_id: true,
+              chuc_vu_id: true,
+            },
           },
-        }, prisma);
+          prisma
+        );
 
         if (historyRecord) {
           if (!personnelId) {
@@ -325,64 +311,6 @@ const scientificAchievements: Record<
   string,
   (req: Request, res: Response, responseData: unknown) => Promise<string>
 > = {
-  CREATE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-    const loai = req.body?.loai || '';
-    const moTa = req.body?.mo_ta || '';
-    const nam = req.body?.nam || '';
-    const personnelId = req.body?.personnel_id || req.body?.quan_nhan_id || null;
-
-    const loaiName = getDanhHieuName(loai);
-
-    let hoTen = '';
-    if (personnelId) {
-      try {
-        const personnelRecord = await quanNhanRepository.findUniqueRaw({
-          where: { id: personnelId },
-          select: { ho_ten: true },
-        });
-        hoTen = personnelRecord?.ho_ten || '';
-      } catch {}
-    }
-
-    try {
-      const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
-      const achievement = data?.data || data;
-      if (achievement?.QuanNhan?.ho_ten) {
-        hoTen = achievement.QuanNhan.ho_ten;
-      }
-    } catch {}
-
-    return `Tạo thành tích khoa học: ${loaiName}${hoTen ? ` cho quân nhân ${hoTen}` : ''}${
-      moTa ? ` - ${moTa}` : ''
-    }${nam ? ` (Năm ${nam})` : ''}`;
-  },
-  UPDATE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-    const loai = req.body?.loai || '';
-    const moTa = req.body?.mo_ta || '';
-    const nam = req.body?.nam || '';
-    const achievementId = normalizeParam(req.params?.id);
-
-    const loaiName = getDanhHieuName(loai);
-
-    let hoTen = '';
-    try {
-      const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
-      const achievement = data?.data || data;
-      if (achievement?.QuanNhan?.ho_ten) {
-        hoTen = achievement.QuanNhan.ho_ten;
-      } else if (achievementId) {
-        const achievementRecord = (await scientificAchievementRepository.findUniqueRaw({
-          where: { id: achievementId },
-          include: { QuanNhan: { select: { ho_ten: true } } },
-        })) as ThanhTichKhoaHocWithHoTen | null;
-        hoTen = achievementRecord?.QuanNhan?.ho_ten || '';
-      }
-    } catch {}
-
-    return `Cập nhật thành tích khoa học: ${loaiName}${hoTen ? ` cho quân nhân ${hoTen}` : ''}${
-      moTa ? ` - ${moTa}` : ''
-    }${nam ? ` (Năm ${nam})` : ''}`;
-  },
   DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     let hoTen = '';
     let loai = '';

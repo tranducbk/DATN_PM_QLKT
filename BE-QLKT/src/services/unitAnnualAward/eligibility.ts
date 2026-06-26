@@ -6,56 +6,11 @@ import {
   DANH_HIEU_DON_VI_CO_BAN,
   DANH_HIEU_DON_VI_BANG_KHEN,
 } from '../../constants/danhHieu.constants';
-import { type FlagsInWindow } from '../eligibility/chainEligibility';
 import { evaluateUnitChain, getUnitChainConfig } from '../eligibility/unitChainEvaluator';
-import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { resolveUnit, buildUnitIdFields } from '../../helpers/unitHelper';
 
-/*
- * ════════════════════════════════════════════════════════════════════════════
- *  UNIT ANNUAL ELIGIBILITY — chuỗi danh hiệu ĐƠN VỊ (BKBQP/BKTTCP đơn vị)
- * ════════════════════════════════════════════════════════════════════════════
- *
- *  PARITY VỚI CÁ NHÂN (xem `services/profile/annual.ts`):
- *
- *      Cá nhân (`annual.ts`)                  ↔  Đơn vị (file này)
- *      ───────────────────────────────────────────────────────────
- *      calculateContinuousCSTDCS              ↔  calculateContinuousYears (ĐVQT)
- *      countBKBQPInStreak (xét nhan_bkbqp)    ↔  countBKBQPInStreak (đơn vị)
- *      countCSTDTQInStreak                    ↔  KHÔNG CÓ (đơn vị không CSTDTQ)
- *      computeChainContext                    ↔  recalculateAnnualUnit (inline)
- *      computeEligibilityFlags                ↔  checkUnitAwardEligibility
- *
- *  KHÁC BIỆT QUAN TRỌNG:
- *  ① 2 cấp đơn vị (CoQuanDonVi vs DonViTrucThuoc) → mọi query phải dùng
- *     OR clause: `[{co_quan_don_vi_id: donViId}, {don_vi_truc_thuoc_id: donViId}]`
- *     để match cả 2 loại FK trong cùng bảng DanhHieuDonViHangNam.
- *  ② Đơn vị KHÔNG có CSTDTQ trung gian → chuỗi chỉ 2 mức:
- *        ĐVQT (cơ bản, đếm streak) → BKBQP (chu kỳ 2y) → BKTTCP (chu kỳ 7y)
- *  ③ Đơn vị KHÔNG có NCKH → bỏ qua check NCKH liên tục.
- *  ④ BKTTCP đơn vị KHÔNG lifetime → nhận lặp lại mỗi 7y (xem
- *     chainAwards.constants.ts: UNIT_CHAIN_AWARDS).
- *  ⑤ Tất cả các hàm đều ASYNC (cá nhân pure sync) vì đơn vị phải query
- *     bảng nhỏ hơn, không cache pre-load như cá nhân.
- *
- *  RECALC FLOW (recalculateAnnualUnit):
- *  - Trigger sau khi approve đề xuất DON_VI_HANG_NAM.
- *  - Tính: dvqt_lien_tuc, bkbqp_in_streak, du_dieu_kien_bkbqp_unit,
- *    du_dieu_kien_bkttcp_unit, goi_y (text gợi ý cho FE).
- *  - Upsert vào bảng UnitAnnualProfile (1 record/đơn vị/năm).
- * ════════════════════════════════════════════════════════════════════════════
- */
-
-export async function calculateContinuousYears(donViId: string, year: number) {
+async function calculateContinuousYears(donViId: string, year: number) {
   year = Number(year);
-  // Lấy các năm đơn vị ĐẠT ĐVQT (Đơn vị Quyết thắng), mới nhất trước, để đếm
-  // CHUỖI LIÊN TỤC tính đến year-1. OR(...) vì donViId có thể là CQĐV hoặc ĐVTT.
-  // SQL minh hoạ:
-  //   SELECT nam, danh_hieu FROM "DanhHieuDonViHangNam"
-  //     WHERE (co_quan_don_vi_id = $donVi OR don_vi_truc_thuoc_id = $donVi)
-  //       AND nam <= $year - 1 AND danh_hieu = 'DVQT'
-  //     ORDER BY nam DESC;
-  // Vòng lặp dưới dừng NGAY khi gặp năm bị "đứt" (r.nam !== current) → độ dài chuỗi.
   const records = await danhHieuDonViHangNamRepository.findMany({
     where: {
       OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
@@ -76,33 +31,12 @@ export async function calculateContinuousYears(donViId: string, year: number) {
   return continuous;
 }
 
-export async function countBKBQPInStreak(donViId: string, year: number, dvqtStreak?: number) {
-  year = Number(year);
-  const streak = dvqtStreak ?? (await calculateContinuousYears(donViId, year));
-  const startYear = year - 1 - streak + 1;
-  // Đếm số BKBQP đơn vị TRONG CỬA SỔ chuỗi ĐVQT (startYear → year-1) — BKBQP cũ
-  // ngoài cửa sổ tự rơi ra, buộc phải có BKBQP mới ở chu kỳ hiện tại. SQL minh hoạ:
-  //   SELECT COUNT(*) FROM "DanhHieuDonViHangNam"
-  //     WHERE (co_quan_don_vi_id = $donVi OR don_vi_truc_thuoc_id = $donVi)
-  //       AND nam BETWEEN $startYear AND $year - 1
-  //       AND nhan_bkbqp = TRUE;
-  const count = await danhHieuDonViHangNamRepository.count({
-    where: {
-      OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
-      nam: { gte: startYear, lte: year - 1 },
-      nhan_bkbqp: true,
-    },
-  });
-  return count;
-}
-
-export async function calculateTotalDVQT(donViId: string, year: number) {
+async function calculateTotalDVQT(donViId: string, year: number) {
   year = Number(year);
   const records = await danhHieuDonViHangNamRepository.findMany({
     where: {
       OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
       nam: { lte: year },
-      status: PROPOSAL_STATUS.APPROVED,
       danh_hieu: { not: null },
     },
     select: {
@@ -133,17 +67,17 @@ export async function calculateTotalDVQT(donViId: string, year: number) {
   };
 }
 
-export function buildSuggestion(
-  du_dieu_kien_bk_tong_cuc: boolean,
-  du_dieu_kien_bk_thu_tuong: boolean
+function buildSuggestion(
+  du_dieu_kien_bkbqp: boolean,
+  du_dieu_kien_bkttcp: boolean
 ) {
   const tenBKBQP = getDanhHieuName(DANH_HIEU_DON_VI_HANG_NAM.BKBQP);
   const tenBKTTCP = getDanhHieuName(DANH_HIEU_DON_VI_HANG_NAM.BKTTCP);
 
-  if (du_dieu_kien_bk_thu_tuong) {
+  if (du_dieu_kien_bkttcp) {
     return `Đã đủ điều kiện đề nghị xét ${tenBKTTCP}.`;
   }
-  if (du_dieu_kien_bk_tong_cuc) {
+  if (du_dieu_kien_bkbqp) {
     return `Đã đủ điều kiện đề nghị xét ${tenBKBQP}.`;
   }
   return `Chưa đủ điều kiện đề nghị xét ${tenBKBQP}.`;
@@ -158,26 +92,23 @@ export async function checkUnitAwardEligibility(donViId: string, year: number, d
   const config = getUnitChainConfig(danhHieu);
   if (!config) return { eligible: true, reason: '' };
 
-  const dvqtLienTuc = await calculateContinuousYears(donViId, year);
-  const bkbqpInCycle = await countBKBQPInStreak(donViId, year, config.cycleYears);
-
-  const flagsInWindow: FlagsInWindow = {};
-  config.requiredFlags.forEach(f => {
-    flagsInWindow[f.code] = bkbqpInCycle;
-  });
-
-  let hasReceived = false;
-  if (config.isLifetime) {
-    const lifetimeCount = await danhHieuDonViHangNamRepository.count({
+  const [dvqtLienTuc, danhHieuList] = await Promise.all([
+    calculateContinuousYears(donViId, year),
+    danhHieuDonViHangNamRepository.findMany({
       where: {
         OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
-        [config.flagColumn]: true,
+        nam: { lte: year },
       },
-    });
-    hasReceived = lifetimeCount > 0;
-  }
+      orderBy: { nam: 'asc' },
+    }),
+  ]);
 
-  return evaluateUnitChain(danhHieu, dvqtLienTuc, flagsInWindow, hasReceived);
+  const titleRows = danhHieuList as Array<Record<string, unknown> & { nam: number }>;
+  const hasReceived = config.isLifetime
+    ? titleRows.some(r => r[config.flagColumn] === true)
+    : false;
+
+  return evaluateUnitChain(danhHieu, dvqtLienTuc, titleRows, year, hasReceived);
 }
 
 export async function recalculateAnnualUnit(donViId: string, year: number | null = null) {
@@ -189,7 +120,6 @@ export async function recalculateAnnualUnit(donViId: string, year: number | null
       where: {
         OR: [{ co_quan_don_vi_id: donViId }, { don_vi_truc_thuoc_id: donViId }],
         nam: { lte: targetYear },
-        status: PROPOSAL_STATUS.APPROVED,
       },
       orderBy: { nam: 'asc' },
     }),
@@ -197,22 +127,21 @@ export async function recalculateAnnualUnit(donViId: string, year: number | null
     calculateContinuousYears(donViId, targetYear),
   ]);
 
-  const bkbqpInLast7Years = danhHieuList.filter(
-    r => r.nhan_bkbqp === true && r.nam >= targetYear - 7 && r.nam <= targetYear - 1
-  ).length;
-
-  const du_dieu_kien_bk_tong_cuc = evaluateUnitChain(
+  const titleRows = danhHieuList as Array<Record<string, unknown> & { nam: number }>;
+  const du_dieu_kien_bkbqp = evaluateUnitChain(
     DANH_HIEU_DON_VI_HANG_NAM.BKBQP,
     dvqtLienTuc,
-    {}
+    titleRows,
+    targetYear
   ).eligible;
-  const du_dieu_kien_bk_thu_tuong = evaluateUnitChain(
+  const du_dieu_kien_bkttcp = evaluateUnitChain(
     DANH_HIEU_DON_VI_HANG_NAM.BKTTCP,
     dvqtLienTuc,
-    { [DANH_HIEU_DON_VI_HANG_NAM.BKBQP]: bkbqpInLast7Years }
+    titleRows,
+    targetYear
   ).eligible;
 
-  const goi_y = buildSuggestion(du_dieu_kien_bk_tong_cuc, du_dieu_kien_bk_thu_tuong);
+  const goi_y = buildSuggestion(du_dieu_kien_bkbqp, du_dieu_kien_bkttcp);
 
   const whereCondition = isCoQuanDonVi
     ? { unique_co_quan_don_vi_nam: { co_quan_don_vi_id: donViId, nam: targetYear } }
@@ -222,8 +151,8 @@ export async function recalculateAnnualUnit(donViId: string, year: number | null
     tong_dvqt: dvqtResult.total,
     tong_dvqt_json: dvqtResult.details,
     dvqt_lien_tuc: dvqtLienTuc,
-    du_dieu_kien_bk_tong_cuc,
-    du_dieu_kien_bk_thu_tuong,
+    du_dieu_kien_bkbqp,
+    du_dieu_kien_bkttcp,
     goi_y,
   };
 

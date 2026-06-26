@@ -14,9 +14,9 @@ import {
 import type { ProposalListFilterRow } from '@/lib/proposal/proposalListFilters';
 import { countProposalsByStatus } from '@/lib/proposal/proposalListFilters';
 
-export type ProposalListTabsVariant = 'manager' | 'adminReview';
+type ProposalListTabsVariant = 'manager' | 'adminReview';
 
-export interface ProposalListTabItem {
+interface ProposalListTabItem {
   key: string;
   label: ReactNode;
 }

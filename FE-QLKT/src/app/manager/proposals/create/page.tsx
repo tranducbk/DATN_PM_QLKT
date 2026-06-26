@@ -9,7 +9,6 @@ import {
   Upload,
   Steps,
   Space,
-  Breadcrumb,
   Radio,
   Alert,
   message as antMessage,
@@ -23,14 +22,12 @@ import { getApiErrorMessage } from '@/lib/http/apiError';
 
 import {
   UploadOutlined,
-  HomeOutlined,
   TrophyOutlined,
   TeamOutlined,
   CheckCircleOutlined,
   ArrowLeftOutlined,
   EditOutlined,
 } from '@ant-design/icons';
-import Link from 'next/link';
 import type { UploadFile } from 'antd/es/upload/interface';
 import { apiClient } from '@/lib/http/apiClient';
 import {
@@ -47,6 +44,7 @@ import {
 import { PROPOSAL_TYPE_ICON_COMPONENTS } from '@/constants/proposalUi.constants';
 import { AWARD_TYPE_REGISTRY } from '@/constants/awardTypeRegistry.constants';
 import { FileAttachmentList } from '@/components/proposals/FileAttachmentList';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 // Shared components — reuse from admin to avoid duplicating ~2000 lines
 import { Step2SelectPersonnelCaNhanHangNam } from '@/components/proposals/bulk/Step2SelectPersonnelCaNhanHangNam';
 import { Step2SelectPersonnelNienHan } from '@/components/proposals/bulk/Step2SelectPersonnelNienHan';
@@ -207,7 +205,7 @@ export default function CreateProposalPage() {
     }
   }, [selectedUnitIds]);
 
-  // Fetch personnel/unit details when reaching Step 5 (Review)
+  // Lazy-load personnel/unit details only when the review step opens
   useEffect(() => {
     if (currentStep === 4) {
       if (proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM && selectedUnitIds.length > 0) {
@@ -476,7 +474,7 @@ export default function CreateProposalPage() {
 
   const renderStepContent = () => {
     switch (currentStep) {
-      case 0: // Step 1: Choose Type
+      case 0:
         return (
           <div>
             <Alert
@@ -528,7 +526,7 @@ export default function CreateProposalPage() {
           </div>
         );
 
-      case 1: // Step 2: Select Personnel/Units
+      case 1:
         if (proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
           return (
             <Step2SelectUnits
@@ -628,7 +626,7 @@ export default function CreateProposalPage() {
             return null;
         }
 
-      case 2: // Step 3: Set Titles
+      case 2:
         return (
           <Step3SetTitles
             selectedPersonnelIds={selectedPersonnelIds}
@@ -643,12 +641,12 @@ export default function CreateProposalPage() {
           />
         );
 
-      case 3: // Step 4: Upload Files
+      case 3:
         return (
           <div>
             <Alert
-              message="Bước 4: Upload file đính kèm"
-              description="Upload các file đính kèm liên quan (tùy chọn, không giới hạn số lượng)"
+              message="Bước 4: Đính kèm tệp"
+              description="Đính kèm các tệp liên quan. Bước này không bắt buộc và không giới hạn số lượng tệp."
               type="info"
               showIcon
               style={{ marginBottom: 24 }}
@@ -675,7 +673,7 @@ export default function CreateProposalPage() {
           </div>
         );
 
-      case 4: // Step 5: Review & Submit
+      case 4:
         // Merge personnel/unit details with title data
         let reviewTableData: ReviewRow[] = [];
 
@@ -850,22 +848,7 @@ export default function CreateProposalPage() {
 
   return (
     <div style={{ padding: '24px' }}>
-      {/* Breadcrumb */}
-      <Breadcrumb
-        style={{ marginBottom: 16 }}
-        items={[
-          {
-            title: (
-              <Link href="/manager/dashboard">
-                <HomeOutlined />
-              </Link>
-            ),
-          },
-          {
-            title: 'Tạo danh sách đề xuất khen thưởng',
-          },
-        ]}
-      />
+      <PageBreadcrumb items={[{ title: 'Tạo danh sách đề xuất khen thưởng' }]} />
 
       {/* Header */}
       <div style={{ marginBottom: 24 }}>

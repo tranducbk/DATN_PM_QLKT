@@ -1,37 +1,3 @@
-/*
- * ════════════════════════════════════════════════════════════════════════════
- *  ADHOC AWARD SERVICE — khen thưởng đột xuất (KhenThuongDotXuat)
- * ════════════════════════════════════════════════════════════════════════════
- *
- *  BUSINESS RULE:
- *  Khen thưởng đột xuất KHÔNG đi qua quy trình đề xuất (Manager → Admin
- *  duyệt). Admin trực tiếp tạo khi có sự kiện đột xuất (vd: cứu người,
- *  hoàn thành nhiệm vụ đặc biệt).
- *
- *  ĐẶC THÙ:
- *  - Đối tượng: cá nhân HOẶC đơn vị (mutually exclusive).
- *  - Không có chuỗi/cấp bậc → 1 record độc lập.
- *  - Có thể attach nhiều file (ảnh + tài liệu).
- *  - Loại khen thưởng tự do (free text danh hieu).
- *
- *  WHY tách khỏi proposal flow:
- *  - Tính chất "đột xuất" cần xử lý nhanh, không qua duyệt nhiều bước.
- *  - Strategy pattern không apply (không có chuỗi, không có eligibility check).
- *  - File attachment đa dạng (ảnh, PDF, Word) — khác PDF quyết định.
- *
- *  ATTT — UPLOAD FILE:
- *  - multer adhocAwardUpload accept ảnh + doc + xls (xem configs/multer.ts).
- *  - Limit 50MB/file (lớn hơn 10MB của proposal vì có ảnh).
- *  - File QĐ → uploads/decisions/ (dedup tên "(1)(2)", persistDecisionFile).
- *  - File đính kèm → storage/proposals/ (tên <timestamp>_<sanitized>).
- *  - DB chỉ lưu metadata (đường dẫn tương đối) trong JSON files_dinh_kem;
- *    FE xem qua signed URL, không chạm đường dẫn thật.
- *
- *  NOTIFICATION:
- *  Sau khi tạo, notify đối tượng được khen + manager đơn vị qua socket.
- * ════════════════════════════════════════════════════════════════════════════
- */
-
 import path from 'path';
 import fs from 'fs/promises';
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
@@ -40,11 +6,14 @@ import { adhocAwardRepository } from '../repositories/adhocAward.repository';
 import { accountRepository } from '../repositories/account.repository';
 import { ROLES } from '../constants/roles.constants';
 import { ADHOC_TYPE } from '../constants/adhocType.constants';
+import { UNIT_TYPE } from '../constants/unitType.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { ForbiddenError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
 import type { KhenThuongDotXuat, Prisma } from '../generated/prisma';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { logMessages } from '../constants/logMessages.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import decisionService from './decision.service';
 import { sanitizeFilename } from './proposal/helpers';
@@ -204,8 +173,6 @@ class AdhocAwardService {
     const baseName = path.basename(sanitized, ext);
     let filename = sanitized;
     let counter = 1;
-    // Giữ tên gốc cho dễ nhận biết; trùng thì thêm "(1)(2)" tránh ghi đè file
-    // QĐ khác cùng tên (giống decisionUpload — xem configs/multer.ts).
     while (
       await fs
         .access(path.join(uploadsDir, filename))
@@ -238,9 +205,7 @@ class AdhocAwardService {
     if (existing) return;
 
     if (!decisionYear || !signDate || !signer?.trim()) {
-      throw new ValidationError(
-        'Quyết định mới cần đầy đủ năm, ngày ký và người ký quyết định'
-      );
+      throw new ValidationError('Quyết định mới cần đầy đủ năm, ngày ký và người ký quyết định');
     }
 
     const filePath = decisionFile?.buffer ? await this.persistDecisionFile(decisionFile) : null;
@@ -290,13 +255,13 @@ class AdhocAwardService {
     }
 
     if (type === ADHOC_TYPE.TAP_THE) {
-      if (unitType === 'CO_QUAN_DON_VI') {
+      if (unitType === UNIT_TYPE.CO_QUAN_DON_VI) {
         const unit = await coQuanDonViRepository.findIdById(String(unitId));
 
         if (!unit) {
           throw new NotFoundError('Cơ quan đơn vị');
         }
-      } else if (unitType === 'DON_VI_TRUC_THUOC') {
+      } else if (unitType === UNIT_TYPE.DON_VI_TRUC_THUOC) {
         const unit = await donViTrucThuocRepository.findIdById(String(unitId));
 
         if (!unit) {
@@ -311,46 +276,27 @@ class AdhocAwardService {
     const uploadedAttachedFiles: AttachedFileInfo[] = [];
 
     if (attachedFiles && attachedFiles.length > 0) {
-      const attachedDir = path.join(__dirname, '..', '..', 'storage', 'proposals');
-      await fs.mkdir(attachedDir, { recursive: true });
-
-      for (const file of attachedFiles) {
-        // Prefix timestamp → tên file vật lý không đụng nhau giữa các lần
-        // upload; tên gốc (decodedName) vẫn giữ trong DB để hiển thị.
-        const timestamp = Date.now();
-        let decodedName = file.originalname;
-        try {
-          decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-        } catch (error) {
-          console.error('Failed to decode uploaded attachment name during adhoc-award create:', error);
-          decodedName = file.originalname;
-        }
-        const sanitizedName = decodedName.replace(/[<>:"/\\|?*]/g, '_');
-        const uniqueName = `${timestamp}_${sanitizedName}`;
-        const filePath = path.join(attachedDir, uniqueName);
-
-        await fs.writeFile(filePath, file.buffer);
-
-        uploadedAttachedFiles.push({
-          filename: uniqueName,
-          originalName: decodedName,
-          path: `storage/proposals/${uniqueName}`,
-          size: file.size,
-          mimeType: file.mimetype,
-          uploadedAt: new Date().toISOString(),
-        });
-      }
+      uploadedAttachedFiles.push(
+        ...(await this.persistAdhocAttachments(attachedFiles, 'adhoc-award create'))
+      );
     }
 
-    await this.ensureDecisionRecord({ decisionNumber, decisionYear, signDate, signer, decisionFile });
+    await this.ensureDecisionRecord({
+      decisionNumber,
+      decisionYear,
+      signDate,
+      signer,
+      decisionFile,
+    });
 
     const adhocAward = await adhocAwardRepository.create({
       loai: 'KHEN_THUONG_DOT_XUAT',
       doi_tuong: type,
       ...(type === ADHOC_TYPE.CA_NHAN && personnelId && { quan_nhan_id: personnelId }),
-      ...(type === ADHOC_TYPE.TAP_THE && unitType === 'CO_QUAN_DON_VI' && { co_quan_don_vi_id: unitId }),
       ...(type === ADHOC_TYPE.TAP_THE &&
-        unitType === 'DON_VI_TRUC_THUOC' && { don_vi_truc_thuoc_id: unitId }),
+        unitType === UNIT_TYPE.CO_QUAN_DON_VI && { co_quan_don_vi_id: unitId }),
+      ...(type === ADHOC_TYPE.TAP_THE &&
+        unitType === UNIT_TYPE.DON_VI_TRUC_THUOC && { don_vi_truc_thuoc_id: unitId }),
       hinh_thuc_khen_thuong: awardForm,
       nam: year,
       cap_bac: rank || null,
@@ -363,14 +309,60 @@ class AdhocAwardService {
           : null,
     } as Prisma.KhenThuongDotXuatUncheckedCreateInput);
 
+    // Reload with relations — notifyOnAdhocAwardCreated reads QuanNhan/CoQuanDonVi/
+    // DonViTrucThuoc, which the bare create() result does not include.
+    const adhocAwardWithRelations = await adhocAwardRepository.findUniqueRaw({
+      where: { id: adhocAward.id },
+      include: {
+        QuanNhan: { include: { CoQuanDonVi: true, DonViTrucThuoc: true } },
+        CoQuanDonVi: true,
+        DonViTrucThuoc: { include: { CoQuanDonVi: true } },
+      },
+    });
+
     try {
-      await notifyOnAdhocAwardCreated(adhocAward, admin.username);
+      await notifyOnAdhocAwardCreated(adhocAwardWithRelations ?? adhocAward, admin.username);
     } catch (e) {
       console.error('notifyOnAdhocAwardCreated failed:', e);
-      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.ADHOC_AWARDS, description: `Lỗi gửi thông báo tạo ${AWARD_LABEL}: ${e}` });
+      void writeSystemLog({
+        action: AUDIT_ACTIONS.ERROR,
+        resource: AWARD_SLUGS.ADHOC_AWARDS,
+        description: logMessages.notifyError('tạo', AWARD_LABEL, e),
+      });
     }
 
     return adhocAward;
+  }
+
+  private async persistAdhocAttachments(
+    attachedFiles: UploadedFile[],
+    context: string
+  ): Promise<AttachedFileInfo[]> {
+    const dir = path.join(__dirname, '..', '..', 'storage', 'proposals');
+    await fs.mkdir(dir, { recursive: true });
+    const saved: AttachedFileInfo[] = [];
+    for (const file of attachedFiles) {
+      const timestamp = Date.now();
+      let decodedName = file.originalname;
+      try {
+        decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
+      } catch (error) {
+        console.error(`Failed to decode uploaded attachment name during ${context}:`, error);
+        decodedName = file.originalname;
+      }
+      const sanitizedName = decodedName.replace(/[<>:"/\\|?*]/g, '_');
+      const uniqueName = `${timestamp}_${sanitizedName}`;
+      await fs.writeFile(path.join(dir, uniqueName), file.buffer);
+      saved.push({
+        filename: uniqueName,
+        originalName: decodedName,
+        path: `storage/proposals/${uniqueName}`,
+        size: file.size,
+        mimeType: file.mimetype,
+        uploadedAt: new Date().toISOString(),
+      });
+    }
+    return saved;
   }
 
   async getAdhocAwards({
@@ -540,33 +532,9 @@ class AdhocAwardService {
     }
 
     if (attachedFiles && attachedFiles.length > 0) {
-      const proposalsDir = path.join(__dirname, '..', '..', 'storage', 'proposals');
-      await fs.mkdir(proposalsDir, { recursive: true });
-
-      for (const file of attachedFiles) {
-        const timestamp = Date.now();
-        let decodedName = file.originalname;
-        try {
-          decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-        } catch (error) {
-          console.error('Failed to decode uploaded attachment name during adhoc-award update:', error);
-          decodedName = file.originalname;
-        }
-        const sanitizedName = decodedName.replace(/[<>:"/\\|?*]/g, '_');
-        const uniqueName = `${timestamp}_${sanitizedName}`;
-        const filePath = path.join(proposalsDir, uniqueName);
-
-        await fs.writeFile(filePath, file.buffer);
-
-        existingAttachedFiles.push({
-          filename: uniqueName,
-          originalName: decodedName,
-          path: `storage/proposals/${uniqueName}`,
-          size: file.size,
-          mimeType: file.mimetype,
-          uploadedAt: new Date().toISOString(),
-        });
-      }
+      existingAttachedFiles.push(
+        ...(await this.persistAdhocAttachments(attachedFiles, 'adhoc-award update'))
+      );
     }
 
     const updateData: Record<string, unknown> = {};
@@ -604,7 +572,11 @@ class AdhocAwardService {
       await notifyOnAdhocAwardUpdated(updated, admin.username);
     } catch (e) {
       console.error('notifyOnAdhocAwardUpdated failed:', e);
-      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.ADHOC_AWARDS, description: `Lỗi gửi thông báo cập nhật ${AWARD_LABEL}: ${e}` });
+      void writeSystemLog({
+        action: AUDIT_ACTIONS.ERROR,
+        resource: AWARD_SLUGS.ADHOC_AWARDS,
+        description: logMessages.notifyError('cập nhật', AWARD_LABEL, e),
+      });
     }
 
     return updated;
@@ -654,7 +626,11 @@ class AdhocAwardService {
         await fs.unlink(fullPath);
       } catch (error) {
         console.error('Failed to delete attachment file during adhoc-award delete:', error);
-        void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.ADHOC_AWARDS, description: `Lỗi xóa file đính kèm ${AWARD_LABEL}: ${error}` });
+        void writeSystemLog({
+          action: AUDIT_ACTIONS.ERROR,
+          resource: AWARD_SLUGS.ADHOC_AWARDS,
+          description: `Lỗi xóa file đính kèm ${AWARD_LABEL}: ${error}`,
+        });
       }
     }
 
@@ -664,7 +640,11 @@ class AdhocAwardService {
       await notifyOnAdhocAwardDeleted(awardInfo, admin?.username || 'Admin');
     } catch (error) {
       console.error('Failed to send adhoc-award deletion notifications:', error);
-      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.ADHOC_AWARDS, description: `Lỗi gửi thông báo xóa ${AWARD_LABEL}: ${error}` });
+      void writeSystemLog({
+        action: AUDIT_ACTIONS.ERROR,
+        resource: AWARD_SLUGS.ADHOC_AWARDS,
+        description: logMessages.notifyError('xóa', AWARD_LABEL, error),
+      });
     }
 
     return { success: true, award: awardInfo };
@@ -704,7 +684,7 @@ class AdhocAwardService {
       doi_tuong: ADHOC_TYPE.TAP_THE,
     };
 
-    if (unitType === 'CO_QUAN_DON_VI') {
+    if (unitType === UNIT_TYPE.CO_QUAN_DON_VI) {
       where.co_quan_don_vi_id = unitId;
 
       const unit = await coQuanDonViRepository.findIdById(unitId);
@@ -712,7 +692,7 @@ class AdhocAwardService {
       if (!unit) {
         throw new NotFoundError('Cơ quan đơn vị');
       }
-    } else if (unitType === 'DON_VI_TRUC_THUOC') {
+    } else if (unitType === UNIT_TYPE.DON_VI_TRUC_THUOC) {
       where.don_vi_truc_thuoc_id = unitId;
 
       const unit = await donViTrucThuocRepository.findIdById(unitId);

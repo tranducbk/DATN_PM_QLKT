@@ -455,3 +455,52 @@ Tách bạch system management (SA) khỏi business operations (ADMIN); SA có r
 - `bypassEligibility` chỉ skip `validatePersonnelConditions` (service-years check). Handler-level checks (rank order HCCSVV, downgrade HCBVTQ) vẫn chạy → SA vẫn không thể tạo dữ liệu trái thứ tự hạng. Nếu cần bypass hoàn toàn cho data import lịch sử, mở rộng để handlers respect `ctx.bypassEligibility`.
 - DELETE personnel giữ `requireAdmin` (SA+ADMIN) là exception có chủ ý — phục vụ workflow xoá account cascade. Document ở route JSDoc.
 
+---
+
+## 13. Full-project bug/sync audit — 2026-06-23
+
+Audit toàn dự án (5 mảng song song: eligibility chuỗi, slug/audit/notification, hợp đồng API FE↔BE, correctness BE, correctness FE). Kết luận: engine eligibility (recalc vs API), hợp đồng API FE↔BE, audit/notification map đều **đã đồng bộ**; không có bug HIGH. Các mục đã fix:
+
+| # | Việc | Trạng thái | Evidence |
+|---|---|---|---|
+| A1 | Format ngày thủ công ở `manager/proposals/page.tsx` (HH:mm DD/MM/YYYY, lệch toàn app) | DONE | Thay bằng `formatDateTime(date)` — cùng định dạng mọi nơi. Vi phạm AP-FE-2 đã hết. |
+| A2 | Leak `error.message` Prisma ra user ở `account.service.ts` (decrement so_luong catch) | DONE | `console.error('[deleteAccount] ...')` + message generic + `AppError(..., 500)`, mirror `personnel.service.ts:363`. Hết leak (AP-9). |
+| A3 | Dead code `localStorage.getItem('unit_id')` + state bị vứt ở `manager/personnel/[id]/edit/page.tsx` | DONE | Xoá state `setManagerUnitId` + đọc key không tồn tại (đúng key là `don_vi_id`). |
+| A4 | Hardcode mã HCCSVV (`'HCCSVV_HANG_*'`) ở `nienHanHelpers.ts` + `Step3SetTitlesNienHan.tsx` | DONE | Dùng `DANH_HIEU_HCCSVV.*` (kể cả type union + Select options). |
+| A5 | Hardcode `'DTKH'/'SKKH'` ở 4 file (ProposalDetailModal, manager proposals, awards bulk create, user profile) | DONE | Dùng `THANH_TICH_KHOA_HOC.*`. Label tiếng Việt giữ nguyên (không có constant mã). |
+| A6 | Dead stub `checkUnitAwardEligibility` trong `unitAnnualAward/crud.ts:defaultDeps` (không bao giờ gọi qua deps) | DONE | Xoá khỏi `defaultDeps` + interface `UnitAnnualAwardDeps`. |
+| A7 | Comment cũ `hccsvv` ở `configs/multer.ts` | DONE | Đổi thành `tenureMedal`. |
+| A8 | military-flag: slug số ít `military-flag` lệch path/7-loại-còn-lại (số nhiều) | DONE | `AWARD_SLUGS.MILITARY_FLAG = 'military-flags'` (slug=path=plural). Migration `SystemLog`/`ThongBao` đã chạy `--apply` (0 dòng — DB chưa có audit log slug cũ); script one-time đã xoá sau khi chạy. |
+
+**Để lại có chủ ý (không phải bug):**
+- Single-add (`annualReward/crud.ts`) + unit `upsert` bỏ qua chain eligibility, bulk thì enforce — đúng thiết kế "đột xuất Admin thêm trực tiếp".
+- `deleteProposal` chặn xoá đề xuất đã duyệt/từ chối (ledger integrity); message đã nêu "có thể đã được phê duyệt hoặc từ chối" nên không gây hiểu nhầm nghiêm trọng.
+- `GET /api/awards` trả `success` thay `paginated` — không có FE consumer.
+
+**Verify state:** BE typecheck clean · FE typecheck clean · FE lint clean · BE jest 1017/1017 pass (89 suites).
+
+---
+
+## 14. Audit log coverage — 2026-06-23
+
+Rà thao tác quan trọng chưa ghi `SystemLog`. Phát hiện cơ chế: middleware `auditLog` chỉ ghi khi response `success===true` **và** `req.user` tồn tại → route không có `verifyToken` (login/logout) thì config audit gắn vào nhưng không bao giờ chạy (dead code).
+
+| # | Việc | Trạng thái | Evidence |
+|---|---|---|---|
+| B1 | Login/logout: `auditLog({LOGIN/LOGOUT})` dead (không `verifyToken` → `req.user` undefined → không bao giờ ghi) | DONE (gỡ dead code) | Xoá `auditLog` khỏi route login+logout (`auth.route.ts`); xoá `AUDIT_ACTIONS.LOGIN/LOGOUT` + builder `LOGIN/LOGOUT` trong `helpers/auditLog/auth.ts`. Theo quyết định user: không thêm logging login, chỉ dọn dead code. |
+| B2 | NCKH: route `POST /` + `PUT /:id` (tạo/sửa đơn lẻ) chưa log VÀ không ai dùng (FE chỉ list/delete/export/template/import) | DONE (gỡ route thừa) | NCKH theo nghiệp vụ chỉ thêm-qua-import + xoá. Xoá route create/update (main + nested alias) + controller method + validation + `service.updateAchievement` + interface. **Giữ** `service.createAchievement` (bulk/import dùng — `awardBulk/handlers.ts:177`). |
+| B3 | DevZone config changes chưa log (toggle feature, đổi cron schedule, đổi backup schedule) | DONE (log SA-only) | Thêm `writeSystemLog` (actor `SYSTEM_ACTOR`) cho `PUT /cron/schedule` + `PUT /features` (resource `dev-zone`), `PUT /backup/schedule` (resource `backup`). Hiển thị chỉ SUPER_ADMIN. |
+| B4 | `cleanupOldBackups` xoá file backup cũ không vết (chạy ở route thủ công + tự động sau mỗi backup) | DONE (log SA-only, kèm tên file) | Log `DELETE` trong chính `backup.service.cleanupOldBackups` (phủ cả lần auto) khi có file bị xoá; payload chứa **danh sách tên file** (`files`) + `retentionDays`. Bỏ log trùng ở route. |
+| B5 | Test cron + log (user lo cron không chạy thật) | DONE | Tách logic cron khỏi route → `services/recalcCron.service.ts` (export tự nhiên, KHÔNG để guard `NODE_ENV==='test'` lộ test trong prod); auto-init chuyển về `index.ts` (`initScheduledJobs`). Test: `tests/services/devZoneCron.test.ts` (6 — runCronJob recalc+log, lưu cron_last_run/result, fail; updateCronTask đăng ký/tắt theo settings), `tests/routes/devZoneConfig.test.ts` (4 — 3 config route ghi đúng log + sai mật khẩu 401), +3 assert ghi log trong `backup.service.test.ts`. Lưu ý: cron chạy-thật chỉ verify ở production qua `cron_last_run` + log RECALCULATE (lịch mặc định `0 1 1 * *` = 1h sáng ngày 1 hàng tháng). |
+| B6 | Backup cleanup route mồ côi (UI không có nút) → đổi thành liệt kê + xoá file cụ thể | DONE (FE cần test browser) | Bỏ `POST /backup/cleanup`; thêm `DELETE /backup/:filename` (dùng `deleteBackup` sẵn có, validate tên file); `GET /backup/status` trả toàn bộ file (`recentBackups`). FE `dev_zone/page.tsx`: render danh sách file (tên/ngày/dung lượng/loại) + nút xoá (Popconfirm). Auto-cleanup theo retention vẫn giữ. |
+
+**Cơ chế SA-only:** thêm `SUPER_ADMIN_ONLY_RESOURCES = [backup, dev-zone]` (`resourceSlugs.constants.ts`); filter visibility đổi từ `{ not: 'backup' }` → `{ notIn: SUPER_ADMIN_ONLY_RESOURCES }` ở `logVisibility.ts` + `systemLogs.service.ts` (getLogs + getResources). Cập nhật 2 assertion trong `tests/services/systemLogs.service.test.ts` (dùng constant, user duyệt).
+
+**Để lại theo quyết định user (không cần log):**
+- Cron run/fail (operational) + DevZone auth fail — không cần log.
+- `DELETE /api/system-logs` (xoá log theo ID) — user quyết "xoá log không cần ghi log"; giữ không log (`/all` vẫn tự ghi 1 dòng, không đụng vì có test).
+
+**Đã log đúng (không phải gap):** đổi mật khẩu, account CRUD + đổi role, submit/approve/reject/delete đề xuất, decisions, bulk + bulk-bypass, import 7 loại (confirm), xoá account/personnel/unit/position, **xoá toàn bộ log** (`/all`), backup tạo/xoá đơn lẻ, recalc-all, rate-limit breach.
+
+**Verify state:** BE typecheck clean · BE jest 1030/1030 pass (91 suites, +13 test mới) · FE typecheck + lint clean (UI backup list/delete chờ user test browser).
+

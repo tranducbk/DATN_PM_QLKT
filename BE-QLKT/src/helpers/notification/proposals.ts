@@ -31,6 +31,7 @@ import {
 } from './helpers';
 import { accountRepository } from '../../repositories/account.repository';
 import { notificationRepository } from '../../repositories/notification.repository';
+import { NOTIFICATION_TITLES } from '../../constants/notificationMessages.constants';
 
 interface ProposalNotifyInfo {
   id: string;
@@ -80,7 +81,7 @@ async function notifyAdminsOnProposalSubmission(
     nguoi_nhan_id: admin.id,
     recipient_role: admin.role,
     type: NOTIFICATION_TYPES.PROPOSAL_SUBMITTED,
-    title: 'Đề xuất khen thưởng mới',
+    title: NOTIFICATION_TITLES.PROPOSAL_NEW,
     message: `${submitterDisplayName} đã gửi ${proposalTypeName.toLowerCase()}`,
     resource: RESOURCE_TYPES.PROPOSALS,
     tai_nguyen_id: proposal.id,
@@ -108,7 +109,7 @@ async function notifyManagerOnProposalApproval(
     nguoi_nhan_id: proposal.nguoi_de_xuat_id,
     recipient_role: ROLES.MANAGER,
     type: NOTIFICATION_TYPES.PROPOSAL_APPROVED,
-    title: 'Đề xuất đã được phê duyệt',
+    title: NOTIFICATION_TITLES.PROPOSAL_APPROVED,
     message: `${proposalTypeName} của bạn đã được ${approverDisplayName} phê duyệt`,
     resource: RESOURCE_TYPES.PROPOSALS,
     tai_nguyen_id: proposal.id,
@@ -135,7 +136,7 @@ async function notifyManagerOnProposalRejection(
     nguoi_nhan_id: proposal.nguoi_de_xuat_id,
     recipient_role: ROLES.MANAGER,
     type: NOTIFICATION_TYPES.PROPOSAL_REJECTED,
-    title: 'Đề xuất bị từ chối',
+    title: NOTIFICATION_TITLES.PROPOSAL_REJECTED,
     message: `${proposalTypeName} của bạn đã bị ${rejectorDisplayName} từ chối. Lý do: ${reason || 'Không có lý do cụ thể'}`,
     resource: RESOURCE_TYPES.PROPOSALS,
     tai_nguyen_id: proposal.id,
@@ -170,7 +171,7 @@ async function notifyOnProposalDeletion(
     nguoi_nhan_id: admin.id,
     recipient_role: admin.role,
     type: NOTIFICATION_TYPES.PROPOSAL_DELETED,
-    title: 'Đề xuất khen thưởng đã bị xóa',
+    title: NOTIFICATION_TITLES.PROPOSAL_DELETED,
     message: `${actorDisplayName} đã xóa ${proposalTypeName.toLowerCase()}`,
     resource: RESOURCE_TYPES.PROPOSALS,
     tai_nguyen_id: proposal.id,
@@ -188,7 +189,7 @@ async function notifyOnProposalDeletion(
         nguoi_nhan_id: proposer.id,
         recipient_role: proposer.role,
         type: NOTIFICATION_TYPES.PROPOSAL_DELETED,
-        title: 'Đề xuất của bạn đã bị xóa',
+        title: NOTIFICATION_TITLES.PROPOSAL_DELETED_RECIPIENT,
         message: `${proposalTypeName} của bạn đã bị ${actorDisplayName} xóa khỏi hệ thống`,
         resource: RESOURCE_TYPES.PROPOSALS,
         tai_nguyen_id: proposal.id,

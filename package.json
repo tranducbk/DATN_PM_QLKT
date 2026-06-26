@@ -22,9 +22,9 @@
     "deploy": "npm run build && npm run restart",
     "typecheck": "cd BE-QLKT && npm run typecheck && cd ../FE-QLKT && npm run typecheck",
     "test": "cd BE-QLKT && npx jest",
-    "doc:build": "cd SOICT_DATN_Tran_Anh_Duc_20220120 && latexmk",
-    "doc:watch": "cd SOICT_DATN_Tran_Anh_Duc_20220120 && latexmk -pvc",
-    "doc:clean": "cd SOICT_DATN_Tran_Anh_Duc_20220120 && latexmk -c"
+    "doc:build": "cd \"Báo cáo ĐATN\" && latexmk",
+    "doc:watch": "cd \"Báo cáo ĐATN\" && latexmk -pvc",
+    "doc:clean": "bash \"Báo cáo ĐATN/clean.sh\""
   },
   "devDependencies": {
     "pm2": "^5.4.0"

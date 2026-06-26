@@ -3,13 +3,13 @@ import { collectPersonnelDuplicateErrors } from '../../src/services/eligibility/
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 import { DANH_HIEU_DAC_BIET } from '../../src/constants/danhHieu.constants';
 
-describe('collectPersonnelDuplicateErrors', () => {
-  it('returns empty array when no items provided', async () => {
+describe('Quân nhân trùng: kiểm tra trùng khen thưởng theo từng quân nhân', () => {
+  it('Quân nhân trùng: không có dòng nào để kiểm tra → không báo lỗi nào', async () => {
     const result = await collectPersonnelDuplicateErrors([], 2025, PROPOSAL_TYPES.HC_QKQT);
     expect(result).toEqual([]);
   });
 
-  it('skips items missing personnel_id or danh_hieu', async () => {
+  it('Quân nhân trùng: bỏ qua các dòng thiếu quân nhân hoặc thiếu danh hiệu', async () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
     const result = await collectPersonnelDuplicateErrors(
       [
@@ -22,7 +22,7 @@ describe('collectPersonnelDuplicateErrors', () => {
     expect(result).toEqual([]);
   });
 
-  it('returns ho_ten-prefixed message for HC_QKQT duplicate stored on the personnel', async () => {
+  it('Quân nhân trùng: quân nhân đã có HC QKQT → báo lỗi mở đầu bằng họ tên quân nhân', async () => {
     prismaMock.huanChuongQuanKyQuyetThang.findFirst.mockResolvedValueOnce({
       id: 'a1',
       quan_nhan_id: 'p1',
@@ -41,7 +41,7 @@ describe('collectPersonnelDuplicateErrors', () => {
     expect(result[0]).toMatch(/Nguyễn Văn A:/);
   });
 
-  it('falls back to id when ho_ten map missing entry', async () => {
+  it('Quân nhân trùng: thiếu họ tên quân nhân → dùng tên chung "một quân nhân", không lộ mã định danh nội bộ', async () => {
     prismaMock.huanChuongQuanKyQuyetThang.findFirst.mockResolvedValueOnce({
       id: 'a1',
       quan_nhan_id: 'p1',
@@ -56,10 +56,11 @@ describe('collectPersonnelDuplicateErrors', () => {
       PROPOSAL_TYPES.HC_QKQT
     );
 
-    expect(result[0].startsWith('p1:')).toBe(true);
+    expect(result[0].startsWith('một quân nhân:')).toBe(true);
+    expect(result[0]).not.toContain('p1');
   });
 
-  it('returns empty array when no duplicates detected', async () => {
+  it('Quân nhân trùng: không phát hiện trùng nào → không báo lỗi', async () => {
     prismaMock.huanChuongQuanKyQuyetThang.findFirst.mockResolvedValueOnce(null);
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
 

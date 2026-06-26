@@ -2,7 +2,10 @@ import { prisma } from '../../models';
 import { formatDate } from '../datetimeHelper';
 import { PrismaClient } from '../../generated/prisma';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
-import { coQuanDonViRepository, donViTrucThuocRepository } from '../../repositories/unit.repository';
+import {
+  coQuanDonViRepository,
+  donViTrucThuocRepository,
+} from '../../repositories/unit.repository';
 import { positionRepository } from '../../repositories/position.repository';
 
 const FALLBACK = {
@@ -21,7 +24,7 @@ const parseResponseData = (responseData: unknown): Record<string, unknown> | nul
     }
     return null;
   } catch (error) {
-   console.error('Audit log helper fallback triggered (helpers/auditLog/constants.ts):', error);
+    console.error('[auditLog] best-effort fallback:', error);
     return null;
   }
 };
@@ -54,16 +57,22 @@ const getUnitNameFromUnitId = async (unitId: string, prisma: PrismaClient): Prom
   if (!unitId) return '';
   try {
     const [selectedCoQuan, selectedDonVi] = await Promise.all([
-      coQuanDonViRepository.findUniqueRaw({
-        where: { id: unitId },
-        select: { ten_don_vi: true },
-      }, prisma),
-      donViTrucThuocRepository.findUniqueRaw({
-        where: { id: unitId },
-        include: {
-          CoQuanDonVi: { select: { ten_don_vi: true } },
+      coQuanDonViRepository.findUniqueRaw(
+        {
+          where: { id: unitId },
+          select: { ten_don_vi: true },
         },
-      }, prisma),
+        prisma
+      ),
+      donViTrucThuocRepository.findUniqueRaw(
+        {
+          where: { id: unitId },
+          include: {
+            CoQuanDonVi: { select: { ten_don_vi: true } },
+          },
+        },
+        prisma
+      ),
     ]);
 
     if (selectedCoQuan?.ten_don_vi) {
@@ -78,7 +87,7 @@ const getUnitNameFromUnitId = async (unitId: string, prisma: PrismaClient): Prom
     }
     return '';
   } catch (error) {
-   console.error('Audit log helper fallback triggered (helpers/auditLog/constants.ts):', error);
+    console.error('[auditLog] best-effort fallback:', error);
     return '';
   }
 };
@@ -86,13 +95,16 @@ const getUnitNameFromUnitId = async (unitId: string, prisma: PrismaClient): Prom
 const queryPersonnelName = async (personnelId: string, prisma: PrismaClient): Promise<string> => {
   if (!personnelId) return '';
   try {
-    const personnel = await quanNhanRepository.findUniqueRaw({
-      where: { id: personnelId },
-      select: { ho_ten: true },
-    }, prisma);
+    const personnel = await quanNhanRepository.findUniqueRaw(
+      {
+        where: { id: personnelId },
+        select: { ho_ten: true },
+      },
+      prisma
+    );
     return personnel?.ho_ten || '';
   } catch (error) {
-   console.error('Audit log helper fallback triggered (helpers/auditLog/constants.ts):', error);
+    console.error('[auditLog] best-effort fallback:', error);
     return '';
   }
 };
@@ -103,24 +115,27 @@ const queryPositionInfo = async (
 ): Promise<{ tenChucVu: string; tenDonVi: string }> => {
   if (!chucVuId) return { tenChucVu: '', tenDonVi: '' };
   try {
-    const chucVu = await positionRepository.findUniqueRaw({
-      where: { id: chucVuId },
-      include: {
-        CoQuanDonVi: { select: { ten_don_vi: true } },
-        DonViTrucThuoc: {
-          include: {
-            CoQuanDonVi: { select: { ten_don_vi: true } },
+    const chucVu = await positionRepository.findUniqueRaw(
+      {
+        where: { id: chucVuId },
+        include: {
+          CoQuanDonVi: { select: { ten_don_vi: true } },
+          DonViTrucThuoc: {
+            include: {
+              CoQuanDonVi: { select: { ten_don_vi: true } },
+            },
           },
         },
       },
-    }, prisma);
+      prisma
+    );
     if (!chucVu) return { tenChucVu: '', tenDonVi: '' };
     return {
       tenChucVu: chucVu.ten_chuc_vu || '',
       tenDonVi: getUnitNameFromChucVu(chucVu),
     };
   } catch (error) {
-   console.error('Audit log helper fallback triggered (helpers/auditLog/constants.ts):', error);
+    console.error('[auditLog] best-effort fallback:', error);
     return { tenChucVu: '', tenDonVi: '' };
   }
 };
@@ -129,7 +144,7 @@ const withPrisma = async <T>(callback: (prisma: PrismaClient) => Promise<T>): Pr
   try {
     return await callback(prisma);
   } catch (error) {
-    console.error('AuditLog.withPrisma failed', { error });
+    console.error('[auditLog] withPrisma failed:', error);
     return null;
   }
 };
@@ -174,7 +189,7 @@ const getFileName = (req: { file?: { originalname?: string } }): string => {
   try {
     return Buffer.from(req.file.originalname, 'latin1').toString('utf8');
   } catch (error) {
-   console.error('Audit log helper fallback triggered (helpers/auditLog/constants.ts):', error);
+    console.error('[auditLog] best-effort fallback:', error);
     return req.file.originalname;
   }
 };

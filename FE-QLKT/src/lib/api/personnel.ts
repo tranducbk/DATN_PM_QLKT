@@ -3,12 +3,12 @@ import { getApiErrorMessage } from '@/lib/http/apiError';
 import type { ApiResponse } from '@/lib/types/common';
 
 /** Position-history mutation response with optional backend warning metadata. */
-export type PositionHistoryWarning = {
+type PositionHistoryWarning = {
   message: string;
   suggestedEndDate?: string | null;
 };
 
-export type PositionHistoryMutationResponse = ApiResponse & {
+type PositionHistoryMutationResponse = ApiResponse & {
   warning?: PositionHistoryWarning;
 };
 
@@ -48,6 +48,15 @@ export async function updatePersonnel(id: string, body: Record<string, unknown>)
   try {
     const res = await axiosInstance.put(`/api/personnel/${id}`, body);
     return { success: res.data?.success, data: res.data?.data };
+  } catch (e: unknown) {
+    return { success: false, message: getApiErrorMessage(e) };
+  }
+}
+
+export async function updateMyProfile(body: Record<string, unknown>): Promise<ApiResponse> {
+  try {
+    const res = await axiosInstance.put('/api/personnel/me', body);
+    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }

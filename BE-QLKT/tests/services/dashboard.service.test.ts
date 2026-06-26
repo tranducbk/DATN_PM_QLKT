@@ -6,16 +6,14 @@ import { PROPOSAL_STATUS } from '../../src/constants/proposalStatus.constants';
 import { PROPOSAL_TYPES } from '../../src/constants/proposalTypes.constants';
 import { DANH_HIEU_CA_NHAN_HANG_NAM } from '../../src/constants/danhHieu.constants';
 
-describe('dashboard.service - getStatistics (SUPER_ADMIN)', () => {
-  it('Cho role SUPER_ADMIN → Khi getStatistics → Thì tổng hợp count account, personnel, units, logs', async () => {
+describe('Thống kê: bảng điều khiển dành cho SUPER_ADMIN', () => {
+  it('Thống kê: SUPER_ADMIN → tổng hợp số tài khoản, quân nhân, đơn vị và nhật ký', async () => {
     prismaMock.taiKhoan.groupBy.mockResolvedValueOnce([
       { role: ROLES.ADMIN, _count: { id: 2 } },
       { role: ROLES.MANAGER, _count: { id: 5 } },
     ]);
     prismaMock.systemLog.findMany.mockResolvedValueOnce([]);
-    prismaMock.systemLog.groupBy.mockResolvedValueOnce([
-      { action: 'CREATE', _count: { id: 12 } },
-    ]);
+    prismaMock.systemLog.groupBy.mockResolvedValueOnce([{ action: 'CREATE', _count: { id: 12 } }]);
     prismaMock.taiKhoan.findMany.mockResolvedValueOnce([]);
     prismaMock.taiKhoan.count.mockResolvedValueOnce(20);
     prismaMock.quanNhan.count.mockResolvedValueOnce(150);
@@ -38,8 +36,8 @@ describe('dashboard.service - getStatistics (SUPER_ADMIN)', () => {
   });
 });
 
-describe('dashboard.service - getAdminStatistics', () => {
-  it('Cho role ADMIN → Khi getAdminStatistics → Thì gom proposal/scientific theo type và status', async () => {
+describe('Thống kê: bảng điều khiển dành cho ADMIN', () => {
+  it('Thống kê: ADMIN → gom đề xuất và thành tích khoa học theo loại và trạng thái', async () => {
     prismaMock.thanhTichKhoaHoc.groupBy.mockResolvedValueOnce([
       { loai: 'BAI_BAO', _count: { id: 4 } },
     ]);
@@ -47,6 +45,7 @@ describe('dashboard.service - getAdminStatistics', () => {
       .mockResolvedValueOnce([{ loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM, _count: { id: 3 } }])
       .mockResolvedValueOnce([{ status: PROPOSAL_STATUS.PENDING, _count: { id: 5 } }]);
     prismaMock.thanhTichKhoaHoc.findMany.mockResolvedValueOnce([]);
+    prismaMock.systemLog.findMany.mockResolvedValueOnce([]);
     prismaMock.quanNhan.count.mockResolvedValueOnce(100);
     prismaMock.donViTrucThuoc.count.mockResolvedValueOnce(8);
     prismaMock.chucVu.count.mockResolvedValueOnce(15);
@@ -58,16 +57,16 @@ describe('dashboard.service - getAdminStatistics', () => {
     expect(result.totalUnits).toBe(8);
     expect(result.totalPositions).toBe(15);
     expect(result.pendingApprovals).toBe(5);
-    expect(result.proposalsByStatus).toEqual([
-      { status: PROPOSAL_STATUS.PENDING, count: 5 },
-    ]);
+    expect(result.proposalsByStatus).toEqual([{ status: PROPOSAL_STATUS.PENDING, count: 5 }]);
     expect(result.scientificAchievementsByMonth).toHaveLength(6);
+    expect(result.dailyActivity).toHaveLength(7);
   });
 
-  it('Cho count proposal pending → Khi gọi count → Thì truyền filter status=PENDING', async () => {
+  it('Thống kê: đếm đề xuất chờ duyệt → chỉ đếm đề xuất có trạng thái PENDING', async () => {
     prismaMock.thanhTichKhoaHoc.groupBy.mockResolvedValueOnce([]);
     prismaMock.bangDeXuat.groupBy.mockResolvedValueOnce([]).mockResolvedValueOnce([]);
     prismaMock.thanhTichKhoaHoc.findMany.mockResolvedValueOnce([]);
+    prismaMock.systemLog.findMany.mockResolvedValueOnce([]);
     prismaMock.quanNhan.count.mockResolvedValueOnce(0);
     prismaMock.donViTrucThuoc.count.mockResolvedValueOnce(0);
     prismaMock.chucVu.count.mockResolvedValueOnce(0);
@@ -81,8 +80,8 @@ describe('dashboard.service - getAdminStatistics', () => {
   });
 });
 
-describe('dashboard.service - getManagerStatistics', () => {
-  it('Cho manager không có quân nhân → Khi getManagerStatistics → Thì trả empty stats', async () => {
+describe('Thống kê: bảng điều khiển dành cho MANAGER (Chỉ huy đơn vị)', () => {
+  it('Thống kê: MANAGER chưa gắn quân nhân → trả thống kê rỗng', async () => {
     prismaMock.taiKhoan.findUnique.mockResolvedValueOnce({ quan_nhan_id: null });
 
     const result = await dashboardService.getManagerStatistics('user-1', undefined);
@@ -92,7 +91,7 @@ describe('dashboard.service - getManagerStatistics', () => {
     expect(result.personnelByPosition).toEqual([]);
   });
 
-  it('Cho manager có don_vi_truc_thuoc → Khi getManagerStatistics → Thì query chỉ DVTT, ưu tiên DVTT trước CQDV', async () => {
+  it('Thống kê: MANAGER thuộc Đơn vị trực thuộc → chỉ thống kê DVTT đó, ưu tiên DVTT trước CQDV', async () => {
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce({
       don_vi_truc_thuoc_id: 'dvtt-1',
       co_quan_don_vi_id: 'cqdv-1',
@@ -105,15 +104,18 @@ describe('dashboard.service - getManagerStatistics', () => {
         { danh_hieu: DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS },
       ])
       .mockResolvedValueOnce([]);
-    prismaMock.quanNhan.groupBy.mockResolvedValueOnce([
-      { cap_bac: 'Thiếu tá', _count: { id: 2 } },
-    ]);
+    prismaMock.quanNhan.groupBy.mockResolvedValueOnce([{ cap_bac: 'Thiếu tá', _count: { id: 2 } }]);
     prismaMock.bangDeXuat.groupBy
       .mockResolvedValueOnce([{ status: PROPOSAL_STATUS.PENDING, _count: { id: 1 } }])
-      .mockResolvedValueOnce([{ loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM, _count: { id: 1 } }]);
+      .mockResolvedValueOnce([
+        { loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM, _count: { id: 1 } },
+      ]);
     prismaMock.thanhTichKhoaHoc.findMany.mockResolvedValueOnce([]);
     prismaMock.thanhTichKhoaHoc.groupBy.mockResolvedValueOnce([]);
-    prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ chuc_vu_id: 'cv-1' }, { chuc_vu_id: 'cv-1' }]);
+    prismaMock.quanNhan.findMany.mockResolvedValueOnce([
+      { chuc_vu_id: 'cv-1' },
+      { chuc_vu_id: 'cv-1' },
+    ]);
     prismaMock.chucVu.findMany.mockResolvedValueOnce([{ id: 'cv-1', ten_chuc_vu: 'Trợ lý' }]);
 
     const result = (await dashboardService.getManagerStatistics('user-1', 'qn-mgr')) as any;
@@ -131,7 +133,7 @@ describe('dashboard.service - getManagerStatistics', () => {
     expect(result.personnelByRank).toEqual([{ rank: 'Thiếu tá', count: 2 }]);
   });
 
-  it('Cho manager chỉ có CQDV (không DVTT) → Khi getManagerStatistics → Thì gom cả con DVTT', async () => {
+  it('Thống kê: MANAGER cấp Cơ quan đơn vị (không có DVTT) → gom cả quân nhân các Đơn vị trực thuộc con', async () => {
     prismaMock.quanNhan.findUnique.mockResolvedValueOnce({
       don_vi_truc_thuoc_id: null,
       co_quan_don_vi_id: 'cqdv-1',

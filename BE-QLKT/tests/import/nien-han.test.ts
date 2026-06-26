@@ -46,8 +46,8 @@ async function makeNienHanExcelBuffer(rows: NienHanRow[]): Promise<Buffer> {
   return Buffer.from(arrayBuffer as ArrayBuffer);
 }
 
-describe('tenureMedal.service - previewImport', () => {
-  it('Row hợp lệ HCCSVV_HANG_BA → push vào valid, không có errors', async () => {
+describe('Nhập Excel HCCSVV: xem trước (preview)', () => {
+  it('Nhập Excel HCCSVV: dòng HANG_BA hợp lệ (đủ năm phục vụ) → ghi nhận vào danh sách hợp lệ', async () => {
     // Given: personnel enlisted >= 10 years before reference month
     const p1 = makePersonnel({
       id: 'qn-1',
@@ -89,7 +89,7 @@ describe('tenureMedal.service - previewImport', () => {
     });
   });
 
-  it('Row thiếu Tháng/Số quyết định → vào errors', async () => {
+  it('Nhập Excel HCCSVV: dòng thiếu tháng nhận → báo lỗi "Thiếu Tháng"', async () => {
     const p1 = makePersonnel({ id: 'qn-1', ho_ten: 'Nguyễn Văn A', ngay_nhap_ngu: new Date('2010-01-01') });
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([{ ...p1, ChucVu: { ten_chuc_vu: 'Trợ lý' } }]);
@@ -107,7 +107,7 @@ describe('tenureMedal.service - previewImport', () => {
     expect(result.errors[0].message).toBe(IMPORT_NIEN_HAN_MISSING_FIELDS(['Tháng']));
   });
 
-  it('QN không tồn tại trong DB → errors "Không tìm thấy quân nhân"', async () => {
+  it('Nhập Excel HCCSVV: mã quân nhân không có trong hệ thống → báo lỗi "Không tìm thấy quân nhân"', async () => {
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([{ so_quyet_dinh: 'QD-001' }]);
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
     prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([]);
@@ -130,7 +130,7 @@ describe('tenureMedal.service - previewImport', () => {
     expect(result.errors[0].message).toBe(IMPORT_NIEN_HAN_PERSONNEL_NOT_FOUND);
   });
 
-  it('QN chưa đủ 10 năm cho HCCSVV_HANG_BA → errors "Chưa đủ thời gian phục vụ"', async () => {
+  it('Nhập Excel HCCSVV: quân nhân chưa đủ 10 năm phục vụ cho HANG_BA → báo lỗi "Chưa đủ thời gian phục vụ"', async () => {
     const p1 = makePersonnel({
       id: 'qn-1',
       ho_ten: 'Nguyễn Văn A',
@@ -161,7 +161,7 @@ describe('tenureMedal.service - previewImport', () => {
     expect(result.errors[0].message).toContain('Chưa đủ thời gian phục vụ');
   });
 
-  it('Row HCCSVV_HANG_NHI không có HANG_BA tiền điều kiện → errors "Phải có Hạng Ba trước"', async () => {
+  it('Nhập Excel HCCSVV: xin HANG_NHI khi chưa có HANG_BA → báo lỗi "Phải có hạng Ba trước"', async () => {
     const p1 = makePersonnel({
       id: 'qn-1',
       ho_ten: 'Nguyễn Văn A',
@@ -192,7 +192,7 @@ describe('tenureMedal.service - previewImport', () => {
     expect(result.errors[0].message).toContain('Phải có hạng Ba trước');
   });
 
-  it('Preview HCCSVV_HANG_NHI khi chưa có HANG_BA → vào errors (rank-order)', async () => {
+  it('Nhập Excel HCCSVV: xin HANG_NHI khi hệ thống chưa có HANG_BA → báo lỗi sai thứ tự hạng', async () => {
     const p1 = makePersonnel({
       id: 'qn-rk',
       ho_ten: 'Người Rank',
@@ -222,7 +222,7 @@ describe('tenureMedal.service - previewImport', () => {
     expect(result.errors[0].message).toContain('Phải có hạng Ba trước');
   });
 
-  it('Empty row giữa data rows → bị skip, không vào valid hay errors', async () => {
+  it('Nhập Excel HCCSVV: dòng trống xen giữa các dòng dữ liệu → bỏ qua, không tính vào hợp lệ lẫn lỗi', async () => {
     const p1 = makePersonnel({
       id: 'qn-empty',
       ho_ten: 'Có Data',
@@ -255,7 +255,7 @@ describe('tenureMedal.service - previewImport', () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it('Duplicate trong cùng file (cùng id + danh_hieu) → row thứ 2 vào errors', async () => {
+  it('Nhập Excel HCCSVV: cùng quân nhân và danh hiệu lặp lại trong file → dòng thứ 2 báo "Trùng lặp trong file"', async () => {
     const p1 = makePersonnel({
       id: 'qn-dup',
       ho_ten: 'Trùng Lặp',
@@ -285,7 +285,7 @@ describe('tenureMedal.service - previewImport', () => {
     expect(result.errors[0].message).toContain('Trùng lặp trong file');
   });
 
-  it('Tháng = 0 → errors "không hợp lệ"', async () => {
+  it('Nhập Excel HCCSVV: tháng nhận = 0 (bị coi là bỏ trống) → báo lỗi "Thiếu Tháng"', async () => {
     const p1 = makePersonnel({
       id: 'qn-th0',
       ho_ten: 'Tháng Zero',
@@ -318,7 +318,7 @@ describe('tenureMedal.service - previewImport', () => {
     expect(result.errors[0].message).toBe(IMPORT_NIEN_HAN_MISSING_FIELDS(['Tháng']));
   });
 
-  it('Tháng = 13 → errors "không hợp lệ. Chỉ được nhập 1-12"', async () => {
+  it('Nhập Excel HCCSVV: tháng nhận = 13 (ngoài 1-12) → báo lỗi "Chỉ được nhập 1-12"', async () => {
     const p1 = makePersonnel({
       id: 'qn-th13',
       ho_ten: 'Tháng OOR',
@@ -348,7 +348,7 @@ describe('tenureMedal.service - previewImport', () => {
     expect(result.errors[0].message).toContain('Chỉ được nhập 1-12');
   });
 
-  it('Năm < 1900 → errors "không hợp lệ"', async () => {
+  it('Nhập Excel HCCSVV: năm nhận trước 1900 → báo lỗi không hợp lệ', async () => {
     const p1 = makePersonnel({
       id: 'qn-y',
       ho_ten: 'Năm Cũ',
@@ -378,7 +378,7 @@ describe('tenureMedal.service - previewImport', () => {
     expect(result.errors[0].message).toContain('không hợp lệ');
   });
 
-  it('Danh hiệu enum không hợp lệ → errors "không tồn tại"', async () => {
+  it('Nhập Excel HCCSVV: danh hiệu không thuộc danh mục → báo lỗi "không tồn tại"', async () => {
     const p1 = makePersonnel({
       id: 'qn-dh',
       ho_ten: 'Sai Danh Hiệu',
@@ -408,7 +408,7 @@ describe('tenureMedal.service - previewImport', () => {
     expect(result.errors[0].message).toContain('không tồn tại');
   });
 
-  it('Sheet name là "Danh hiệu hằng năm" → throw ValidationError "không phải HCCSVV"', async () => {
+  it('Nhập Excel HCCSVV: tải nhầm file danh hiệu hằng năm → từ chối với "không phải HCCSVV"', async () => {
     // Tự tạo buffer với tên sheet hằng năm cá nhân để kích hoạt guard riêng
     const workbook = new ExcelJS.Workbook();
     const ws = workbook.addWorksheet('Danh hiệu hằng năm');
@@ -420,7 +420,7 @@ describe('tenureMedal.service - previewImport', () => {
     await expectError(tenureMedalService.previewImport(buffer), ValidationError, /không phải HCCSVV/);
   });
 
-  it('Đúng 10.0 năm phục vụ cho HANG_BA → vào valid (boundary)', async () => {
+  it('Nhập Excel HCCSVV: đúng 10 năm phục vụ cho HANG_BA (mốc biên) → ghi nhận hợp lệ', async () => {
     // Mốc tháng 11/2024; ngay_nhap_ngu = 2014-12-01 → ~119+ tháng. Dùng đầu năm.
     // Service dùng calculateServiceMonths với (nam, thang, 0) là cuối tháng.
     // Chọn mốc đơn giản: nhập ngũ 2014-11-01, mốc 2024-11-30 → đúng 120 tháng.
@@ -453,7 +453,7 @@ describe('tenureMedal.service - previewImport', () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it('Preview HCCSVV_HANG_NHI khi HANG_BA cùng năm → errors "phải sau năm"', async () => {
+  it('Nhập Excel HCCSVV: xin HANG_NHI cùng năm với HANG_BA đã có → báo lỗi "phải sau năm nhận hạng Ba"', async () => {
     const p1 = makePersonnel({
       id: 'qn-rk',
       ho_ten: 'Người Rank',
@@ -486,8 +486,8 @@ describe('tenureMedal.service - previewImport', () => {
   });
 });
 
-describe('tenureMedal.service - confirmImport', () => {
-  it('Confirm với 1 valid item → upsert đúng args', async () => {
+describe('Nhập Excel HCCSVV: xác nhận (confirm)', () => {
+  it('Nhập Excel HCCSVV: xác nhận 1 dòng hợp lệ → tạo (hoặc cập nhật) bản ghi đúng dữ liệu', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([]);
     prismaMock.khenThuongHCCSVV.upsert.mockResolvedValueOnce({ id: 'hccsvv-1' });
@@ -525,7 +525,7 @@ describe('tenureMedal.service - confirmImport', () => {
     });
   });
 
-  it('Confirm khi DB đã có hạng cao hơn → throw ValidationError "không thể import"', async () => {
+  it('Nhập Excel HCCSVV: xác nhận khi hệ thống đã có hạng cao hơn → chặn và báo "đã có"', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([
       { quan_nhan_id: 'qn-1', danh_hieu: DANH_HIEU_HCCSVV.HANG_NHAT },
@@ -555,7 +555,7 @@ describe('tenureMedal.service - confirmImport', () => {
     expect(prismaMock.khenThuongHCCSVV.upsert).not.toHaveBeenCalled();
   });
 
-  it('Confirm HCCSVV_HANG_NHAT đầy đủ tuần tự → success', async () => {
+  it('Nhập Excel HCCSVV: xác nhận HANG_NHAT khi đã có đủ HANG_BA rồi HANG_NHI tuần tự → tạo bản ghi thành công', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([
       { quan_nhan_id: 'qn-rk', danh_hieu: DANH_HIEU_HCCSVV.HANG_BA, nam: 2010 },
@@ -585,7 +585,7 @@ describe('tenureMedal.service - confirmImport', () => {
     expect(prismaMock.khenThuongHCCSVV.upsert).toHaveBeenCalledTimes(1);
   });
 
-  it('Confirm HCCSVV_HANG_NHI khi HANG_BA cùng năm → reject "phải sau năm"', async () => {
+  it('Nhập Excel HCCSVV: xác nhận HANG_NHI cùng năm với HANG_BA đã có → chặn và báo "phải sau năm nhận hạng Ba"', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.khenThuongHCCSVV.findMany.mockResolvedValueOnce([
       { quan_nhan_id: 'qn-rk', danh_hieu: DANH_HIEU_HCCSVV.HANG_BA, nam: 2024 },

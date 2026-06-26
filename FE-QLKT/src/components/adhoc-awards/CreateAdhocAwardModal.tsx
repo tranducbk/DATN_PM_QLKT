@@ -40,7 +40,7 @@ import type {
   DecisionAutocompleteRow,
 } from './types';
 import { INITIAL_CREATE_FORM, RANK_OPTIONS } from './types';
-import { BASE_URL } from '@/configs';
+import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 
 const { Text } = Typography;
 const { TextArea } = Input;
@@ -352,7 +352,7 @@ export function CreateAdhocAwardModal({
   };
 
   const renderDropzoneContent = (hint: string) => (
-    <div style={{ padding: '6px 8px' }}>
+    <div style={{ padding: '6px 8px', width: '100%', textAlign: 'center' }}>
       <CloudUploadOutlined
         style={{ fontSize: 30, color: 'var(--ant-color-primary)' }}
       />
@@ -700,7 +700,7 @@ export function CreateAdhocAwardModal({
 
       case 2:
         return (
-          <div style={{ maxWidth: 560, margin: '0 auto' }}>
+          <div>
             <div style={{ marginBottom: 12 }}>
               <Text strong style={{ display: 'block', marginBottom: 4 }}>
                 Tải file đính kèm
@@ -755,15 +755,7 @@ export function CreateAdhocAwardModal({
                     type="link"
                     size="small"
                     icon={<DownloadOutlined />}
-                    onClick={() => {
-                      const link = document.createElement('a');
-                      link.href = `${BASE_URL}/${selectedDecision.file_path}`;
-                      link.download = selectedDecision.file_path?.split('/').pop() || 'file';
-                      link.target = '_blank';
-                      document.body.appendChild(link);
-                      link.click();
-                      document.body.removeChild(link);
-                    }}
+                    onClick={() => downloadDecisionFile(selectedDecision.so_quyet_dinh)}
                   >
                     Tải về
                   </Button>
@@ -843,23 +835,21 @@ export function CreateAdhocAwardModal({
             </div>
 
             {!selectedDecision && (
-              <div>
+              <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <Text style={{ display: 'block', marginBottom: 4 }}>File quyết định</Text>
                 <Text type="secondary" style={{ display: 'block', marginBottom: 8, fontSize: 12 }}>
                   Tải lên bản scan quyết định để lưu vào hệ thống (không bắt buộc)
                 </Text>
-                <div style={{ maxWidth: 560 }}>
-                  <Upload.Dragger
-                    fileList={createDecisionFileList}
-                    onChange={({ fileList }) => setCreateDecisionFileList(fileList.slice(-1))}
-                    beforeUpload={() => false}
-                    maxCount={1}
-                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
-                    itemRender={renderUploadItem}
-                  >
-                    {renderDropzoneContent('PDF, Word, hình ảnh · 1 file')}
-                  </Upload.Dragger>
-                </div>
+                <Upload.Dragger
+                  fileList={createDecisionFileList}
+                  onChange={({ fileList }) => setCreateDecisionFileList(fileList.slice(-1))}
+                  beforeUpload={() => false}
+                  maxCount={1}
+                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  itemRender={renderUploadItem}
+                >
+                  {renderDropzoneContent('PDF, Word, hình ảnh · 1 file')}
+                </Upload.Dragger>
               </div>
             )}
           </Space>

@@ -6,7 +6,6 @@ import {
   Input,
   Select,
   Space,
-  Alert,
   Typography,
   Tag,
   message,
@@ -20,6 +19,8 @@ import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/http/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { ExcelImportSection } from './ExcelImportSection';
+import { StepGuide } from './StepGuide';
+import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
 import * as XLSX from 'xlsx';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import type {
@@ -350,21 +351,14 @@ export function Step2SelectUnits({
 
   return (
     <div>
-      <Alert
-        message="Bước 2: Lựa chọn đơn vị"
-        description={
-          <div>
-            <p>1. Chọn năm đề xuất để xác định kỳ xét.</p>
-            <p>
-              2. Lựa chọn đơn vị đề xuất từ danh sách (bao gồm cơ quan đơn vị và đơn vị trực thuộc).
-            </p>
-            <p>3. Kiểm tra lại danh sách đã chọn và nhấn &quot;Tiếp tục&quot; để sang bước chọn danh hiệu.</p>
-          </div>
-        }
-        type="info"
-        showIcon
+      <StepGuide
+        title={stepGuideTitle(2, 'Lựa chọn đơn vị')}
         icon={<TeamOutlined />}
-        style={{ marginBottom: 24 }}
+        steps={[
+          GUIDE_LINES.pickYear,
+          'Lựa chọn đơn vị đề xuất từ danh sách, gồm cơ quan đơn vị và đơn vị trực thuộc.',
+          GUIDE_LINES.nextToTitles,
+        ]}
       />
 
       {/* Upload Excel section - admin only */}

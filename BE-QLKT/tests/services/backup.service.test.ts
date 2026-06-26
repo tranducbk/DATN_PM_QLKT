@@ -5,8 +5,12 @@ import { prismaMock } from '../helpers/prismaMock';
 import { expectError } from '../helpers/errorAssert';
 
 import backupService from '../../src/services/backup.service';
+import { writeSystemLog } from '../../src/helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../../src/constants/auditActions.constants';
+import { RESOURCE_SLUGS } from '../../src/constants/resourceSlugs.constants';
 
 const BACKUP_DIR = path.join(process.cwd(), 'backups');
+const mockWriteSystemLog = writeSystemLog as jest.Mock;
 
 function makeStats(mtime: Date, size = 2048) {
   return {
@@ -18,12 +22,12 @@ function makeStats(mtime: Date, size = 2048) {
   } as unknown as fs.Stats;
 }
 
-describe('backup.service - listBackups', () => {
+describe('Sao lưu: liệt kê file sao lưu', () => {
   beforeEach(() => {
     jest.restoreAllMocks();
   });
 
-  it('Cho danh sách file → Khi listBackups → Thì lọc file đúng pattern và sort desc', () => {
+  it('Sao lưu: thư mục có nhiều file → chỉ lấy file sao lưu đúng định dạng, sắp xếp mới nhất trước', () => {
     const files = [
       'backup_20260101_120000_manual.sql',
       'random.txt',
@@ -48,7 +52,7 @@ describe('backup.service - listBackups', () => {
     expect(result[1].type).toBe('manual');
   });
 
-  it('Cho thư mục rỗng → Khi listBackups → Thì trả về mảng rỗng', () => {
+  it('Sao lưu: thư mục rỗng → trả danh sách rỗng', () => {
     jest.spyOn(fs, 'mkdirSync').mockReturnValue(undefined);
     (jest.spyOn(fs, 'readdirSync') as jest.Mock).mockReturnValue([]);
 
@@ -58,12 +62,12 @@ describe('backup.service - listBackups', () => {
   });
 });
 
-describe('backup.service - getBackupFilePath', () => {
+describe('Sao lưu: lấy đường dẫn file sao lưu', () => {
   beforeEach(() => {
     jest.restoreAllMocks();
   });
 
-  it('Cho filename hợp lệ và file tồn tại → Khi getBackupFilePath → Thì trả về absolute path', () => {
+  it('Sao lưu: tên file hợp lệ và file tồn tại → trả đường dẫn tuyệt đối', () => {
     const filename = 'backup_20260301_120000_manual.sql';
     jest.spyOn(fs, 'existsSync').mockReturnValue(true);
 
@@ -72,13 +76,13 @@ describe('backup.service - getBackupFilePath', () => {
     expect(result).toBe(path.join(BACKUP_DIR, filename));
   });
 
-  it('Cho filename sai pattern → Khi getBackupFilePath → Thì throw "Tên file không hợp lệ"', () => {
+  it('Sao lưu: tên file sai định dạng (chứa đường dẫn lạ) → báo "Tên file không hợp lệ"', () => {
     expect(() => backupService.getBackupFilePath('../etc/passwd')).toThrow(
       'Tên file không hợp lệ'
     );
   });
 
-  it('Cho filename hợp lệ nhưng file không tồn tại → Khi getBackupFilePath → Thì throw', () => {
+  it('Sao lưu: tên file hợp lệ nhưng file không tồn tại → báo file không tồn tại', () => {
     jest.spyOn(fs, 'existsSync').mockReturnValue(false);
 
     expect(() =>
@@ -87,12 +91,12 @@ describe('backup.service - getBackupFilePath', () => {
   });
 });
 
-describe('backup.service - deleteBackup', () => {
+describe('Sao lưu: xóa file sao lưu', () => {
   beforeEach(() => {
     jest.restoreAllMocks();
   });
 
-  it('Cho file backup hợp lệ → Khi deleteBackup → Thì gọi fs.unlinkSync với đúng path', async () => {
+  it('Sao lưu: file hợp lệ → xóa đúng file tại đường dẫn tương ứng', async () => {
     const filename = 'backup_20260301_120000_scheduled.sql';
     jest.spyOn(fs, 'existsSync').mockReturnValue(true);
     const unlinkSpy = jest.spyOn(fs, 'unlinkSync').mockReturnValue(undefined);
@@ -102,21 +106,37 @@ describe('backup.service - deleteBackup', () => {
     expect(unlinkSpy).toHaveBeenCalledWith(path.join(BACKUP_DIR, filename));
   });
 
-  it('Cho filename không hợp lệ → Khi deleteBackup → Thì throw trước khi unlink', async () => {
+  it('Sao lưu: tên file không hợp lệ → báo lỗi trước khi xóa, không đụng tới file', async () => {
     const unlinkSpy = jest.spyOn(fs, 'unlinkSync').mockReturnValue(undefined);
 
     await expectError(backupService.deleteBackup('hax.sql'), Error, 'Tên file không hợp lệ');
 
     expect(unlinkSpy).not.toHaveBeenCalled();
   });
+
+  it('Sao lưu: xóa file → ghi log hệ thống (DELETE / backup) kèm tên file', async () => {
+    const filename = 'backup_20260301_120000_scheduled.sql';
+    jest.spyOn(fs, 'existsSync').mockReturnValue(true);
+    jest.spyOn(fs, 'unlinkSync').mockReturnValue(undefined);
+
+    await backupService.deleteBackup(filename);
+
+    expect(mockWriteSystemLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: AUDIT_ACTIONS.DELETE,
+        resource: RESOURCE_SLUGS.BACKUP,
+        description: expect.stringContaining(filename),
+      })
+    );
+  });
 });
 
-describe('backup.service - cleanupOldBackups', () => {
+describe('Sao lưu: dọn dẹp file sao lưu cũ', () => {
   beforeEach(() => {
     jest.restoreAllMocks();
   });
 
-  it('Cho file cũ hơn retention → Khi cleanupOldBackups → Thì xoá và trả deleted count', async () => {
+  it('Sao lưu: có file cũ hơn số ngày lưu giữ → xóa và trả về số file đã xóa', async () => {
     prismaMock.systemSetting.findUnique.mockResolvedValue({ key: 'backup_retention_days', value: '15' });
     const oldDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
     const newDate = new Date();
@@ -139,7 +159,7 @@ describe('backup.service - cleanupOldBackups', () => {
     expect(unlinkSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('Cho retention setting invalid → Khi cleanupOldBackups → Thì fallback default 15 ngày', async () => {
+  it('Sao lưu: cấu hình số ngày lưu giữ không hợp lệ → dùng mặc định 15 ngày', async () => {
     prismaMock.systemSetting.findUnique.mockResolvedValue({ key: 'backup_retention_days', value: 'abc' });
     jest.spyOn(fs, 'mkdirSync').mockReturnValue(undefined);
     (jest.spyOn(fs, 'readdirSync') as jest.Mock).mockReturnValue([]);
@@ -149,9 +169,28 @@ describe('backup.service - cleanupOldBackups', () => {
     expect(result.deleted).toBe(0);
     expect(result.files).toEqual([]);
   });
+
+  it('Sao lưu: có file cũ bị xóa → ghi log hệ thống (DELETE / backup) kèm danh sách file', async () => {
+    prismaMock.systemSetting.findUnique.mockResolvedValue({ key: 'backup_retention_days', value: '15' });
+    const oldDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    jest.spyOn(fs, 'mkdirSync').mockReturnValue(undefined);
+    (jest.spyOn(fs, 'readdirSync') as jest.Mock).mockReturnValue(['backup_20250101_120000_manual.sql']);
+    jest.spyOn(fs, 'statSync').mockImplementation(() => makeStats(oldDate));
+    jest.spyOn(fs, 'unlinkSync').mockReturnValue(undefined);
+
+    await backupService.cleanupOldBackups();
+
+    expect(mockWriteSystemLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: AUDIT_ACTIONS.DELETE,
+        resource: RESOURCE_SLUGS.BACKUP,
+        payload: expect.objectContaining({ files: ['backup_20250101_120000_manual.sql'] }),
+      })
+    );
+  });
 });
 
-describe('backup.service - createBackup → cleanup chain', () => {
+describe('Sao lưu: tạo bản sao lưu và tự động dọn dẹp file cũ', () => {
   beforeEach(() => {
     jest.restoreAllMocks();
   });
@@ -163,7 +202,7 @@ describe('backup.service - createBackup → cleanup chain', () => {
       'khenThuongHCCSVV', 'khenThuongDotXuat', 'huanChuongQuanKyQuyetThang',
       'kyNiemChuongVSNXDQDNDVN', 'hoSoNienHan', 'hoSoCongHien', 'hoSoHangNam',
       'bangDeXuat', 'danhHieuDonViHangNam', 'hoSoDonViHangNam', 'fileQuyetDinh',
-      'systemSetting',
+      'systemSetting', 'systemLog',
     ] as const;
     for (const m of models) {
       (prismaMock[m] as { findMany: jest.Mock }).findMany.mockResolvedValue([]);
@@ -177,7 +216,7 @@ describe('backup.service - createBackup → cleanup chain', () => {
     (jest.spyOn(fs, 'readdirSync') as jest.Mock).mockReturnValue([]);
   }
 
-  it('Cho backup thành công → Thì cleanupOldBackups được gọi sau khi backup', async () => {
+  it('Sao lưu: tạo bản sao lưu thành công → tự động dọn dẹp file cũ ngay sau đó', async () => {
     mockEmptyTables();
     mockFsHappyPath();
     const cleanupSpy = jest.spyOn(backupService, 'cleanupOldBackups').mockResolvedValue({ deleted: 0, files: [] });
@@ -187,7 +226,7 @@ describe('backup.service - createBackup → cleanup chain', () => {
     expect(cleanupSpy).toHaveBeenCalledTimes(1);
   });
 
-  it('Cho backup fail (DB error) → Thì cleanupOldBackups KHÔNG được gọi', async () => {
+  it('Sao lưu: tạo bản sao lưu thất bại do lỗi CSDL → không chạy dọn dẹp file cũ', async () => {
     prismaMock.coQuanDonVi.findMany.mockRejectedValueOnce(new Error('DB connection lost'));
     mockFsHappyPath();
     const cleanupSpy = jest.spyOn(backupService, 'cleanupOldBackups').mockResolvedValue({ deleted: 0, files: [] });
@@ -199,7 +238,7 @@ describe('backup.service - createBackup → cleanup chain', () => {
     expect(cleanupSpy).not.toHaveBeenCalled();
   });
 
-  it('Cho backup thành công → Thì backup_last_run setting được lưu', async () => {
+  it('Sao lưu: tạo bản sao lưu thành công → ghi lại thời điểm chạy sao lưu gần nhất', async () => {
     mockEmptyTables();
     mockFsHappyPath();
     jest.spyOn(backupService, 'cleanupOldBackups').mockResolvedValue({ deleted: 0, files: [] });
@@ -212,7 +251,7 @@ describe('backup.service - createBackup → cleanup chain', () => {
     expect(lastRunCall).toBeDefined();
   });
 
-  it('Cho 0 records → Thì vẫn ghi file SQL hợp lệ với BEGIN/COMMIT + 0 totalRecords', async () => {
+  it('Sao lưu: không có bản ghi nào → vẫn ghi file SQL hợp lệ với BEGIN/COMMIT và 0 bản ghi', async () => {
     mockEmptyTables();
     mockFsHappyPath();
     jest.spyOn(backupService, 'cleanupOldBackups').mockResolvedValue({ deleted: 0, files: [] });
@@ -227,7 +266,7 @@ describe('backup.service - createBackup → cleanup chain', () => {
     expect(sqlContent).toContain('-- Records:    0');
   });
 
-  it('Cho type=scheduled → Thì filename chứa "_scheduled"', async () => {
+  it('Sao lưu: bản sao lưu theo lịch → tên file có chứa "_scheduled"', async () => {
     mockEmptyTables();
     mockFsHappyPath();
     jest.spyOn(backupService, 'cleanupOldBackups').mockResolvedValue({ deleted: 0, files: [] });
@@ -235,5 +274,20 @@ describe('backup.service - createBackup → cleanup chain', () => {
     const result = await backupService.createBackup({ triggeredBy: 'SYSTEM', userId: 'SYSTEM', type: 'scheduled' });
 
     expect(result.filename).toMatch(/^backup_\d{8}_\d{6}_scheduled\.sql$/);
+  });
+
+  it('Sao lưu: tạo backup thành công → ghi log hệ thống (BACKUP / backup)', async () => {
+    mockEmptyTables();
+    mockFsHappyPath();
+    jest.spyOn(backupService, 'cleanupOldBackups').mockResolvedValue({ deleted: 0, files: [] });
+
+    await backupService.createBackup({ triggeredBy: 'admin', userId: 'u1', type: 'manual' });
+
+    expect(mockWriteSystemLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: AUDIT_ACTIONS.BACKUP,
+        resource: RESOURCE_SLUGS.BACKUP,
+      })
+    );
   });
 });

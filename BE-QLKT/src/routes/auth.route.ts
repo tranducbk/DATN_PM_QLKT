@@ -31,17 +31,7 @@ const router = Router();
  * @desc    Log in to the system
  * @access  Public
  */
-router.post(
-  '/login',
-  authLimiter,
-  validate(authValidation.login),
-  auditLog({
-    action: AUDIT_ACTIONS.LOGIN,
-    resource: RESOURCE_SLUGS.AUTH,
-    getDescription: getLogDescription(RESOURCE_SLUGS.AUTH, 'LOGIN'),
-  }),
-  authController.login
-);
+router.post('/login', authLimiter, validate(authValidation.login), authController.login);
 
 /**
  * @route   POST /api/auth/refresh
@@ -55,15 +45,7 @@ router.post('/refresh', authLimiter, authController.refresh);
  * @desc    Log out and invalidate the refresh token
  * @access  Public
  */
-router.post(
-  '/logout',
-  auditLog({
-    action: AUDIT_ACTIONS.LOGOUT,
-    resource: RESOURCE_SLUGS.AUTH,
-    getDescription: getLogDescription(RESOURCE_SLUGS.AUTH, 'LOGOUT'),
-  }),
-  authController.logout
-);
+router.post('/logout', authController.logout);
 
 /**
  * @route   POST /api/auth/change-password

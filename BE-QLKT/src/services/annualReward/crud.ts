@@ -18,18 +18,18 @@ import { NotFoundError, ValidationError } from '../../middlewares/errorHandler';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.ANNUAL_REWARDS];
 import { writeSystemLog } from '../../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../../constants/auditActions.constants';
+import { logMessages } from '../../constants/logMessages.constants';
 import { validateDecisionNumbers } from '../eligibility/decisionNumberValidation';
-import profileService from '../profile.service';
 import {
   collectPendingProposalPersonnelIdsForAward,
   isPersonalChainAward,
 } from '../eligibility/annualBulkValidation';
-import type { DanhHieuHangNam, QuanNhan, Prisma } from '../../generated/prisma';
+import type { DanhHieuHangNam, Prisma } from '../../generated/prisma';
 import type {
   CreateAnnualRewardData,
   UpdateAnnualRewardData,
   CheckResult,
-  BulkCreateData,
   StatisticsFilters,
 } from './types';
 
@@ -96,13 +96,19 @@ export async function createAnnualReward(data: CreateAnnualRewardData): Promise<
     }
     // Block: adding same flag that already exists
     if (nhan_bkbqp && existingReward.nhan_bkbqp) {
-      throw new ValidationError(`Năm ${nam} đã có Bằng khen Bộ Quốc phòng.`);
+      throw new ValidationError(
+        `Năm ${nam} đã có ${getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP)}.`
+      );
     }
     if (nhan_cstdtq && existingReward.nhan_cstdtq) {
-      throw new ValidationError(`Năm ${nam} đã có Chiến sĩ thi đua toàn quân.`);
+      throw new ValidationError(
+        `Năm ${nam} đã có ${getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ)}.`
+      );
     }
     if (nhan_bkttcp && existingReward.nhan_bkttcp) {
-      throw new ValidationError(`Năm ${nam} đã có Bằng khen Thủ tướng Chính phủ.`);
+      throw new ValidationError(
+        `Năm ${nam} đã có ${getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP)}.`
+      );
     }
 
     const mergeDecisionErrors = validateDecisionNumbers(
@@ -309,36 +315,28 @@ export async function deleteAnnualReward(
 
     if (isBaseAward) {
       if (reward.danh_hieu !== awardType) {
-        throw new ValidationError(
-          `Bản ghi không có ${getDanhHieuName(awardType)}`
-        );
+        throw new ValidationError(`Bản ghi không có ${getDanhHieuName(awardType)}`);
       }
       updateData.danh_hieu = null;
       updateData.so_quyet_dinh = null;
       updateData.ghi_chu = null;
     } else if (awardType === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
       if (!reward.nhan_bkbqp) {
-        throw new ValidationError(
-          `Bản ghi không có ${getDanhHieuName(awardType)}`
-        );
+        throw new ValidationError(`Bản ghi không có ${getDanhHieuName(awardType)}`);
       }
       updateData.nhan_bkbqp = false;
       updateData.so_quyet_dinh_bkbqp = null;
       updateData.ghi_chu_bkbqp = null;
     } else if (awardType === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ) {
       if (!reward.nhan_cstdtq) {
-        throw new ValidationError(
-          `Bản ghi không có ${getDanhHieuName(awardType)}`
-        );
+        throw new ValidationError(`Bản ghi không có ${getDanhHieuName(awardType)}`);
       }
       updateData.nhan_cstdtq = false;
       updateData.so_quyet_dinh_cstdtq = null;
       updateData.ghi_chu_cstdtq = null;
     } else if (awardType === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
       if (!reward.nhan_bkttcp) {
-        throw new ValidationError(
-          `Bản ghi không có ${getDanhHieuName(awardType)}`
-        );
+        throw new ValidationError(`Bản ghi không có ${getDanhHieuName(awardType)}`);
       }
       updateData.nhan_bkttcp = false;
       updateData.so_quyet_dinh_bkttcp = null;
@@ -352,8 +350,7 @@ export async function deleteAnnualReward(
       awardType === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ ? false : reward.nhan_cstdtq;
     const remainingBkttcp =
       awardType === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP ? false : reward.nhan_bkttcp;
-    const isEmpty =
-      !remainingDanhHieu && !remainingBkbqp && !remainingCstdtq && !remainingBkttcp;
+    const isEmpty = !remainingDanhHieu && !remainingBkbqp && !remainingCstdtq && !remainingBkttcp;
 
     if (isEmpty) {
       await danhHieuHangNamRepository.delete(id);
@@ -372,9 +369,9 @@ export async function deleteAnnualReward(
       );
     } catch (e) {
       void writeSystemLog({
-        action: 'ERROR',
+        action: AUDIT_ACTIONS.ERROR,
         resource: AWARD_SLUGS.ANNUAL_REWARDS,
-        description: `Lỗi gửi thông báo xóa ${AWARD_LABEL}: ${e}`,
+        description: logMessages.notifyError('xóa', AWARD_LABEL, e),
       });
     }
 
@@ -398,9 +395,9 @@ export async function deleteAnnualReward(
     );
   } catch (e) {
     void writeSystemLog({
-      action: 'ERROR',
+      action: AUDIT_ACTIONS.ERROR,
       resource: AWARD_SLUGS.ANNUAL_REWARDS,
-      description: `Lỗi gửi thông báo xóa ${AWARD_LABEL}: ${e}`,
+      description: logMessages.notifyError('xóa', AWARD_LABEL, e),
     });
   }
 
@@ -506,7 +503,6 @@ export async function checkAnnualRewards(
     },
   };
 }
-
 
 export async function getStatistics(filters: StatisticsFilters = {}): Promise<{
   total: number;

@@ -18,6 +18,8 @@ import { getApiErrorMessage } from '@/lib/http/apiError';
 import { formatDate } from '@/lib/utils';
 import { apiClient } from '@/lib/http/apiClient';
 import { usePersonnelList } from './usePersonnelList';
+import { StepGuide } from './StepGuide';
+import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
 import {
   sttColumn,
   hoTenWithUnitColumn,
@@ -581,20 +583,15 @@ export function Step2SelectPersonnelNienHan({
 
   return (
     <div>
-      <Alert
-        message={`Bước 2: Lựa chọn quân nhân - ${AWARD_TAB_LABELS.HCCSVV}`}
-        description={
-          <div>
-            <p>1. Chọn năm và tháng đề xuất để hệ thống đánh giá điều kiện chính xác theo mốc thời gian.</p>
-            <p>2. Lựa chọn quân nhân đủ điều kiện từ danh sách gợi ý.</p>
-            <p>3. Đối chiếu thông tin ngày nhập ngũ, ngày xuất ngũ và thời gian công tác trước khi chọn.</p>
-            <p>4. Hoàn tất lựa chọn, nhấn &quot;Tiếp tục&quot; để sang bước xác nhận danh hiệu.</p>
-          </div>
-        }
-        type="info"
-        showIcon
+      <StepGuide
+        title={stepGuideTitle(2, 'Lựa chọn quân nhân', AWARD_TAB_LABELS.HCCSVV)}
         icon={<TeamOutlined />}
-        style={{ marginBottom: 24 }}
+        steps={[
+          GUIDE_LINES.pickYearMonth,
+          'Lựa chọn quân nhân đủ điều kiện từ danh sách gợi ý.',
+          'Đối chiếu thông tin ngày nhập ngũ, ngày xuất ngũ và thời gian công tác trước khi chọn.',
+          GUIDE_LINES.nextToTitles,
+        ]}
       />
 
       {/* Upload Excel Section */}

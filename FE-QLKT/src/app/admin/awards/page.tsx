@@ -7,7 +7,6 @@ import {
   Table,
   Space,
   Typography,
-  Breadcrumb,
   message,
   Tabs,
   Popconfirm,
@@ -16,8 +15,8 @@ import {
 import { getApiErrorMessage } from '@/lib/http/apiError';
 
 import type { TableColumnsType } from 'antd';
-import { DownloadOutlined, HomeOutlined, DeleteOutlined } from '@ant-design/icons';
-import { apiClient } from '@/lib/http/apiClient';
+import { DownloadOutlined, DeleteOutlined } from '@ant-design/icons';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import {
   DANH_HIEU_MAP,
@@ -44,107 +43,15 @@ import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagi
 import { useDebounce } from '@/hooks/useDebounce';
 import { AwardsFilterBar } from '@/components/awards/AwardsFilterBar';
 import { formatDate } from '@/lib/utils';
+import type {
+  AwardTableRow,
+  AwardFilters,
+  PersonnelDisplay,
+  AwardTypeFetchParams,
+} from './types';
+import { INITIAL_FILTERS, AWARD_TYPE_CONFIG } from './helpers';
 
 const { Title, Paragraph, Text } = Typography;
-
-/** Một dòng bảng khen thưởng — có thể là cấu trúc lồng (adhoc, scientific, …) */
-interface AwardCore {
-  id: string;
-  cccd: string;
-  ho_ten: string;
-  ngay_sinh?: string;
-  don_vi: string;
-  co_quan_don_vi?: string;
-  don_vi_truc_thuoc?: string;
-  cap_bac?: string;
-  chuc_vu: string;
-  nam: number;
-  thang?: number | null;
-  danh_hieu: string | null;
-  so_quyet_dinh?: string | null;
-  ghi_chu?: string | null;
-  nhan_bkbqp?: boolean;
-  so_quyet_dinh_bkbqp?: string | null;
-  nhan_cstdtq?: boolean;
-  so_quyet_dinh_cstdtq?: string | null;
-  nhan_bkttcp?: boolean;
-  so_quyet_dinh_bkttcp?: string | null;
-  mo_ta?: string | null;
-  ten_de_tai?: string | null;
-}
-
-/** Dòng hiển thị/ghép filter — gồm cả bản ghi adhoc / scientific có quan hệ lồng */
-type AwardTableRow = AwardCore & {
-  loai?: string;
-  QuanNhan?: {
-    ho_ten?: string;
-    ngay_sinh?: string;
-    CoQuanDonVi?: { ten_don_vi?: string };
-    DonViTrucThuoc?: { ten_don_vi?: string; CoQuanDonVi?: { ten_don_vi?: string } };
-  };
-  CoQuanDonVi?: { ten_don_vi?: string };
-  DonViTrucThuoc?: { ten_don_vi?: string; CoQuanDonVi?: { ten_don_vi?: string } };
-};
-
-interface AwardFilters {
-  nam: string;
-  ho_ten: string;
-  danh_hieu: string;
-  de_tai: string;
-}
-
-interface PersonnelDisplay {
-  displayName: string;
-  unitInfoText: string;
-  parentUnit: string | null;
-  ngaySinh?: string;
-}
-
-const INITIAL_FILTERS: AwardFilters = {
-  nam: '',
-  ho_ten: '',
-  danh_hieu: '',
-  de_tai: '',
-};
-
-interface AwardTypeFetchParams {
-  limit?: number;
-  page?: number;
-  [key: string]: unknown;
-}
-
-interface AwardTypeApiResult {
-  success: boolean;
-  message?: string;
-  data?: AwardTableRow[];
-}
-
-interface AwardTypeDeleteResult {
-  success: boolean;
-  message?: string;
-}
-
-const AWARD_TYPE_CONFIG: Record<
-  string,
-  {
-    fetch: (params: AwardTypeFetchParams) => Promise<AwardTypeApiResult>;
-    delete: (id: string, awardType?: string) => Promise<AwardTypeDeleteResult>;
-  }
-> = {
-  CNHN: { fetch: apiClient.getAnnualRewards, delete: apiClient.deleteAnnualReward },
-  DVHN: { fetch: apiClient.getUnitAnnualAwards, delete: apiClient.deleteUnitAnnualAward },
-  HCCSVV: { fetch: apiClient.getTenureMedals, delete: apiClient.deleteTenureMedal },
-  HCBVTQ: { fetch: apiClient.getContributionMedals, delete: apiClient.deleteContributionMedal },
-  KNC_VSNXD_QDNDVN: {
-    fetch: apiClient.getCommemorationMedals,
-    delete: apiClient.deleteCommemorationMedal,
-  },
-  HCQKQT: { fetch: apiClient.getMilitaryFlag, delete: apiClient.deleteMilitaryFlag },
-  NCKH: {
-    fetch: apiClient.getScientificAchievements,
-    delete: apiClient.deleteScientificAchievement,
-  },
-};
 
 export default function AdminAwardsPage() {
   const [activeTab, setActiveTab] = useState<AwardType>('CNHN');
@@ -193,7 +100,7 @@ export default function AdminAwardsPage() {
     setFilters(prev => ({ ...prev, [key]: value }));
   };
 
-  const handleDeleteAward = async (id: string, awardType?: string, awardLabel?: string) => {
+  const handleDeleteAward = useCallback(async (id: string, awardType?: string, awardLabel?: string) => {
     try {
       setDeleting({ id, awardType });
       const config = AWARD_TYPE_CONFIG[activeTab];
@@ -208,13 +115,16 @@ export default function AdminAwardsPage() {
         return;
       }
       message.success(awardLabel ? `Đã xóa ${awardLabel}` : 'Xóa khen thưởng thành công');
-      await fetchAwards();
+      setAwardsByTab(prev => ({
+        ...prev,
+        [activeTab]: (prev[activeTab] ?? []).filter(row => row.id !== id),
+      }));
     } catch (error: unknown) {
       message.error(getApiErrorMessage(error, 'Có lỗi xảy ra khi xóa khen thưởng'));
     } finally {
       setDeleting(null);
     }
-  };
+  }, [activeTab]);
 
   const handleDownloadDecision = async (soQuyetDinh: string) => {
     await downloadDecisionFile(soQuyetDinh);
@@ -239,7 +149,7 @@ export default function AdminAwardsPage() {
     [activeTab]
   );
 
-  const resolvePersonnelDisplay = (record: AwardTableRow): PersonnelDisplay => {
+  const resolvePersonnelDisplay = useCallback((record: AwardTableRow): PersonnelDisplay => {
     const isAnnualTab = activeTab === 'CNHN';
     const hasNestedQuanNhan = AWARD_TAB_META[activeTab].hasNestedQuanNhan;
     const hoTen = hasNestedQuanNhan
@@ -285,7 +195,7 @@ export default function AdminAwardsPage() {
           ? record.QuanNhan?.ngay_sinh || record.ngay_sinh
           : record.ngay_sinh,
     };
-  };
+  }, [activeTab]);
 
   const danhHieuOptions = useMemo(() => {
     const options = AWARD_TAB_DANH_HIEU[activeTab] || [];
@@ -556,9 +466,8 @@ export default function AdminAwardsPage() {
           );
         },
       },
-      // eslint-disable-next-line react-hooks/exhaustive-deps
     ],
-    [activeTab, deleting]
+    [activeTab, deleting, handleDeleteAward, resolvePersonnelDisplay]
   );
 
   const visibleColumns = useMemo(
@@ -577,12 +486,7 @@ export default function AdminAwardsPage() {
 
   return (
     <div style={{ padding: '24px' }}>
-      <Breadcrumb style={{ marginBottom: '16px' }}>
-        <Breadcrumb.Item href="/">
-          <HomeOutlined />
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>Quản lý khen thưởng</Breadcrumb.Item>
-      </Breadcrumb>
+      <PageBreadcrumb items={[{ title: 'Quản lý khen thưởng' }]} />
 
       <div
         style={{

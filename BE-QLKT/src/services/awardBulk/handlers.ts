@@ -15,7 +15,7 @@ import {
   formatDanhHieuList,
   DANH_HIEU_HCCSVV,
   DANH_HIEU_HCBVTQ,
-  CONG_HIEN_HE_SO_GROUPS,
+  getLoaiDeXuatName,
 } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES, type ProposalType } from '../../constants/proposalTypes.constants';
 import { GENDER } from '../../constants/gender.constants';
@@ -26,19 +26,25 @@ import {
   validateHCBVTQHighestRank,
   type PositionMonthsByGroup,
 } from '../../helpers/awardValidation/contributionMedalHighestRank';
-import { evaluateHCBVTQRank, requiredCongHienMonths } from '../eligibility/hcbvtqEligibility';
-import { aggregatePositionMonthsByGroup } from '../eligibility/congHienMonthsAggregator';
+import { evaluateHCBVTQRank, requiredContributionMonths } from '../eligibility/hcbvtqEligibility';
+import { aggregatePositionMonthsByGroup } from '../eligibility/contributionMonthsAggregator';
 import type { QuanNhan, Prisma } from '../../generated/prisma';
 import type { ServiceTimeJson } from '../../types/proposal';
 import type { BulkCreateContext, CreateHandler, TitleDataItem } from './types';
 import { throwValidationErrors } from './validation';
 
-/** Build the JSON service-time payload stored on award rows. */
-export function calculateThoiGian(quanNhan: QuanNhan): ServiceTimeJson | null {
+const CONTRIBUTION_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
+
+/** Build the JSON service-time payload, counting service up to cutoffDate (the award date). */
+export function calculateThoiGian(
+  quanNhan: QuanNhan,
+  cutoffDate: Date = new Date()
+): ServiceTimeJson | null {
   if (!quanNhan.ngay_nhap_ngu) return null;
 
   const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
-  const ngayKetThuc = quanNhan.ngay_xuat_ngu ? new Date(quanNhan.ngay_xuat_ngu) : new Date();
+  const rawEnd = quanNhan.ngay_xuat_ngu ? new Date(quanNhan.ngay_xuat_ngu) : cutoffDate;
+  const ngayKetThuc = rawEnd > cutoffDate ? cutoffDate : rawEnd;
 
   const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
 
@@ -89,15 +95,17 @@ async function bulkUpsertMedalAward(
 ): Promise<{ importedCount: number; affectedPersonnelIds: Set<string> }> {
   const importedCount = { value: 0 };
   const affectedPersonnelIds = new Set<string>();
+  const cutoffDate = buildCutoffDate(nam, thang ?? null);
 
   for (const item of titleData) {
     const quanNhan = personnelMap.get(item.personnel_id);
 
     if (!quanNhan) {
-      throw new NotFoundError(`Quân nhân (ID: ${item.personnel_id})`);
+      console.error('[bulkCreateAwards] personnel not found for medal upsert:', item.personnel_id);
+      throw new NotFoundError('Thông tin một quân nhân');
     }
 
-    const thoiGian = calculateThoiGian(quanNhan);
+    const thoiGian = calculateThoiGian(quanNhan, cutoffDate);
     const where = buildWhere(item.personnel_id, item.danh_hieu);
     const extraData = extraDataBuilder ? extraDataBuilder(item) : {};
 
@@ -173,8 +181,8 @@ async function handleDonViHangNam(ctx: BulkCreateContext): Promise<void> {
         ctx.affectedUnitIds.add(item.don_vi_id);
       }
     } catch (error) {
-      const unitMsg = `Lỗi khi thêm khen thưởng cho đơn vị ${item.don_vi_id}: ${(error as Error).message}`;
-      console.error('[bulkCreateAwards]', unitMsg, error);
+      console.error('[bulkCreateAwards] unit award error', { don_vi_id: item.don_vi_id, error });
+      const unitMsg = 'Có lỗi xảy ra khi lưu khen thưởng cho một đơn vị, vui lòng thử lại.';
       ctx.errors.push(unitMsg);
       ctx.errorDetails.push({ personnelId: item.don_vi_id || '', error: unitMsg });
     }
@@ -199,8 +207,9 @@ async function handleNCKH(ctx: BulkCreateContext): Promise<void> {
       ctx.importedCount.value++;
       ctx.affectedPersonnelIds.add(item.personnel_id);
     } catch (error) {
-      const nckhMsg = `Lỗi khi thêm thành tích cho quân nhân ${item.personnel_id}: ${(error as Error).message}`;
-      console.error('[bulkCreateAwards]', nckhMsg, error);
+      console.error('[bulkCreateAwards] NCKH error', { personnel_id: item.personnel_id, error });
+      const name = ctx.personnelMap.get(item.personnel_id)?.ho_ten ?? 'một quân nhân';
+      const nckhMsg = `Có lỗi xảy ra khi lưu thành tích khoa học cho ${name}, vui lòng thử lại.`;
       ctx.errors.push(nckhMsg);
       ctx.errorDetails.push({ personnelId: item.personnel_id || '', error: nckhMsg });
     }
@@ -248,7 +257,8 @@ async function handleNienHan(ctx: BulkCreateContext): Promise<void> {
   const allowedDanhHieus: string[] = Object.values(DANH_HIEU_HCCSVV);
   for (const item of titleData) {
     if (!item.danh_hieu) {
-      errors.push(`Huy chương CSVV thiếu danh_hieu cho quân nhân ${item.personnel_id}`);
+      const name = personnelMap.get(item.personnel_id)?.ho_ten ?? 'một quân nhân';
+      errors.push(`${name}: chưa chọn danh hiệu`);
     } else if (!allowedDanhHieus.includes(item.danh_hieu)) {
       errors.push(
         `Danh hiệu "${item.danh_hieu}" không hợp lệ. Chỉ cho phép: ${formatDanhHieuList(allowedDanhHieus)}`
@@ -275,7 +285,7 @@ async function handleNienHan(ctx: BulkCreateContext): Promise<void> {
     const orderError = validateHCCSVVRankOrder(item.danh_hieu, nam, existing);
     if (orderError) {
       const qn = personnelMap.get(item.personnel_id);
-      const name = qn?.ho_ten || item.personnel_id;
+      const name = qn?.ho_ten ?? 'một quân nhân';
       errors.push(`${name}: ${orderError}`);
     }
   }
@@ -306,7 +316,8 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
   const allowedDanhHieus: string[] = Object.values(DANH_HIEU_HCBVTQ);
   for (const item of titleData) {
     if (!item.danh_hieu) {
-      errors.push(`HC BVTQ thiếu danh_hieu cho quân nhân ${item.personnel_id}`);
+      const name = ctx.personnelMap.get(item.personnel_id)?.ho_ten ?? 'một quân nhân';
+      errors.push(`${name}: chưa chọn danh hiệu`);
     } else if (!allowedDanhHieus.includes(item.danh_hieu)) {
       errors.push(
         `Danh hiệu "${item.danh_hieu}" không hợp lệ. Chỉ cho phép: ${formatDanhHieuList(allowedDanhHieus)}`
@@ -356,11 +367,7 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
     monthsByPersonnel.set(personnelId, aggregatePositionMonthsByGroup(histories, cutoffDate));
   }
 
-  const getTotalMonthsByGroup = (personnelId: string, group: string) => {
-    const months = monthsByPersonnel.get(personnelId);
-    if (!months) return 0;
-    return months[group as keyof PositionMonthsByGroup] ?? 0;
-  };
+  const emptyMonthsByGroup = aggregatePositionMonthsByGroup([], cutoffDate);
 
   const eligibleTitleData: TitleDataItem[] = [];
   for (const item of titleData) {
@@ -370,23 +377,10 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
     }
 
     const info = personnelGenderMap.get(item.personnel_id);
-    const hoTen = (info && info.ho_ten) || item.personnel_id;
+    const hoTen = (info && info.ho_ten) || 'một quân nhân';
     const gioiTinh = info && info.gioi_tinh;
 
-    const months: PositionMonthsByGroup = {
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: getTotalMonthsByGroup(
-        item.personnel_id,
-        CONG_HIEN_HE_SO_GROUPS.LEVEL_07
-      ),
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: getTotalMonthsByGroup(
-        item.personnel_id,
-        CONG_HIEN_HE_SO_GROUPS.LEVEL_08
-      ),
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: getTotalMonthsByGroup(
-        item.personnel_id,
-        CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
-      ),
-    };
+    const months = monthsByPersonnel.get(item.personnel_id) ?? emptyMonthsByGroup;
     const result = evaluateHCBVTQRank(item.danh_hieu, months, gioiTinh);
 
     if (!result.rank) {
@@ -400,7 +394,7 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
       const genderText = gioiTinh === GENDER.FEMALE ? ' (Nữ giảm 1/3 thời gian)' : '';
 
       errors.push(
-        `Quân nhân "${hoTen}" không đủ điều kiện Huân chương Bảo vệ Tổ quốc ${result.rankName}. ` +
+        `Quân nhân "${hoTen}" không đủ điều kiện ${CONTRIBUTION_LABEL} ${result.rankName}. ` +
           `Yêu cầu: ít nhất ${requiredYearsText}${genderText}. Hiện tại: ${totalYearsText}.`
       );
       continue;
@@ -425,7 +419,7 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
       const rankError = validateHCBVTQRankUpgrade(existingRank, item.danh_hieu);
       if (rankError) {
         const info = personnelGenderMap.get(item.personnel_id);
-        const hoTen = (info && info.ho_ten) || item.personnel_id;
+        const hoTen = (info && info.ho_ten) || 'một quân nhân';
         errors.push(`Quân nhân "${hoTen}": ${rankError}`);
         continue;
       }
@@ -441,25 +435,12 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
       highestRankFiltered.push(item);
       continue;
     }
-    const months: PositionMonthsByGroup = {
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_07]: getTotalMonthsByGroup(
-        item.personnel_id,
-        CONG_HIEN_HE_SO_GROUPS.LEVEL_07
-      ),
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_08]: getTotalMonthsByGroup(
-        item.personnel_id,
-        CONG_HIEN_HE_SO_GROUPS.LEVEL_08
-      ),
-      [CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10]: getTotalMonthsByGroup(
-        item.personnel_id,
-        CONG_HIEN_HE_SO_GROUPS.LEVEL_09_10
-      ),
-    };
+    const months = monthsByPersonnel.get(item.personnel_id) ?? emptyMonthsByGroup;
     const info = personnelGenderMap.get(item.personnel_id);
-    const requiredMonths = requiredCongHienMonths(info?.gioi_tinh ?? null);
+    const requiredMonths = requiredContributionMonths(info?.gioi_tinh ?? null);
     const downgradeError = validateHCBVTQHighestRank(item.danh_hieu, months, requiredMonths);
     if (downgradeError) {
-      const hoTen = (info && info.ho_ten) || item.personnel_id;
+      const hoTen = (info && info.ho_ten) || 'một quân nhân';
       errors.push(`Quân nhân "${hoTen}": ${downgradeError}`);
       continue;
     }

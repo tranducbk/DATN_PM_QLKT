@@ -1,40 +1,6 @@
-/*
- * ════════════════════════════════════════════════════════════════════════════
- *  SCIENTIFIC ACHIEVEMENT SERVICE — CRUD + Excel I/O cho NCKH
- * ════════════════════════════════════════════════════════════════════════════
- *
- *  NCKH = Thành tích Nghiên cứu Khoa học hàng năm.
- *  KHÁC khen thưởng khác: KHÔNG phải huân chương, mà là THÀNH TÍCH ghi
- *  nhận hàng năm (đề tài, sáng kiến, công bố).
- *
- *  UNIQUE TUPLE: (quan_nhan_id, nam, mo_ta)
- *  - 1 quân nhân nhiều thành tích/năm (vd: 2 đề tài cấp đơn vị).
- *  - Nhưng 2 thành tích trùng mô tả + năm = trùng → reject.
- *  - App-layer check + DB không có composite unique (nên thêm).
- *
- *  ROLE TRONG CHUỖI DANH HIỆU:
- *  - NCKH là PREREQUISITE cho BKBQP/CSTDTQ/BKTTCP cá nhân.
- *  - Eligibility yêu cầu "NCKH mỗi năm trong chuỗi CSTDCS".
- *  - Recalc annual profile sau khi insert NCKH → cập nhật `nckh_lien_tuc`
- *    + flag du_dieu_kien_* (xem profile/annual.ts).
- *
- *  EXCEL TEMPLATE format:
- *  - CCCD | Năm | Loại đề tài | Mô tả | Cấp bậc | Chức vụ | Số QĐ
- *  - `loai` = enum (DE_TAI_CAP_BO, SANG_KIEN_DON_VI, ...).
- *  - `mo_ta` = free text (search dễ duplicate).
- *
- *  IMPORT TRIGGER PROFILE RECALC:
- *  Sau bulk import, loop trigger safeRecalculateAnnualProfile để cập
- *  nhật chuỗi danh hiệu của tất cả quân nhân bị ảnh hưởng.
- * ════════════════════════════════════════════════════════════════════════════
- */
-
-import { prisma } from '../models';
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { scientificAchievementRepository } from '../repositories/scientificAchievement.repository';
-import { decisionFileRepository } from '../repositories/decisionFile.repository';
 import ExcelJS from 'exceljs';
-import { loadWorkbook, getAndValidateWorksheet } from '../helpers/excel/excelImportHelper';
 import profileService from './profile.service';
 import * as notificationHelper from '../helpers/notification';
 import { DANH_HIEU_NCKH, resolveNckhCode } from '../constants/danhHieu.constants';
@@ -42,13 +8,15 @@ import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { logMessages } from '../constants/logMessages.constants';
 import { NotFoundError, ValidationError } from '../middlewares/errorHandler';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS];
 import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
 import { fetchTemplateData } from './excel/templateData.service';
-import { parseHeaderMap, getHeaderCol, resolvePersonnelInfo, sanitizeRowData, validatePersonnelNameMatch } from '../helpers/excel/excelHelper';
-import { IMPORT_TRANSACTION_TIMEOUT, EXPORT_FETCH_LIMIT } from '../constants/excel.constants';
+import { sanitizeRowData } from '../helpers/excel/excelHelper';
+import { EXPORT_FETCH_LIMIT } from '../constants/excel.constants';
 import {
   AWARD_EXCEL_SHEETS,
   NCKH_EXPORT_COLUMNS,
@@ -66,58 +34,18 @@ interface CreateAchievementData {
   ghi_chu?: string | null;
 }
 
-interface UpdateAchievementData {
-  nam?: number;
-  loai?: string;
-  mo_ta?: string;
-  cap_bac?: string;
-  chuc_vu?: string;
-  ghi_chu?: string;
-}
-
 interface ExportFilters {
   nam?: number;
   loai?: string;
   don_vi_id?: string;
 }
 
-interface PreviewError {
-  row: number;
-  ho_ten: string;
-  nam: number | unknown;
-  loai?: string;
-  message: string;
-}
-
-interface PreviewValidItem {
-  row: number;
-  personnel_id: string;
-  ho_ten: string;
-  cap_bac: string | null;
-  chuc_vu: string | null;
-  nam: number;
-  loai: string;
-  mo_ta: string;
-  so_quyet_dinh: string | null;
-  ghi_chu: string | null;
-  history: {
-    nam: number;
-    loai: string;
-    mo_ta: string;
-    so_quyet_dinh: string | null;
-  }[];
-}
-
-export interface ConfirmImportItem {
-  personnel_id: string;
-  nam: number;
-  loai: string;
-  mo_ta: string;
-  cap_bac?: string | null;
-  chuc_vu?: string | null;
-  so_quyet_dinh?: string | null;
-  ghi_chu?: string | null;
-}
+import type { ConfirmImportItem } from './scientificAchievement/types';
+import {
+  previewImport as runPreviewImport,
+  confirmImport as runConfirmImport,
+} from './scientificAchievement/import';
+export type { ConfirmImportItem };
 
 class ScientificAchievementService {
   async getAchievements(personnelId: string) {
@@ -150,7 +78,9 @@ class ScientificAchievementService {
 
     const loaiCode = resolveNckhCode(loai);
     if (!loaiCode) {
-      throw new ValidationError('Loại thành tích không hợp lệ. Chỉ chấp nhận: ' + Object.values(DANH_HIEU_NCKH).join(', '));
+      throw new ValidationError(
+        'Loại thành tích không hợp lệ. Chỉ chấp nhận: ' + Object.values(DANH_HIEU_NCKH).join(', ')
+      );
     }
 
     const newAchievement = await scientificAchievementRepository.create({
@@ -167,48 +97,14 @@ class ScientificAchievementService {
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
     } catch (e) {
-      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi tính lại hồ sơ hằng năm sau khi cập nhật ${AWARD_LABEL}: ${e}` });
+      void writeSystemLog({
+        action: AUDIT_ACTIONS.ERROR,
+        resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
+        description: logMessages.recalcError('cập nhật', AWARD_LABEL, e),
+      });
     }
 
     return newAchievement;
-  }
-
-  async updateAchievement(id: string, data: UpdateAchievementData) {
-    const { nam, loai, mo_ta, cap_bac, chuc_vu, ghi_chu } = data;
-
-    const achievement = await scientificAchievementRepository.findUniqueRaw({
-      where: { id },
-    });
-
-    if (!achievement) {
-      throw new NotFoundError('Thành tích');
-    }
-
-    let loaiCode: string | null = null;
-    if (loai) {
-      loaiCode = resolveNckhCode(loai);
-      if (!loaiCode) {
-        throw new ValidationError('Loại thành tích không hợp lệ');
-      }
-    }
-
-    const updateData: Record<string, unknown> = {};
-    if (nam !== undefined) updateData.nam = nam;
-    if (loaiCode) updateData.loai = loaiCode;
-    if (mo_ta !== undefined) updateData.mo_ta = mo_ta;
-    if (cap_bac !== undefined) updateData.cap_bac = cap_bac;
-    if (chuc_vu !== undefined) updateData.chuc_vu = chuc_vu;
-    if (ghi_chu !== undefined) updateData.ghi_chu = ghi_chu;
-
-    const updatedAchievement = await scientificAchievementRepository.update(id, updateData);
-
-    try {
-      await profileService.recalculateAnnualProfile(achievement.quan_nhan_id);
-    } catch (e) {
-      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi tính lại hồ sơ hằng năm sau khi cập nhật ${AWARD_LABEL}: ${e}` });
-    }
-
-    return updatedAchievement;
   }
 
   async deleteAchievement(id: string, adminUsername = 'Admin') {
@@ -238,7 +134,11 @@ class ScientificAchievementService {
     try {
       await profileService.recalculateAnnualProfile(personnelId);
     } catch (error) {
-      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi tính lại hồ sơ hằng năm sau khi xóa ${AWARD_LABEL}: ${error}` });
+      void writeSystemLog({
+        action: AUDIT_ACTIONS.ERROR,
+        resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
+        description: logMessages.recalcError('xóa', AWARD_LABEL, error),
+      });
     }
 
     try {
@@ -249,7 +149,11 @@ class ScientificAchievementService {
         adminUsername
       );
     } catch (error) {
-      void writeSystemLog({ action: 'ERROR', resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS, description: `Lỗi gửi thông báo xóa ${AWARD_LABEL}: ${error}` });
+      void writeSystemLog({
+        action: AUDIT_ACTIONS.ERROR,
+        resource: AWARD_SLUGS.SCIENTIFIC_ACHIEVEMENTS,
+        description: logMessages.notifyError('xóa', AWARD_LABEL, error),
+      });
     }
 
     return {
@@ -259,9 +163,6 @@ class ScientificAchievementService {
     };
   }
 
-  // NCKH là THÀNH TÍCH nghiên cứu (không phải khen thưởng) nên filter theo `loai`
-  // (DTKH/SKKH) thay vì `danh_hieu`. Khung export y hệt các loại khác: build where
-  // tăng dần → query → addRow + sanitizeRowData → return Workbook (controller lo HTTP).
   async exportToExcel(filters: ExportFilters = {}) {
     const { nam, loai, don_vi_id } = filters;
 
@@ -298,31 +199,28 @@ class ScientificAchievementService {
 
     achievements.forEach((achievement, index) => {
       const quanNhan = achievement.QuanNhan;
-      // Tên đơn vị hiển thị ưu tiên DVTT (đơn vị cụ thể của quân nhân) rồi mới CQDV.
-      // cap_bac/chuc_vu ưu tiên giá trị lưu tại bản ghi thành tích, fallback hồ sơ.
       const donVi = quanNhan?.DonViTrucThuoc?.ten_don_vi ?? quanNhan?.CoQuanDonVi?.ten_don_vi ?? '';
 
-      worksheet.addRow(sanitizeRowData({
-        stt: index + 1,
-        id: quanNhan?.id ?? '',
-        ho_ten: quanNhan?.ho_ten ?? '',
-        cap_bac: achievement.cap_bac ?? quanNhan?.cap_bac ?? '',
-        chuc_vu: achievement.chuc_vu ?? quanNhan?.ChucVu?.ten_chuc_vu ?? '',
-        don_vi: donVi,
-        nam: achievement.nam,
-        loai: achievement.loai ?? '',
-        mo_ta: achievement.mo_ta ?? '',
-        so_quyet_dinh: achievement.so_quyet_dinh ?? '',
-        ghi_chu: achievement.ghi_chu ?? '',
-      }));
+      worksheet.addRow(
+        sanitizeRowData({
+          stt: index + 1,
+          id: quanNhan?.id ?? '',
+          ho_ten: quanNhan?.ho_ten ?? '',
+          cap_bac: achievement.cap_bac ?? quanNhan?.cap_bac ?? '',
+          chuc_vu: achievement.chuc_vu ?? quanNhan?.ChucVu?.ten_chuc_vu ?? '',
+          don_vi: donVi,
+          nam: achievement.nam,
+          loai: achievement.loai ?? '',
+          mo_ta: achievement.mo_ta ?? '',
+          so_quyet_dinh: achievement.so_quyet_dinh ?? '',
+          ghi_chu: achievement.ghi_chu ?? '',
+        })
+      );
     });
 
     return workbook;
   }
 
-  // Template NCKH dùng chung buildTemplate như personal. Không truyền danhHieuOptions
-  // (NCKH chọn loại qua cột riêng trong NCKH_TEMPLATE_COLUMNS, không phải dropdown
-  // danh hiệu), nhưng vẫn lấy decisionNumbers để gắn dropdown số QĐ.
   async generateTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const { personnelList, decisionNumbers } = await fetchTemplateData({
       personnelIds,
@@ -337,315 +235,12 @@ class ScientificAchievementService {
     });
   }
 
-  /*
-   * NCKH IMPORT — preview (validate) + confirm (ghi DB). Là THÀNH TÍCH (DTKH/SKKH),
-   * 1 quân nhân có NHIỀU thành tích/năm (khác khen thưởng 1 record/năm) → không
-   * chặn trùng theo (id, năm), chỉ validate loại + mô tả + số QĐ.
-   */
   async previewImport(buffer: Buffer) {
-    const workbook = await loadWorkbook(buffer);
-    const worksheet = getAndValidateWorksheet(workbook, { sheetName: AWARD_EXCEL_SHEETS.NCKH });
-
-    const headerMap = parseHeaderMap(worksheet);
-
-    const idCol = getHeaderCol(headerMap, ['id', 'ma_quan_nhan', 'personnel_id']);
-    const hoTenCol = getHeaderCol(headerMap, ['ho_va_ten', 'ho_ten', 'hoten', 'hovaten', 'ten']);
-    const capBacCol = getHeaderCol(headerMap, ['cap_bac', 'capbac', 'cap_bc']);
-    const chucVuCol = getHeaderCol(headerMap, ['chuc_vu', 'chucvu', 'chc_vu']);
-    const namCol = getHeaderCol(headerMap, ['nam', 'year']);
-    const loaiCol = getHeaderCol(headerMap, ['loai', 'loại']);
-    const moTaCol = getHeaderCol(headerMap, ['mo_ta', 'mota', 'mo_t']);
-    const soQuyetDinhCol = getHeaderCol(headerMap, ['so_quyet_dinh', 'soquyetdinh', 'so_qd']);
-    const ghiChuCol = getHeaderCol(headerMap, ['ghi_chu', 'ghichu', 'ghi_ch']);
-
-    if (!idCol || !namCol || !loaiCol || !moTaCol) {
-      throw new ValidationError(
-        `Thiếu cột bắt buộc: ID, Năm, Loại, Mô tả. Tìm thấy headers: ${Object.keys(headerMap).join(
-          ', '
-        )}`
-      );
-    }
-
-    const errors: PreviewError[] = [];
-    const valid: PreviewValidItem[] = [];
-    let total = 0;
-    const seenInFile = new Set<string>();
-    const currentYear = new Date().getFullYear();
-
-    const allPersonnelIds = new Set<string>();
-    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
-      const row = worksheet.getRow(rowNumber);
-      const idValue = idCol ? row.getCell(idCol).value : null;
-      if (idValue) {
-        const pid = String(idValue).trim();
-        if (pid) allPersonnelIds.add(pid);
-      }
-    }
-
-    const [personnelList, existingAchievementsList, existingDecisions] = await Promise.all([
-      allPersonnelIds.size > 0
-        ? quanNhanRepository.findManyRaw({
-            where: { id: { in: [...allPersonnelIds] } },
-            select: { id: true, ho_ten: true, cap_bac: true, ChucVu: { select: { ten_chuc_vu: true } } },
-          })
-        : Promise.resolve([]),
-      allPersonnelIds.size > 0
-        ? scientificAchievementRepository.findManyRaw({
-            where: { quan_nhan_id: { in: [...allPersonnelIds] } },
-            select: { quan_nhan_id: true, nam: true, loai: true, mo_ta: true, so_quyet_dinh: true },
-          })
-        : Promise.resolve([]),
-      decisionFileRepository.findManyRaw({
-        select: { so_quyet_dinh: true },
-      }),
-    ]);
-
-    const personnelMap = new Map(personnelList.map(p => [p.id, p]));
-    // Map<personnelId, records[]> for history
-    const achievementsByPersonnel = new Map<string, typeof existingAchievementsList>();
-    for (const a of existingAchievementsList) {
-      const list = achievementsByPersonnel.get(a.quan_nhan_id) || [];
-      list.push(a);
-      achievementsByPersonnel.set(a.quan_nhan_id, list);
-    }
-    // Set<key> for duplicate-in-DB check
-    const existingAchievementKeys = new Set(
-      existingAchievementsList.map(a => `${a.quan_nhan_id}_${a.nam}_${a.loai}_${a.mo_ta}`)
-    );
-    const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
-    for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
-      const row = worksheet.getRow(rowNumber);
-      const idValue = idCol ? row.getCell(idCol).value : null;
-      const ho_ten = hoTenCol ? String(row.getCell(hoTenCol).value ?? '').trim() : '';
-      const namVal = row.getCell(namCol).value;
-      const loai_raw = loaiCol ? String(row.getCell(loaiCol).value ?? '').trim() : '';
-      const mo_ta = moTaCol ? String(row.getCell(moTaCol).value ?? '').trim() : '';
-      const cap_bac = capBacCol ? String(row.getCell(capBacCol).value ?? '').trim() : null;
-      const chuc_vu = chucVuCol ? String(row.getCell(chucVuCol).value ?? '').trim() : null;
-      const so_quyet_dinh = soQuyetDinhCol
-        ? String(row.getCell(soQuyetDinhCol).value ?? '').trim()
-        : null;
-      const ghi_chu = ghiChuCol ? String(row.getCell(ghiChuCol).value ?? '').trim() : null;
-
-      if (!idValue && !namVal && !loai_raw) continue;
-
-      if (idValue && !loai_raw) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam: namVal,
-          loai: '',
-          message: 'Bỏ qua — không có loại thành tích nào được điền',
-        });
-        continue;
-      }
-
-      total++;
-
-      const missingFields: string[] = [];
-      if (!idValue) missingFields.push('ID');
-      if (!namVal) missingFields.push('Năm');
-      if (!loai_raw) missingFields.push('Loại');
-      if (!mo_ta) missingFields.push('Mô tả');
-      if (missingFields.length > 0) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam: namVal,
-          loai: loai_raw,
-          message: `Thiếu ${missingFields.join(', ')}`,
-        });
-        continue;
-      }
-
-      const personnelId = String(idValue).trim();
-      if (!personnelId) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam: namVal,
-          loai: loai_raw,
-          message: `ID không hợp lệ: ${idValue}`,
-        });
-        continue;
-      }
-      const personnel = personnelMap.get(personnelId);
-      if (!personnel) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam: namVal,
-          loai: loai_raw,
-          message: `Không tìm thấy quân nhân tương ứng với mã trong file.`,
-        });
-        continue;
-      }
-
-      const nameMismatch = validatePersonnelNameMatch(ho_ten, personnel.ho_ten);
-      if (nameMismatch) {
-        errors.push({ row: rowNumber, ho_ten, nam: namVal, loai: loai_raw, message: nameMismatch });
-        continue;
-      }
-
-      const nam = parseInt(String(namVal));
-      if (!Number.isInteger(nam)) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam: namVal,
-          loai: loai_raw,
-          message: `Giá trị năm không hợp lệ: ${namVal}`,
-        });
-        continue;
-      }
-      if (nam < 1900 || nam > currentYear) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam,
-          loai: loai_raw,
-          message: `Năm ${nam} không hợp lệ. Chỉ được nhập đến năm hiện tại (${currentYear})`,
-        });
-        continue;
-      }
-
-      const loai = resolveNckhCode(loai_raw);
-      if (!loai) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam,
-          loai: loai_raw,
-          message: `Loại "${loai_raw}" không hợp lệ. Chỉ chấp nhận: ${Object.values(DANH_HIEU_NCKH).join(', ')}`,
-        });
-        continue;
-      }
-
-      if (!so_quyet_dinh) {
-        errors.push({ row: rowNumber, ho_ten, nam, loai, message: 'Thiếu số quyết định' });
-        continue;
-      }
-      if (!validDecisionNumbers.has(so_quyet_dinh)) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam,
-          loai,
-          message: `Số quyết định "${so_quyet_dinh}" không tồn tại trên hệ thống`,
-        });
-        continue;
-      }
-
-      const fileKey = `${personnel.id}_${nam}_${loai}_${mo_ta}`;
-      if (seenInFile.has(fileKey)) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam,
-          loai,
-          message: `Trùng lặp trong file — cùng quân nhân, năm ${nam}, loại ${loai}, mô tả "${mo_ta}"`,
-        });
-        continue;
-      }
-      seenInFile.add(fileKey);
-
-      if (existingAchievementKeys.has(fileKey)) {
-        errors.push({
-          row: rowNumber,
-          ho_ten,
-          nam,
-          loai,
-          message: 'Thành tích khoa học đã tồn tại',
-        });
-        continue;
-      }
-
-      const allRecords = achievementsByPersonnel.get(personnel.id) || [];
-      const history = [...allRecords]
-        .sort((a, b) => b.nam - a.nam)
-        .slice(0, 5)
-        .map(r => ({
-          nam: r.nam,
-          loai: r.loai,
-          mo_ta: r.mo_ta,
-          so_quyet_dinh: r.so_quyet_dinh,
-        }));
-
-      const { hoTen, capBac, chucVu, missingFields: missingInfoFields } = resolvePersonnelInfo(
-        { ho_ten, cap_bac, chuc_vu },
-        personnel
-      );
-      if (missingInfoFields.length > 0) {
-        errors.push({
-          row: rowNumber,
-          ho_ten: hoTen,
-          nam,
-          message: `Thiếu ${missingInfoFields.join(', ')} (cả trong file và hệ thống)`,
-        });
-        continue;
-      }
-
-      valid.push({
-        row: rowNumber,
-        personnel_id: personnel.id,
-        ho_ten: hoTen,
-        cap_bac: capBac,
-        chuc_vu: chucVu,
-        nam,
-        loai,
-        mo_ta,
-        so_quyet_dinh,
-        ghi_chu,
-        history,
-      });
-    }
-
-    return { total, valid, errors };
+    return runPreviewImport(buffer);
   }
 
   async confirmImport(validItems: ConfirmImportItem[], adminId: string) {
-    // ─── TRANSACTION CONFIRM: ghi lô thành tích NCKH NGUYÊN TỬ ──────────────────
-    // prisma.$transaction gom nhiều lệnh ghi thành 1 đơn vị "tất cả hoặc không":
-    //   • Mở:        BEGIN;
-    //   • Bên trong: chạy lần lượt các lệnh — LƯU Ý dùng `prismaTx` (client của
-    //                transaction), KHÔNG dùng `prisma` gốc, nếu không lệnh đó nằm
-    //                NGOÀI transaction → không được rollback chung.
-    //   • Không lỗi: COMMIT  → mọi INSERT có hiệu lực cùng lúc.
-    //   • Có throw:  ROLLBACK → huỷ HẾT, DB như chưa chạy gì.
-    // ⇒ Import 100 dòng mà dòng 50 ném lỗi → 49 dòng trước cũng bị huỷ (không để
-    //   lại dữ liệu nửa vời). Đây là tính ATOMICITY (A trong ACID).
-    //
-    // SQL minh hoạ (tương đương):
-    //   BEGIN;
-    //     INSERT INTO "ThanhTichKhoaHoc" (quan_nhan_id, nam, loai, mo_ta, ...) VALUES (...);
-    //     INSERT INTO "ThanhTichKhoaHoc" (...);   -- lặp cho từng dòng validItems
-    //   COMMIT;                                    -- hoặc ROLLBACK nếu có exception
-    //
-    // timeout (IMPORT_TRANSACTION_TIMEOUT): lô quá lớn chạy quá lâu → Prisma tự
-    // rollback để không giữ lock vô hạn làm nghẽn các request khác.
-    return await prisma.$transaction(
-      async prismaTx => {
-        const results = [];
-        for (const item of validItems) {
-          const result = await scientificAchievementRepository.create(
-            {
-              quan_nhan_id: item.personnel_id,
-              nam: item.nam,
-              loai: resolveNckhCode(item.loai) ?? item.loai,
-              mo_ta: item.mo_ta,
-              cap_bac: item.cap_bac ?? null,
-              chuc_vu: item.chuc_vu ?? null,
-              so_quyet_dinh: item.so_quyet_dinh ?? null,
-              ghi_chu: item.ghi_chu ?? null,
-            },
-            prismaTx
-          );
-          results.push(result);
-        }
-        return { imported: results.length, data: results };
-      },
-      { timeout: IMPORT_TRANSACTION_TIMEOUT }
-    );
+    return runConfirmImport(validItems, adminId);
   }
 
   /**
@@ -669,7 +264,9 @@ class ScientificAchievementService {
     const [achievements, total] = await Promise.all([
       scientificAchievementRepository.findManyRaw({
         where,
-        include: { QuanNhan: { include: { CoQuanDonVi: true, DonViTrucThuoc: true, ChucVu: true } } },
+        include: {
+          QuanNhan: { include: { CoQuanDonVi: true, DonViTrucThuoc: true, ChucVu: true } },
+        },
         orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
         skip: (page - 1) * limit,
         take: limit,

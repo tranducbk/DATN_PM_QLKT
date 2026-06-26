@@ -16,7 +16,7 @@ import { PROPOSAL_STATUS, PROPOSAL_TYPES, type ProposalType } from '@/constants/
 
 type IconComponent = ComponentType;
 
-export interface ProposalStatusUi {
+interface ProposalStatusUi {
   color: string;
   icon: IconComponent | null;
 }

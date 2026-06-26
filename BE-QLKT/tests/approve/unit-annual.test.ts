@@ -41,8 +41,8 @@ afterEach(() => {
 
 const ADMIN_ID = 'acc-admin-2';
 
-describe('approveProposal — DON_VI_HANG_NAM', () => {
-  it('duyệt thành công với ĐVQT (CQDV) → upsert đúng don_vi và status APPROVED', async () => {
+describe('Phê duyệt đề xuất đơn vị hằng năm', () => {
+  it('Phê duyệt kèm quyết định: đề xuất ĐVQT (CQDV) → tạo khen thưởng đúng đơn vị, đề xuất chuyển APPROVED', async () => {
     // Given: đề xuất đơn vị hằng năm PENDING với 1 item ĐVQT cho CQDV
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-uv-1' });
     const item = makeProposalItemDonVi({
@@ -56,7 +56,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-1',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -85,13 +85,12 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       null
     );
 
-    // Then: create đúng don_vi và status APPROVED
+    // Then: create đúng don_vi (danh hiệu không còn cột status)
     expect(prismaMock.danhHieuDonViHangNam.create).toHaveBeenCalledTimes(1);
     const createArgs = prismaMock.danhHieuDonViHangNam.create.mock.calls[0][0];
     expect(createArgs.data.danh_hieu).toBe(DANH_HIEU_DON_VI_HANG_NAM.DVQT);
     expect(createArgs.data.co_quan_don_vi_id).toBe(cqdv.id);
     expect(createArgs.data.don_vi_truc_thuoc_id).toBeNull();
-    expect(createArgs.data.status).toBe(PROPOSAL_STATUS.APPROVED);
 
     expect(prismaMock.bangDeXuat.updateMany).toHaveBeenCalledTimes(1);
     expect(prismaMock.bangDeXuat.updateMany.mock.calls[0][0].data.status).toBe(
@@ -99,7 +98,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     );
   });
 
-  it('duyệt thành công với BKBQP (DVTT) → create set nhan_bkbqp và DonViTrucThuoc connect', async () => {
+  it('Phê duyệt kèm quyết định: đề xuất BKBQP đơn vị (DVTT) → bản ghi đánh dấu nhan_bkbqp và gắn đúng đơn vị trực thuộc', async () => {
     // Given: đề xuất DVTT mang flag BKBQP đơn vị (không có DV title)
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-uv-1', parentId: 'cqdv-parent-uv' });
     const item = makeProposalItemDonVi({
@@ -113,7 +112,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-2',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: dvtt,
       data_danh_hieu: [item],
     });
@@ -150,14 +149,14 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(createArgs.data.CoQuanDonVi).toBeUndefined();
   });
 
-  it('reject khi proposal đã APPROVED', async () => {
+  it('Phê duyệt bị chặn: đề xuất đơn vị đã được duyệt trước đó → báo đã phê duyệt', async () => {
     // Given: đề xuất đơn vị đã APPROVED
     const proposal = makeProposal({
       id: 'prop-uv-already',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       status: PROPOSAL_STATUS.APPROVED,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
     });
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(proposal);
 
@@ -171,7 +170,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('throw NotFoundError khi proposal không tồn tại', async () => {
+  it('Phê duyệt bị chặn: đề xuất đơn vị không tồn tại → báo "Đề xuất không tồn tại"', async () => {
     prismaMock.bangDeXuat.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -181,14 +180,14 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     );
   });
 
-  it('bypass FE — reject mixed group ĐVQT + BKBQP cùng đề xuất', async () => {
+  it('Phê duyệt bị chặn: đề xuất đơn vị trộn ĐVQT với BKBQP (lách kiểm tra giao diện, gửi thẳng API) → buộc tách riêng', async () => {
     // Given: đề xuất đơn vị trộn ĐVQT (basic) + BKBQP (chain) — FE chặn, ở đây bypass
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-mixed' });
     const proposal = makeProposal({
       id: 'prop-uv-mixed-1',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [
         makeProposalItemDonVi({
@@ -217,14 +216,14 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject mixed group ĐVTT + BKTTCP cùng đề xuất', async () => {
+  it('Phê duyệt bị chặn: đề xuất đơn vị trộn ĐVTT với BKTTCP (lách kiểm tra giao diện, gửi thẳng API) → buộc tách riêng', async () => {
     // Given: ĐVTT (basic) + BKTTCP (chain) cùng 1 đề xuất
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-mixed-2' });
     const proposal = makeProposal({
       id: 'prop-uv-mixed-2',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [
         makeProposalItemDonVi({
@@ -251,14 +250,14 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject mixed group ĐVQT + BKTTCP cùng đề xuất', async () => {
+  it('Phê duyệt bị chặn: đề xuất đơn vị trộn ĐVQT với BKTTCP (lách kiểm tra giao diện, gửi thẳng API) → buộc tách riêng', async () => {
     // Given: một biến thể nhóm trộn khác
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-mixed-3' });
     const proposal = makeProposal({
       id: 'prop-uv-mixed-3',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [
         makeProposalItemDonVi({
@@ -286,7 +285,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('đơn vị đã có record cùng năm → reject duplicate (Fix #2)', async () => {
+  it('Phê duyệt bị chặn: đơn vị đã có danh hiệu cùng năm trên hệ thống → báo trùng', async () => {
     // Given: đơn vị đã có record cùng năm trong DB
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-existing' });
     const item = makeProposalItemDonVi({
@@ -298,7 +297,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-existing',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -329,7 +328,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('reject pending conflict cùng đơn vị/danh hiệu/năm (Fix #2)', async () => {
+  it('Phê duyệt bị chặn: đang có đề xuất chờ duyệt trùng cùng đơn vị, cùng danh hiệu, cùng năm → báo trùng', async () => {
     // Given: đã có 1 đề xuất PENDING khác cùng đơn vị/năm/danh_hieu
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-pending-conflict' });
     const item = makeProposalItemDonVi({
@@ -341,7 +340,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-pending',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -377,7 +376,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('regression: duplicate check exclude chính proposal đang duyệt (không self-match)', async () => {
+  it('Phê duyệt đơn vị hằng năm: bộ lọc chống trùng bỏ qua chính đề xuất đang duyệt → không tự báo trùng oan, vẫn duyệt được', async () => {
     // Bug đã fix: checkDuplicateUnitAward query PENDING proposals mà không exclude proposalId
     // hiện tại → đề xuất matches chính nó → ValidationError sai.
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-self-match' });
@@ -392,7 +391,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-self-match',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2026,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -440,7 +439,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(duplicateCheckCall![0].where.id).toEqual({ not: proposal.id });
   });
 
-  it('bypass FE — reject khi đơn vị chưa đủ ĐK BKBQP đơn vị', async () => {
+  it('Phê duyệt bị chặn: đơn vị chưa đủ điều kiện BKBQP đơn vị (lách kiểm tra giao diện, gửi thẳng API) → từ chối', async () => {
     // Given: item BKBQP nhưng eligibility đơn vị trả false
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-not-elig-bk' });
     const item = makeProposalItemDonVi({
@@ -452,7 +451,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-not-elig-bk',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -477,7 +476,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('reject khi item ĐVQT thiếu so_quyet_dinh', async () => {
+  it('Phê duyệt bị chặn: đề xuất ĐVQT thiếu số quyết định → báo "Thiếu số quyết định"', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-no-qd' });
     const item = makeProposalItemDonVi({
       unitKind: 'CQDV',
@@ -489,7 +488,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-no-qd',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -510,7 +509,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('reject khi item BKBQP đơn vị thiếu so_quyet_dinh_bkbqp', async () => {
+  it('Phê duyệt bị chặn: đề xuất BKBQP đơn vị thiếu số quyết định BKBQP → báo "Thiếu số quyết định"', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkbqp-no-qd' });
     const item = makeProposalItemDonVi({
       unitKind: 'CQDV',
@@ -522,7 +521,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-bkbqp-no-qd',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -541,7 +540,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     );
   });
 
-  it('approve thành công đơn vị đầy đủ so_quyet_dinh', async () => {
+  it('Phê duyệt thông thường: đề xuất đơn vị đã có đủ số quyết định → tạo khen thưởng, đề xuất chuyển APPROVED', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-ok-qd' });
     const item = makeProposalItemDonVi({
       unitKind: 'CQDV',
@@ -554,7 +553,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-ok-qd',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -579,7 +578,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.updateMany).toHaveBeenCalledTimes(1);
   });
 
-  it('reject khi item BKTTCP đơn vị thiếu so_quyet_dinh_bkttcp', async () => {
+  it('Phê duyệt bị chặn: đề xuất BKTTCP đơn vị thiếu số quyết định BKTTCP → báo "Thiếu số quyết định"', async () => {
     // Given: item BKTTCP đơn vị thiếu so_quyet_dinh_bkttcp
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bkttcp-no-qd' });
     const item = makeProposalItemDonVi({
@@ -592,7 +591,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-bkttcp-no-qd',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -614,7 +613,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('field isolation — item BKBQP đơn vị only, so_quyet_dinh (ĐVQT) không bị contaminate', async () => {
+  it('Phê duyệt thông thường: đề xuất đơn vị chỉ có BKBQP → chỉ lưu đúng số quyết định BKBQP, không ghi nhầm sang ĐVQT/BKTTCP', async () => {
     // Given: item BKBQP đơn vị chỉ có so_quyet_dinh_bkbqp.
     // create.data KHÔNG được chứa so_quyet_dinh ĐVQT/ĐVTT lẫn so_quyet_dinh_bkttcp.
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-iso-bk' });
@@ -631,7 +630,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-iso-bk',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -664,7 +663,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(createArgs.data.so_quyet_dinh_bkttcp).toBeNull();
   });
 
-  it('field swap đơn vị — item BKBQP với so_quyet_dinh_bkttcp (nhầm field) → reject', async () => {
+  it('Phê duyệt bị chặn: đề xuất BKBQP đơn vị gắn nhầm số quyết định sang BKTTCP, thiếu số quyết định BKBQP → báo "Thiếu số quyết định"', async () => {
     // Given: item BKBQP đơn vị gắn nhầm field (so_quyet_dinh_bkttcp).
     // Thiếu so_quyet_dinh_bkbqp bắt buộc → validation phải reject.
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-swap-bk' });
@@ -681,7 +680,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-swap-bk',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -704,7 +703,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(prismaMock.bangDeXuat.updateMany).not.toHaveBeenCalled();
   });
 
-  it('bypass FE — reject khi đơn vị chưa đủ ĐK BKTTCP đơn vị', async () => {
+  it('Phê duyệt bị chặn: đơn vị chưa đủ điều kiện BKTTCP đơn vị (lách kiểm tra giao diện, gửi thẳng API) → từ chối', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-not-elig-bkttcp' });
     const item = makeProposalItemDonVi({
       unitKind: 'CQDV',
@@ -715,7 +714,7 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
       id: 'prop-uv-not-elig-bkttcp',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [item],
     });
@@ -739,13 +738,13 @@ describe('approveProposal — DON_VI_HANG_NAM', () => {
     expect(prismaMock.danhHieuDonViHangNam.create).not.toHaveBeenCalled();
   });
 
-  it('approve transaction rollback: missing unit info aggregates into ValidationError', async () => {
+  it('Phê duyệt bị chặn: một dòng thiếu thông tin đơn vị → hủy toàn bộ và gộp lý do lỗi', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-msg-ok' });
     const proposal = makeProposal({
       id: 'prop-uv-partial-msg',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [
         makeProposalItemDonVi({

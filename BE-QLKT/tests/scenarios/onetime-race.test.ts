@@ -75,8 +75,8 @@ function ONETIME_RACE_buildHcqkqtItem(personnelId: string, hoTen: string): Oneti
   };
 }
 
-describe('One-time race — HC_QKQT parallel approve', () => {
-  it('Hai proposal HC_QKQT cùng QN approve song song khi DB trống → cả hai đều reach create (pinned: thiếu unique guard ở approve)', async () => {
+describe('Tranh chấp đồng thời: phê duyệt song song khen thưởng chỉ trao một lần (HC QKQT)', () => {
+  it('Tranh chấp đồng thời: hai đề xuất HC QKQT cùng quân nhân được duyệt song song khi chưa có khen thưởng → cả hai đều ghi (hiện chưa chặn trùng ở bước duyệt)', async () => {
     // Given: cùng QN, 2 đề xuất HC_QKQT pending từ năm/admin khác nhau.
     const personnel = makePersonnel({
       id: 'qn-race-hcqkqt',
@@ -90,7 +90,7 @@ describe('One-time race — HC_QKQT parallel approve', () => {
         status: PROPOSAL_STATUS.PENDING,
         nam,
         thang,
-        nguoi_de_xuat_id: ADMIN_ID_1,
+        nguoi_de_xuat_id: 'acc-submitter',
         data_nien_han: [
           {
             ...ONETIME_RACE_buildHcqkqtItem(personnel.id, personnel.ho_ten),
@@ -156,7 +156,7 @@ describe('One-time race — HC_QKQT parallel approve', () => {
     //   để Prisma throw P2002 từ create.
   });
 
-  it('Approve-time HC_QKQT khi DB đã có award → checkDuplicateAward block với hcqkqtAlreadyAwardedMessage', async () => {
+  it('Phê duyệt bị chặn: duyệt HC QKQT khi quân nhân đã có HC QKQT trong hồ sơ → chặn vì trùng khen thưởng trọn đời', async () => {
     // Given: proposal HC_QKQT pending nhưng DB đã có row HC_QKQT của cùng QN
     const personnel = makePersonnel({
       id: 'qn-hcqkqt-already',
@@ -169,7 +169,7 @@ describe('One-time race — HC_QKQT parallel approve', () => {
       status: PROPOSAL_STATUS.PENDING,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID_1,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_nien_han: [
         { ...ONETIME_RACE_buildHcqkqtItem(personnel.id, personnel.ho_ten), nam_nhan: 2024, thang_nhan: 6 },
       ],
@@ -197,8 +197,8 @@ describe('One-time race — HC_QKQT parallel approve', () => {
   });
 });
 
-describe('One-time race — CONG_HIEN upgrade vs duplicate', () => {
-  it('QN đã có HCBVTQ_HANG_BA → approve HCBVTQ_HANG_NHI: upgrade qua update (không create mới)', async () => {
+describe('Xét điều kiện HCBVTQ: nâng hạng và chặn hạ hạng', () => {
+  it('Phê duyệt thông thường: quân nhân đã có HCBVTQ hạng Ba, duyệt HCBVTQ hạng Nhì → nâng hạng tại chỗ, không tạo bản ghi mới', async () => {
     // Given: đã có HCBVTQ_HANG_BA trong DB, proposal mới xin HANG_NHI
     const personnel = makePersonnel({
       id: 'qn-upgrade',
@@ -211,7 +211,7 @@ describe('One-time race — CONG_HIEN upgrade vs duplicate', () => {
       status: PROPOSAL_STATUS.PENDING,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID_1,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_cong_hien: [
         {
           personnel_id: personnel.id,
@@ -274,7 +274,7 @@ describe('One-time race — CONG_HIEN upgrade vs duplicate', () => {
     expect(updateArgs.data.danh_hieu).toBe(DANH_HIEU_HCBVTQ.HANG_NHI);
   });
 
-  it('QN đã có HCBVTQ_HANG_NHI → approve HCBVTQ_HANG_BA: reject với "thấp hơn hoặc bằng"', async () => {
+  it('Phê duyệt bị chặn: quân nhân đã có HCBVTQ hạng Nhì, duyệt HCBVTQ hạng Ba (hạ hạng) → từ chối "thấp hơn hoặc bằng", không ghi gì', async () => {
     // Given: thử downgrade — phải bị reject không ghi DB
     const personnel = makePersonnel({
       id: 'qn-downgrade',
@@ -287,7 +287,7 @@ describe('One-time race — CONG_HIEN upgrade vs duplicate', () => {
       status: PROPOSAL_STATUS.PENDING,
       nam: 2024,
       thang: 6,
-      nguoi_de_xuat_id: ADMIN_ID_1,
+      nguoi_de_xuat_id: 'acc-submitter',
       data_cong_hien: [
         {
           personnel_id: personnel.id,

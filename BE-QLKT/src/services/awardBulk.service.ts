@@ -1,7 +1,10 @@
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { accountRepository } from '../repositories/account.repository';
+import { decisionFileRepository } from '../repositories/decisionFile.repository';
 import * as notificationHelper from '../helpers/notification';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { logMessages } from '../constants/logMessages.constants';
 import { buildBulkAwardSummaryMessage } from '../helpers/award/awardSummaryMessage';
 import {
   formatDanhHieuList,
@@ -23,12 +26,8 @@ import {
   validatePersonnelConditions,
   throwValidationErrors,
 } from './awardBulk/validation';
-import { CREATE_HANDLERS, calculateThoiGian } from './awardBulk/handlers';
-import type {
-  BulkCreateAwardsParams,
-  BulkCreateContext,
-  TitleDataItem,
-} from './awardBulk/types';
+import { CREATE_HANDLERS } from './awardBulk/handlers';
+import type { BulkCreateAwardsParams, BulkCreateContext } from './awardBulk/types';
 
 export type { TitleDataItem } from './awardBulk/types';
 
@@ -36,7 +35,6 @@ class AwardBulkService {
   checkDuplicateAwards = checkDuplicateAwards;
   checkDuplicateUnitAwards = checkDuplicateUnitAwards;
   validatePersonnelConditions = validatePersonnelConditions;
-  calculateThoiGian = calculateThoiGian;
 
   /*
    * ═══════════════════════════════════════════════════════════════════════
@@ -127,16 +125,16 @@ class AwardBulkService {
 
     if (type === PROPOSAL_TYPES.NCKH) {
       const validNCKHCodes = Object.keys(DANH_HIEU_NCKH);
-      for (const item of titleData) {
+      titleData.forEach((item, index) => {
         if (!item.loai || !validNCKHCodes.includes(item.loai)) {
           errors.push(
-            `Thành tích khoa học phải có loại hợp lệ: ${validNCKHCodes.join(', ')} (quân nhân: ${item.personnel_id})`
+            `Dòng ${index + 1}: Thành tích khoa học phải có loại hợp lệ (${validNCKHCodes.join(', ')})`
           );
         }
         if (!item.mo_ta || item.mo_ta.trim() === '') {
-          errors.push(`Thành tích khoa học phải có mô tả (quân nhân: ${item.personnel_id})`);
+          errors.push(`Dòng ${index + 1}: Thành tích khoa học phải có mô tả`);
         }
-      }
+      });
     }
 
     if (type === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
@@ -195,6 +193,36 @@ class AwardBulkService {
       bypassEligibility,
     };
 
+    // Award FK (so_quyet_dinh) rejects unknown decision numbers and aborts the batch,
+    // so register every decision number before insert (no-op for existing ones).
+    const decisionsToSync = new Set<string>();
+    for (const item of titleData) {
+      if (item.so_quyet_dinh) decisionsToSync.add(item.so_quyet_dinh);
+    }
+    if (decisionsToSync.size > 0) {
+      const admin = (await accountRepository.findUniqueRaw({
+        where: { id: adminId },
+        include: { QuanNhan: { select: { ho_ten: true } } },
+      })) as { username?: string; QuanNhan?: { ho_ten?: string | null } } | null;
+      const nguoiKy = admin?.QuanNhan?.ho_ten || admin?.username || 'Chưa cập nhật';
+      const ngayKy = new Date();
+      for (const soQuyetDinh of decisionsToSync) {
+        await decisionFileRepository.upsertRaw({
+          where: { so_quyet_dinh: soQuyetDinh },
+          create: {
+            so_quyet_dinh: soQuyetDinh,
+            nam,
+            ngay_ky: ngayKy,
+            nguoi_ky: nguoiKy,
+            file_path: null,
+            loai_khen_thuong: type,
+            ghi_chu: 'Tự động đồng bộ từ thêm khen thưởng đồng loạt',
+          },
+          update: {},
+        });
+      }
+    }
+
     const handler = CREATE_HANDLERS[type as ProposalType];
     if (!handler) {
       throw new ValidationError(
@@ -232,16 +260,15 @@ class AwardBulkService {
         }
       } catch (e) {
         void writeSystemLog({
-          action: 'ERROR',
-          resource: 'award-bulk',
-          description: `Lỗi gửi thông báo thêm khen thưởng đồng loạt: ${e}`,
+          action: AUDIT_ACTIONS.ERROR,
+          resource: RESOURCE_SLUGS.AWARD_BULK,
+          description: logMessages.notifyError('thêm', 'khen thưởng đồng loạt', e),
         });
       }
     })();
 
     const affectedCount = affectedPersonnelIds.size;
-    const affectedUnitCount =
-      type === PROPOSAL_TYPES.DON_VI_HANG_NAM ? affectedUnitIds.size : 0;
+    const affectedUnitCount = type === PROPOSAL_TYPES.DON_VI_HANG_NAM ? affectedUnitIds.size : 0;
     const message = buildBulkAwardSummaryMessage({
       type,
       importedCount,
@@ -254,9 +281,9 @@ class AwardBulkService {
       void writeSystemLog({
         userId: adminId,
         userRole: ROLES.ADMIN,
-        action: 'ERROR',
+        action: AUDIT_ACTIONS.ERROR,
         resource: RESOURCE_SLUGS.AWARDS,
-        description: `[Thêm khen thưởng đồng loạt] ${LOAI_DE_XUAT_MAP[type as keyof typeof LOAI_DE_XUAT_MAP] || type} năm ${nam}: ${importedCount} thành công, ${errors.length} lỗi. Chi tiết: ${errors.join('; ')}`,
+        description: `Thêm khen thưởng đồng loạt ${LOAI_DE_XUAT_MAP[type as keyof typeof LOAI_DE_XUAT_MAP] || type} năm ${nam}: ${importedCount} thành công, ${errors.length} lỗi. Chi tiết: ${errors.join('; ')}`,
       });
     }
 

@@ -1,34 +1,14 @@
-import type {
-  HoSoNienHan,
-  HoSoHangNam,
-  DanhHieuHangNam,
-  ThanhTichKhoaHoc,
-} from '../generated/prisma';
+import type { HoSoNienHan, HoSoHangNam } from '../generated/prisma';
 import type { EligibilityResult } from './eligibility/chainEligibility';
-import type {
-  HCCSVVCalcResult,
-  HCBVTQCalcResult,
-  SpecialCaseResult,
-  NCKHYearsResult,
-  TenureProfileUpdate,
-  RecalculateResult,
-} from './profile/types';
+import type { TenureProfileUpdate, RecalculateResult } from './profile/types';
 import {
   getAnnualProfile,
-  calculateContinuousCSTDCS,
-  calculateContinuousNCKH,
-  countBKBQPInStreak,
-  countCSTDTQInStreak,
-  checkNCKHInYears,
-  handleSpecialCases,
   recalculateAnnualProfile,
   checkAwardEligibility,
   recalculateAll,
 } from './profile/annual';
 import {
   getTenureProfile,
-  calculateEligibilityDate,
-  calculateHCCSVV,
   recalculateTenureProfile,
   getAllTenureProfiles,
   updateTenureProfile,
@@ -36,8 +16,8 @@ import {
 import {
   getContributionProfile,
   recalculateContributionProfile,
-  calculateHCBVTQ,
 } from './profile/contribution';
+import { recalculateFullProfile, recalculateAllFullProfiles } from './profile/fullRecalc';
 
 /*
  * ════════════════════════════════════════════════════════════════════════════
@@ -105,86 +85,6 @@ class ProfileService {
   }
 
   /**
-   * Longest backward chain of calendar years ending at `year - 1` where each year has `danh_hieu === 'CSTDCS'`.
-   * @param danhHieuList - `DanhHieuHangNam` rows (callers may pass filtered or full lists)
-   * @param year - Evaluation anchor year
-   * @returns Streak length; non-`CSTDCS` years in the sequence stop the count
-   */
-  calculateContinuousCSTDCS(danhHieuList: DanhHieuHangNam[], year: number): number {
-    return calculateContinuousCSTDCS(danhHieuList, year);
-  }
-
-  /**
-   * Counts consecutive approved science rows ending at `year - 1` (one per calendar year).
-   * @param thanhTichList - `ThanhTichKhoaHoc` rows (any order; sorted internally)
-   * @param year - Proposal / evaluation anchor year
-   * @returns Streak length
-   */
-  calculateContinuousNCKH(thanhTichList: ThanhTichKhoaHoc[], year: number): number {
-    return calculateContinuousNCKH(thanhTichList, year);
-  }
-
-  /**
-   * Đếm tổng số lần nhận BKBQP trong chuỗi CSTDCS liên tục.
-   */
-  countBKBQPInStreak(danhHieuList: DanhHieuHangNam[], year: number, cstdcsStreak: number): number {
-    return countBKBQPInStreak(danhHieuList, year, cstdcsStreak);
-  }
-
-  /**
-   * Đếm tổng số lần nhận CSTDTQ trong chuỗi CSTDCS liên tục.
-   */
-  countCSTDTQInStreak(danhHieuList: DanhHieuHangNam[], year: number, cstdcsStreak: number): number {
-    return countCSTDTQInStreak(danhHieuList, year, cstdcsStreak);
-  }
-
-  /**
-   * Whether approved NCKH exists for any year in the candidate list.
-   * @param nckhList - Approved `ThanhTichKhoaHoc` rows
-   * @param years - Years to intersect (e.g. streak window)
-   * @returns Flags plus the matching year subset
-   */
-  checkNCKHInYears(nckhList: ThanhTichKhoaHoc[], years: number[]): NCKHYearsResult {
-    return checkNCKHInYears(nckhList, years);
-  }
-
-  /**
-   * Detects admin-forced medals or broken CSTDCS chains that restart eligibility messaging.
-   * @param danhHieuList - Annual rows (newest first after internal sort)
-   * @returns Whether to show a one-off hint and whether streak counters reset
-   */
-  handleSpecialCases(danhHieuList: DanhHieuHangNam[]): SpecialCaseResult {
-    return handleSpecialCases(danhHieuList);
-  }
-
-  /**
-   * Eligibility date = enlistment + required years of service for the given HCCSVV tier.
-   * @param ngayNhapNgu - Enlistment date
-   * @param soNam - Required tenure (10 / 15 / 20)
-   * @returns Calendar date when the tier becomes eligible, or `null` without enlistment
-   */
-  calculateEligibilityDate(ngayNhapNgu: Date | null | undefined, soNam: number): Date | null {
-    return calculateEligibilityDate(ngayNhapNgu, soNam);
-  }
-
-  /**
-   * Eligibility snapshot for one HCCSVV tier, including operator-facing `goiY` text.
-   * @param ngayNhapNgu - Enlistment date
-   * @param soNam - Required years for this tier
-   * @param currentStatus - `ELIGIBILITY_STATUS` from `ho_so_nien_han`
-   * @param hangName - Tier label
-   * @returns Status, optional milestone date, and Vietnamese guidance string
-   */
-  calculateHCCSVV(
-    ngayNhapNgu: Date | null | undefined,
-    soNam: number,
-    currentStatus: string,
-    hangName: string
-  ): HCCSVVCalcResult {
-    return calculateHCCSVV(ngayNhapNgu, soNam, currentStatus, hangName);
-  }
-
-  /**
    * Recomputes annual-profile counters and suggestion text for one personnel.
    * @param personnelId - Personnel ID
    * @param year - Evaluation year (defaults to current calendar year)
@@ -224,28 +124,29 @@ class ProfileService {
   }
 
   /**
-   * HCBVTQ tier helper: compares total months served against the coefficient-specific threshold.
-   * @param totalMonths - Cumulative qualifying months
-   * @param requiredMonths - Threshold from position group rules
-   * @param currentStatus - Existing `ELIGIBILITY_STATUS` (preserves `DA_NHAN`)
-   * @param rank - Medal tier label used in `goiY` text
-   * @returns Status, optional milestone date, and Vietnamese guidance string
-   */
-  calculateHCBVTQ(
-    totalMonths: number,
-    requiredMonths: number,
-    currentStatus: string,
-    rank: string
-  ): HCBVTQCalcResult {
-    return calculateHCBVTQ(totalMonths, requiredMonths, currentStatus, rank);
-  }
-
-  /**
    * Batch job: `recalculateAnnualProfile` for every personnel (best-effort per row).
    * @returns Aggregate counts and per-personnel error list
    */
   recalculateAll(): Promise<RecalculateResult> {
     return recalculateAll();
+  }
+
+  /**
+   * Recalculates all three profile types (annual, tenure, contribution) for one personnel.
+   * @param personnelId - Personnel ID
+   * @returns The personnel's name for the caller's success message
+   * @throws NotFoundError - When the personnel does not exist
+   */
+  recalculateFullProfile(personnelId: string): Promise<{ ho_ten: string | null }> {
+    return recalculateFullProfile(personnelId);
+  }
+
+  /**
+   * Batch job: recalculates all three profile types for every personnel (best-effort per row).
+   * @returns Aggregate counts and per-personnel error list
+   */
+  recalculateAllFullProfiles(): Promise<RecalculateResult> {
+    return recalculateAllFullProfiles();
   }
 
   /**

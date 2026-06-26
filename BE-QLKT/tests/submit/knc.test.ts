@@ -43,8 +43,8 @@ function callSubmit(items: NienHanItem[], thang: number | null = 6, nam = 2024) 
   );
 }
 
-describe('proposal.submit - KNC_VSNXD_QDNDVN', () => {
-  it('gửi thành công nam ≥25 năm', async () => {
+describe('Gửi đề xuất Kỷ niệm chương (KNC) Vì sự nghiệp xây dựng QĐND Việt Nam', () => {
+  it('Gửi đề xuất: quân nhân nam đủ 25 năm phục vụ → tạo đề xuất KNC', async () => {
     arrangeManager();
     const target = makePersonnel({
       id: 'qn-male',
@@ -69,7 +69,7 @@ describe('proposal.submit - KNC_VSNXD_QDNDVN', () => {
     expect(prismaMock.bangDeXuat.create).toHaveBeenCalledTimes(1);
   });
 
-  it('gửi thành công nữ ≥20 năm', async () => {
+  it('Gửi đề xuất: quân nhân nữ đủ 20 năm phục vụ → tạo đề xuất KNC', async () => {
     arrangeManager();
     const target = makePersonnel({
       id: 'qn-female',
@@ -93,7 +93,7 @@ describe('proposal.submit - KNC_VSNXD_QDNDVN', () => {
     expect(prismaMock.bangDeXuat.create).toHaveBeenCalledTimes(1);
   });
 
-  it('reject nam <25 năm', async () => {
+  it('Gửi đề xuất bị chặn: quân nhân nam chưa đủ 25 năm phục vụ → chưa đủ điều kiện KNC', async () => {
     arrangeManager();
     const target = makePersonnel({
       id: 'qn-male-short',
@@ -111,7 +111,7 @@ describe('proposal.submit - KNC_VSNXD_QDNDVN', () => {
     );
   });
 
-  it('reject nữ <20 năm', async () => {
+  it('Gửi đề xuất bị chặn: quân nhân nữ chưa đủ 20 năm phục vụ → chưa đủ điều kiện KNC', async () => {
     arrangeManager();
     const target = makePersonnel({
       id: 'qn-female-short',
@@ -129,7 +129,7 @@ describe('proposal.submit - KNC_VSNXD_QDNDVN', () => {
     );
   });
 
-  it('reject khi thiếu giới tính', async () => {
+  it('Gửi đề xuất bị chặn: quân nhân thiếu giới tính → không xác định được mốc năm, chưa đủ điều kiện KNC', async () => {
     arrangeManager();
     const target = {
       ...makePersonnel({
@@ -149,7 +149,7 @@ describe('proposal.submit - KNC_VSNXD_QDNDVN', () => {
     );
   });
 
-  it('reject khi danh_hieu sai', async () => {
+  it('Gửi đề xuất bị chặn: chọn nhầm danh hiệu (không phải KNC) → báo danh hiệu không hợp lệ', async () => {
     arrangeManager();
     const target = makePersonnel({ id: 'qn-x' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -161,7 +161,7 @@ describe('proposal.submit - KNC_VSNXD_QDNDVN', () => {
     );
   });
 
-  it('reject khi thiếu tháng', async () => {
+  it('Gửi đề xuất bị chặn: chưa nhập tháng đề xuất → báo thiếu tháng', async () => {
     arrangeManager();
     const target = makePersonnel({
       id: 'qn-no-thang',

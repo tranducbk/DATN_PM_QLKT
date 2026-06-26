@@ -5,7 +5,7 @@
  */
 
 import { Request, Response } from 'express';
-import personnelService from '../services/personnel.service';
+import personnelService, { UpdateOwnProfileData } from '../services/personnel.service';
 import { parsePagination } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
@@ -109,6 +109,19 @@ class PersonnelController {
     });
   });
 
+  updateMyProfile = catchAsync(async (req: Request, res: Response) => {
+    const user = req.user!;
+    if (!user.quan_nhan_id) {
+      return ResponseHelper.badRequest(res, 'Tài khoản chưa gắn với hồ sơ quân nhân');
+    }
+    const result = await personnelService.updateOwnProfile(
+      user.quan_nhan_id,
+      req.body as UpdateOwnProfileData,
+      { actorId: user.id, actorRole: user.role }
+    );
+    return ResponseHelper.success(res, { data: result, message: 'Cập nhật thông tin thành công' });
+  });
+
   updatePersonnel = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const user = req.user!;
@@ -179,7 +192,12 @@ class PersonnelController {
     if (!id) return ResponseHelper.badRequest(res, 'ID quân nhân không hợp lệ');
     const userRole = user.role;
     const userQuanNhanId = user.quan_nhan_id;
-    const result = await personnelService.deletePersonnel(id, userRole, userQuanNhanId);
+    const result = await personnelService.deletePersonnel(
+      id,
+      userRole,
+      userQuanNhanId,
+      user.username
+    );
     return ResponseHelper.success(res, { data: result, message: 'Xóa quân nhân thành công' });
   });
 

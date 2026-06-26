@@ -41,8 +41,8 @@ async function makeKncExcelBuffer(rows: KncRow[]): Promise<Buffer> {
   return Buffer.from(arrayBuffer as ArrayBuffer);
 }
 
-describe('commemorativeMedal.service - previewImport (KNC VSNXD)', () => {
-  it('Nam ≥ 25 năm phục vụ → vào valid', async () => {
+describe('Nhập Excel KNC VSNXD: xem trước (preview)', () => {
+  it('Nhập Excel KNC: quân nhân nam phục vụ >= 25 năm → ghi nhận vào danh sách hợp lệ', async () => {
     const p1 = makePersonnel({
       id: 'qn-1',
       ho_ten: 'Nguyễn Văn A',
@@ -79,7 +79,7 @@ describe('commemorativeMedal.service - previewImport (KNC VSNXD)', () => {
     });
   });
 
-  it('Nữ ≥ 20 năm phục vụ → vào valid', async () => {
+  it('Nhập Excel KNC: quân nhân nữ phục vụ >= 20 năm → ghi nhận vào danh sách hợp lệ', async () => {
     const p1 = makePersonnel({
       id: 'qn-2',
       ho_ten: 'Trần Thị B',
@@ -114,7 +114,7 @@ describe('commemorativeMedal.service - previewImport (KNC VSNXD)', () => {
     });
   });
 
-  it('Nam < 25 năm phục vụ → errors "Chưa đủ điều kiện: Nam cần >= 25 năm"', async () => {
+  it('Nhập Excel KNC: nam chưa đủ 25 năm phục vụ → báo lỗi "Nam cần >= 25 năm"', async () => {
     const p1 = makePersonnel({
       id: 'qn-1',
       ho_ten: 'Nguyễn Văn A',
@@ -145,7 +145,7 @@ describe('commemorativeMedal.service - previewImport (KNC VSNXD)', () => {
     expect(result.errors[0].message).toContain(IMPORT_KNC_NOT_ENOUGH_SERVICE_PREFIX('Nam', 25));
   });
 
-  it('Nữ < 20 năm phục vụ → errors "Chưa đủ điều kiện: Nữ cần >= 20 năm"', async () => {
+  it('Nhập Excel KNC: nữ chưa đủ 20 năm phục vụ → báo lỗi "Nữ cần >= 20 năm"', async () => {
     const p1 = makePersonnel({
       id: 'qn-2',
       ho_ten: 'Trần Thị B',
@@ -176,7 +176,7 @@ describe('commemorativeMedal.service - previewImport (KNC VSNXD)', () => {
     expect(result.errors[0].message).toContain(IMPORT_KNC_NOT_ENOUGH_SERVICE_PREFIX('Nữ', 20));
   });
 
-  it('Nam đúng 25 năm phục vụ (boundary) → vào valid', async () => {
+  it('Nhập Excel KNC: nam đúng 25 năm phục vụ (mốc biên) → ghi nhận hợp lệ', async () => {
     // enlist Dec 1999 + ref Dec 2024 → exactly 300 months (25.0y) — boundary inclusive
     const p1 = makePersonnel({
       id: 'qn-b1',
@@ -197,7 +197,7 @@ describe('commemorativeMedal.service - previewImport (KNC VSNXD)', () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it('Nữ đúng 20 năm phục vụ (boundary) → vào valid', async () => {
+  it('Nhập Excel KNC: nữ đúng 20 năm phục vụ (mốc biên) → ghi nhận hợp lệ', async () => {
     const p1 = makePersonnel({
       id: 'qn-b2',
       ho_ten: 'Trần Thị C',
@@ -217,7 +217,7 @@ describe('commemorativeMedal.service - previewImport (KNC VSNXD)', () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it('Empty/blank rows → bị skip, không tính vào total', async () => {
+  it('Nhập Excel KNC: dòng trống → bỏ qua, không tính vào tổng số dòng', async () => {
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([]);
     prismaMock.kyNiemChuongVSNXDQDNDVN.findMany.mockResolvedValueOnce([]);
     prismaMock.fileQuyetDinh.findMany.mockResolvedValueOnce([]);
@@ -233,7 +233,7 @@ describe('commemorativeMedal.service - previewImport (KNC VSNXD)', () => {
     expect(result.errors).toHaveLength(0);
   });
 
-  it('Duplicate cùng personnel_id trong file → row sau errors "Trùng lặp trong file"', async () => {
+  it('Nhập Excel KNC: cùng một quân nhân lặp lại trong file → dòng sau báo "Trùng lặp trong file"', async () => {
     const p1 = makePersonnel({
       id: 'qn-d',
       ho_ten: 'Nguyễn Văn D',
@@ -255,7 +255,7 @@ describe('commemorativeMedal.service - previewImport (KNC VSNXD)', () => {
     expect(result.errors[0].message).toContain('Trùng lặp trong file');
   });
 
-  it('QN đã có KNC trên hệ thống → errors lifetime award', async () => {
+  it('Nhập Excel KNC: quân nhân đã được tặng KNC (khen thưởng chỉ trao một lần) → báo lỗi "đã được tặng"', async () => {
     const p1 = makePersonnel({
       id: 'qn-e',
       ho_ten: 'Nguyễn Văn E',
@@ -278,7 +278,7 @@ describe('commemorativeMedal.service - previewImport (KNC VSNXD)', () => {
     expect(result.errors[0].message).toContain('năm 2020');
   });
 
-  it('Sai sheet name → throw ValidationError', async () => {
+  it('Nhập Excel KNC: sai tên trang tính → từ chối với "Không tìm thấy sheet"', async () => {
     const workbook = new ExcelJS.Workbook();
     workbook.addWorksheet('WrongSheet').addRow([...HEADERS]);
     const arrayBuffer = await workbook.xlsx.writeBuffer();
@@ -289,7 +289,7 @@ describe('commemorativeMedal.service - previewImport (KNC VSNXD)', () => {
     );
   });
 
-  it('QN thiếu ngày nhập ngũ → errors "Không có ngày nhập ngũ"', async () => {
+  it('Nhập Excel KNC: quân nhân thiếu ngày nhập ngũ → báo lỗi "Không có ngày nhập ngũ"', async () => {
     const p1 = makePersonnel({
       id: 'qn-1',
       ho_ten: 'Nguyễn Văn A',
@@ -321,8 +321,8 @@ describe('commemorativeMedal.service - previewImport (KNC VSNXD)', () => {
   });
 });
 
-describe('commemorativeMedal.service - confirmImport (KNC VSNXD)', () => {
-  it('Confirm valid → upsert tạo KNC', async () => {
+describe('Nhập Excel KNC VSNXD: xác nhận (confirm)', () => {
+  it('Nhập Excel KNC: xác nhận dòng hợp lệ → tạo bản ghi KNC', async () => {
     prismaMock.bangDeXuat.findMany.mockResolvedValueOnce([]);
     prismaMock.kyNiemChuongVSNXDQDNDVN.findMany.mockResolvedValueOnce([]);
     prismaMock.kyNiemChuongVSNXDQDNDVN.upsert.mockResolvedValueOnce({ id: 'knc-1' });

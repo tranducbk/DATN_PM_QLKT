@@ -1,6 +1,6 @@
 import { PROPOSAL_TYPES, type ProposalType } from './proposalTypes.constants';
 
-export interface AwardTypeMetadata {
+interface AwardTypeMetadata {
   code: ProposalType;
   label: string;
   shortLabel: string;

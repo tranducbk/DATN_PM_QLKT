@@ -1,6 +1,7 @@
 import axiosInstance from '@/lib/http/axiosInstance';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import type { ApiResponse } from '@/lib/types/common';
+import { createPreviewImport, createConfirmImport } from './importFactory';
 
 export * from './annualAwards';
 export * from './unitAnnualAwards';
@@ -26,33 +27,6 @@ export async function getScientificAchievements(params?: {
   try {
     const res = await axiosInstance.get('/api/scientific-achievements', { params });
     return { success: res.data?.success, data: res.data?.data, pagination: res.data?.pagination };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
-export async function createScientificAchievement(
-  personnelId: string,
-  body: Record<string, unknown>
-): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.post(
-      `/api/personnel/${personnelId}/scientific-achievements`,
-      body
-    );
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
-export async function updateScientificAchievement(
-  id: string,
-  body: Record<string, unknown>
-): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.put(`/api/scientific-achievements/${id}`, body);
-    return { success: res.data?.success, data: res.data?.data };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -104,21 +78,6 @@ export async function importScientificAchievements(file: File): Promise<ApiRespo
       },
     });
     return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
-export async function getAwards(params?: {
-  don_vi_id?: number;
-  nam?: number;
-  danh_hieu?: string;
-  page?: number;
-  limit?: number;
-}): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.get('/api/awards', { params });
-    return { success: res.data?.success, data: res.data?.data, pagination: res.data?.pagination };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -198,39 +157,10 @@ export async function exportTenureMedals(params?: {
   }
 }
 
-export async function getTenureMedalsStatistics(params?: {
-  don_vi_id?: number;
-  nam?: number;
-}): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.get('/api/tenure-medals/statistics', { params });
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
 export async function deleteTenureMedal(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/tenure-medals/${id}`);
     return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
-export async function createTenureMedalDirect(body: {
-  quan_nhan_id: string;
-  danh_hieu: string;
-  nam: number;
-  cap_bac?: string;
-  chuc_vu?: string;
-  so_quyet_dinh?: string;
-  ghi_chu?: string;
-}): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.post('/api/tenure-medals', body);
-    return { success: res.data?.success, data: res.data?.data, message: res.data?.message };
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
@@ -291,18 +221,6 @@ export async function exportContributionMedals(params?: {
     return res.data;
   } catch (e: unknown) {
     throw new Error(getApiErrorMessage(e));
-  }
-}
-
-export async function getContributionMedalsStatistics(params?: {
-  don_vi_id?: number;
-  nam?: number;
-}): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.get('/api/contribution-medals/statistics', { params });
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
   }
 }
 
@@ -371,18 +289,6 @@ export async function exportCommemorationMedals(params?: {
   }
 }
 
-export async function getCommemorationMedalsStatistics(params?: {
-  don_vi_id?: number;
-  nam?: number;
-}): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.get('/api/commemorative-medals/statistics', { params });
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
 export async function deleteCommemorationMedal(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/commemorative-medals/${id}`);
@@ -433,18 +339,6 @@ export async function exportMilitaryFlag(params?: {
   }
 }
 
-export async function getMilitaryFlagStatistics(params?: {
-  don_vi_id?: number;
-  nam?: number;
-}): Promise<ApiResponse> {
-  try {
-    const res = await axiosInstance.get('/api/military-flags/statistics', { params });
-    return { success: res.data?.success, data: res.data?.data };
-  } catch (e: unknown) {
-    return { success: false, message: getApiErrorMessage(e) };
-  }
-}
-
 export async function deleteMilitaryFlag(id: string): Promise<ApiResponse> {
   try {
     const res = await axiosInstance.delete(`/api/military-flags/${id}`);
@@ -470,31 +364,6 @@ export async function getCommemorationMedalsByPersonnel(personnelId: string): Pr
   } catch (e: unknown) {
     return { success: false, message: getApiErrorMessage(e) };
   }
-}
-
-// Factory cho luồng import 2 bước — 6+ loại khen thưởng dùng chung, chỉ khác URL:
-// • PREVIEW gửi FILE qua multipart/form-data (BE parse + validate, không ghi DB).
-// • CONFIRM gửi JSON { items } (dòng admin đã chọn) → BE ghi DB.
-// Tách factory để khỏi lặp boilerplate FormData/post cho từng loại.
-
-/** Create a preview-import function for a given endpoint. */
-function createPreviewImport(url: string) {
-  return async (file: File): Promise<ApiResponse> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    const res = await axiosInstance.post(url, formData, {
-      headers: { 'Content-Type': 'multipart/form-data' },
-    });
-    return res.data;
-  };
-}
-
-/** Create a confirm-import function for a given endpoint. */
-function createConfirmImport(url: string) {
-  return async (items: unknown[]): Promise<ApiResponse> => {
-    const res = await axiosInstance.post(url, { items });
-    return res.data;
-  };
 }
 
 export const previewTenureMedalsImport = createPreviewImport('/api/tenure-medals/import/preview');

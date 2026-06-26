@@ -55,7 +55,7 @@ export const DEFAULT_PASSWORD = process.env.DEFAULT_PASSWORD;
 export const DEV_ZONE_PASSWORD = process.env.DEV_ZONE_PASSWORD;
 
 
-export const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
+const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
 
 export const REFRESH_TOKEN_TTL = '2d';
 export const REFRESH_COOKIE_NAME = 'refreshToken';

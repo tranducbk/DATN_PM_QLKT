@@ -1,30 +1,15 @@
-/*
- * ANNUAL REWARD ROUTE — CRUD khen thưởng hàng năm cá nhân (DanhHieuHangNam).
- * Bao gồm: list, get-by-id, create, update, delete, statistics, history.
- * Excel: /template, /import, /export.
- * Mỗi quân nhân chỉ 1 row/năm (upsert by quan_nhan_id + nam unique).
- */
-
-import { Router, Request, Response } from 'express';
-import path from 'path';
-import fs from 'fs';
+import { Router } from 'express';
 import annualRewardController from '../controllers/annualReward.controller';
-import {
-  verifyToken,
-  requireManager,
-  requireAdminOnly,
-} from '../middlewares/auth';
+import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import {
   excelUpload as upload,
   pdfDecisionUpload as pdfUpload,
-  decisionUploadDir as uploadDir,
 } from '../configs/multer';
 import { validate } from '../middlewares/validate';
 import { excelImportValidation } from '../validations';
 import { annualRewardValidation } from '../validations';
-import { normalizeParam } from '../helpers/paginationHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 
@@ -38,7 +23,7 @@ const router = Router();
 router.get(
   '/',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(annualRewardValidation.getAnnualRewardsQuery, 'query'),
   annualRewardController.getAnnualRewards
 );
@@ -51,7 +36,7 @@ router.get(
 router.post(
   '/',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(annualRewardValidation.createAnnualReward),
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
@@ -182,7 +167,7 @@ router.post(
  * @desc    Download Excel template for annual reward import
  * @access  Private - ADMIN, MANAGER
  */
-router.get('/template', verifyToken, requireManager, annualRewardController.getTemplate);
+router.get('/template', verifyToken, requireAdminOnly, annualRewardController.getTemplate);
 
 /**
  * @route   GET /api/annual-rewards/export
@@ -192,7 +177,7 @@ router.get('/template', verifyToken, requireManager, annualRewardController.getT
 router.get(
   '/export',
   verifyToken,
-  requireManager,
+  requireAdminOnly,
   validate(annualRewardValidation.exportAnnualRewardsQuery, 'query'),
   annualRewardController.exportToExcel
 );
@@ -205,44 +190,9 @@ router.get(
 router.get(
   '/statistics',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   validate(annualRewardValidation.getAnnualRewardsStatisticsQuery, 'query'),
   annualRewardController.getStatistics
 );
-
-/**
- * @route   GET /api/annual-rewards/decision-files/:filename
- * @desc    Serve a decision PDF file for annual rewards
- * @access  Private - All authenticated users
- */
-router.get('/decision-files/:filename', verifyToken, (req: Request, res: Response) => {
-  try {
-    const raw = normalizeParam(req.params.filename);
-    if (!raw) {
-      return res.status(400).json({
-        success: false,
-        message: 'Thiếu tên file',
-      });
-    }
-    const filename = path.basename(raw);
-    const filePath = path.join(uploadDir, filename);
-
-    if (!fs.existsSync(filePath)) {
-      return res.status(404).json({
-        success: false,
-        message: 'File không tồn tại',
-      });
-    }
-
-    res.setHeader('Content-Type', 'application/pdf');
-    res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-    res.sendFile(filePath);
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Không thể tải file',
-    });
-  }
-});
 
 export default router;

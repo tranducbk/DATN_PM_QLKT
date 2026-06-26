@@ -92,7 +92,7 @@ export interface ImportAccumulator {
   importedThanhTich: number;
 }
 
-export interface SubmitPayload {
+interface SubmitPayload {
   data_danh_hieu?: unknown[] | null;
   data_thanh_tich?: unknown[] | null;
   data_nien_han?: unknown[] | null;
@@ -129,18 +129,6 @@ export interface ProposalStrategy {
   ): Promise<SubmitValidationResult>;
 
   /**
-   * Approve-time pre-transaction checks (status, month, duplicate, eligibility,
-   * decision numbers). Returns aggregated errors. Must NOT modify DB state.
-   * @param editedData - Approver-edited JSON payload
-   * @param ctx - Approve-time context
-   * @returns Aggregated error strings (empty when valid)
-   */
-  validateApprove(
-    editedData: EditedProposalData,
-    ctx: ProposalApproveContext
-  ): Promise<string[]>;
-
-  /**
    * Inside transaction: import items into target award table. Mutates `acc`
    * (errors + counters + affected ids).
    * @param editedData - Approver-edited JSON payload
@@ -158,11 +146,4 @@ export interface ProposalStrategy {
     acc: ImportAccumulator,
     prismaTx: PrismaTx
   ): Promise<void>;
-
-  /**
-   * Build success message after import.
-   * @param acc - Populated accumulator
-   * @returns Vietnamese summary message
-   */
-  buildSuccessMessage(acc: ImportAccumulator): string;
 }

@@ -214,32 +214,26 @@ class CaNhanHangNamStrategy implements ProposalStrategy {
       return { errors, payload: { data_danh_hieu: dataDanhHieu } };
     }
 
-    const eligibilityErrors: string[] = [];
-    for (const item of dataDanhHieu) {
-      if (!item.personnel_id || !item.danh_hieu) continue;
-      if (!DANH_HIEU_CA_NHAN_BANG_KHEN.has(item.danh_hieu)) continue;
-      const eligibility = await profileService.checkAwardEligibility(
-        item.personnel_id,
-        ctx.nam,
-        item.danh_hieu
-      );
-      if (!eligibility.eligible) {
-        const hoTen = personnelMap.get(item.personnel_id)?.ho_ten || item.personnel_id;
-        eligibilityErrors.push(`${hoTen}: ${eligibility.reason}`);
-      }
-    }
+    const eligibilityChecks = await Promise.all(
+      dataDanhHieu.map(async item => {
+        if (!item.personnel_id || !item.danh_hieu) return null;
+        if (!DANH_HIEU_CA_NHAN_BANG_KHEN.has(item.danh_hieu)) return null;
+        const eligibility = await profileService.checkAwardEligibility(
+          item.personnel_id,
+          ctx.nam,
+          item.danh_hieu
+        );
+        if (eligibility.eligible) return null;
+        const hoTen = personnelMap.get(item.personnel_id)?.ho_ten || 'một quân nhân';
+        return `${hoTen}: ${eligibility.reason}`;
+      })
+    );
+    const eligibilityErrors = eligibilityChecks.filter((e): e is string => e !== null);
     if (eligibilityErrors.length > 0) {
       errors.push(`Một số quân nhân chưa đủ điều kiện:\n${eligibilityErrors.join('\n')}`);
     }
 
     return { errors, payload: { data_danh_hieu: dataDanhHieu } };
-  }
-
-  async validateApprove(
-    _editedData: EditedProposalData,
-    _ctx: ProposalApproveContext
-  ): Promise<string[]> {
-    return [];
   }
 
   async importInTransaction(
@@ -373,9 +367,6 @@ class CaNhanHangNamStrategy implements ProposalStrategy {
     }
   }
 
-  buildSuccessMessage(acc: ImportAccumulator): string {
-    return `Đã phê duyệt danh hiệu cá nhân hằng năm cho ${acc.affectedPersonnelIds.size} quân nhân`;
-  }
 }
 
 export const caNhanHangNamStrategy = new CaNhanHangNamStrategy();

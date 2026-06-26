@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 import {
   Button,
-  Breadcrumb,
   Card,
   Tabs,
   Select,
@@ -14,7 +13,7 @@ import {
   theme as antdTheme,
   Spin,
 } from 'antd';
-import { PlusOutlined, HomeOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
 import dynamic from 'next/dynamic';
 import { UnitsTable } from '@/components/categories/UnitsTable';
 import { UnitList } from '@/components/categories/UnitList';
@@ -22,7 +21,7 @@ import { PositionsTable, type PositionRow } from '@/components/categories/Positi
 import { apiClient } from '@/lib/http/apiClient';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
-import Link from 'next/link';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 
 const { Title, Text } = Typography;
 const { Option } = Select;
@@ -118,19 +117,7 @@ export default function SACategoriesPage() {
         <LoadingState fullPage text="Đang tải danh mục..." />
       ) : (
         <div style={{ padding: '24px' }}>
-          <Breadcrumb
-            style={{ marginBottom: 16 }}
-            items={[
-              {
-                title: (
-                  <Link href="/super-admin/dashboard">
-                    <HomeOutlined />
-                  </Link>
-                ),
-              },
-              { title: 'Quản lý cơ quan đơn vị' },
-            ]}
-          />
+          <PageBreadcrumb items={[{ title: 'Quản lý cơ quan đơn vị' }]} />
 
           <div
             style={{

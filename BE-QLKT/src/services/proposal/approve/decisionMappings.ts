@@ -11,6 +11,7 @@ import {
 } from '../../../constants/danhHieu.constants';
 import { RESOURCE_SLUGS } from '../../../constants/resourceSlugs.constants';
 import { writeSystemLog } from '../../../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../../../constants/auditActions.constants';
 import { sanitizeFilename } from '../helpers';
 import type { ProposalDanhHieuItem, ProposalThanhTichItem } from '../../../types/proposal';
 import type {
@@ -195,6 +196,33 @@ export function buildDecisionMappings(
   return { decisionMapping, specialDecisionMapping };
 }
 
+// Direct-match types resolve their PDF by comparing one decision number to one pdfPaths key.
+// NCKH is excluded — it also matches against per-achievement so_quyet_dinh (handled below).
+const DECISION_FILE_KEY: Partial<
+  Record<ProposalType, { decisionKey: keyof DecisionInputMap; pdfKey: string }>
+> = {
+  [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: {
+    decisionKey: 'so_quyet_dinh_ca_nhan_hang_nam',
+    pdfKey: 'file_pdf_ca_nhan_hang_nam',
+  },
+  [PROPOSAL_TYPES.DON_VI_HANG_NAM]: {
+    decisionKey: 'so_quyet_dinh_don_vi_hang_nam',
+    pdfKey: 'file_pdf_don_vi_hang_nam',
+  },
+  [PROPOSAL_TYPES.NIEN_HAN]: {
+    decisionKey: 'so_quyet_dinh_nien_han',
+    pdfKey: 'file_pdf_nien_han',
+  },
+  [PROPOSAL_TYPES.CONG_HIEN]: {
+    decisionKey: 'so_quyet_dinh_cong_hien',
+    pdfKey: 'file_pdf_cong_hien',
+  },
+  [PROPOSAL_TYPES.DOT_XUAT]: {
+    decisionKey: 'so_quyet_dinh_dot_xuat',
+    pdfKey: 'file_pdf_dot_xuat',
+  },
+};
+
 /** Resolves which `pdfPaths` key matches a decision number for the current proposal type. */
 function resolveDecisionFilePath(
   proposalType: ProposalType,
@@ -203,36 +231,6 @@ function resolveDecisionFilePath(
   pdfPaths: Record<string, string | undefined>,
   thanhTichData: ProposalThanhTichItem[]
 ): string | null | undefined {
-  if (
-    proposalType === PROPOSAL_TYPES.CA_NHAN_HANG_NAM &&
-    decisions.so_quyet_dinh_ca_nhan_hang_nam === soQuyetDinh
-  ) {
-    return pdfPaths.file_pdf_ca_nhan_hang_nam;
-  }
-  if (
-    proposalType === PROPOSAL_TYPES.DON_VI_HANG_NAM &&
-    decisions.so_quyet_dinh_don_vi_hang_nam === soQuyetDinh
-  ) {
-    return pdfPaths.file_pdf_don_vi_hang_nam;
-  }
-  if (
-    proposalType === PROPOSAL_TYPES.NIEN_HAN &&
-    decisions.so_quyet_dinh_nien_han === soQuyetDinh
-  ) {
-    return pdfPaths.file_pdf_nien_han;
-  }
-  if (
-    proposalType === PROPOSAL_TYPES.CONG_HIEN &&
-    decisions.so_quyet_dinh_cong_hien === soQuyetDinh
-  ) {
-    return pdfPaths.file_pdf_cong_hien;
-  }
-  if (
-    proposalType === PROPOSAL_TYPES.DOT_XUAT &&
-    decisions.so_quyet_dinh_dot_xuat === soQuyetDinh
-  ) {
-    return pdfPaths.file_pdf_dot_xuat;
-  }
   if (proposalType === PROPOSAL_TYPES.NCKH) {
     const matchingThanhTich = thanhTichData.find(t => t.so_quyet_dinh === soQuyetDinh);
     if (
@@ -241,6 +239,12 @@ function resolveDecisionFilePath(
     ) {
       return pdfPaths.file_pdf_nckh;
     }
+    return null;
+  }
+
+  const entry = DECISION_FILE_KEY[proposalType];
+  if (entry && decisions[entry.decisionKey] === soQuyetDinh) {
+    return pdfPaths[entry.pdfKey];
   }
   return null;
 }
@@ -357,7 +361,7 @@ export async function syncDecisionFiles(
       }
     } catch (error) {
       void writeSystemLog({
-        action: 'ERROR',
+        action: AUDIT_ACTIONS.ERROR,
         resource: RESOURCE_SLUGS.PROPOSALS,
         description: 'ProposalApprove.syncDecisionFiles failed',
         payload: { proposalId, soQuyetDinh, error },

@@ -47,8 +47,8 @@ function makeRes(): CapturedRes {
   return res;
 }
 
-describe('accountController.getAccounts — SA sees all roles including other SAs', () => {
-  it('SA without role filter → where AND has no role exclusion', async () => {
+describe('Phân quyền: danh sách tài khoản — SUPER_ADMIN thấy mọi vai trò, kể cả SUPER_ADMIN khác', () => {
+  it('Phân quyền: SUPER_ADMIN không lọc vai trò → danh sách gồm đủ 4 cấp, không loại trừ SUPER_ADMIN', async () => {
     prismaMock.taiKhoan.findMany.mockResolvedValueOnce([
       { id: 'a1', username: 'sa1', role: ROLES.SUPER_ADMIN, quan_nhan_id: null, createdAt: new Date(), QuanNhan: null },
       { id: 'a2', username: 'admin1', role: ROLES.ADMIN, quan_nhan_id: null, createdAt: new Date(), QuanNhan: null },
@@ -76,7 +76,7 @@ describe('accountController.getAccounts — SA sees all roles including other SA
     expect(payload.pagination.total).toBe(4);
   });
 
-  it('SA filter role=SUPER_ADMIN → service receives roleFilter=SUPER_ADMIN', async () => {
+  it('Phân quyền: SUPER_ADMIN lọc vai trò = SUPER_ADMIN → chỉ trả về các tài khoản SUPER_ADMIN', async () => {
     prismaMock.taiKhoan.findMany.mockResolvedValueOnce([
       { id: 'a1', username: 'sa1', role: ROLES.SUPER_ADMIN, quan_nhan_id: null, createdAt: new Date(), QuanNhan: null },
     ]);
@@ -94,7 +94,7 @@ describe('accountController.getAccounts — SA sees all roles including other SA
     expect(roleClause).toEqual({ role: ROLES.SUPER_ADMIN });
   });
 
-  it('ADMIN without role filter → defaults to MANAGER,USER (SA + ADMIN excluded)', async () => {
+  it('Phân quyền: ADMIN không lọc vai trò → chỉ thấy MANAGER và USER, bị chặn thấy SUPER_ADMIN và ADMIN', async () => {
     prismaMock.taiKhoan.findMany.mockResolvedValueOnce([]);
     prismaMock.taiKhoan.count.mockResolvedValueOnce(0);
 

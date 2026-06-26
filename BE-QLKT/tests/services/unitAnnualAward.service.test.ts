@@ -29,8 +29,8 @@ function arrangeResolveUnit(unit: ReturnType<typeof makeUnit>): void {
   }
 }
 
-describe('unitAnnualAward.service - upsert', () => {
-  it('tạo mới khi chưa có record (CQDV)', async () => {
+describe('Trao khen thưởng hằng năm cho đơn vị: tạo (hoặc cập nhật) bản ghi', () => {
+  it('Trao khen thưởng hằng năm: ĐVQT năm 2024 cho CQDV chưa có bản ghi → tạo mới, gắn đúng vào cơ quan đơn vị', async () => {
     // Cho: 1 CQDV chưa có record unit-annual
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-1' });
     arrangeResolveUnit(cqdv);
@@ -68,7 +68,7 @@ describe('unitAnnualAward.service - upsert', () => {
     });
   });
 
-  it('tạo mới khi chưa có record (DVTT)', async () => {
+  it('Trao khen thưởng hằng năm: ĐVTT năm 2024 cho ĐVTT chưa có bản ghi → tạo mới, gắn đúng vào đơn vị trực thuộc', async () => {
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-1', parentId: 'cqdv-parent' });
     arrangeResolveUnit(dvtt);
     prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValueOnce(null);
@@ -101,7 +101,7 @@ describe('unitAnnualAward.service - upsert', () => {
     });
   });
 
-  it('merge cờ BKBQP vào record ĐVQT đã có', async () => {
+  it('Trao khen thưởng hằng năm: đơn vị đã có ĐVQT, thêm BKBQP → cập nhật bản ghi cũ, không ghi đè danh hiệu cơ bản', async () => {
     // Cho: record DVQT đã có, chưa có cờ BKBQP
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-2' });
     arrangeResolveUnit(cqdv);
@@ -138,7 +138,7 @@ describe('unitAnnualAward.service - upsert', () => {
     expect(args.update.danh_hieu).toBeUndefined();
   });
 
-  it('merge cờ BKTTCP vào record có sẵn', async () => {
+  it('Trao khen thưởng hằng năm: đơn vị thêm BKTTCP vào bản ghi có sẵn → cập nhật cờ và số quyết định BKTTCP', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-3' });
     arrangeResolveUnit(cqdv);
     const existing = makeUnitAnnualRecord({
@@ -172,7 +172,7 @@ describe('unitAnnualAward.service - upsert', () => {
     });
   });
 
-  it('reject thêm cờ BKBQP lần 2', async () => {
+  it('Trao khen thưởng hằng năm: đơn vị năm 2024 đã có BKBQP, trao BKBQP lần 2 → từ chối "đã có BKBQP"', async () => {
     // Cho: record đã bật cờ BKBQP
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-4' });
     arrangeResolveUnit(cqdv);
@@ -191,12 +191,12 @@ describe('unitAnnualAward.service - upsert', () => {
         nguoi_tao_id: 'admin-1',
       }),
       ValidationError,
-      'Đơn vị đã có Bằng khen Bộ Quốc phòng năm 2024'
+      'Đơn vị đã có Bằng khen của Bộ trưởng Bộ Quốc phòng năm 2024'
     );
     expect(prismaMock.danhHieuDonViHangNam.upsert).not.toHaveBeenCalled();
   });
 
-  it('reject thêm danh hiệu cơ bản khi đã có (ĐVQT rồi → ĐVTT)', async () => {
+  it('Trao khen thưởng hằng năm: đơn vị năm 2024 đã có ĐVQT, trao thêm ĐVTT → từ chối vì đã có danh hiệu năm đó', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-5' });
     arrangeResolveUnit(cqdv);
     prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValueOnce({
@@ -217,7 +217,7 @@ describe('unitAnnualAward.service - upsert', () => {
     );
   });
 
-  it('reject thêm cờ BKTTCP lần 2', async () => {
+  it('Trao khen thưởng hằng năm: đơn vị năm 2024 đã có BKTTCP, trao BKTTCP lần 2 → từ chối "đã có BKTTCP"', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-6' });
     arrangeResolveUnit(cqdv);
     prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValueOnce({
@@ -234,11 +234,11 @@ describe('unitAnnualAward.service - upsert', () => {
         nguoi_tao_id: 'admin-1',
       }),
       ValidationError,
-      'Đơn vị đã có Bằng khen Thủ tướng Chính phủ năm 2024'
+      'Đơn vị đã có Bằng khen của Thủ tướng Chính phủ năm 2024'
     );
   });
 
-  it('NotFoundError khi đơn vị không tồn tại', async () => {
+  it('Trao khen thưởng hằng năm: trao cho đơn vị không tồn tại → báo "Đơn vị không tồn tại"', async () => {
     // Cho: không có CQDV/DVTT nào match id
     prismaMock.coQuanDonVi.findUnique.mockResolvedValueOnce(null);
     prismaMock.donViTrucThuoc.findUnique.mockResolvedValueOnce(null);
@@ -256,8 +256,8 @@ describe('unitAnnualAward.service - upsert', () => {
   });
 });
 
-describe('unitAnnualAward.service - remove', () => {
-  it('xoá thành công khi record tồn tại', async () => {
+describe('Trao khen thưởng hằng năm cho đơn vị: gỡ bỏ cả bản ghi', () => {
+  it('Gỡ khen thưởng hằng năm: bản ghi đơn vị tồn tại → xóa thành công', async () => {
     const existing = makeUnitAnnualRecord({
       unitId: 'cqdv-7',
       unitKind: 'CQDV',
@@ -275,7 +275,7 @@ describe('unitAnnualAward.service - remove', () => {
     });
   });
 
-  it('NotFoundError khi record không tồn tại', async () => {
+  it('Gỡ khen thưởng hằng năm: bản ghi đơn vị không tồn tại → báo không tìm thấy', async () => {
     prismaMock.danhHieuDonViHangNam.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -287,8 +287,8 @@ describe('unitAnnualAward.service - remove', () => {
   });
 });
 
-describe('unitAnnualAward.service - decision-number validation', () => {
-  it('upsert ĐVQT (CQDV) thiếu so_quyet_dinh → reject', async () => {
+describe('Trao khen thưởng hằng năm cho đơn vị: bắt buộc có số quyết định', () => {
+  it('Trao khen thưởng hằng năm: trao ĐVQT cho CQDV mà thiếu số quyết định → từ chối, không ghi DB', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-dec-1' });
     arrangeResolveUnit(cqdv);
     prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValueOnce(null);
@@ -306,7 +306,7 @@ describe('unitAnnualAward.service - decision-number validation', () => {
     expect(prismaMock.danhHieuDonViHangNam.upsert).not.toHaveBeenCalled();
   });
 
-  it('upsert ĐVTT (DVTT) thiếu so_quyet_dinh → reject', async () => {
+  it('Trao khen thưởng hằng năm: trao ĐVTT cho ĐVTT mà thiếu số quyết định → từ chối', async () => {
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-dec-1', parentId: 'cqdv-parent-x' });
     arrangeResolveUnit(dvtt);
     prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValueOnce(null);
@@ -323,7 +323,7 @@ describe('unitAnnualAward.service - decision-number validation', () => {
     );
   });
 
-  it('upsert BKBQP đơn vị thiếu so_quyet_dinh_bkbqp → reject', async () => {
+  it('Trao khen thưởng hằng năm: trao BKBQP cho đơn vị mà thiếu số quyết định BKBQP → từ chối, không ghi DB', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-dec-2' });
     arrangeResolveUnit(cqdv);
     prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValueOnce({
@@ -345,7 +345,7 @@ describe('unitAnnualAward.service - decision-number validation', () => {
     expect(prismaMock.danhHieuDonViHangNam.upsert).not.toHaveBeenCalled();
   });
 
-  it('upsert BKTTCP đơn vị thiếu so_quyet_dinh_bkttcp → reject', async () => {
+  it('Trao khen thưởng hằng năm: trao BKTTCP cho đơn vị mà thiếu số quyết định BKTTCP → từ chối', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-dec-3' });
     arrangeResolveUnit(cqdv);
     prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValueOnce({
@@ -366,7 +366,7 @@ describe('unitAnnualAward.service - decision-number validation', () => {
     );
   });
 
-  it('upsert ĐVQT (CQDV) đầy đủ so_quyet_dinh → success', async () => {
+  it('Trao khen thưởng hằng năm: trao ĐVQT cho CQDV có đủ số quyết định → tạo khen thưởng thành công', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-dec-ok' });
     arrangeResolveUnit(cqdv);
     prismaMock.danhHieuDonViHangNam.findFirst.mockResolvedValueOnce(null);
@@ -392,8 +392,8 @@ describe('unitAnnualAward.service - decision-number validation', () => {
   });
 });
 
-describe('unitAnnualAward.service - remove (granular)', () => {
-  it('xóa ĐVQT khi record còn BKBQP → clear danh_hieu/so_quyet_dinh/ghi_chu', async () => {
+describe('Trao khen thưởng hằng năm cho đơn vị: gỡ bỏ từng danh hiệu trên bản ghi', () => {
+  it('Gỡ khen thưởng hằng năm: bản ghi đơn vị có cả ĐVQT và BKBQP, gỡ ĐVQT → chỉ xóa ĐVQT, không xóa cả bản ghi', async () => {
     // Cho: record unit-annual giữ cả DVQT và BKBQP
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-del-1' });
     const record = makeUnitAnnualRecord({
@@ -424,7 +424,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     });
   });
 
-  it('xóa ĐVTT khi record còn BKBQP → clear base award (DVTT path)', async () => {
+  it('Gỡ khen thưởng hằng năm: bản ghi đơn vị trực thuộc còn BKBQP, gỡ ĐVTT → chỉ xóa danh hiệu cơ bản', async () => {
     const dvtt = makeUnit({ kind: 'DVTT', id: 'dvtt-del-1', parentId: 'cqdv-x' });
     const record = makeUnitAnnualRecord({
       unitId: dvtt.id,
@@ -448,7 +448,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     });
   });
 
-  it('xóa BKBQP khi record còn ĐVQT → clear cờ BKBQP', async () => {
+  it('Gỡ khen thưởng hằng năm: bản ghi đơn vị còn ĐVQT, gỡ BKBQP → chỉ xóa BKBQP', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-del-2' });
     const record = makeUnitAnnualRecord({
       unitId: cqdv.id,
@@ -473,7 +473,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     });
   });
 
-  it('xóa BKTTCP khi record còn BKBQP → clear cờ BKTTCP', async () => {
+  it('Gỡ khen thưởng hằng năm: bản ghi đơn vị còn BKBQP, gỡ BKTTCP → chỉ xóa BKTTCP', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-del-3' });
     const record = makeUnitAnnualRecord({
       unitId: cqdv.id,
@@ -498,7 +498,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     });
   });
 
-  it('xóa ĐVQT khi đó là danh hiệu duy nhất → xóa cả row', async () => {
+  it('Gỡ khen thưởng hằng năm: ĐVQT là danh hiệu duy nhất trên bản ghi đơn vị, gỡ ĐVQT → xóa luôn cả bản ghi', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-del-4' });
     const record = makeUnitAnnualRecord({
       unitId: cqdv.id,
@@ -516,7 +516,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     expect(prismaMock.danhHieuDonViHangNam.update).not.toHaveBeenCalled();
   });
 
-  it('xóa BKBQP khi đó là danh hiệu duy nhất → xóa cả row', async () => {
+  it('Gỡ khen thưởng hằng năm: BKBQP là danh hiệu duy nhất trên bản ghi đơn vị, gỡ BKBQP → xóa luôn cả bản ghi', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-del-5' });
     const record = makeUnitAnnualRecord({
       unitId: cqdv.id,
@@ -534,7 +534,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     expect(prismaMock.danhHieuDonViHangNam.update).not.toHaveBeenCalled();
   });
 
-  it('xóa ĐVQT khi record không có ĐVQT (chỉ có BKBQP) → ValidationError', async () => {
+  it('Gỡ khen thưởng hằng năm: bản ghi đơn vị chỉ có BKBQP, yêu cầu gỡ ĐVQT → từ chối vì bản ghi không có ĐVQT', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-del-6' });
     const record = makeUnitAnnualRecord({
       unitId: cqdv.id,
@@ -554,7 +554,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     expect(prismaMock.danhHieuDonViHangNam.update).not.toHaveBeenCalled();
   });
 
-  it('xóa với awardType không hợp lệ → ValidationError', async () => {
+  it('Gỡ khen thưởng hằng năm: loại danh hiệu cần gỡ không hợp lệ → từ chối "loại danh hiệu không hợp lệ"', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-del-7' });
     const record = makeUnitAnnualRecord({
       unitId: cqdv.id,
@@ -572,7 +572,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     );
   });
 
-  it('xóa record không tồn tại → NotFoundError', async () => {
+  it('Gỡ khen thưởng hằng năm: bản ghi đơn vị không tồn tại → báo không tìm thấy', async () => {
     prismaMock.danhHieuDonViHangNam.findUnique.mockResolvedValueOnce(null);
 
     await expectError(
@@ -581,7 +581,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     );
   });
 
-  it('xóa không truyền awardType → backward compat, xóa cả row', async () => {
+  it('Gỡ khen thưởng hằng năm: không nêu loại danh hiệu cần gỡ → xóa luôn cả bản ghi đơn vị (tương thích cũ)', async () => {
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-del-8' });
     const record = makeUnitAnnualRecord({
       unitId: cqdv.id,
@@ -601,7 +601,7 @@ describe('unitAnnualAward.service - remove (granular)', () => {
     expect(prismaMock.danhHieuDonViHangNam.update).not.toHaveBeenCalled();
   });
 
-  it('gọi recalc unit sau khi xóa granular', async () => {
+  it('Gỡ khen thưởng hằng năm: sau khi gỡ một danh hiệu → tính lại hồ sơ của đơn vị đó', async () => {
     const recalcSpy = jest.spyOn(unitAnnualAwardService, 'recalculateAnnualUnit');
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-del-9' });
     const record = makeUnitAnnualRecord({

@@ -13,7 +13,6 @@ import {
   Select,
   Space,
   Typography,
-  Breadcrumb,
   Popconfirm,
   message,
   Spin,
@@ -31,10 +30,10 @@ import {
   PlusOutlined,
   DeleteOutlined,
   EditOutlined,
-  HomeOutlined,
   InfoCircleOutlined,
 } from '@ant-design/icons';
 import { apiClient } from '@/lib/http/apiClient';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import { calculateDuration, formatDate, formatHeSoChucVu } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
@@ -99,16 +98,13 @@ export function PositionHistoryView({ role }: PositionHistoryViewProps) {
       }
       if (historiesRes.success) {
         const mappedHistories = (historiesRes.data || []).map((h: any) => {
-          const chucVu = h.ChucVu || {};
-          const unitInfo = chucVu.DonViTrucThuoc
-            ? [chucVu.DonViTrucThuoc.ten_don_vi, chucVu.DonViTrucThuoc.CoQuanDonVi?.ten_don_vi]
-                .filter(Boolean)
-                .join(', ')
-            : chucVu.CoQuanDonVi?.ten_don_vi || '';
+          const unitInfo = [h.ten_don_vi_truc_thuoc, h.ten_co_quan_don_vi]
+            .filter(Boolean)
+            .join(', ');
 
           return {
             ...h,
-            chuc_vu_name: chucVu.ten_chuc_vu || '-',
+            chuc_vu_name: h.ten_chuc_vu || '-',
             unit_info: unitInfo,
           };
         });
@@ -378,20 +374,13 @@ export function PositionHistoryView({ role }: PositionHistoryViewProps) {
       }}
     >
       <div style={{ padding: '24px' }}>
-        <Breadcrumb style={{ marginBottom: 24 }}>
-          <Breadcrumb.Item>
-            <Link href={`${basePath}/dashboard`}>
-              <HomeOutlined />
-            </Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <Link href={`${basePath}/personnel`}>Quân nhân</Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <Link href={`${basePath}/personnel/${personnelId}`}>{personnel?.ho_ten}</Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>Lịch sử chức vụ</Breadcrumb.Item>
-        </Breadcrumb>
+        <PageBreadcrumb
+          items={[
+            { title: 'Quân nhân', href: `${basePath}/personnel` },
+            { title: personnel?.ho_ten, href: `${basePath}/personnel/${personnelId}` },
+            { title: 'Lịch sử chức vụ' },
+          ]}
+        />
 
         <div
           style={{
@@ -504,8 +493,7 @@ export function PositionHistoryView({ role }: PositionHistoryViewProps) {
               >
                 <Text type="warning">
                   <InfoCircleOutlined style={{ marginRight: 8 }} />
-                  Đây là chức vụ hiện tại. Bạn chỉ có thể sửa thời gian (ngày bắt đầu, ngày kết
-                  thúc). Để thay đổi chức vụ đảm nhận, vui lòng sử dụng mục &quot;Cập nhật thông
+                  Đây là chức vụ hiện tại. Bạn chỉ có thể sửa ngày bắt đầu. Để thay đổi chức vụ đảm nhận hoặc kết thúc giai đoạn này, vui lòng sử dụng mục &quot;Cập nhật thông
                   tin cá nhân&quot;.
                 </Text>
               </div>
@@ -622,6 +610,7 @@ export function PositionHistoryView({ role }: PositionHistoryViewProps) {
                 style={{ width: '100%' }}
                 size="large"
                 allowClear
+                disabled={isCurrentPosition}
                 placeholder="Chọn ngày kết thúc (có thể để trống)"
               />
             </Form.Item>

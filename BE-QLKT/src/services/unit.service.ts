@@ -1,10 +1,13 @@
 import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHandler';
-import {
-  coQuanDonViRepository,
-  donViTrucThuocRepository,
-} from '../repositories/unit.repository';
+import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories/unit.repository';
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { positionRepository } from '../repositories/position.repository';
+import { danhHieuDonViHangNamRepository } from '../repositories/danhHieu.repository';
+import { adhocAwardRepository } from '../repositories/adhocAward.repository';
+import { proposalRepository } from '../repositories/proposal.repository';
+import { positionHistoryRepository } from '../repositories/positionHistory.repository';
+
+type UnitForeignKey = 'co_quan_don_vi_id' | 'don_vi_truc_thuoc_id';
 
 interface CreateUnitData {
   ma_don_vi: string;
@@ -86,9 +89,7 @@ class UnitService {
         coQuanDonViRepository.findAllLight(),
         donViTrucThuocRepository.findAllWithParentLight(),
       ]);
-      const items = [...cqdv, ...dvtt].sort((a, b) =>
-        a.ma_don_vi.localeCompare(b.ma_don_vi)
-      );
+      const items = [...cqdv, ...dvtt].sort((a, b) => a.ma_don_vi.localeCompare(b.ma_don_vi));
       return { items, total: items.length };
     }
   }
@@ -192,7 +193,11 @@ class UnitService {
         updateData.co_quan_don_vi_id = co_quan_don_vi_id;
       }
 
-      return donViTrucThuocRepository.update(id, updateData);
+      const result = await donViTrucThuocRepository.update(id, updateData);
+      if (ten_don_vi && ten_don_vi !== donViTrucThuoc.ten_don_vi) {
+        await this.syncHistoryUnitName(id, false, ten_don_vi);
+      }
+      return result;
     } else {
       const updateData: Record<string, unknown> = {};
       if (ma_don_vi) {
@@ -207,22 +212,87 @@ class UnitService {
       }
       if (ten_don_vi) updateData.ten_don_vi = ten_don_vi;
 
-      return coQuanDonViRepository.update(id, updateData);
+      const result = await coQuanDonViRepository.update(id, updateData);
+      if (ten_don_vi && ten_don_vi !== coQuanDonVi.ten_don_vi) {
+        await this.syncHistoryUnitName(id, true, ten_don_vi);
+      }
+      return result;
     }
   }
 
-  async isDescendant(ancestorId: string, descendantId: string): Promise<boolean> {
-    try {
-      if (ancestorId === descendantId) return true;
+  /**
+   * Propagates a unit rename into position-history snapshots (defense-in-depth fallback).
+   * @param unitId - Renamed unit id
+   * @param isCoQuanDonVi - True for a parent unit (CQDV), false for a subordinate unit (DVTT)
+   * @param newName - New unit name
+   */
+  private async syncHistoryUnitName(unitId: string, isCoQuanDonVi: boolean, newName: string) {
+    if (!isCoQuanDonVi) {
+      const positions = await positionRepository.findManyRaw({
+        where: { don_vi_truc_thuoc_id: unitId },
+        select: { id: true },
+      });
+      const ids = positions.map(p => p.id);
+      if (ids.length) {
+        await positionHistoryRepository.updateMany(
+          { chuc_vu_id: { in: ids } },
+          { ten_don_vi_truc_thuoc: newName }
+        );
+      }
+      return;
+    }
 
-      const descendant = await donViTrucThuocRepository.findById(descendantId);
+    // CQDV name = ten_co_quan_don_vi for positions directly under it AND positions in its sub-units.
+    const [directPositions, childPositions] = await Promise.all([
+      positionRepository.findManyRaw({
+        where: { co_quan_don_vi_id: unitId },
+        select: { id: true },
+      }),
+      positionRepository.findManyRaw({
+        where: { DonViTrucThuoc: { co_quan_don_vi_id: unitId } },
+        select: { id: true },
+      }),
+    ]);
+    const ids = [...directPositions, ...childPositions].map(p => p.id);
+    if (ids.length) {
+      await positionHistoryRepository.updateMany(
+        { chuc_vu_id: { in: ids } },
+        { ten_co_quan_don_vi: newName }
+      );
+    }
+  }
 
-      if (!descendant) return false;
+  /**
+   * Block unit deletion while related records still exist; every FK to a unit is
+   * onDelete: Cascade, so an unchecked delete would silently wipe award history.
+   * @param id - Unit id being deleted
+   * @param fk - Foreign key column the related records use to reference this unit
+   * @param label - Human-readable unit label for the error message
+   * @throws ValidationError - When personnel, positions, awards, or proposals remain
+   */
+  private async assertUnitHasNoDependencies(id: string, fk: UnitForeignKey, label: string) {
+    const [personnelCount, positionCount, danhHieuCount, adhocCount, proposalCount] =
+      await Promise.all([
+        quanNhanRepository.count({ [fk]: id }),
+        positionRepository.count({ [fk]: id }),
+        danhHieuDonViHangNamRepository.count({ where: { [fk]: id } }),
+        adhocAwardRepository.count({ [fk]: id }),
+        proposalRepository.count({ [fk]: id }),
+      ]);
 
-      return descendant.co_quan_don_vi_id === ancestorId;
-    } catch (error) {
-      console.error('Failed to resolve unit hierarchy relation:', error);
-      return false;
+    if (personnelCount > 0) {
+      throw new ValidationError(`Không thể xóa ${label} vì còn ${personnelCount} quân nhân`);
+    }
+    if (positionCount > 0) {
+      throw new ValidationError(`Không thể xóa ${label} vì còn ${positionCount} chức vụ`);
+    }
+
+    const awardCount = (danhHieuCount || 0) + (adhocCount || 0);
+    if (awardCount > 0) {
+      throw new ValidationError(`Không thể xóa ${label} vì còn ${awardCount} khen thưởng đã ghi nhận`);
+    }
+    if (proposalCount > 0) {
+      throw new ValidationError(`Không thể xóa ${label} vì còn ${proposalCount} đề xuất liên quan`);
     }
   }
 
@@ -243,36 +313,22 @@ class UnitService {
         );
       }
 
-      const [personnelCount, positionCount] = await Promise.all([
-        quanNhanRepository.count({ co_quan_don_vi_id: id }),
-        positionRepository.count({ co_quan_don_vi_id: id }),
-      ]);
-
-      if (personnelCount > 0) {
-        throw new ValidationError(`Không thể xóa cơ quan đơn vị vì còn ${personnelCount} quân nhân`);
-      }
-      if (positionCount > 0) {
-        throw new ValidationError(`Không thể xóa cơ quan đơn vị vì còn ${positionCount} chức vụ`);
-      }
-
+      await this.assertUnitHasNoDependencies(id, 'co_quan_don_vi_id', 'cơ quan đơn vị');
       await coQuanDonViRepository.delete(id);
     } else {
-      const [personnelCount, positionCount] = await Promise.all([
-        quanNhanRepository.count({ don_vi_truc_thuoc_id: id }),
-        positionRepository.count({ don_vi_truc_thuoc_id: id }),
-      ]);
-
-      if (personnelCount > 0) {
-        throw new ValidationError(`Không thể xóa đơn vị trực thuộc vì còn ${personnelCount} quân nhân`);
-      }
-      if (positionCount > 0) {
-        throw new ValidationError(`Không thể xóa đơn vị trực thuộc vì còn ${positionCount} chức vụ`);
-      }
-
+      await this.assertUnitHasNoDependencies(id, 'don_vi_truc_thuoc_id', 'đơn vị trực thuộc');
       await donViTrucThuocRepository.delete(id);
     }
 
-    return { message: 'Xóa cơ quan đơn vị/đơn vị trực thuộc thành công' };
+    // Return the deleted unit's identity so the audit log can name it (the record
+    // is gone after this point and cannot be fetched again).
+    const deletedUnit = coQuanDonVi || donViTrucThuoc;
+    return {
+      message: 'Xóa cơ quan đơn vị/đơn vị trực thuộc thành công',
+      ten_don_vi: deletedUnit?.ten_don_vi ?? null,
+      ma_don_vi: deletedUnit?.ma_don_vi ?? null,
+      co_quan_don_vi_id: donViTrucThuoc?.co_quan_don_vi_id ?? null,
+    };
   }
 
   async getUnitById(id: string) {
@@ -304,7 +360,9 @@ class UnitService {
     const dvttCountMap = new Map(dvttCounts.map(c => [c.don_vi_truc_thuoc_id!, c._count]));
 
     const cqdvToUpdate = coQuanDonViList.filter(u => u.so_luong !== (cqdvCountMap.get(u.id) ?? 0));
-    const dvttToUpdate = donViTrucThuocList.filter(u => u.so_luong !== (dvttCountMap.get(u.id) ?? 0));
+    const dvttToUpdate = donViTrucThuocList.filter(
+      u => u.so_luong !== (dvttCountMap.get(u.id) ?? 0)
+    );
     const updated = cqdvToUpdate.length + dvttToUpdate.length;
 
     if (updated > 0) {

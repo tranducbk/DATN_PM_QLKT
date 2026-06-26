@@ -9,7 +9,6 @@ import {
   Alert,
   Space,
   Typography,
-  Breadcrumb,
   message,
   Result,
 } from 'antd';
@@ -20,11 +19,10 @@ import {
   ArrowLeftOutlined,
   SaveOutlined,
   HistoryOutlined,
-  HomeOutlined,
 } from '@ant-design/icons';
 import { useRouter } from 'next/navigation';
-import Link from 'next/link';
 import { DANH_HIEU_MAP } from '@/constants/danhHieu.constants';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { LoadingState } from '@/components/shared/LoadingState';
 import { getApiErrorMessage, logApiError } from '@/lib/http/apiError';
 import { formatDate } from '@/lib/utils';
@@ -270,7 +268,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
       }
       return col;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- pagination is manually controlled via setValidPagination in handlers
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.validColumns, validPagination.current, validPagination.pageSize]);
 
   const invalidColumnsPaginated = useMemo(() => {
@@ -286,7 +284,7 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
       }
       return col;
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- pagination is manually controlled via setInvalidPagination in handlers
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [config.invalidColumns, invalidPagination.current, invalidPagination.pageSize]);
 
   const historyColumnsCentered = useMemo(
@@ -337,17 +335,9 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
   if (!previewData || (validCount === 0 && invalidCount === 0)) {
     return (
       <div style={{ padding: 24 }}>
-        <Breadcrumb
-          style={{ marginBottom: 16 }}
+        <PageBreadcrumb
           items={[
-            {
-              title: (
-                <Link href="/admin/dashboard">
-                  <HomeOutlined /> Trang chủ
-                </Link>
-              ),
-            },
-            { title: <Link href="/admin/awards">Khen thưởng</Link> },
+            { title: 'Khen thưởng', href: '/admin/awards' },
             { title: 'Xem trước dữ liệu tải lên' },
           ]}
         />
@@ -367,20 +357,10 @@ export function ImportReviewPageContent({ config }: { config: ImportReviewConfig
 
   return (
     <div style={{ padding: 24 }}>
-      <Breadcrumb
-        style={{ marginBottom: 16 }}
+      <PageBreadcrumb
         items={[
-          {
-            title: (
-              <Link href="/admin/dashboard">
-                <HomeOutlined /> Trang chủ
-              </Link>
-            ),
-          },
-          { title: <Link href="/admin/awards">Khen thưởng</Link> },
-          {
-            title: <Link href="/admin/awards/bulk/create">Thêm hàng loạt</Link>,
-          },
+          { title: 'Khen thưởng', href: '/admin/awards' },
+          { title: 'Thêm hàng loạt', href: '/admin/awards/bulk/create' },
           { title: breadcrumbLastItem },
         ]}
       />

@@ -78,8 +78,11 @@ Table QuanNhan {
 Table LichSuChucVu {
   id varchar(30) [pk]
   quan_nhan_id varchar(30) [not null]
-  chuc_vu_id varchar(30) [not null]
+  chuc_vu_id varchar(30) [note: 'nullable — SetNull khi xóa chức vụ']
   he_so_chuc_vu float [not null, default: 0]
+  ten_chuc_vu varchar(255) [note: 'snapshot tên chức vụ']
+  ten_co_quan_don_vi varchar(255) [note: 'snapshot tên cơ quan đơn vị']
+  ten_don_vi_truc_thuoc varchar(255) [note: 'snapshot tên đơn vị trực thuộc']
   ngay_bat_dau date [not null]
   ngay_ket_thuc date
   so_thang int
@@ -105,7 +108,7 @@ Table BangDeXuat {
   id varchar(30) [pk]
   co_quan_don_vi_id varchar(30)
   don_vi_truc_thuoc_id varchar(30)
-  nguoi_de_xuat_id varchar(30) [not null]
+  nguoi_de_xuat_id varchar(30) [note: 'nullable — SetNull khi xóa tài khoản']
   loai_de_xuat varchar(20) [not null]
   nam int [not null]
   thang int
@@ -178,8 +181,7 @@ Table DanhHieuDonViHangNam {
   nhan_bkttcp boolean [not null, default: false]
   so_quyet_dinh_bkttcp varchar(100)
   ghi_chu_bkttcp text
-  status varchar(20) [not null, default: 'PENDING']
-  nguoi_tao_id varchar(30) [not null]
+  nguoi_tao_id varchar(30) [note: 'nullable — SetNull khi xóa tài khoản']
   nguoi_duyet_id varchar(30)
   ngay_duyet timestamp
   ghi_chu text
@@ -347,8 +349,8 @@ Table HoSoDonViHangNam {
   tong_dvqt int [not null, default: 0]
   tong_dvqt_json jsonb
   dvqt_lien_tuc int [not null, default: 0]
-  du_dieu_kien_bk_tong_cuc boolean [not null, default: false]
-  du_dieu_kien_bk_thu_tuong boolean [not null, default: false]
+  du_dieu_kien_bkbqp boolean [not null, default: false]
+  du_dieu_kien_bkttcp boolean [not null, default: false]
   goi_y text
   createdAt timestamp [not null]
   updatedAt timestamp [not null]
@@ -445,13 +447,13 @@ Ref: QuanNhan.chuc_vu_id > ChucVu.id [delete: restrict]
 Ref: QuanNhan.co_quan_don_vi_id > CoQuanDonVi.id [delete: cascade]
 Ref: QuanNhan.don_vi_truc_thuoc_id > DonViTrucThuoc.id [delete: cascade]
 Ref: LichSuChucVu.quan_nhan_id > QuanNhan.id [delete: cascade]
-Ref: LichSuChucVu.chuc_vu_id > ChucVu.id [delete: cascade]
+Ref: LichSuChucVu.chuc_vu_id > ChucVu.id [delete: set null]
 Ref: TaiKhoan.quan_nhan_id > QuanNhan.id [delete: cascade]
 
 // Đề xuất
 Ref: BangDeXuat.co_quan_don_vi_id > CoQuanDonVi.id [delete: cascade]
 Ref: BangDeXuat.don_vi_truc_thuoc_id > DonViTrucThuoc.id [delete: cascade]
-Ref: BangDeXuat.nguoi_de_xuat_id > TaiKhoan.id [delete: cascade]
+Ref: BangDeXuat.nguoi_de_xuat_id > TaiKhoan.id [delete: set null]
 Ref: BangDeXuat.nguoi_duyet_id > TaiKhoan.id [delete: set null]
 
 // Khen thưởng cá nhân → quân nhân
@@ -468,7 +470,7 @@ Ref: KhenThuongDotXuat.don_vi_truc_thuoc_id > DonViTrucThuoc.id [delete: cascade
 // Khen thưởng đơn vị
 Ref: DanhHieuDonViHangNam.co_quan_don_vi_id > CoQuanDonVi.id [delete: cascade]
 Ref: DanhHieuDonViHangNam.don_vi_truc_thuoc_id > DonViTrucThuoc.id [delete: cascade]
-Ref: DanhHieuDonViHangNam.nguoi_tao_id > TaiKhoan.id [delete: cascade]
+Ref: DanhHieuDonViHangNam.nguoi_tao_id > TaiKhoan.id [delete: set null]
 Ref: DanhHieuDonViHangNam.nguoi_duyet_id > TaiKhoan.id [delete: set null]
 
 // Hồ sơ điều kiện

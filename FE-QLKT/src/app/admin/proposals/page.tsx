@@ -10,7 +10,6 @@ import {
   Tag,
   Space,
   Typography,
-  Breadcrumb,
   Input,
   Select,
   message,
@@ -21,14 +20,13 @@ import {
   CheckCircleOutlined,
   CloseCircleOutlined,
   ClockCircleOutlined,
-  HomeOutlined,
   SearchOutlined,
   TrophyOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
-import Link from 'next/link';
 import { isAxiosError } from 'axios';
 import { apiClient } from '@/lib/http/apiClient';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import { formatDateTime } from '@/lib/utils';
 import {
@@ -94,7 +92,6 @@ export default function AdminProposalsPage() {
   const [decisionModalVisible, setDecisionModalVisible] = useState(false);
   const [selectedProposal, setSelectedProposal] = useState<Proposal | null>(null);
   const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([]);
-  const [, setSelectedDecision] = useState<unknown>(null);
   const [, setExtraordinaryRewardModalVisible] = useState(false);
 
   const fetchProposals = useCallback(async () => {
@@ -363,22 +360,7 @@ export default function AdminProposalsPage() {
 
   return (
     <div style={{ padding: '24px' }}>
-      {/* Breadcrumb */}
-      <Breadcrumb
-        style={{ marginBottom: 16 }}
-        items={[
-          {
-            title: (
-              <Link href="/admin/dashboard">
-                <HomeOutlined />
-              </Link>
-            ),
-          },
-          {
-            title: 'Quản lý đề xuất khen thưởng',
-          },
-        ]}
-      />
+      <PageBreadcrumb items={[{ title: 'Quản lý đề xuất khen thưởng' }]} />
 
       {/* Header */}
       <div
@@ -527,11 +509,8 @@ export default function AdminProposalsPage() {
         visible={decisionModalVisible}
         onClose={() => {
           setDecisionModalVisible(false);
-          setSelectedDecision(null);
         }}
         onSuccess={async decision => {
-          setSelectedDecision(decision);
-
           const selectedProposals = filteredProposals.filter(p => selectedRowKeys.includes(p.id));
 
           try {
@@ -554,7 +533,6 @@ export default function AdminProposalsPage() {
             );
             setDecisionModalVisible(false);
             setSelectedRowKeys([]);
-            setSelectedDecision(null);
             fetchProposals();
           } catch (error: unknown) {
             if (isAxiosError(error) && error.response?.status === 404) {

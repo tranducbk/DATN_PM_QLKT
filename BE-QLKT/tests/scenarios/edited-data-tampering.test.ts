@@ -18,10 +18,7 @@ import {
   makeAnnualRecord,
 } from '../helpers/fixtures';
 import { expectError } from '../helpers/errorAssert';
-import {
-  MIXED_CA_NHAN_HANG_NAM_ERROR,
-  duplicateActualAnnualMessage,
-} from '../helpers/errorMessages';
+import { MIXED_CA_NHAN_HANG_NAM_ERROR } from '../helpers/errorMessages';
 
 import proposalService from '../../src/services/proposal';
 import profileService from '../../src/services/profile.service';
@@ -31,7 +28,6 @@ import { PROPOSAL_STATUS } from '../../src/constants/proposalStatus.constants';
 import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
   DANH_HIEU_DON_VI_HANG_NAM,
-  getDanhHieuName,
 } from '../../src/constants/danhHieu.constants';
 
 beforeEach(() => {
@@ -50,6 +46,8 @@ afterEach(() => {
 });
 
 const ADMIN_ID = 'acc-admin-edit-1';
+const RECONCILE_REJECT_MSG =
+  'Không thể phê duyệt: dữ liệu chỉnh sửa chứa quân nhân hoặc đơn vị không có trong đề xuất gốc.';
 
 /** Builds a clean CSTDCS proposal owned by `ADMIN_ID`. */
 function EDITED_buildAnnualProposal(personnelId: string, ho_ten = 'QN A') {
@@ -65,15 +63,15 @@ function EDITED_buildAnnualProposal(personnelId: string, ho_ten = 'QN A') {
     loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
     status: PROPOSAL_STATUS.PENDING,
     nam: 2024,
-    nguoi_de_xuat_id: ADMIN_ID,
+    nguoi_de_xuat_id: 'acc-submitter',
     unit: cqdv,
     data_danh_hieu: [submittedItem],
   });
   return { cqdv, submittedItem, proposal };
 }
 
-describe('editedData tampering — personnel_id swap', () => {
-  it('Đổi personnel_id từ qn-A sang qn-B → service dùng editedData, ghi DB cho qn-B (lỗ hổng)', async () => {
+describe('Sửa dữ liệu sau khi gửi: tráo quân nhân lúc phê duyệt', () => {
+  it('Sửa dữ liệu sau khi gửi: admin tráo quân nhân A thành quân nhân B lúc duyệt → từ chối vì B không có trong đề xuất gốc', async () => {
     // Given: submit với qn-A, admin gửi editedData với qn-B
     const { proposal } = EDITED_buildAnnualProposal('qn-A', 'Nguyễn A');
     const swappedItem = makeProposalItemCaNhan({
@@ -99,27 +97,25 @@ describe('editedData tampering — personnel_id swap', () => {
     );
     prismaMock.bangDeXuat.updateMany.mockResolvedValueOnce({ count: 1 });
 
-    // When
-    await proposalService.approveProposal(
-      proposal.id,
-      { data_danh_hieu: [swappedItem] },
-      ADMIN_ID,
-      { so_quyet_dinh_cstdcs: 'QD-ORIG' },
-      {},
-      null
+    // Then: reconcile chặn — personnel_id qn-B không có trong đề xuất gốc (qn-A).
+    await expectError(
+      proposalService.approveProposal(
+        proposal.id,
+        { data_danh_hieu: [swappedItem] },
+        ADMIN_ID,
+        { so_quyet_dinh_cstdcs: 'QD-ORIG' },
+        {},
+        null
+      ),
+      ValidationError,
+      RECONCILE_REJECT_MSG
     );
-
-    // Then: DB ghi cho qn-B — lỗ hổng đã pin
-    expect(prismaMock.danhHieuHangNam.upsert).toHaveBeenCalledTimes(1);
-    const upsertArgs = prismaMock.danhHieuHangNam.upsert.mock.calls[0][0];
-    expect(upsertArgs.where.quan_nhan_id_nam).toEqual({ quan_nhan_id: 'qn-B', nam: 2024 });
-    // TODO: admin-tampering — service tin editedData.personnel_id; cân nhắc
-    //   reject item có personnel_id không nằm trong payload submit gốc.
+    expect(prismaMock.danhHieuHangNam.upsert).not.toHaveBeenCalled();
   });
 });
 
-describe('editedData tampering — nam override', () => {
-  it('editedData nam=2099 trên item nhưng proposal.nam=2024 → service vẫn dùng proposal.nam', async () => {
+describe('Sửa dữ liệu sau khi gửi: ghi đè năm khen thưởng lúc phê duyệt', () => {
+  it('Sửa dữ liệu sau khi gửi: admin sửa năm của dòng thành 2099 nhưng đề xuất gốc là 2024 → khen thưởng vẫn lưu theo năm 2024 gốc', async () => {
     // Given: proposal lưu nam=2024; editedData mang item.nam=2099
     const { proposal, submittedItem } = EDITED_buildAnnualProposal('qn-nam-override');
     const tamperedItem = { ...submittedItem, nam: 2099 };
@@ -155,8 +151,8 @@ describe('editedData tampering — nam override', () => {
   });
 });
 
-describe('editedData tampering — danh_hieu group escalation', () => {
-  it('editedData thêm BKBQP cùng item CSTDCS đã có → block với MIXED_CA_NHAN_HANG_NAM_ERROR', async () => {
+describe('Sửa dữ liệu sau khi gửi: nâng danh hiệu lên nhóm xung khắc lúc phê duyệt', () => {
+  it('Sửa dữ liệu sau khi gửi: đề xuất gốc chỉ có CSTDCS, admin chèn thêm BKBQP cho cùng quân nhân → từ chối trộn nhóm', async () => {
     // Given: proposal lưu chỉ có CSTDCS; admin chèn thêm BKBQP cho cùng QN
     const { proposal, submittedItem } = EDITED_buildAnnualProposal('qn-mix');
     const escalatedBkbqp = makeProposalItemCaNhan({
@@ -186,8 +182,8 @@ describe('editedData tampering — danh_hieu group escalation', () => {
   });
 });
 
-describe('editedData tampering — extra item injection', () => {
-  it('editedData thêm 1 item mới (qn-C CSTDCS) ngoài submit data → duplicate check VẪN chạy cho item mới', async () => {
+describe('Sửa dữ liệu sau khi gửi: chèn thêm quân nhân lạ lúc phê duyệt', () => {
+  it('Sửa dữ liệu sau khi gửi: admin chèn thêm quân nhân C ngoài đề xuất gốc lúc duyệt → từ chối (chống chèn dữ liệu lạ)', async () => {
     // Given: submit chỉ có qn-A; admin thêm qn-C; DB đã có qn-C CSTDCS năm 2024
     const { proposal, submittedItem } = EDITED_buildAnnualProposal('qn-A');
     const injectedItem = makeProposalItemCaNhan({
@@ -225,20 +221,14 @@ describe('editedData tampering — extra item injection', () => {
         null
       ),
       ValidationError,
-      {
-        startsWith:
-          'Phát hiện đề xuất trùng (cùng năm và cùng danh hiệu):\nPhạm C: ' +
-          duplicateActualAnnualMessage(
-            getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.CSTDCS),
-            2024
-          ),
-      }
+      RECONCILE_REJECT_MSG
     );
+    expect(prismaMock.danhHieuHangNam.upsert).not.toHaveBeenCalled();
   });
 });
 
-describe('editedData tampering — wrong decision field key', () => {
-  it('Item BKBQP nhưng admin set so_quyet_dinh thay vì so_quyet_dinh_bkbqp → vẫn ghi DB (so_quyet_dinh_bkbqp = null)', async () => {
+describe('Sửa dữ liệu sau khi gửi: gắn nhầm ô số quyết định lúc phê duyệt', () => {
+  it('Sửa dữ liệu sau khi gửi: dòng BKBQP nhưng admin gắn số quyết định vào ô chung thay vì ô BKBQP → số gắn nhầm vẫn lưu vào số quyết định chuỗi, che mất số hợp lệ', async () => {
     // Given: item BKBQP nhưng số quyết định chuỗi bị đặt nhầm dưới so_quyet_dinh
     const cqdv = makeUnit({ kind: 'CQDV', id: 'cqdv-bk' });
     const personnel = makePersonnel({ unit: cqdv, id: 'qn-bk' });
@@ -246,7 +236,7 @@ describe('editedData tampering — wrong decision field key', () => {
       id: 'prop-bk-edit',
       loai: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdv,
       data_danh_hieu: [
         makeProposalItemCaNhan({
@@ -298,8 +288,8 @@ describe('editedData tampering — wrong decision field key', () => {
   });
 });
 
-describe('editedData tampering — DON_VI item swap', () => {
-  it('Đổi co_quan_don_vi_id trong DON_VI item → write theo editedData (lỗ hổng)', async () => {
+describe('Sửa dữ liệu sau khi gửi: tráo đơn vị lúc phê duyệt', () => {
+  it('Sửa dữ liệu sau khi gửi: admin tráo cơ quan đơn vị X sang Y lúc duyệt → từ chối vì Y không có trong đề xuất gốc', async () => {
     // Given: submit với cqdv-X; admin sửa editedData trỏ về cqdv-Y
     const cqdvX = makeUnit({ kind: 'CQDV', id: 'cqdv-X' });
     const cqdvY = makeUnit({ kind: 'CQDV', id: 'cqdv-Y' });
@@ -315,7 +305,7 @@ describe('editedData tampering — DON_VI item swap', () => {
       id: 'prop-dv-edit',
       loai: PROPOSAL_TYPES.DON_VI_HANG_NAM,
       nam: 2024,
-      nguoi_de_xuat_id: ADMIN_ID,
+      nguoi_de_xuat_id: 'acc-submitter',
       unit: cqdvX,
       data_danh_hieu: [submittedItem],
     });
@@ -332,20 +322,19 @@ describe('editedData tampering — DON_VI item swap', () => {
     });
     prismaMock.bangDeXuat.updateMany.mockResolvedValueOnce({ count: 1 });
 
-    // When
-    await proposalService.approveProposal(
-      proposal.id,
-      { data_danh_hieu: [tamperedItem] },
-      ADMIN_ID,
-      { so_quyet_dinh_don_vi_hang_nam: 'QD-DVQT' },
-      {},
-      null
+    // Then: reconcile chặn — đơn vị cqdv-Y không có trong đề xuất gốc (cqdv-X).
+    await expectError(
+      proposalService.approveProposal(
+        proposal.id,
+        { data_danh_hieu: [tamperedItem] },
+        ADMIN_ID,
+        { so_quyet_dinh_don_vi_hang_nam: 'QD-DVQT' },
+        {},
+        null
+      ),
+      ValidationError,
+      RECONCILE_REJECT_MSG
     );
-
-    // Then: DB ghi vào cqdv-Y, không phải cqdv-X — lỗ hổng đã pin
-    const createArgs = prismaMock.danhHieuDonViHangNam.create.mock.calls[0][0];
-    expect(createArgs.data.co_quan_don_vi_id).toBe(cqdvY.id);
-    // TODO: unit swap được chấp nhận — xác nhận với nghiệp vụ liệu approve.ts có
-    //   nên reject editedData unit id lệch khỏi scope đơn vị lưu trong proposal.
+    expect(prismaMock.danhHieuDonViHangNam.create).not.toHaveBeenCalled();
   });
 });

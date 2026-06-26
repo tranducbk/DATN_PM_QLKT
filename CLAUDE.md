@@ -35,6 +35,7 @@ PM QLKT/
 
 - **4 roles**: SUPER_ADMIN > ADMIN > MANAGER > USER
 - **7 award types**: Annual, Unit Annual, Tenure Medals (`tenure-medals`), Contribution (`contribution-medals`), Commemorative Medal (`commemorative-medals`), Military Flag (`military-flag`), Scientific Achievement
+- **Kỷ niệm chương là CATEGORY nhiều loại** (BẮT BUỘC khi đụng `commemorative-medals`): hiện chỉ có `KNC_VSNXD_QDNDVN` nhưng SẼ thêm nhiều loại kỷ niệm chương khác. KHÔNG hardcode 1 loại như thể là duy nhất. Thiết kế theo registry giống `DANH_HIEU_HCBVTQ` (category + nhiều danh hiệu con): label category dùng `AWARD_LABELS[COMMEMORATIVE_MEDALS]` (nên là "Kỷ niệm chương" generic), tên từng loại để trong 1 map `DANH_HIEU_KY_NIEM_CHUONG`; eligibility/validation/import dispatch theo danh hiệu con qua registry, không `if (danh_hieu === KNC_VSNXD_QDNDVN)`. Áp dụng tương tự cho mọi award type có nhiều hạng/loại.
 - **Annual chain awards** (cá nhân): BKBQP (2y CSTDCS), CSTDTQ (3y + 1 BKBQP trong cửa sổ trượt 3y), BKTTCP (7y + 3 BKBQP + 2 CSTDTQ trong 7y cuối). Mỗi loại cần NCKH mỗi năm. Flag fields: `nhan_bkbqp/cstdtq/bkttcp` + `so_quyet_dinh_*/ghi_chu_*`.
 - **Annual chain awards** (đơn vị): BKBQP (2y ĐVQT), BKTTCP (7y + 3 BKBQP trong 7y cuối). Không có CSTDTQ. Không có NCKH.
 - **Chain cycle semantics** — quan trọng:
@@ -45,7 +46,6 @@ PM QLKT/
   - **CSTDTQ BKBQP-trong-3y**: cửa sổ trượt 3 năm cuối từ `year-1`. BKBQP của chu kỳ trước tự rơi ra → bắt buộc có BKBQP mới ở chu kỳ hiện tại.
   - **Unit BKTTCP BKBQP-trong-7y**: cửa sổ trượt 7 năm cuối. BKBQP cũ rơi ra giống CSTDTQ.
   - **Personal BKTTCP**: dùng `bkbqpIn7Years === 3` và `cstdtqIn7Years === 2` strict (vì lifetime). Unit BKTTCP non-lifetime dùng `>= 3`.
-- **Chain context helpers** (`services/profile/annual.ts`): `lastFlagYearInChain`, `computeChainContext` derive `chainStartYear`, `lastBkbqp/Cstdtq/BkttcpYear`, `streakSinceLast<flag>`, `missedBkbqp/Cstdtq` từ `DanhHieuHangNam` — không lưu DB. FE đọc qua `AnnualStreakResult.chainContext`.
 - **Eligibility logic**: `computeEligibilityFlags` (recalc profile) và `checkAwardEligibility` (API validation) MUST khớp nhau. Cùng dùng `chainEligibility.checkChainEligibility` cho rule core; `computeEligibilityFlags` áp lifetime block riêng cho personal BKTTCP qua `hasReceivedBKTTCP` flag.
 - **Recalc goi_y order** (personal): `hasReceivedBKTTCP` → "chưa hỗ trợ cao hơn" trước; rồi `du_dieu_kien_bkttcp/cstdtq/bkbqp` → eligible message; cuối cùng "Chưa đủ ĐK BKBQP/CSTDTQ".
 - **Real-time**: Socket.IO for notifications
@@ -81,7 +81,7 @@ PM QLKT/
 ## Key Patterns
 
 ### Backend
-- **Layered**: Route → Middleware → Controller → Service → Prisma
+- **Layered**: Route → Middleware → Controller → Service → Repository → Prisma
 - **Middleware chain**: `verifyToken → requireAdmin (or other checkRole guard) → validate(schema) → auditLog(options) → controller.method`
 - **Async errors**: Wrap controllers with `catchAsync()` helper
 - **Responses**: Always use `ResponseHelper.success()`, `.created()`, `.paginated()`, `.badRequest()`, `.notFound()`, etc.
@@ -257,7 +257,7 @@ Khi có ≥ 4 nhánh `if/else` dispatch theo enum/type (vd: 7 loại đề xuấ
 
 **Rule:** code is the single source of truth — báo cáo/slide/diagram bám theo code, không ngược lại. Khi sửa code làm thay đổi thứ mà tài liệu đang mô tả (port, script name, dependency, kiến trúc, schema, route, eligibility rule, số liệu test, UC behavior), **bắt buộc** mở file liên quan dưới đây và update đồng bộ trong cùng commit. Refactor thuần nội bộ (rename biến, extract helper, chia file) không cần đồng bộ doc.
 
-> **⚠️ Báo cáo chính giờ là bản LaTeX** tại `SOICT_DATN_Tran_Anh_Duc_20220120/` (`DoAn.tex` + `Chuong/*.tex`). `docs/report/BAO_CAO.md` **đã ngừng dùng** — KHÔNG sync vào nó nữa. Bảng dưới đây nhắc `docs/report/BAO_CAO.md` chỉ còn để tham chiếu lịch sử; thay bằng `Chuong/*.tex` tương ứng: §2 khảo sát → `2_Khao_sat.tex`, §3 công nghệ → `3_Cong_nghe.tex`, §4 thiết kế/triển khai/kiểm thử → `4_Ket_qua_thuc_nghiem.tex`, §5 đóng góp → `5_Giai_phap_dong_gop.tex`, kết luận/hướng phát triển → `6_Ket_luan.tex`.
+> **⚠️ Báo cáo chính giờ là bản LaTeX** tại `Báo cáo ĐATN/` (`DoAn.tex` + `Chuong/*.tex`). `docs/report/BAO_CAO.md` **đã ngừng dùng** — KHÔNG sync vào nó nữa. Bảng dưới đây nhắc `docs/report/BAO_CAO.md` chỉ còn để tham chiếu lịch sử; thay bằng `Chuong/*.tex` tương ứng: §2 khảo sát → `2_Khao_sat.tex`, §3 công nghệ → `3_Cong_nghe.tex`, §4 thiết kế/triển khai/kiểm thử → `4_Ket_qua_thuc_nghiem.tex`, §5 đóng góp → `5_Giai_phap_dong_gop.tex`, kết luận/hướng phát triển → `6_Ket_luan.tex`.
 
 ### Doc index — file nào chứa gì
 

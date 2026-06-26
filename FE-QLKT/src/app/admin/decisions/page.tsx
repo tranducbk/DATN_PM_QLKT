@@ -11,7 +11,6 @@ import {
   Select,
   Tag,
   Typography,
-  Breadcrumb,
   App,
   Popconfirm,
   Modal,
@@ -20,7 +19,6 @@ import {
 } from 'antd';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import {
-  HomeOutlined,
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
@@ -29,6 +27,7 @@ import {
   FileTextOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { apiClient } from '@/lib/http/apiClient';
 import { downloadDecisionFile } from '@/lib/file/downloadDecisionFile';
 import { DEFAULT_PAGE_SIZE, DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
@@ -209,15 +208,10 @@ export default function AdminDecisionsPage() {
       title: 'Ghi chú',
       dataIndex: 'ghi_chu',
       key: 'ghi_chu',
-      width: 200,
-      align: 'center',
+      width: 240,
       render: (text: string | null) => {
         if (!text) return <Text type="secondary">-</Text>;
-        return (
-          <Text ellipsis={{ tooltip: text }} style={{ maxWidth: 200 }}>
-            {text}
-          </Text>
-        );
+        return <Text style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{text}</Text>;
       },
     },
     {
@@ -285,13 +279,7 @@ export default function AdminDecisionsPage() {
 
   return (
     <div style={{ padding: '24px' }}>
-      <Breadcrumb
-        items={[
-          { title: <HomeOutlined />, href: '/admin/dashboard' },
-          { title: 'Quản lý quyết định' },
-        ]}
-        style={{ marginBottom: 16 }}
-      />
+      <PageBreadcrumb items={[{ title: 'Quản lý quyết định' }]} />
 
       <Card>
         <div

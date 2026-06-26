@@ -1,54 +1,66 @@
 import rateLimit from 'express-rate-limit';
+import type { Request, Response } from 'express';
+import { writeSystemLog } from '../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 
-/*
- * RATE LIMITER — chống brute force + abuse, dựa trên IP.
- *
- * Cơ chế: express-rate-limit lưu counter trong memory (default) hoặc
- * Redis (production). Mỗi IP có 1 bucket counter, hết window thì reset.
- * Vượt limit → 429 Too Many Requests.
- *
- * 2 PROFILE:
- *
- * ① authLimiter — 30 fail/5 phút cho login/refresh:
- *    - skipSuccessfulRequests: TRUE → chỉ đếm request LỖI (401/400).
- *      Lý do: user gõ password đúng nhiều lần (vd: kiểm tra tab khác)
- *      KHÔNG được tính → không khoá oan.
- *    - 30 fail × 5 phút ≈ 1 attempt/10s → chậm hơn brute force script
- *      (10000/s) tới 10⁵ lần → không thể crack qua API.
- *
- * ② writeLimiter — 30 request/15 phút cho ghi DB:
- *    - Đếm cả success + fail (mặc định).
- *    - Áp dụng cho POST/PUT/DELETE tạo đề xuất, approve, import Excel.
- *    - Lý do: chặn user/bot spam tạo hàng loạt record → DB bloat + log
- *      ngập + admin không kịp duyệt.
- *
- * KHÔNG dùng cho GET endpoint vì:
- *    - Đọc không gây side-effect nguy hiểm.
- *    - User legit có thể refresh trang liên tục.
- *    - Nếu cần chống scrape → dùng CDN/WAF rate limit ở layer ngoài.
+interface RateLimitMessage {
+  success: boolean;
+  message: string;
+}
+
+const AUTH_MESSAGE: RateLimitMessage = {
+  success: false,
+  message: 'Quá nhiều yêu cầu, thử lại sau ít phút.',
+};
+
+const WRITE_MESSAGE: RateLimitMessage = {
+  success: false,
+  message: 'Quá nhiều yêu cầu, vui lòng thử lại sau',
+};
+
+/** Resolves the affected resource slug from the request path (the segment after /api/). */
+const resourceFromReq = (req: Request): string => {
+  const parts = (req.originalUrl || '').split('?')[0].split('/').filter(Boolean);
+  const apiIdx = parts.indexOf('api');
+  return (apiIdx >= 0 ? parts[apiIdx + 1] : parts[0]) || 'rate-limit';
+};
+
+/**
+ * Builds a rate-limit handler that records a system log on the first breach of each
+ * window (subsequent blocked requests in the same window are not re-logged, to avoid
+ * flooding the audit trail during a burst) and returns the standard 429 response.
  */
+const makeRateLimitHandler =
+  (message: RateLimitMessage) =>
+  (req: Request, res: Response): void => {
+    const info = (req as Request & { rateLimit?: { limit: number; used: number } }).rateLimit;
+    if (!info || info.used === info.limit + 1) {
+      void writeSystemLog({
+        userId: req.user?.id,
+        userRole: req.user?.role,
+        action: AUDIT_ACTIONS.RATE_LIMIT,
+        resource: resourceFromReq(req),
+        description: `Quá giới hạn yêu cầu: ${req.method} ${req.originalUrl} từ IP ${req.ip ?? 'không rõ'}`,
+      });
+    }
+    res.status(429).json(message);
+  };
 
-/** For login/auth endpoints — only count failed requests so legit users không bị chặn */
+/** For login/auth endpoints — only count failed requests so legit users are not blocked */
 export const authLimiter = rateLimit({
   windowMs: 5 * 60 * 1000, // 5 minutes
   max: 30,
-  message: {
-    success: false,
-    message: 'Quá nhiều yêu cầu, thử lại sau ít phút.',
-  },
-  standardHeaders: true,  // gửi RateLimit-* header (RFC draft) → FE biết còn bao nhiêu
-  legacyHeaders: false,   // tắt X-RateLimit-* cũ
-  skipSuccessfulRequests: true, // KEY: chỉ đếm fail request
+  standardHeaders: true,
+  legacyHeaders: false,
+  skipSuccessfulRequests: true,
+  handler: makeRateLimitHandler(AUTH_MESSAGE),
 });
 
 /** For sensitive write operations */
 export const writeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 30,
-  message: {
-    success: false,
-    message: 'Quá nhiều yêu cầu, vui lòng thử lại sau',
-  },
   standardHeaders: true,
   legacyHeaders: false,
+  handler: makeRateLimitHandler(WRITE_MESSAGE),
 });

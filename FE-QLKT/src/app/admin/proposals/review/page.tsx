@@ -8,7 +8,6 @@ import {
   Table,
   Button,
   Typography,
-  Breadcrumb,
   Space,
   Spin,
   Empty,
@@ -17,8 +16,9 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 
-import { HomeOutlined, EyeOutlined, LoadingOutlined, DeleteOutlined } from '@ant-design/icons';
+import { EyeOutlined, LoadingOutlined, DeleteOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/http/apiClient';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import {
   DEFAULT_PAGE_SIZE,
   DEFAULT_ANTD_TABLE_PAGINATION,
@@ -231,12 +231,7 @@ export default function ProposalReviewPage() {
 
   return (
     <div style={{ padding: '24px' }}>
-      <Breadcrumb style={{ marginBottom: '16px' }}>
-        <Breadcrumb.Item href="/">
-          <HomeOutlined />
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>Duyệt đề xuất</Breadcrumb.Item>
-      </Breadcrumb>
+      <PageBreadcrumb items={[{ title: 'Duyệt đề xuất' }]} />
 
       <div style={{ marginBottom: '24px' }}>
         <Title level={2}>Duyệt đề xuất khen thưởng</Title>

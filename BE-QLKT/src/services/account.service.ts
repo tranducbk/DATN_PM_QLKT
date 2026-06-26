@@ -4,7 +4,6 @@ import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories/unit.repository';
 import { accountRepository } from '../repositories/account.repository';
 import { proposalRepository } from '../repositories/proposal.repository';
-import { positionRepository } from '../repositories/position.repository';
 import { positionHistoryRepository } from '../repositories/positionHistory.repository';
 import { DEFAULT_PASSWORD } from '../configs';
 import { ROLES, canManageRole } from '../constants/roles.constants';
@@ -19,9 +18,22 @@ import type { Prisma } from '../generated/prisma';
 import profileService from './profile.service';
 import { adjustUnitCount } from './personnel/unitCount';
 import { rotatePositionHistory } from './personnel/positionHistory';
+import {
+  resolvePersonnelDataForCreate,
+  resolveUnitReassignment,
+} from './account/unitAssignment';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { logMessages } from '../constants/logMessages.constants';
 import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 import { emitToUser } from '../utils/socketService';
+import type {
+  CreateAccountData,
+  UpdateAccountData,
+  FormattedAccount,
+  PaginatedAccounts,
+} from './account/types';
+import { formatAccount } from './account/helpers';
 
 const ACCOUNT_QUAN_NHAN_INCLUDE = {
   QuanNhan: {
@@ -37,98 +49,6 @@ const ACCOUNT_QUAN_NHAN_INCLUDE = {
   },
 } as const;
 
-interface CreateAccountData {
-  personnel_id?: string | null;
-  username: string;
-  password: string;
-  role: string;
-  co_quan_don_vi_id?: string | null;
-  don_vi_truc_thuoc_id?: string | null;
-  chuc_vu_id?: string | null;
-}
-
-interface UpdateAccountData {
-  role?: string;
-  password?: string;
-  co_quan_don_vi_id?: string | null;
-  don_vi_truc_thuoc_id?: string | null;
-  chuc_vu_id?: string | null;
-}
-
-interface FormattedAccount {
-  id: string;
-  username: string;
-  role: string;
-  quan_nhan_id: string | null;
-  ho_ten: string | null;
-  don_vi: string | null;
-  cap_bac?: string | null;
-  chuc_vu: string | null;
-  createdAt?: Date;
-}
-
-interface PaginatedAccounts {
-  accounts: FormattedAccount[];
-  pagination: {
-    total: number;
-    page: number;
-    limit: number;
-    totalPages: number;
-  };
-}
-
-/*
- * ════════════════════════════════════════════════════════════════════════════
- *  ACCOUNT SERVICE — quản lý tài khoản (ATTT critical)
- * ════════════════════════════════════════════════════════════════════════════
- *
- *  ATTT POINTS QUAN TRỌNG:
- *
- *  ① BCRYPT HASH với cost factor = 10:
- *     - bcrypt.hash(password, 10) → 2^10 = 1024 iteration.
- *     - Trade-off: 10 đủ chậm (≈100ms) để chống brute force, đủ nhanh
- *       để không block server khi nhiều user login đồng thời.
- *     - 2026 best practice là 12+ → có thể tăng khi server mạnh hơn.
- *     - LƯU Ý: bcrypt tự sinh salt → mỗi hash khác nhau dù cùng password
- *       → ngăn rainbow table attack.
- *
- *  ② STORE password_hash (KHÔNG password plain):
- *     - DB schema field tên `password_hash` để rõ ý đồ (không bao giờ
- *       chứa plain text).
- *     - Compare qua bcrypt.compare (constant-time) → KHÔNG dùng `===`
- *       (vulnerable to timing attack).
- *
- *  ③ password_hash EXCLUDED trong tất cả response + backup:
- *     - findManyRaw + select KHÔNG include password_hash trừ login flow.
- *     - Backup service exclude field này.
- *     - JSON serializer: nếu chuyển model toàn bộ ra response → MASK.
- *
- *  ④ DEFAULT_PASSWORD khi admin tạo tài khoản mới:
- *     - User phải ĐỔI ngay khi login đầu tiên (force flag trong DB).
- *     - Default password chung không leak qua API → chỉ admin biết.
- *
- *  ⑤ validatePassword RULE:
- *     - Tối thiểu 8 ký tự (yêu cầu cơ bản).
- *     - KHÔNG check complexity (chữ hoa, ký tự đặc biệt) — quá ngặt với
- *       user lớn tuổi trong môi trường quân đội. Trade-off UX.
- *
- *  ⑥ ROLE HIERARCHY trong getAccounts:
- *     - excludeSuperAdmin=true → ADMIN không thấy SUPER_ADMIN list
- *       (chống enumerate role cao hơn).
- *     - SUPER_ADMIN tự quản lý qua DevZone, không qua endpoint thường.
- *
- *  ⑦ REFRESH TOKEN INVALIDATION khi đổi password:
- *     - Update password → set refreshToken = null → buộc đăng nhập lại
- *       trên TẤT CẢ thiết bị.
- *     - Lý do: nếu password bị leak/đổi, mọi session cũ phải invalidate.
- *
- *  QUAN HỆ với QuanNhan:
- *  - 1 TaiKhoan = 1 QuanNhan (1-1, nullable nếu là tài khoản admin
- *    không phải quân nhân).
- *  - quan_nhan_id = NULL → tài khoản hệ thống (SUPER_ADMIN, ADMIN).
- *  - quan_nhan_id != NULL → tài khoản quân nhân (MANAGER, USER).
- * ════════════════════════════════════════════════════════════════════════════
- */
 class AccountService {
   async getAccounts(
     page: number | string = 1,
@@ -208,7 +128,7 @@ class AccountService {
     };
   }
 
-  async getAccountById(id: string): Promise<Record<string, unknown>> {
+  async getAccountById(id: string, callerRole?: string): Promise<Record<string, unknown>> {
     const account = await accountRepository.findUniqueRaw({
       where: { id },
       include: ACCOUNT_QUAN_NHAN_INCLUDE,
@@ -216,6 +136,11 @@ class AccountService {
 
     if (!account) {
       throw new NotFoundError('Tài khoản');
+    }
+
+    // Non-SUPER_ADMIN callers must not read a SUPER_ADMIN account (mirrors the list exclusion).
+    if (callerRole && callerRole !== ROLES.SUPER_ADMIN && account.role === ROLES.SUPER_ADMIN) {
+      throw new ForbiddenError('Không có quyền xem tài khoản này');
     }
 
     return {
@@ -315,75 +240,17 @@ class AccountService {
       }
     }
 
-    if ((role === ROLES.MANAGER || role === ROLES.USER) && !personnel_id) {
-      if (role === ROLES.MANAGER) {
-        if (!co_quan_don_vi_id) {
-          throw new ValidationError(
-            'Tài khoản MANAGER phải có thông tin Cơ quan đơn vị. Vui lòng chọn Cơ quan đơn vị.'
-          );
-        }
-        if (don_vi_truc_thuoc_id) {
-          throw new ValidationError(
-            'Tài khoản MANAGER chỉ được chọn Cơ quan đơn vị, không được chọn Đơn vị trực thuộc.'
-          );
-        }
-      } else if (role === ROLES.USER) {
-        if (!co_quan_don_vi_id || !don_vi_truc_thuoc_id) {
-          throw new ValidationError(
-            'Tài khoản USER phải có đầy đủ thông tin Cơ quan đơn vị và Đơn vị trực thuộc. Vui lòng chọn cả hai.'
-          );
-        }
-      }
-
-      if (!chuc_vu_id) {
-        throw new ValidationError('Vui lòng chọn chức vụ');
-      }
-
-      const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-        co_quan_don_vi_id ? coQuanDonViRepository.findIdById(co_quan_don_vi_id) : null,
-        don_vi_truc_thuoc_id
-          ? donViTrucThuocRepository.findIdAndParentById(don_vi_truc_thuoc_id)
-          : null,
-      ]);
-
-      if (co_quan_don_vi_id && !coQuanDonVi) {
-        throw new NotFoundError('Cơ quan đơn vị');
-      }
-      if (don_vi_truc_thuoc_id) {
-        if (!donViTrucThuoc) {
-          throw new NotFoundError('Đơn vị trực thuộc');
-        }
-        if (co_quan_don_vi_id && donViTrucThuoc.co_quan_don_vi_id !== co_quan_don_vi_id) {
-          throw new ValidationError('Đơn vị trực thuộc không thuộc cơ quan đơn vị đã chọn');
-        }
-      }
-
-      const chucVu = await positionRepository.findUniqueRaw({
-        where: { id: chuc_vu_id },
-        select: { he_so_chuc_vu: true, is_manager: true },
-      });
-      if (!chucVu) {
-        throw new NotFoundError('Chức vụ');
-      }
-
-      if (role === ROLES.MANAGER && !chucVu.is_manager) {
-        throw new ValidationError(
-          'Tài khoản MANAGER phải có chức vụ là Chỉ huy. Vui lòng chọn chức vụ có quyền chỉ huy.'
-        );
-      }
-
-      personnelDataForCreate = {
-        cccd: null,
-        ho_ten: username,
-        ChucVu: { connect: { id: chuc_vu_id } },
-        ngay_sinh: null,
-        ngay_nhap_ngu: null,
-        ...(co_quan_don_vi_id ? { CoQuanDonVi: { connect: { id: co_quan_don_vi_id } } } : {}),
-        ...(don_vi_truc_thuoc_id
-          ? { DonViTrucThuoc: { connect: { id: don_vi_truc_thuoc_id } } }
-          : {}),
-      } as Prisma.QuanNhanCreateInput;
-      heSoChucVu = Number(chucVu?.he_so_chuc_vu) || 0;
+    const unitData = await resolvePersonnelDataForCreate({
+      role,
+      username,
+      personnel_id,
+      co_quan_don_vi_id,
+      don_vi_truc_thuoc_id,
+      chuc_vu_id,
+    });
+    if (unitData) {
+      personnelDataForCreate = unitData.personnelDataForCreate;
+      heSoChucVu = unitData.heSoChucVu;
     }
 
     const finalPassword = password || DEFAULT_PASSWORD;
@@ -396,18 +263,6 @@ class AccountService {
 
     const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
-    // ─── TRANSACTION: tạo tài khoản + (nếu MANAGER/USER chưa gắn quân nhân) tự sinh hồ sơ ───
-    // Một bộ 4 thao tác phải đi cùng nhau, gói trong 1 transaction để không lệch
-    // dữ liệu (vd có TaiKhoan nhưng thiếu QuanNhan, hoặc so_luong đếm sai khi 1
-    // bước fail). Bất kỳ throw nào → Prisma ROLLBACK toàn bộ.
-    // SQL minh hoạ (nhánh có personnelDataForCreate):
-    //   INSERT INTO "QuanNhan"     (cccd, ho_ten, chuc_vu_id, ...) VALUES (NULL, $username, ...);
-    //     -- cccd=NULL: tạo trước, CCCD điền sau khi cập nhật hồ sơ
-    //   INSERT INTO "LichSuChucVu" (quan_nhan_id, chuc_vu_id, he_so_chuc_vu, ngay_bat_dau)
-    //     VALUES ($qnId, $chucVu, $heSo, NOW());          -- mốc giữ chức hiện tại
-    //   UPDATE "DonViTrucThuoc" SET so_luong = so_luong + 1 WHERE id = $dvtt;
-    //     -- hoặc "CoQuanDonVi" nếu không có ĐVTT (ưu tiên ĐVTT, tránh đếm 2 lần)
-    //   INSERT INTO "TaiKhoan"     (quan_nhan_id, username, password_hash, role) VALUES (...);
     const newAccount = await prisma.$transaction(async prismaTx => {
       if (personnelDataForCreate) {
         const newPersonnel = await quanNhanRepository.create(
@@ -458,17 +313,7 @@ class AccountService {
       );
     });
 
-    return {
-      id: newAccount.id,
-      username: newAccount.username,
-      role: newAccount.role,
-      quan_nhan_id: newAccount.quan_nhan_id,
-      ho_ten: newAccount.QuanNhan?.ho_ten || null,
-      don_vi:
-        (newAccount.QuanNhan?.DonViTrucThuoc || newAccount.QuanNhan?.CoQuanDonVi)?.ten_don_vi ||
-        null,
-      chuc_vu: newAccount.QuanNhan?.ChucVu?.ten_chuc_vu || null,
-    };
+    return formatAccount(newAccount);
   }
 
   async updateAccount(id: string, data: UpdateAccountData): Promise<FormattedAccount> {
@@ -502,8 +347,8 @@ class AccountService {
       don_vi_truc_thuoc_id !== undefined ||
       chuc_vu_id !== undefined;
 
-    // Roles split into two non-bridgeable groups: soldier accounts (MANAGER/USER, tied to a
-    // quân nhân) and admin accounts (SUPER_ADMIN/ADMIN, no quân nhân). Crossing groups is
+    // Roles split into two non-bridgeable groups: personnel accounts (MANAGER/USER, tied to a
+    // quan_nhan) and admin accounts (SUPER_ADMIN/ADMIN, no quan_nhan). Crossing groups is
     // meaningless and error-prone, so a role change may only stay within its own group.
     if (roleChanging) {
       const targetIsSoldierRole = role === ROLES.MANAGER || role === ROLES.USER;
@@ -535,64 +380,12 @@ class AccountService {
     } | null = null;
 
     if (reassignUnit) {
-      if (effectiveRole === ROLES.MANAGER) {
-        if (!co_quan_don_vi_id) {
-          throw new ValidationError(
-            'Tài khoản chỉ huy phải có Cơ quan đơn vị. Vui lòng chọn Cơ quan đơn vị.'
-          );
-        }
-        if (don_vi_truc_thuoc_id) {
-          throw new ValidationError(
-            'Tài khoản chỉ huy chỉ được chọn Cơ quan đơn vị, không được chọn Đơn vị trực thuộc.'
-          );
-        }
-      } else if (!co_quan_don_vi_id || !don_vi_truc_thuoc_id) {
-        throw new ValidationError(
-          'Tài khoản người dùng phải có đầy đủ Cơ quan đơn vị và Đơn vị trực thuộc. Vui lòng chọn cả hai.'
-        );
-      }
-
-      if (!chuc_vu_id) {
-        throw new ValidationError('Vui lòng chọn chức vụ');
-      }
-
-      const [coQuanDonVi, donViTrucThuoc] = await Promise.all([
-        coQuanDonViRepository.findIdById(co_quan_don_vi_id),
-        don_vi_truc_thuoc_id
-          ? donViTrucThuocRepository.findIdAndParentById(don_vi_truc_thuoc_id)
-          : null,
-      ]);
-
-      if (!coQuanDonVi) {
-        throw new NotFoundError('Cơ quan đơn vị');
-      }
-      if (don_vi_truc_thuoc_id) {
-        if (!donViTrucThuoc) {
-          throw new NotFoundError('Đơn vị trực thuộc');
-        }
-        if (donViTrucThuoc.co_quan_don_vi_id !== co_quan_don_vi_id) {
-          throw new ValidationError('Đơn vị trực thuộc không thuộc cơ quan đơn vị đã chọn');
-        }
-      }
-
-      const chucVu = await positionRepository.findUniqueRaw({
-        where: { id: chuc_vu_id },
-        select: { is_manager: true },
-      });
-      if (!chucVu) {
-        throw new NotFoundError('Chức vụ');
-      }
-      if (effectiveRole === ROLES.MANAGER && !chucVu.is_manager) {
-        throw new ValidationError(
-          'Tài khoản chỉ huy phải có chức vụ là Chỉ huy. Vui lòng chọn chức vụ có quyền chỉ huy.'
-        );
-      }
-
-      resolvedUnit = {
-        chuc_vu_id,
+      resolvedUnit = await resolveUnitReassignment({
+        effectiveRole,
         co_quan_don_vi_id,
-        don_vi_truc_thuoc_id: effectiveRole === ROLES.MANAGER ? null : don_vi_truc_thuoc_id,
-      };
+        don_vi_truc_thuoc_id,
+        chuc_vu_id,
+      });
     }
 
     const updateData: Prisma.TaiKhoanUncheckedUpdateInput = {};
@@ -632,7 +425,8 @@ class AccountService {
 
         // Unit move: keep so_luong counters correct (decrement old, increment new).
         const oldPrimaryUnitId = qn.don_vi_truc_thuoc_id || qn.co_quan_don_vi_id;
-        const newPrimaryUnitId = resolvedUnit.don_vi_truc_thuoc_id || resolvedUnit.co_quan_don_vi_id;
+        const newPrimaryUnitId =
+          resolvedUnit.don_vi_truc_thuoc_id || resolvedUnit.co_quan_don_vi_id;
         if (oldPrimaryUnitId !== newPrimaryUnitId) {
           if (oldPrimaryUnitId) {
             await adjustUnitCount(tx, oldPrimaryUnitId, !qn.don_vi_truc_thuoc_id, 'decrement');
@@ -658,33 +452,20 @@ class AccountService {
         await profileService.recalculateAnnualProfile(account.quan_nhan_id);
       } catch (recalcError) {
         void writeSystemLog({
-          action: 'ERROR',
+          action: AUDIT_ACTIONS.ERROR,
           resource: RESOURCE_SLUGS.PERSONNEL,
-          description: `Lỗi tính lại hồ sơ hằng năm quân nhân ${account.quan_nhan_id}: ${recalcError}`,
+          description: logMessages.recalcPersonnelError(account.quan_nhan_id, recalcError),
         });
       }
     }
 
-    // Đổi vai trò → quyền hạn thay đổi, nhưng JWT cũ vẫn còn hiệu lực tới khi hết
-    // hạn. Đẩy 'force_logout' qua socket buộc session cũ đăng nhập lại để nhận
-    // token mang role mới (tránh dùng quyền cũ sau khi đã bị đổi).
     if (roleChanging) {
       emitToUser(id, 'force_logout', {
         message: 'Vai trò tài khoản của bạn vừa được thay đổi. Vui lòng đăng nhập lại.',
       });
     }
 
-    return {
-      id: updatedAccount.id,
-      username: updatedAccount.username,
-      role: updatedAccount.role,
-      quan_nhan_id: updatedAccount.quan_nhan_id,
-      ho_ten: updatedAccount.QuanNhan?.ho_ten || null,
-      don_vi:
-        (updatedAccount.QuanNhan?.DonViTrucThuoc || updatedAccount.QuanNhan?.CoQuanDonVi)
-          ?.ten_don_vi || null,
-      chuc_vu: updatedAccount.QuanNhan?.ChucVu?.ten_chuc_vu || null,
-    };
+    return formatAccount(updatedAccount);
   }
 
   async resetPassword(accountId: string, callerRole?: string): Promise<{ message: string }> {
@@ -698,7 +479,11 @@ class AccountService {
     }
 
     // ADMIN must not reset passwords of ADMIN/SUPER_ADMIN accounts (privilege escalation).
-    if (callerRole === ROLES.ADMIN && account.role !== ROLES.MANAGER && account.role !== ROLES.USER) {
+    if (
+      callerRole === ROLES.ADMIN &&
+      account.role !== ROLES.MANAGER &&
+      account.role !== ROLES.USER
+    ) {
       throw new ForbiddenError('Không có quyền đặt lại mật khẩu cho tài khoản này');
     }
 
@@ -840,9 +625,11 @@ class AccountService {
           } else {
             await donViTrucThuocRepository.decrementSoLuong(unitId, prismaTx);
           }
-        } catch (error: unknown) {
+        } catch (error) {
+          console.error('[deleteAccount] decrement unit count failed', { unitId, error });
           throw new AppError(
-            `Không thể cập nhật số lượng quân nhân của đơn vị: ${error instanceof Error ? error.message : String(error)}`
+            'Không thể cập nhật số lượng quân nhân của đơn vị, vui lòng thử lại.',
+            500
           );
         }
       }

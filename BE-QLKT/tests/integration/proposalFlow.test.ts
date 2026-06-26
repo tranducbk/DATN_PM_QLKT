@@ -68,8 +68,8 @@ afterAll(async () => {
   await prisma.$disconnect();
 });
 
-describe('Proposal flow (HTTP): submit -> approve -> award + profile', () => {
-  it('manager submits CSTDCS, admin approves, award and annual profile are created', async () => {
+describe('Gửi đề xuất → Phê duyệt → Trao danh hiệu (luồng thật qua HTTP)', () => {
+  it('Gửi đề xuất → Phê duyệt: Manager gửi đề xuất CSTDCS, Admin duyệt → tạo khen thưởng và hồ sơ hằng năm', async () => {
     const managerToken = await login(managerUsername);
     const adminToken = await login(adminUsername);
 

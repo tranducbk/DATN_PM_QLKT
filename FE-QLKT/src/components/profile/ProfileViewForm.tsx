@@ -2,22 +2,35 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { Card, message, ConfigProvider, Tag, Breadcrumb } from 'antd';
-import { UserOutlined, HomeOutlined } from '@ant-design/icons';
-import Link from 'next/link';
+import { Card, message, ConfigProvider, Tag, Button, Modal, Form, Input, DatePicker, Row, Col } from 'antd';
+import { UserOutlined, EditOutlined } from '@ant-design/icons';
+import dayjs, { Dayjs } from 'dayjs';
 import { apiClient } from '@/lib/http/apiClient';
 import { formatDate, formatHeSoChucVu } from '@/lib/utils';
 import { useTheme } from '@/components/ThemeProvider';
 import { LoadingState } from '@/components/shared/LoadingState';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { getAntdThemeConfig } from '@/lib/antdTheme';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import { getRoleInfo } from '@/constants/roles.constants';
 import { GENDER } from '@/constants/gender.constants';
 import type { PersonnelDetail } from '@/lib/types/personnelList';
+import { VietnamAddressCascader } from '@/components/shared/VietnamAddressCascader';
+import { parseAddressToArray, formatAddressToString } from '@/lib/address';
 
 
 interface ProfileViewFormProps {
   personnelId?: string;
+}
+
+interface ProfileFormValues {
+  ho_ten?: string;
+  ngay_sinh?: Dayjs | null;
+  so_dien_thoai?: string;
+  que_quan_2_cap?: string;
+  que_quan_3_cap?: string[];
+  tru_quan?: string;
+  cho_o_hien_nay?: string;
 }
 
 export function ProfileViewForm({
@@ -27,6 +40,9 @@ export function ProfileViewForm({
   const { isDark } = useTheme();
   const [loading, setLoading] = useState(true);
   const [personnelData, setPersonnelData] = useState<PersonnelDetail | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form] = Form.useForm();
 
   const loadPersonnelData = useCallback(async () => {
     try {
@@ -79,6 +95,43 @@ export function ProfileViewForm({
     loadPersonnelData();
   }, [loadPersonnelData]);
 
+  useEffect(() => {
+    if (editOpen && personnelData) {
+      form.setFieldsValue({
+        ho_ten: personnelData.ho_ten,
+        ngay_sinh: personnelData.ngay_sinh ? dayjs(personnelData.ngay_sinh) : null,
+        so_dien_thoai: personnelData.so_dien_thoai,
+        que_quan_2_cap: personnelData.que_quan_2_cap,
+        que_quan_3_cap: parseAddressToArray(personnelData.que_quan_3_cap),
+        tru_quan: personnelData.tru_quan,
+        cho_o_hien_nay: personnelData.cho_o_hien_nay,
+      });
+    }
+  }, [editOpen, personnelData, form]);
+
+  const handleSave = async (values: ProfileFormValues) => {
+    try {
+      setSaving(true);
+      const payload = {
+        ...values,
+        ngay_sinh: values.ngay_sinh ? values.ngay_sinh.format('YYYY-MM-DD') : null,
+        que_quan_3_cap: values.que_quan_3_cap ? formatAddressToString(values.que_quan_3_cap) : null,
+      };
+      const res = await apiClient.updateMyProfile(payload);
+      if (res.success) {
+        message.success('Cập nhật thông tin thành công');
+        setEditOpen(false);
+        loadPersonnelData();
+      } else {
+        message.error(res.message || 'Cập nhật thất bại');
+      }
+    } catch (error: unknown) {
+      message.error(getApiErrorMessage(error, 'Cập nhật thất bại'));
+    } finally {
+      setSaving(false);
+    }
+  };
+
   if (loading) {
     return <LoadingState className="min-h-[400px]" text="Đang tải thông tin..." />;
   }
@@ -90,18 +143,12 @@ export function ProfileViewForm({
   return (
     <ConfigProvider theme={getAntdThemeConfig(isDark)}>
       <div className="p-6 max-w-7xl mx-auto">
-        {/* Breadcrumb */}
-        <Breadcrumb className="mb-6">
-          <Breadcrumb.Item>
-            <Link href="/user/dashboard">
-              <HomeOutlined />
-            </Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>
-            <Link href="/user/profile">Lịch sử chi tiết</Link>
-          </Breadcrumb.Item>
-          <Breadcrumb.Item>Thông tin cá nhân</Breadcrumb.Item>
-        </Breadcrumb>
+        <PageBreadcrumb
+          items={[
+            { title: 'Lịch sử chi tiết', href: '/user/profile' },
+            { title: 'Thông tin cá nhân' },
+          ]}
+        />
 
         <Card
           title={
@@ -109,6 +156,13 @@ export function ProfileViewForm({
               <UserOutlined className="text-2xl" />
               <span className="text-2xl font-bold">Thông tin cá nhân</span>
             </div>
+          }
+          extra={
+            !externalPersonnelId && (
+              <Button type="primary" icon={<EditOutlined />} onClick={() => setEditOpen(true)}>
+                Sửa thông tin
+              </Button>
+            )
           }
           className="shadow-lg"
         >
@@ -316,6 +370,67 @@ export function ProfileViewForm({
             )}
           </div>
         </Card>
+
+        <Modal
+          title="Sửa thông tin cá nhân"
+          open={editOpen}
+          centered
+          width={760}
+          styles={{ body: { overflowX: 'hidden' } }}
+          onCancel={() => setEditOpen(false)}
+          onOk={() => form.submit()}
+          confirmLoading={saving}
+          okText="Lưu"
+          cancelText="Huỷ"
+        >
+          <Form form={form} layout="vertical" onFinish={handleSave}>
+            <Row gutter={16}>
+              <Col xs={24} sm={12}>
+                <Form.Item
+                  name="ho_ten"
+                  label="Họ và tên"
+                  rules={[{ required: true, message: 'Vui lòng nhập họ và tên' }]}
+                >
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item name="ngay_sinh" label="Ngày sinh">
+                  <DatePicker format="DD/MM/YYYY" style={{ width: '100%' }} />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item name="so_dien_thoai" label="Số điện thoại">
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item name="que_quan_2_cap" label="Quê quán 2 cấp">
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item name="tru_quan" label="Trú quán hiện nay">
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col xs={24} sm={12}>
+                <Form.Item name="cho_o_hien_nay" label="Chỗ ở hiện nay">
+                  <Input />
+                </Form.Item>
+              </Col>
+              <Col span={24}>
+                <Form.Item
+                  name="que_quan_3_cap"
+                  label="Quê quán 3 cấp"
+                  rules={[{ required: true, message: 'Vui lòng chọn ít nhất Tỉnh/Thành phố' }]}
+                >
+                  <VietnamAddressCascader size="middle" />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Form>
+        </Modal>
       </div>
     </ConfigProvider>
   );

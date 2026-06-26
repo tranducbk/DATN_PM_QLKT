@@ -1,4 +1,8 @@
 import { systemLogRepository } from '../repositories/systemLog.repository';
+import { SYSTEM_ACTOR } from '../constants/roles.constants';
+
+/** Max stored length of a log description — column is capped, both write paths share this. */
+export const MAX_LOG_DESCRIPTION_LENGTH = 500;
 
 /*
  * ════════════════════════════════════════════════════════════════════════════
@@ -55,14 +59,14 @@ async function writeSystemLog({
 }: WriteSystemLogParams): Promise<void> {
   try {
     // Use null actor ID for system-level logs without a foreign key.
-    const actorId = userId && userId !== 'SYSTEM' ? userId : null;
+    const actorId = userId && userId !== SYSTEM_ACTOR ? userId : null;
     await systemLogRepository.create({
       nguoi_thuc_hien_id: actorId,
-      actor_role: userRole || 'SYSTEM',
+      actor_role: userRole || SYSTEM_ACTOR,
       action,
       resource,
       tai_nguyen_id: resourceId,
-      description: description.substring(0, 500),
+      description: description.substring(0, MAX_LOG_DESCRIPTION_LENGTH),
       payload: payload ? JSON.stringify(payload) : undefined,
     });
   } catch (e) {

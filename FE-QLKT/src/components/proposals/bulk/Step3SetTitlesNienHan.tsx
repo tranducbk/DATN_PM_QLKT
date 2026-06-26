@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Table, Select, Alert, Typography, Space, Tag, message, Button, Input, Empty } from 'antd';
+import { Table, Select, Typography, Space, Tag, message, Button, Input, Empty } from 'antd';
 import { EditOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/http/apiClient';
@@ -10,6 +10,7 @@ import { ServiceHistoryModal } from './ServiceHistoryModal';
 import { MILITARY_RANKS } from '@/constants/militaryRanks.constants';
 import { ELIGIBILITY_STATUS } from '@/constants/eligibilityStatus.constants';
 import {
+  DANH_HIEU_HCCSVV,
   HCCSVV_YEARS_HANG_BA,
   HCCSVV_YEARS_HANG_NHI,
   HCCSVV_YEARS_HANG_NHAT,
@@ -18,6 +19,8 @@ import {
 } from '@/constants/danhHieu.constants';
 import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { formatDate } from '@/lib/utils';
+import { StepGuide } from './StepGuide';
+import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
 import type { DateInput } from '@/lib/types/common';
 import type { ServiceProfile } from '@/lib/types/personnelList';
 
@@ -218,23 +221,23 @@ export function Step3SetTitlesNienHan({
     const namNhan = serviceProfile?.hccsvv_nam_nhan as
       | Record<string, { nam?: number | null }>
       | undefined;
-    const namNhanBa = namNhan?.HCCSVV_HANG_BA?.nam ?? null;
-    const namNhanNhi = namNhan?.HCCSVV_HANG_NHI?.nam ?? null;
+    const namNhanBa = namNhan?.[DANH_HIEU_HCCSVV.HANG_BA]?.nam ?? null;
+    const namNhanNhi = namNhan?.[DANH_HIEU_HCCSVV.HANG_NHI]?.nam ?? null;
 
     if (
       serviceProfile?.hccsvv_hang_nhat_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN &&
       (namNhanNhi == null || nam > namNhanNhi)
     ) {
-      return 'HCCSVV_HANG_NHAT';
+      return DANH_HIEU_HCCSVV.HANG_NHAT;
     }
     if (
       serviceProfile?.hccsvv_hang_nhi_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN &&
       (namNhanBa == null || nam > namNhanBa)
     ) {
-      return 'HCCSVV_HANG_NHI';
+      return DANH_HIEU_HCCSVV.HANG_NHI;
     }
     if (serviceProfile?.hccsvv_hang_ba_status === ELIGIBILITY_STATUS.DU_DIEU_KIEN) {
-      return 'HCCSVV_HANG_BA';
+      return DANH_HIEU_HCCSVV.HANG_BA;
     }
     return undefined;
   };
@@ -391,9 +394,9 @@ export function Step3SetTitlesNienHan({
           const isNotEligible =
             data.danh_hieu &&
             eligibility &&
-            ((data.danh_hieu === 'HCCSVV_HANG_BA' && !eligibility.hangBa) ||
-              (data.danh_hieu === 'HCCSVV_HANG_NHI' && !eligibility.hangNhi) ||
-              (data.danh_hieu === 'HCCSVV_HANG_NHAT' && !eligibility.hangNhat));
+            ((data.danh_hieu === DANH_HIEU_HCCSVV.HANG_BA && !eligibility.hangBa) ||
+              (data.danh_hieu === DANH_HIEU_HCCSVV.HANG_NHI && !eligibility.hangNhi) ||
+              (data.danh_hieu === DANH_HIEU_HCCSVV.HANG_NHAT && !eligibility.hangNhat));
 
           return (
             <div>
@@ -405,9 +408,9 @@ export function Step3SetTitlesNienHan({
                 size="middle"
                 status={isNotEligible ? 'warning' : undefined}
                 options={[
-                  { value: 'HCCSVV_HANG_BA', label: 'hạng Ba' },
-                  { value: 'HCCSVV_HANG_NHI', label: 'hạng Nhì' },
-                  { value: 'HCCSVV_HANG_NHAT', label: 'hạng Nhất' },
+                  { value: DANH_HIEU_HCCSVV.HANG_BA, label: 'hạng Ba' },
+                  { value: DANH_HIEU_HCCSVV.HANG_NHI, label: 'hạng Nhì' },
+                  { value: DANH_HIEU_HCCSVV.HANG_NHAT, label: 'hạng Nhất' },
                 ]}
               />
               {isNotEligible && (
@@ -451,26 +454,19 @@ export function Step3SetTitlesNienHan({
 
   return (
     <div>
-      <Alert
-        message={`Bước 3: Thiết lập danh hiệu - ${AWARD_TAB_LABELS.HCCSVV}`}
-        description={
-          <div>
-            <p>
-              1. Hệ thống tự động gợi ý danh hiệu theo thời gian phục vụ và lịch sử đã nhận cho{' '}
-              <strong>{personnel.length}</strong> quân nhân.
-            </p>
-            <p>
-              2. Yêu cầu thời gian: hạng Ba 10 năm, hạng Nhì 15 năm, hạng Nhất 20 năm.
-            </p>
-            <p>3. Quy tắc xét: nhận theo thứ tự hạng Ba → hạng Nhì → hạng Nhất.</p>
-            <p>4. Kiểm tra để tất cả quân nhân đều đã có danh hiệu trước khi chuyển bước.</p>
-            <p>5. Hoàn tất khai báo, nhấn &quot;Tiếp tục&quot; để sang bước đính kèm tệp.</p>
-          </div>
-        }
-        type="info"
-        showIcon
+      <StepGuide
+        title={stepGuideTitle(3, 'Thiết lập danh hiệu', AWARD_TAB_LABELS.HCCSVV)}
         icon={<EditOutlined />}
-        style={{ marginBottom: 24 }}
+        steps={[
+          <span key="0">
+            Hệ thống tự động gợi ý danh hiệu theo thời gian phục vụ và lịch sử đã nhận cho{' '}
+            <strong>{personnel.length}</strong> quân nhân.
+          </span>,
+          'Yêu cầu thời gian: hạng Ba 10 năm, hạng Nhì 15 năm, hạng Nhất 20 năm.',
+          'Quy tắc xét: nhận theo thứ tự hạng Ba → hạng Nhì → hạng Nhất.',
+          GUIDE_LINES.allHaveTitle,
+          GUIDE_LINES.nextToAttach,
+        ]}
       />
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>

@@ -56,8 +56,8 @@ type SocketNotificationPayload = {
 };
 
 /**
- * Component hiển thị toast khi có thông báo mới qua socket.
- * Phải đặt bên trong <App> để dùng được App.useApp().
+ * Shows a toast when a new notification arrives over the socket.
+ * Must be rendered inside <App> so App.useApp() is available.
  */
 function NotificationToast({ notification }: { notification: SocketNotificationPayload | null }) {
   const { notification: antNotification } = App.useApp();
@@ -76,21 +76,19 @@ function NotificationToast({ notification }: { notification: SocketNotificationP
 }
 
 /**
- * Component lắng nghe lỗi API toàn cục và hiển thị thông báo.
- * Phải đặt bên trong <App> để dùng được App.useApp().
+ * Listens for global API errors and surfaces them as notifications.
+ * Must be rendered inside <App> so App.useApp() is available.
  */
 function ApiErrorHandler() {
   const { message } = App.useApp();
 
   useEffect(() => {
     const handler = (e: CustomEvent<{ message: string; status: number }>) => {
-      const { status: statusCode } = e.detail;
-      if (statusCode >= 500) {
+      const { status } = e.detail;
+      if (status >= 500) {
         message.error(e.detail.message || 'Lỗi máy chủ. Vui lòng thử lại sau.');
-      } else if (statusCode === 403) {
+      } else if (status === 403) {
         message.warning('Bạn không có quyền thực hiện thao tác này.');
-      } else if (statusCode === 400) {
-        message.warning(e.detail.message || 'Dữ liệu không hợp lệ.');
       }
     };
 
@@ -102,8 +100,8 @@ function ApiErrorHandler() {
 }
 
 /**
- * Component hiển thị toast khi trạng thái kết nối socket thay đổi.
- * Phải đặt bên trong <App> để dùng được App.useApp().
+ * Shows a toast when the socket connection status changes.
+ * Must be rendered inside <App> so App.useApp() is available.
  */
 const DISCONNECT_TOAST_DEBOUNCE_MS = 3000;
 
@@ -342,14 +340,24 @@ export function MainLayout({ children, role = ROLES.ADMIN }: MainLayoutProps) {
     }
   };
 
-  const handleDeleteAllNotifications = async () => {
-    try {
-      await apiClient.deleteAllNotifications();
-      setNotifications([]);
-      setNotificationCount(0);
-    } catch (error: unknown) {
-      message.error(getApiErrorMessage(error, 'Không thể xóa thông báo'));
-    }
+  const handleDeleteAllNotifications = () => {
+    Modal.confirm({
+      title: 'Xóa tất cả thông báo?',
+      content: 'Bạn có chắc muốn xóa toàn bộ thông báo? Hành động này không thể hoàn tác.',
+      okText: 'Xóa',
+      cancelText: 'Hủy',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        const result = await apiClient.deleteAllNotifications();
+        if (!result.success) {
+          message.error(result.message || 'Không thể xóa thông báo');
+          return;
+        }
+        setNotifications([]);
+        setNotificationCount(0);
+        message.success('Đã xóa tất cả thông báo');
+      },
+    });
   };
 
   const handleLogout = async () => {

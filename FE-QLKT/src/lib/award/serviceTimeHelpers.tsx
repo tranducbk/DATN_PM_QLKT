@@ -3,6 +3,7 @@ import type { ColumnsType } from 'antd/es/table';
 import type { DateInput } from '@/lib/types/common';
 import type { ContributionProfile } from '@/lib/types/personnelList';
 import { apiClient } from '@/lib/http/apiClient';
+import { formatMonths } from '@/lib/utils';
 
 const { Text } = Typography;
 
@@ -20,7 +21,7 @@ export type ServiceTimeRow = {
 
 type ContributionMonthField = 'months_07' | 'months_08' | 'months_0910';
 
-export function calcServiceTime(
+function calcServiceTime(
   ngayNhapNgu: DateInput,
   ngayXuatNgu: DateInput,
   refNam: number,
@@ -36,15 +37,6 @@ export function calcServiceTime(
     const total = Math.max(0, (endDate.getFullYear() - startDate.getFullYear()) * 12 + endDate.getMonth() - startDate.getMonth());
     return { years: Math.floor(total / 12), months: total % 12, totalMonths: total };
   } catch { return null; }
-}
-
-export function formatMonths(totalMonths: number): string {
-  if (!totalMonths || totalMonths <= 0) return '-';
-  const years = Math.floor(totalMonths / 12);
-  const months = totalMonths % 12;
-  if (years > 0 && months > 0) return `${years} năm ${months} tháng`;
-  if (years > 0) return `${years} năm`;
-  return `${months} tháng`;
 }
 
 export function renderServiceTime(record: ServiceTimeRow, refNam: number, refThang: number) {

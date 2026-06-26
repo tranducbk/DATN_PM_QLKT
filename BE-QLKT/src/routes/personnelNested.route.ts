@@ -13,7 +13,7 @@ import positionHistoryController from '../controllers/positionHistory.controller
 import scientificAchievementController from '../controllers/scientificAchievement.controller';
 import profileController from '../controllers/profile.controller';
 import personnelService from '../services/personnel.service';
-import { verifyToken, requireManager } from '../middlewares/auth';
+import { verifyToken, requireManager, requireAdminOrManager } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
@@ -74,7 +74,7 @@ router.get(
 router.post(
   '/annual-rewards',
   verifyToken,
-  requireManager,
+  requireAdminOrManager,
   auditLog({
     action: AUDIT_ACTIONS.CREATE,
     resource: AWARD_SLUGS.ANNUAL_REWARDS,
@@ -173,22 +173,6 @@ router.get(
   (req: Request, res: Response, next: NextFunction) => {
     req.query.personnel_id = req.params.personnelId;
     scientificAchievementController.getAchievements(req, res, next);
-  }
-);
-
-/**
- * @route   POST /api/personnel/:personnelId/scientific-achievements
- * @desc    Create a scientific achievement for a personnel (alias route)
- * @access  Private - ADMIN, MANAGER
- */
-router.post(
-  '/scientific-achievements',
-  verifyToken,
-  requireManager,
-  (req: Request, res: Response, next: NextFunction) => {
-    // Add personnel_id from URL params to body (CUID, not a number)
-    req.body.personnel_id = req.params.personnelId;
-    scientificAchievementController.createAchievement(req, res, next);
   }
 );
 

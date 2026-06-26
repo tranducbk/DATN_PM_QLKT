@@ -17,18 +17,13 @@ export const PROPOSAL_STATUS_LABELS: Record<string, string> = {
   REJECTED: 'Từ chối',
 };
 
-export const PROPOSAL_STATUS_COLORS: Record<string, string> = {
-  PENDING: 'orange',
-  APPROVED: 'green',
-  REJECTED: 'red',
-};
 
 export function getProposalStatusLabel(status: string | undefined | null): string {
   if (!status) return EMPTY_LABEL;
   return PROPOSAL_STATUS_LABELS[status] ?? status;
 }
 
-export const PROPOSAL_TYPES_REQUIRING_MONTH = new Set<ProposalType>(
+const PROPOSAL_TYPES_REQUIRING_MONTH = new Set<ProposalType>(
   Object.values(AWARD_TYPE_REGISTRY)
     .filter(meta => meta.requiresMonth)
     .map(meta => meta.code)

@@ -54,8 +54,8 @@ function callSubmit(items: NienHanItem[], thang: number | null = 6, nam = 2024) 
   );
 }
 
-describe('proposal.submit - NIEN_HAN', () => {
-  it('gửi thành công 1 item HCCSVV hạng ba (CQDV)', async () => {
+describe('Gửi đề xuất Huy chương Chiến sĩ vẻ vang (HCCSVV) theo niên hạn', () => {
+  it('Gửi đề xuất: HCCSVV hạng Ba cho quân nhân đủ niên hạn (manager thuộc cơ quan đơn vị) → tạo đề xuất', async () => {
     // Cho trước: 1 manager + 1 quân nhân đã 12 năm phục vụ
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({
@@ -92,7 +92,7 @@ describe('proposal.submit - NIEN_HAN', () => {
     });
   });
 
-  it('gửi thành công với DVTT — proposal lưu don_vi_truc_thuoc_id', async () => {
+  it('Gửi đề xuất: manager thuộc đơn vị trực thuộc (ĐVTT) → đề xuất gắn đúng đơn vị trực thuộc', async () => {
     arrangeManagerWithUnit('DVTT');
     const target = makePersonnel({ id: 'qn-2', ngay_nhap_ngu: new Date('2010-01-01') });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -116,7 +116,7 @@ describe('proposal.submit - NIEN_HAN', () => {
     expect(data.co_quan_don_vi_id).toBe(null);
   });
 
-  it('reject khi thiếu tháng (NIEN_HAN bắt buộc thang)', async () => {
+  it('Gửi đề xuất bị chặn: chưa nhập tháng đề xuất → báo thiếu tháng', async () => {
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({ id: 'qn-no-thang' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -129,7 +129,7 @@ describe('proposal.submit - NIEN_HAN', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('reject khi danh_hieu không phải HCCSVV (vd HC_QKQT)', async () => {
+  it('Gửi đề xuất bị chặn: chọn nhầm danh hiệu (HC QKQT thay vì HCCSVV) → báo danh hiệu không hợp lệ', async () => {
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({ id: 'qn-wrong' });
     prismaMock.quanNhan.findMany.mockResolvedValueOnce([target]);
@@ -142,7 +142,7 @@ describe('proposal.submit - NIEN_HAN', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('reject HANG_NHI khi quân nhân chưa có HANG_BA', async () => {
+  it('Gửi đề xuất bị chặn: đề nghị HCCSVV hạng Nhì khi quân nhân chưa có hạng Ba → buộc nhận hạng Ba trước', async () => {
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({
       id: 'qn-rk-1',
@@ -160,7 +160,7 @@ describe('proposal.submit - NIEN_HAN', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('reject HANG_NHI khi HANG_BA cùng năm — phải sau năm', async () => {
+  it('Gửi đề xuất bị chặn: đề nghị HCCSVV hạng Nhì cùng năm với hạng Ba → buộc đề nghị ở năm sau', async () => {
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({
       id: 'qn-rk-2',
@@ -180,7 +180,7 @@ describe('proposal.submit - NIEN_HAN', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('gửi thành công HANG_NHI khi HANG_BA năm trước', async () => {
+  it('Gửi đề xuất: đề nghị HCCSVV hạng Nhì khi đã có hạng Ba từ năm trước → tạo đề xuất', async () => {
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({
       id: 'qn-rk-3',
@@ -206,7 +206,7 @@ describe('proposal.submit - NIEN_HAN', () => {
     expect(prismaMock.bangDeXuat.create).toHaveBeenCalledTimes(1);
   });
 
-  it('reject HANG_NHAT khi thiếu HANG_NHI', async () => {
+  it('Gửi đề xuất bị chặn: đề nghị HCCSVV hạng Nhất khi chưa có hạng Nhì → buộc nhận hạng Nhì trước', async () => {
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({
       id: 'qn-rk-4',
@@ -226,7 +226,7 @@ describe('proposal.submit - NIEN_HAN', () => {
     expect(prismaMock.bangDeXuat.create).not.toHaveBeenCalled();
   });
 
-  it('gửi thành công HANG_NHAT đầy đủ tuần tự', async () => {
+  it('Gửi đề xuất: đề nghị HCCSVV hạng Nhất khi đã có đủ hạng Ba rồi hạng Nhì theo thứ tự → tạo đề xuất', async () => {
     arrangeManagerWithUnit('CQDV');
     const target = makePersonnel({
       id: 'qn-rk-5',

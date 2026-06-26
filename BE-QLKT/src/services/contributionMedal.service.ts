@@ -1,42 +1,12 @@
-/*
- * ════════════════════════════════════════════════════════════════════════════
- *  CONTRIBUTION MEDAL SERVICE — CRUD + Excel I/O cho HCBVTQ
- * ════════════════════════════════════════════════════════════════════════════
- *
- *  HCBVTQ = Huân chương Bảo vệ Tổ quốc (3 hạng Nhất/Nhì/Ba).
- *
- *  KHÁC HCCSVV:
- *  - HCCSVV: 3 record riêng (mỗi hạng 1 row).
- *  - HCBVTQ: 1 record duy nhất per personnel, UPGRADE bằng UPDATE
- *    (xem hcbvtqStrategy.ts).
- *
- *  RANK UPGRADE LOGIC (khi import từ Excel):
- *  - Nếu quân nhân đã có HCBVTQ:
- *      newRank > existingRank → UPDATE record cũ thành rank mới.
- *      newRank ≤ existingRank → REJECT (vô nghĩa, không downgrade).
- *
- *  ELIGIBILITY CHECK trước khi insert:
- *  - Query positionHistory → tính số tháng theo 3 nhóm hệ số (0.7/0.8/0.9-1.0).
- *  - Compare với threshold theo giới tính (120 nam / 80 nữ).
- *  - Hạng cao yêu cầu tháng nhóm cao (xem hcbvtqEligibility.ts).
- *
- *  EXCEL IMPORT: 2-step preview + confirm (giống tenure).
- *  RECALC: trigger profile/contribution.ts sau mỗi insert.
- * ════════════════════════════════════════════════════════════════════════════
- */
-
-import ExcelJS from 'exceljs';
 import { buildMedalListWhere } from '../helpers/unitHelper';
 import { contributionMedalRepository } from '../repositories/contributionMedal.repository';
-import { accountRepository } from '../repositories/account.repository';
 import profileService from './profile.service';
-import * as notificationHelper from '../helpers/notification';
 import { getDanhHieuName } from '../constants/danhHieu.constants';
 import { NotFoundError } from '../middlewares/errorHandler';
-import { sanitizeRowData } from '../helpers/excel/excelHelper';
-import { writeSystemLog } from '../helpers/systemLogHelper';
-import { buildTemplate, styleHeaderRow } from '../helpers/excel/excelTemplateHelper';
+import { buildTemplate, buildAwardExportBuffer } from '../helpers/excel/excelTemplateHelper';
+import { durationToMonths } from '../helpers/serviceYearsHelper';
 import { fetchTemplateData } from './excel/templateData.service';
+import { finalizeMedalAwardDeletion } from './medalAwardHelpers';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
@@ -56,15 +26,13 @@ export type { ContributionAwardValidItem } from './contributionMedal/types';
 
 const AWARD_LABEL = AWARD_LABELS[AWARD_SLUGS.CONTRIBUTION_MEDALS];
 
-class ContributionAwardService {
+class ContributionMedalService {
   /**
    * Export template Excel for Contribution Awards (HCBVTQ) import.
    * @param personnelIds - Pre-fill with selected personnel
    * @param repeatMap - Map of personnel id to repeat count for pre-fill rows
    * @returns Excel workbook buffer
    */
-  // HCBVTQ (cống hiến) cùng khuôn template chung qua buildTemplate (giống HCCSVV):
-  // dropdown 3 hạng + 3 cột điền. Chỉ khác hằng số cột/option đặc thù loại này.
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const { personnelList, decisionNumbers } = await fetchTemplateData({
       personnelIds,
@@ -149,67 +117,33 @@ class ContributionAwardService {
    * @param filters - Optional filters applied before export
    * @returns Excel workbook buffer
    */
-  // Export dữ liệu: tái dùng getAll như HCCSVV. Riêng HCBVTQ có cột "thời gian
-  // cống hiến" lưu dạng object {years, months} → convertThoiGian quy về tổng tháng
-  // trước khi ghi cell (Excel không hiển thị object).
   async exportToExcel(filters: Record<string, unknown> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
-
-    const workbook = new ExcelJS.Workbook();
-    const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.HCBVTQ);
-
-    worksheet.columns = [...HCBVTQ_EXPORT_COLUMNS];
-
-    styleHeaderRow(worksheet);
-
-    const convertThoiGian = thoiGian => {
-      if (!thoiGian) return '';
-      if (typeof thoiGian === 'object') {
-        const years = thoiGian.years ?? 0;
-        const months = thoiGian.months ?? 0;
-        return years * 12 + months;
-      } else if (typeof thoiGian === 'number') {
-        return thoiGian;
-      } else if (typeof thoiGian === 'string') {
-        try {
-          const parsed = JSON.parse(thoiGian);
-          const years = parsed.years ?? 0;
-          const months = parsed.months ?? 0;
-          return years * 12 + months;
-        } catch (error) {
-          console.error('Failed to parse thoi_gian JSON when exporting contribution medals:', error);
-          return thoiGian;
-        }
-      }
-      return '';
-    };
-
-    data.forEach((item, index) => {
-      worksheet.addRow(
-        sanitizeRowData({
-          stt: index + 1,
-          id: item.QuanNhan?.id ?? '',
-          cccd: item.QuanNhan?.cccd ?? '',
-          ho_ten: item.QuanNhan?.ho_ten ?? '',
-          cap_bac: item.cap_bac ?? '',
-          chuc_vu: item.chuc_vu ?? '',
-          don_vi:
-            item.QuanNhan?.CoQuanDonVi?.ten_don_vi ??
-            item.QuanNhan?.DonViTrucThuoc?.ten_don_vi ??
-            '',
-          nam: item.nam,
-          thang: item.thang,
-          danh_hieu: getDanhHieuName(item.danh_hieu),
-          thoi_gian_nhom_0_7: convertThoiGian(item.thoi_gian_nhom_0_7),
-          thoi_gian_nhom_0_8: convertThoiGian(item.thoi_gian_nhom_0_8),
-          thoi_gian_nhom_0_9_1_0: convertThoiGian(item.thoi_gian_nhom_0_9_1_0),
-          so_quyet_dinh: item.so_quyet_dinh ?? '',
-          ghi_chu: item.ghi_chu ?? '',
-        })
-      );
-    });
-
-    return await workbook.xlsx.writeBuffer();
+    return buildAwardExportBuffer(
+      data,
+      AWARD_EXCEL_SHEETS.HCBVTQ,
+      [...HCBVTQ_EXPORT_COLUMNS],
+      (item, index) => ({
+        stt: index + 1,
+        id: item.QuanNhan?.id ?? '',
+        cccd: item.QuanNhan?.cccd ?? '',
+        ho_ten: item.QuanNhan?.ho_ten ?? '',
+        cap_bac: item.cap_bac ?? '',
+        chuc_vu: item.chuc_vu ?? '',
+        don_vi:
+          item.QuanNhan?.CoQuanDonVi?.ten_don_vi ??
+          item.QuanNhan?.DonViTrucThuoc?.ten_don_vi ??
+          '',
+        nam: item.nam,
+        thang: item.thang,
+        danh_hieu: getDanhHieuName(item.danh_hieu),
+        thoi_gian_nhom_0_7: durationToMonths(item.thoi_gian_nhom_0_7),
+        thoi_gian_nhom_0_8: durationToMonths(item.thoi_gian_nhom_0_8),
+        thoi_gian_nhom_0_9_1_0: durationToMonths(item.thoi_gian_nhom_0_9_1_0),
+        so_quyet_dinh: item.so_quyet_dinh ?? '',
+        ghi_chu: item.ghi_chu ?? '',
+      })
+    );
   }
 
   /**
@@ -227,25 +161,6 @@ class ContributionAwardService {
       byRank,
       byYear,
     };
-  }
-
-  /**
-   * Get user with unit info.
-   * @param userId - Account id
-   * @returns Account with nested personnel unit ids
-   */
-  async getUserWithUnit(userId: string) {
-    return await accountRepository.findUniqueRaw({
-      where: { id: userId },
-      include: {
-        QuanNhan: {
-          select: {
-            co_quan_don_vi_id: true,
-            don_vi_truc_thuoc_id: true,
-          },
-        },
-      },
-    });
   }
 
   /**
@@ -274,45 +189,19 @@ class ContributionAwardService {
       throw new NotFoundError('Bản ghi khen thưởng');
     }
 
-    const personnelId = award.quan_nhan_id;
-    const personnel = award.QuanNhan;
-
-    // Delete award only, proposals are kept for audit trail
-    await contributionMedalRepository.delete(id);
-
-    try {
-      await profileService.recalculateContributionProfile(personnelId);
-    } catch (recalcError) {
-      void writeSystemLog({
-        action: 'ERROR',
-        resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,
-        resourceId: id,
-        description: `Lỗi tính lại hồ sơ khen thưởng cống hiến sau khi xóa ${AWARD_LABEL}: ${recalcError}`,
-      });
-    }
-
-    try {
-      await notificationHelper.notifyOnAwardDeleted(
-        award,
-        personnel,
-        PROPOSAL_TYPES.CONG_HIEN,
-        adminUsername
-      );
-    } catch (notifyError) {
-      void writeSystemLog({
-        action: 'ERROR',
-        resource: AWARD_SLUGS.CONTRIBUTION_MEDALS,
-        resourceId: id,
-        description: `Lỗi gửi thông báo xóa khen thưởng ${AWARD_LABEL}: ${notifyError}`,
-      });
-    }
-
-    return {
-      message: `Xóa khen thưởng ${AWARD_LABEL} thành công`,
-      personnelId,
+    return finalizeMedalAwardDeletion({
+      id,
       award,
-    };
+      personnel: award.QuanNhan,
+      personnelId: award.quan_nhan_id,
+      adminUsername,
+      awardLabel: AWARD_LABEL,
+      resourceSlug: AWARD_SLUGS.CONTRIBUTION_MEDALS,
+      proposalType: PROPOSAL_TYPES.CONG_HIEN,
+      deleteFn: () => contributionMedalRepository.delete(id),
+      recalcProfile: pid => profileService.recalculateContributionProfile(pid),
+    });
   }
 }
 
-export default new ContributionAwardService();
+export default new ContributionMedalService();

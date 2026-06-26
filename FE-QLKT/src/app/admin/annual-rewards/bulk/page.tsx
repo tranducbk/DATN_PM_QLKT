@@ -12,7 +12,6 @@ import {
   message,
   Space,
   Typography,
-  Breadcrumb,
   Tag,
   Statistic,
   Upload,
@@ -22,7 +21,6 @@ import type { DateInput } from '@/lib/types/common';
 import type { UploadFile } from 'antd/es/upload/interface';
 import {
   ArrowLeftOutlined,
-  HomeOutlined,
   PlusOutlined,
   SearchOutlined,
   UploadOutlined,
@@ -30,19 +28,20 @@ import {
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
 import { apiClient } from '@/lib/http/apiClient';
 import { DEFAULT_ANTD_TABLE_PAGINATION, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
 
 const { Title, Text } = Typography;
 
-/** Một dòng kết quả `checkAnnualRewards`. */
+/** A single `checkAnnualRewards` result row. */
 interface AnnualRewardCheckResultRow {
   personnel_id: string;
   has_reward: boolean;
   has_proposal: boolean;
 }
 
-/** Option filter đơn vị (getUnits). */
+/** Unit filter option (from getUnits). */
 interface BulkUnitOptionRow {
   id: string;
   ten_don_vi: string;
@@ -280,18 +279,12 @@ export default function BulkAddAnnualRewardsPage() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Breadcrumb */}
-      <Breadcrumb>
-        <Breadcrumb.Item>
-          <Link href="/admin/dashboard">
-            <HomeOutlined />
-          </Link>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>
-          <Link href="/admin/personnel">Quân nhân</Link>
-        </Breadcrumb.Item>
-        <Breadcrumb.Item>Thêm danh hiệu đồng loạt</Breadcrumb.Item>
-      </Breadcrumb>
+      <PageBreadcrumb
+        items={[
+          { title: 'Quân nhân', href: '/admin/personnel' },
+          { title: 'Thêm danh hiệu đồng loạt' },
+        ]}
+      />
 
       {/* Header */}
       <div className="flex items-center justify-between">

@@ -88,8 +88,8 @@ async function hitLimiter(
   });
 }
 
-describe('authLimiter (login/auth endpoints — 30 req / 5min)', () => {
-  it('allows the first 30 requests from an IP', async () => {
+describe('Giới hạn tần suất cho endpoint đăng nhập/xác thực (30 yêu cầu mỗi 5 phút)', () => {
+  it('Cho phép 30 yêu cầu đầu tiên từ một địa chỉ IP', async () => {
     const ip = '10.0.0.1';
     for (let i = 0; i < 30; i++) {
       const result = await hitLimiter(authLimiter, ip);
@@ -97,7 +97,7 @@ describe('authLimiter (login/auth endpoints — 30 req / 5min)', () => {
     }
   });
 
-  it('blocks the 31st request from the same IP within the window', async () => {
+  it('Chặn yêu cầu thứ 31 từ cùng một IP trong cửa sổ thời gian → trả mã 429 kèm thông báo quá nhiều yêu cầu', async () => {
     const ip = '10.0.0.2';
     for (let i = 0; i < 30; i++) {
       await hitLimiter(authLimiter, ip);
@@ -111,7 +111,7 @@ describe('authLimiter (login/auth endpoints — 30 req / 5min)', () => {
     });
   });
 
-  it('counts each IP independently (IP A reaching limit does not affect IP B)', async () => {
+  it('Đếm riêng theo từng IP: IP A chạm giới hạn không ảnh hưởng IP B', async () => {
     const ipA = '10.0.0.3';
     const ipB = '10.0.0.4';
     for (let i = 0; i < 30; i++) {
@@ -124,8 +124,8 @@ describe('authLimiter (login/auth endpoints — 30 req / 5min)', () => {
   });
 });
 
-describe('writeLimiter (sensitive write endpoints — 30 req / 15min)', () => {
-  it('allows the first 30 requests from an IP', async () => {
+describe('Giới hạn tần suất cho endpoint ghi dữ liệu nhạy cảm (30 yêu cầu mỗi 15 phút)', () => {
+  it('Cho phép 30 yêu cầu đầu tiên từ một địa chỉ IP', async () => {
     const ip = '10.0.1.1';
     for (let i = 0; i < 30; i++) {
       const result = await hitLimiter(writeLimiter, ip);
@@ -133,7 +133,7 @@ describe('writeLimiter (sensitive write endpoints — 30 req / 15min)', () => {
     }
   });
 
-  it('blocks the 31st request from the same IP', async () => {
+  it('Chặn yêu cầu thứ 31 từ cùng một IP → trả mã 429', async () => {
     const ip = '10.0.1.2';
     for (let i = 0; i < 30; i++) {
       await hitLimiter(writeLimiter, ip);
@@ -143,7 +143,7 @@ describe('writeLimiter (sensitive write endpoints — 30 req / 15min)', () => {
     expect(blocked.status).toBe(429);
   });
 
-  it('returns Vietnamese user-friendly message when blocked', async () => {
+  it('Khi bị chặn trả về thông báo tiếng Việt thân thiện với người dùng', async () => {
     const ip = '10.0.1.3';
     for (let i = 0; i < 30; i++) {
       await hitLimiter(writeLimiter, ip);

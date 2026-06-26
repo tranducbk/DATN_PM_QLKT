@@ -7,20 +7,26 @@
  */
 
 import { Router, Request, Response, NextFunction } from 'express';
-import profileService from '../services/profile.service';
-import unitAnnualAwardService from '../services/unitAnnualAward.service';
+import { timingSafeEqual } from 'crypto';
 import unitService from '../services/unit.service';
 import backupService from '../services/backup.service';
+import profileService from '../services/profile.service';
+import { NotFoundError } from '../middlewares/errorHandler';
 import cron from 'node-cron';
-import type { ScheduledTask } from 'node-cron';
-import { SETTING_DEFAULTS, AWARD_TYPES, SYSTEM_FEATURES } from '../constants/devZone.constants';
+import { AWARD_TYPES, SYSTEM_FEATURES } from '../constants/devZone.constants';
+import {
+  runCronJob,
+  updateCronTask,
+  updateBackupCronTask,
+  getCronState,
+} from '../services/recalcCron.service';
 import { getSetting, setSetting, getSettings } from '../helpers/settingsHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
+import { SYSTEM_ACTOR } from '../constants/roles.constants';
 import { authLimiter } from '../configs/rateLimiter';
 import { DEV_ZONE_PASSWORD } from '../configs';
-import { systemSettingRepository } from '../repositories/systemSetting.repository';
 
 const router = Router();
 
@@ -34,123 +40,20 @@ const ALL_FEATURE_KEYS = [
   ...SYSTEM_FEATURES.map((f: string) => `allow_${f}`),
 ];
 
-let cronTask: ScheduledTask | null = null;
-let backupCronTask: ScheduledTask | null = null;
-let lastCronRun: string | null = null;
-interface CronResult {
-  status: 'success' | 'error';
-  time: string | null;
-  success?: number;
-  errors?: number;
-  message?: string;
+/** Length-revealing constant-time string compare (avoids early-exit timing oracle). */
+function constantTimeEqual(input: string, secret: string): boolean {
+  const a = Buffer.from(input);
+  const b = Buffer.from(secret);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
 }
 
-let lastCronResult: CronResult | null = null;
-
-/** Runs the scheduled recalculation job for all personnel profiles and unit awards. */
-const runCronJob = async () => {
-  lastCronRun = new Date().toISOString();
-  await setSetting('cron_last_run', lastCronRun);
-  try {
-    const [personnelResult, unitRecalculated, unitCountUpdated] = await Promise.all([
-      profileService.recalculateAll(),
-      unitAnnualAwardService.recalculate({ don_vi_id: undefined, nam: undefined }),
-      unitService.recalculatePersonnelCount(),
-    ]);
-    const totalSuccess = (personnelResult.success || 0) + unitRecalculated;
-    const totalErrors = personnelResult.errors?.length || 0;
-    lastCronResult = {
-      status: 'success',
-      time: lastCronRun,
-      success: totalSuccess,
-      errors: totalErrors,
-    };
-    await setSetting('cron_last_result', JSON.stringify(lastCronResult));
-
-    await writeSystemLog({
-      userId: 'SYSTEM',
-      userRole: 'SYSTEM',
-      action: AUDIT_ACTIONS.RECALCULATE,
-      resource: RESOURCE_SLUGS.PROFILES,
-      description: `Cron job tính toán hồ sơ: cá nhân ${personnelResult.success} thành công (${totalErrors} lỗi), đơn vị ${unitRecalculated} bản ghi, quân số ${unitCountUpdated} đơn vị cập nhật`,
-      payload: {
-        personnelSuccess: personnelResult.success,
-        personnelErrors: totalErrors,
-        unitRecalculated,
-        unitCountUpdated,
-        schedule: await getSetting('cron_schedule', '0 1 1 * *'),
-      },
-    });
-
-    return lastCronResult;
-  } catch (error: unknown) {
-    const errMessage = error instanceof Error ? error.message : String(error);
-    lastCronResult = {
-      status: 'error',
-      time: lastCronRun,
-      message: errMessage,
-    };
-    await setSetting('cron_last_result', JSON.stringify(lastCronResult));
-    throw error;
-  }
-};
-
-/** Updates the active cron task based on cron_enabled and cron_schedule settings. */
-const updateCronTask = async () => {
-  if (cronTask) {
-    cronTask.stop();
-    cronTask = null;
-  }
-  const enabled = (await getSetting('cron_enabled', 'true')) === 'true';
-  const schedule = await getSetting('cron_schedule', '0 1 1 * *');
-  if (enabled && cron.validate(schedule)) {
-    cronTask = cron.schedule(schedule, runCronJob);
-  }
-};
-
-/** Updates the backup cron task based on backup_enabled and backup_cron settings. */
-const updateBackupCronTask = async () => {
-  if (backupCronTask) {
-    backupCronTask.stop();
-    backupCronTask = null;
-  }
-  const enabled = (await getSetting('backup_enabled', 'false')) === 'true';
-  const schedule = await getSetting('backup_cron', '0 2 * * *');
-  if (enabled && cron.validate(schedule)) {
-    backupCronTask = cron.schedule(schedule, () => {
-      backupService
-        .createBackup({ triggeredBy: 'SYSTEM', userId: 'SYSTEM', type: 'scheduled' })
-        .catch(err => console.error('[BackupCron] Failed:', err));
-    });
-  }
-};
-
-/** Seeds default system settings to DB if they do not already exist. */
-async function seedDefaults() {
-  const existing = await systemSettingRepository.findManyRaw({
-    where: { key: { in: Object.keys(SETTING_DEFAULTS) } },
-    select: { key: true },
-  });
-  const existingKeys = new Set(existing.map((s: { key: string }) => s.key));
-  const toCreate = Object.entries(SETTING_DEFAULTS)
-    .filter(([key]) => !existingKeys.has(key))
-    .map(([key, value]) => ({ key, value: value as string }));
-  if (toCreate.length > 0) {
-    await systemSettingRepository.createMany(toCreate);
-  }
-}
-
-seedDefaults()
-  .then(() => Promise.all([updateCronTask(), updateBackupCronTask()]))
-  .catch(error => {
-    console.error('[DevZone] Failed to seed defaults or initialize cron:', error);
-  });
-
-/** Middleware that authenticates DevZone requests via X-Dev-Password header or body.password. */
-const verifyDevPassword = (req: Request, res: Response, next: NextFunction) => {
+const verifyDevPasswordCore = (req: Request, res: Response, next: NextFunction) => {
   if (!DEV_PASSWORD) {
     return res.status(503).json({ success: false, message: 'DevZone không khả dụng' });
   }
+  const header = req.headers['x-dev-password'];
+  const headerPwd = Array.isArray(header) ? header[0] : header;
   const bodyPwd =
     req.body &&
     typeof req.body === 'object' &&
@@ -158,12 +61,16 @@ const verifyDevPassword = (req: Request, res: Response, next: NextFunction) => {
     typeof (req.body as { password?: unknown }).password === 'string'
       ? (req.body as { password: string }).password
       : undefined;
-  const password = req.headers['x-dev-password'] || bodyPwd;
-  if (password !== DEV_PASSWORD) {
+  const password = headerPwd ?? bodyPwd;
+  if (typeof password !== 'string' || !constantTimeEqual(password, DEV_PASSWORD)) {
     return res.status(401).json({ success: false, message: 'Mật khẩu không đúng' });
   }
   next();
 };
+
+// Rate-limit every privileged DevZone route so the shared password can't be brute-forced.
+// Express flattens this array wherever `verifyDevPassword` is used as a route handler.
+const verifyDevPassword = [authLimiter, verifyDevPasswordCore];
 
 /** Returns all feature flags as a key → boolean map from DB settings. */
 async function getFeatures() {
@@ -194,7 +101,7 @@ router.post('/auth', authLimiter, (req: Request, res: Response) => {
     return res.status(503).json({ success: false, message: 'DevZone không khả dụng' });
   }
   const { password } = req.body;
-  if (password === DEV_PASSWORD) {
+  if (typeof password === 'string' && constantTimeEqual(password, DEV_PASSWORD)) {
     return res.json({ success: true });
   }
   return res.status(401).json({ success: false, message: 'Mật khẩu không đúng' });
@@ -206,6 +113,7 @@ router.post('/auth', authLimiter, (req: Request, res: Response) => {
  * @access  Private - DevZone password required
  */
 router.get('/status', verifyDevPassword, async (req: Request, res: Response) => {
+  const { lastCronRun, lastCronResult } = getCronState();
   const cronEnabled = (await getSetting('cron_enabled', 'true')) === 'true';
   const cronSchedule = await getSetting('cron_schedule', '0 1 1 * *');
   const storedLastRun = await getSetting('cron_last_run', null);
@@ -217,8 +125,8 @@ router.get('/status', verifyDevPassword, async (req: Request, res: Response) => 
       parsedLastResult = JSON.parse(storedLastResult);
     } catch (e) {
       void writeSystemLog({
-        action: 'ERROR',
-        resource: 'dev-zone',
+        action: AUDIT_ACTIONS.ERROR,
+        resource: RESOURCE_SLUGS.DEV_ZONE,
         description: `Dữ liệu cron_last_result không hợp lệ: ${e}`,
       });
     }
@@ -253,15 +161,15 @@ router.post('/cron/trigger', verifyDevPassword, async (req: Request, res: Respon
     const result = await runCronJob();
 
     await writeSystemLog({
-      userId: 'SYSTEM',
-      userRole: 'SYSTEM',
+      userId: SYSTEM_ACTOR,
+      userRole: SYSTEM_ACTOR,
       action: AUDIT_ACTIONS.RECALCULATE,
       resource: RESOURCE_SLUGS.PROFILES,
-      description: `Tính toán lại hồ sơ: ${result.success} thành công, ${result.errors || 0} lỗi (trigger thủ công)`,
+      description: `Tính toán lại hồ sơ: ${result.success} thành công, ${result.errors || 0} lỗi (kích hoạt thủ công)`,
       payload: { success: result.success, errors: result.errors || 0 },
     });
 
-    res.json({ success: true, message: 'Cron job đã chạy xong', data: result });
+    res.json({ success: true, message: 'Tác vụ định kỳ đã chạy xong', data: result });
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({ success: false, message: errMessage });
@@ -292,9 +200,18 @@ router.put('/cron/schedule', verifyDevPassword, async (req: Request, res: Respon
   const cronEnabled = (await getSetting('cron_enabled', 'true')) === 'true';
   const cronSchedule = await getSetting('cron_schedule', '0 1 1 * *');
 
+  await writeSystemLog({
+    userId: SYSTEM_ACTOR,
+    userRole: SYSTEM_ACTOR,
+    action: AUDIT_ACTIONS.UPDATE,
+    resource: RESOURCE_SLUGS.DEV_ZONE,
+    description: `Cập nhật tác vụ định kỳ: ${cronEnabled ? 'bật' : 'tắt'}, lịch ${cronSchedule}`,
+    payload: { enabled: cronEnabled, schedule: cronSchedule },
+  });
+
   res.json({
     success: true,
-    message: `Cron job ${cronEnabled ? 'đã bật' : 'đã tắt'}. Lịch: ${cronSchedule}`,
+    message: `Tác vụ định kỳ ${cronEnabled ? 'đã bật' : 'đã tắt'}. Lịch: ${cronSchedule}`,
     data: { enabled: cronEnabled, schedule: cronSchedule },
   });
 });
@@ -309,8 +226,8 @@ router.post('/recalculate-unit-count', verifyDevPassword, async (req: Request, r
     const updated = await unitService.recalculatePersonnelCount();
 
     await writeSystemLog({
-      userId: 'SYSTEM',
-      userRole: 'SYSTEM',
+      userId: SYSTEM_ACTOR,
+      userRole: SYSTEM_ACTOR,
       action: AUDIT_ACTIONS.RECALCULATE,
       resource: RESOURCE_SLUGS.UNITS,
       description: `Tính lại quân số đơn vị: ${updated} đơn vị đã cập nhật`,
@@ -329,6 +246,62 @@ router.post('/recalculate-unit-count', verifyDevPassword, async (req: Request, r
 });
 
 /**
+ * @route   POST /api/dev-zone/recalculate-profile
+ * @desc    Recalculate all three profile types for one personnel (with personnel_id) or every personnel (without)
+ * @access  Private - DevZone password required
+ */
+router.post('/recalculate-profile', verifyDevPassword, async (req: Request, res: Response) => {
+  const body = req.body as { personnel_id?: string };
+  const personnelId = typeof body.personnel_id === 'string' ? body.personnel_id.trim() : '';
+
+  try {
+    if (personnelId) {
+      const { ho_ten } = await profileService.recalculateFullProfile(personnelId);
+
+      await writeSystemLog({
+        userId: SYSTEM_ACTOR,
+        userRole: SYSTEM_ACTOR,
+        action: AUDIT_ACTIONS.RECALCULATE,
+        resource: RESOURCE_SLUGS.PROFILES,
+        resourceId: personnelId,
+        description: `Tính toán lại hồ sơ ${ho_ten || 'một quân nhân'} (kích hoạt thủ công)`,
+      });
+
+      return res.json({
+        success: true,
+        message: `Đã tính toán lại hồ sơ cho ${ho_ten || 'quân nhân'}`,
+        data: { personnel_id: personnelId },
+      });
+    }
+
+    const result = await profileService.recalculateAllFullProfiles();
+
+    await writeSystemLog({
+      userId: SYSTEM_ACTOR,
+      userRole: SYSTEM_ACTOR,
+      action: AUDIT_ACTIONS.RECALCULATE,
+      resource: RESOURCE_SLUGS.PROFILES,
+      description: `Tính toán lại toàn bộ hồ sơ quân nhân: ${result.success} thành công, ${result.errors.length} lỗi (kích hoạt thủ công)`,
+      payload: { success: result.success, errors: result.errors.length },
+    });
+
+    return res.json({
+      success: true,
+      message: `Đã tính toán lại hồ sơ cho ${result.success} quân nhân${result.errors.length ? `, ${result.errors.length} lỗi` : ''}`,
+      data: { success: result.success, errors: result.errors.length },
+    });
+  } catch (error: unknown) {
+    if (error instanceof NotFoundError) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Không tìm thấy quân nhân với ID đã nhập' });
+    }
+    const errMessage = error instanceof Error ? error.message : String(error);
+    return res.status(500).json({ success: false, message: errMessage });
+  }
+});
+
+/**
  * @route   PUT /api/dev-zone/features
  * @desc    Update one or more feature flags
  * @access  Private - DevZone password required
@@ -336,10 +309,23 @@ router.post('/recalculate-unit-count', verifyDevPassword, async (req: Request, r
 router.put('/features', verifyDevPassword, async (req: Request, res: Response) => {
   const updates = req.body;
 
+  const changed: string[] = [];
   for (const key of ALL_FEATURE_KEYS) {
     if (typeof updates[key] === 'boolean') {
       await setSetting(key, String(updates[key]));
+      changed.push(`${key}=${updates[key]}`);
     }
+  }
+
+  if (changed.length > 0) {
+    await writeSystemLog({
+      userId: SYSTEM_ACTOR,
+      userRole: SYSTEM_ACTOR,
+      action: AUDIT_ACTIONS.UPDATE,
+      resource: RESOURCE_SLUGS.DEV_ZONE,
+      description: `Cập nhật tính năng hệ thống: ${changed.join(', ')}`,
+      payload: { changed },
+    });
   }
 
   res.json({
@@ -358,7 +344,7 @@ router.post('/backup/trigger', verifyDevPassword, async (req: Request, res: Resp
   try {
     const result = await backupService.createBackup({
       triggeredBy: 'devzone',
-      userId: 'SYSTEM',
+      userId: SYSTEM_ACTOR,
       type: 'manual',
     });
     res.json({ success: true, message: 'Backup thành công', data: result });
@@ -388,7 +374,7 @@ router.get('/backup/status', verifyDevPassword, async (req: Request, res: Respon
       schedule,
       retentionDays: parseInt(retentionDays, 10),
       lastRun,
-      recentBackups: files.slice(0, 5),
+      recentBackups: files,
       totalFiles: files.length,
     },
   });
@@ -425,6 +411,19 @@ router.put('/backup/schedule', verifyDevPassword, async (req: Request, res: Resp
   const currentSchedule = await getSetting('backup_cron', '0 2 * * *');
   const currentRetention = await getSetting('backup_retention_days', '15');
 
+  await writeSystemLog({
+    userId: SYSTEM_ACTOR,
+    userRole: SYSTEM_ACTOR,
+    action: AUDIT_ACTIONS.UPDATE,
+    resource: RESOURCE_SLUGS.BACKUP,
+    description: `Cập nhật lịch backup tự động: ${currentEnabled ? 'bật' : 'tắt'}, lịch ${currentSchedule}, giữ ${currentRetention} ngày`,
+    payload: {
+      enabled: currentEnabled,
+      schedule: currentSchedule,
+      retentionDays: parseInt(currentRetention, 10),
+    },
+  });
+
   res.json({
     success: true,
     message: `Backup tự động ${currentEnabled ? 'đã bật' : 'đã tắt'}`,
@@ -437,21 +436,19 @@ router.put('/backup/schedule', verifyDevPassword, async (req: Request, res: Resp
 });
 
 /**
- * @route   POST /api/dev-zone/backup/cleanup
- * @desc    Manually trigger old backup cleanup
+ * @route   DELETE /api/dev-zone/backup/:filename
+ * @desc    Delete a specific backup file by name
  * @access  Private - DevZone password required
  */
-router.post('/backup/cleanup', verifyDevPassword, async (req: Request, res: Response) => {
+router.delete('/backup/:filename', verifyDevPassword, async (req: Request, res: Response) => {
+  const param = req.params.filename;
+  const filename = Array.isArray(param) ? param[0] : param;
   try {
-    const result = await backupService.cleanupOldBackups();
-    res.json({
-      success: true,
-      message: `Đã xóa ${result.deleted} file backup cũ`,
-      data: result,
-    });
+    await backupService.deleteBackup(filename);
+    res.json({ success: true, message: 'Đã xóa file sao lưu' });
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);
-    res.status(500).json({ success: false, message: errMessage });
+    res.status(400).json({ success: false, message: errMessage });
   }
 });
 
