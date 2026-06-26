@@ -1,3 +1,26 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  COMMEMORATIVE MEDAL SERVICE — CRUD + Excel I/O cho KNC VSNXD QĐNDVN
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  KNC = Kỷ niệm chương Vì Sự nghiệp Xây dựng QĐNDVN.
+ *
+ *  ĐIỀU KIỆN GENDER-AWARE:
+ *  - Nam: ≥ 25 năm phục vụ
+ *  - Nữ: ≥ 20 năm phục vụ (ưu đãi 5 năm)
+ *  - LIFETIME — 1 quân nhân chỉ nhận 1 lần.
+ *
+ *  CHIA SẺ logic với HC_QKQT:
+ *  - Cùng dùng `serviceYearsEligibility` để check thâm niên (singleton helper).
+ *  - Cùng dùng `singleMedalImporter` template trong approve flow.
+ *  - Service riêng vì bảng đích khác (KyNiemChuongVSNXDQDNDVN).
+ *
+ *  VALIDATION ADDITIONAL:
+ *  - gioi_tinh bắt buộc (vì threshold khác nhau).
+ *  - Thiếu giới tính → reject với reason 'MISSING_GENDER'.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { buildMedalListWhere } from '../helpers/unitHelper';
 import { commemorativeMedalRepository } from '../repositories/commemorativeMedal.repository';
@@ -32,6 +55,8 @@ class CommemorativeMedalService {
    * Export template Excel for Commemorative Medal (KNC VSNXD) import
    * Pre-filled with selected personnel
    */
+  // KNC là kỷ niệm chương 1 hạng duy nhất → KHÔNG có danhHieuOptions (không cần
+  // dropdown danh hiệu) và chỉ 1 cột admin điền ('K'). Phần còn lại theo khuôn chung.
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const { personnelList, decisionNumbers } = await fetchTemplateData({
       personnelIds,
@@ -66,8 +91,10 @@ class CommemorativeMedalService {
    * Get all Commemorative Medals with filters and pagination
    */
   async getAll(filters: Record<string, unknown> = {}, page: number = 1, limit: number = 50) {
+    // buildMedalListWhere: ráp điều kiện lọc + phạm vi đơn vị (gồm cả ĐVTT con nếu cần)
     const where = await buildMedalListWhere(filters);
 
+    // Song song: lấy 1 trang dữ liệu + đếm tổng số bản ghi (phục vụ phân trang)
     const [data, total] = await Promise.all([
       commemorativeMedalRepository.findManyRaw({
         where,
@@ -104,6 +131,7 @@ class CommemorativeMedalService {
   /**
    * Export Commemorative Medals to Excel
    */
+  // Export KNC theo đúng khuôn chung (getAll → buildAwardExportBuffer).
   async exportToExcel(filters: Record<string, unknown> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
     return buildAwardExportBuffer(
@@ -120,6 +148,7 @@ class CommemorativeMedalService {
         thang: item.thang,
         cap_bac: item.cap_bac,
         chuc_vu: item.chuc_vu,
+        // thoi_gian lưu dạng {years, months} → quy về tổng số tháng để ghi ra Excel
         thoi_gian: durationToMonths(item.thoi_gian),
         so_quyet_dinh: item.so_quyet_dinh,
         ghi_chu: item.ghi_chu ?? '',
@@ -152,6 +181,7 @@ class CommemorativeMedalService {
    * Get Commemorative Medal by personnel ID
    */
   async getByPersonnelId(personnelId: string) {
+    // KNC là lifetime → mỗi quân nhân tối đa 1 bản ghi (unique theo quan_nhan_id)
     const result = await commemorativeMedalRepository.findUniqueRaw({
       where: { quan_nhan_id: personnelId },
       include: {
@@ -167,6 +197,7 @@ class CommemorativeMedalService {
         },
       },
     });
+    // Bọc thành mảng (0 hoặc 1 phần tử) để FE dùng chung kiểu danh sách
     return result ? [result] : [];
   }
 
@@ -222,11 +253,15 @@ class CommemorativeMedalService {
    * @returns `{ alreadyReceived, reason, award?/proposal? }`
    */
   async checkAlreadyReceived(personnelId: string) {
+    // Đã có bản ghi KNC → đã nhận (lifetime, không cấp lại)
     const existingAward = await commemorativeMedalRepository.findUniqueRaw({
       where: { quan_nhan_id: personnelId },
     });
     if (existingAward) return { alreadyReceived: true, reason: 'Đã nhận', award: existingAward };
 
+    // loai_de_xuat = KNC khoá đúng loại; data_nien_han là cột JSON chia sẻ (cùng
+    // cấu trúc với HC_QKQT/HCCSVV, không phải logic niên hạn). array_contains tìm
+    // đề xuất chứa quân nhân này.
     const pendingProposal = await proposalRepository.findFirstRaw({
       where: {
         loai_de_xuat: PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,

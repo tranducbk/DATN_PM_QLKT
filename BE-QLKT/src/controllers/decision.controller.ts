@@ -56,11 +56,13 @@ interface GetFilePathsBody {
 }
 
 class DecisionController {
+  /** Lấy danh sách quyết định (có phân trang), lọc theo năm/loại/từ khóa. */
   getAllDecisions = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetAllDecisionsQuery;
     const { page, limit } = parsePagination(query);
     const { nam, loai_khen_thuong, search } = query;
 
+    // Chỉ thêm filter khi tham số thực sự có giá trị, tránh lọc rỗng.
     const filters: Record<string, unknown> = {};
     if (nam) filters.nam = nam;
     if (loai_khen_thuong) filters.loai_khen_thuong = loai_khen_thuong;
@@ -76,6 +78,7 @@ class DecisionController {
     });
   });
 
+  /** Gợi ý nhanh số quyết định theo tiền tố (q) để FE autocomplete. */
   autocomplete = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as AutocompleteQuery;
     const { q, limit = 10, loai_khen_thuong } = query;
@@ -88,6 +91,7 @@ class DecisionController {
     });
   });
 
+  /** Lấy chi tiết một quyết định theo id. */
   getDecisionById = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const id = normalizeParam(params.id);
@@ -100,6 +104,7 @@ class DecisionController {
     });
   });
 
+  /** Tra cứu quyết định theo số quyết định (so_quyet_dinh). */
   getDecisionBySoQuyetDinh = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as SoQuyetDinhParams;
     const soQuyetDinh = normalizeParam(params.soQuyetDinh);
@@ -114,6 +119,7 @@ class DecisionController {
     });
   });
 
+  /** Tạo quyết định mới, kèm upload file PDF (nếu có) lên disk. */
   createDecision = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as CreateDecisionBody;
     const file = req.file;
@@ -141,6 +147,7 @@ class DecisionController {
     return ResponseHelper.created(res, { data: decision, message: 'Tạo quyết định thành công' });
   });
 
+  /** Cập nhật quyết định; nếu upload PDF mới thì thay file_path. */
   updateDecision = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const body = req.body as UpdateDecisionBody;
@@ -149,9 +156,11 @@ class DecisionController {
     if (!id) return ResponseHelper.badRequest(res, 'Thiếu id');
 
     const { so_quyet_dinh, nam, ngay_ky, nguoi_ky, loai_khen_thuong, ghi_chu } = body;
+    // File PDF mới (nếu có) ghi đè file_path do client gửi lên.
     let file_path = body.file_path;
     if (file) file_path = `uploads/decisions/${file.filename}`;
 
+    // Chặn update rỗng: phải có ít nhất một field cần thay đổi.
     if (
       !so_quyet_dinh &&
       !nam &&
@@ -179,6 +188,7 @@ class DecisionController {
     });
   });
 
+  /** Xóa quyết định; service tự chặn khi quyết định còn bản ghi tham chiếu. */
   deleteDecision = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const id = normalizeParam(params.id);
@@ -188,11 +198,13 @@ class DecisionController {
     return ResponseHelper.success(res, { message: result.message, data: result.decision });
   });
 
+  /** Lấy danh sách các năm đang có quyết định (để FE dựng bộ lọc năm). */
   getAvailableYears = catchAsync(async (req: Request, res: Response) => {
     const years = await decisionService.getAvailableYears();
     return ResponseHelper.success(res, { data: years, message: 'Lấy danh sách năm thành công' });
   });
 
+  /** Lấy danh sách loại khen thưởng đang có quyết định (để FE dựng bộ lọc). */
   getAwardTypes = catchAsync(async (req: Request, res: Response) => {
     const types = await decisionService.getAwardTypes();
     return ResponseHelper.success(res, {
@@ -201,6 +213,7 @@ class DecisionController {
     });
   });
 
+  /** Lấy đường dẫn file PDF của 1 quyết định và trả kèm signed view_url. */
   getFilePath = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as SoQuyetDinhParams;
     // normalizeParam gom kiểu param Express (string | string[]) về 1 chuỗi.
@@ -229,9 +242,11 @@ class DecisionController {
     });
   });
 
+  /** Lấy file path cho nhiều số quyết định cùng lúc (batch, tránh N+1 call). */
   getFilePaths = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as GetFilePathsBody;
     const { soQuyetDinhs } = body;
+    // Yêu cầu mảng đầu vào để service truy vấn theo lô một lần.
     if (!Array.isArray(soQuyetDinhs)) {
       return ResponseHelper.badRequest(res, 'soQuyetDinhs phải là một mảng');
     }

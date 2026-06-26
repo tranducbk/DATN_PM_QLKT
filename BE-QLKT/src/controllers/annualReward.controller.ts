@@ -127,10 +127,13 @@ interface GetStatisticsQuery {
 }
 
 class AnnualRewardController {
+  /** Lấy danh sách danh hiệu: theo 1 quân nhân, hoặc phân trang + filter. */
   getAnnualRewards = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetAnnualRewardsQuery;
     const { personnel_id, page, limit, nam, danh_hieu, ho_ten } = query;
 
+    // Có personnel_id → trả toàn bộ danh hiệu của riêng người đó (không phân trang),
+    // nhưng phải kiểm tra quyền xem hồ sơ trước theo role + đơn vị của user.
     if (personnel_id) {
       await personnelService.assertCanViewPersonnel(
         personnel_id,
@@ -146,11 +149,14 @@ class AnnualRewardController {
 
     const { page: pageNum, limit: limitNum } = parsePagination({ page, limit });
 
+    // Filter tìm theo tên quân nhân (không phân biệt hoa thường).
     const quanNhanFilter: Record<string, unknown> = {};
     if (ho_ten) {
       quanNhanFilter.ho_ten = { contains: ho_ten, mode: 'insensitive' };
     }
 
+    // MANAGER bị giới hạn theo đơn vị: helper bọc thêm điều kiện đơn vị quanh filter
+    // hiện có. Trả null nếu không có ràng buộc nào → fallback dùng filter gốc (hoặc null).
     const managerQuanNhanWhere = await buildManagerQuanNhanFilter(req, quanNhanFilter);
     const quanNhanWhere =
       managerQuanNhanWhere ?? (Object.keys(quanNhanFilter).length > 0 ? quanNhanFilter : null);
@@ -172,6 +178,7 @@ class AnnualRewardController {
     });
   });
 
+  /** Thêm 1 danh hiệu hằng năm cho quân nhân, sau đó tính lại hồ sơ điều kiện. */
   createAnnualReward = catchAsync(async (req: Request, res: Response) => {
     const user = req.user;
     const body = req.body as CreateAnnualRewardBody;
@@ -205,6 +212,8 @@ class AnnualRewardController {
       so_quyet_dinh_bkttcp,
     });
 
+    // Recalc là tác dụng phụ: lỗi recalc không được làm hỏng việc thêm danh hiệu
+    // đã thành công → chỉ ghi log lỗi rồi vẫn trả 201.
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
     } catch (recalcError) {
@@ -221,6 +230,7 @@ class AnnualRewardController {
     return ResponseHelper.created(res, { data: result, message: 'Thêm danh hiệu thành công' });
   });
 
+  /** Cập nhật 1 danh hiệu hằng năm theo id, sau đó tính lại hồ sơ điều kiện. */
   updateAnnualReward = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const user = req.user;
@@ -256,6 +266,7 @@ class AnnualRewardController {
       so_quyet_dinh_bkttcp,
     });
 
+    // Recalc theo quân nhân của bản ghi vừa sửa; lỗi recalc chỉ log, không chặn response.
     try {
       await profileService.recalculateAnnualProfile(result.quan_nhan_id);
     } catch (recalcError) {
@@ -272,11 +283,13 @@ class AnnualRewardController {
     return ResponseHelper.success(res, { data: result, message: 'Cập nhật danh hiệu thành công' });
   });
 
+  /** Xóa 1 danh hiệu hằng năm theo id. */
   deleteAnnualReward = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const id = normalizeParam(params.id);
     if (!id) return ResponseHelper.badRequest(res, 'Thiếu id');
 
+    // awardType (tùy chọn) để service ghi audit/thông báo đúng loại danh hiệu bị xóa.
     const query = req.query as AwardTypeQuery;
     const awardType = normalizeParam(query.awardType) || null;
     const adminUsername = getAdminUsername(req);
@@ -284,6 +297,7 @@ class AnnualRewardController {
     return ResponseHelper.success(res, { message: result.message, data: result.reward });
   });
 
+  /** Kiểm tra điều kiện danh hiệu cho nhiều quân nhân trước khi tạo hàng loạt. */
   checkAnnualRewards = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as CheckAnnualRewardsBody;
     const { personnel_ids, nam, danh_hieu } = body;
@@ -294,6 +308,7 @@ class AnnualRewardController {
     });
   });
 
+  /** Tạo cùng 1 danh hiệu cho nhiều quân nhân trong một lần. */
   bulkCreateAnnualRewards = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as BulkCreateAnnualRewardsBody;
     const {
@@ -324,6 +339,7 @@ class AnnualRewardController {
     });
   });
 
+  /** Xem trước file Excel import: validate không ghi DB, trả danh sách hợp lệ + lỗi. */
   // PREVIEW: nhận file (multer memoryStorage → req.file.buffer trong RAM), gọi
   // service validate (không ghi DB), ghi audit IMPORT_PREVIEW rồi trả {valid, errors}.
   // originalname re-decode latin1→utf8 vì tên file tiếng Việt bị multipart mã hoá hỏng.
@@ -336,6 +352,7 @@ class AnnualRewardController {
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
+  /** Xác nhận import: ghi vào DB các dòng admin đã chọn ở bước preview. */
   // CONFIRM: nhận JSON { items } (dòng admin đã chọn ở preview) — KHÔNG upload lại
   // file. Route đã validate() Zod trước; service re-validate + ghi DB trong transaction.
   // Sau khi ghi xong → notifyOnImport fire-and-forget (catch riêng, không chặn response).
@@ -355,11 +372,13 @@ class AnnualRewardController {
       description: logMessages.importSuccess(AWARD_LABEL, result.imported ?? items.length),
       payload: { imported: result.imported ?? items.length },
     });
+    // Thông báo cho chủ hồ sơ các quân nhân vừa được import (fire-and-forget).
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
     safeNotifyImport(user.id, AWARD_SLUGS.ANNUAL_REWARDS, result.imported ?? items.length, personnelIds);
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
+  /** Import trực tiếp từ file Excel trong 1 lượt (parse + ghi DB, không qua preview). */
   importAnnualRewards = catchAsync(async (req: Request, res: Response) => {
     const file = req.file;
     if (!file?.buffer) {
@@ -375,6 +394,7 @@ class AnnualRewardController {
     });
   });
 
+  /** Xuất file Excel mẫu để nhập danh hiệu (có thể prefill sẵn quân nhân). */
   getTemplate = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetTemplateQuery;
     const personnelIds = parsePersonnelIdsFromQuery(query);
@@ -416,6 +436,7 @@ class AnnualRewardController {
     return res.status(200).send(buffer);
   });
 
+  /** Xuất danh sách danh hiệu ra Excel theo filter; MANAGER bị giới hạn theo đơn vị. */
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
     const rawQuery = req.query;
     const query = rawQuery as ExportToExcelQuery;
@@ -460,16 +481,19 @@ class AnnualRewardController {
     return res.status(200).send(buffer);
   });
 
+  /** Thống kê danh hiệu theo năm; MANAGER chỉ thấy số liệu của đơn vị mình. */
   getStatistics = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetStatisticsQuery;
     const user = req.user;
     const { nam } = query;
     const role = user?.role;
+    // Ưu tiên CQDV (đơn vị cha) trước DVTT — MANAGER thường quản ở cấp CQDV.
     const userUnitId = user?.co_quan_don_vi_id ?? user?.don_vi_truc_thuoc_id;
 
     const filters: Record<string, unknown> = {
       nam,
     };
+    // Ép phạm vi thống kê về đơn vị của MANAGER; ADMIN/SUPER_ADMIN xem toàn bộ.
     if (role === ROLES.MANAGER && userUnitId) {
       filters.don_vi_id = userUnitId;
     }

@@ -1,3 +1,4 @@
+// Hằng số và hàm tiện ích dùng chung để dựng mô tả tiếng Việt cho audit-log.
 import { prisma } from '../../models';
 import { formatDate } from '../datetimeHelper';
 import { PrismaClient } from '../../generated/prisma';
@@ -8,6 +9,7 @@ import {
 } from '../../repositories/unit.repository';
 import { positionRepository } from '../../repositories/position.repository';
 
+/** Nhãn mặc định khi thiếu dữ liệu hiển thị (tên, đơn vị, chức vụ, file). */
 const FALLBACK = {
   UNKNOWN: 'Chưa xác định',
   NO_NAME: 'Chưa có tên',
@@ -16,6 +18,7 @@ const FALLBACK = {
   NO_FILE: 'Không có file',
 } as const;
 
+/** Parse responseData (JSON string hoặc object) thành Record; null nếu không hợp lệ. */
 const parseResponseData = (responseData: unknown): Record<string, unknown> | null => {
   try {
     const parsed = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
@@ -38,6 +41,7 @@ interface ChucVuWithUnit {
   [key: string]: unknown;
 }
 
+/** Lấy tên đơn vị từ chức vụ, ưu tiên CQDV rồi tới ĐVTT (kèm CQDV cha nếu có). */
 const getUnitNameFromChucVu = (chucVu: ChucVuWithUnit | null | undefined): string => {
   if (!chucVu) return '';
   if (chucVu.CoQuanDonVi?.ten_don_vi) {
@@ -53,6 +57,7 @@ const getUnitNameFromChucVu = (chucVu: ChucVuWithUnit | null | undefined): strin
   return '';
 };
 
+/** Tra tên đơn vị theo id (thử CQDV trước, ĐVTT sau); chuỗi rỗng nếu lỗi/không thấy. */
 const getUnitNameFromUnitId = async (unitId: string, prisma: PrismaClient): Promise<string> => {
   if (!unitId) return '';
   try {
@@ -92,6 +97,7 @@ const getUnitNameFromUnitId = async (unitId: string, prisma: PrismaClient): Prom
   }
 };
 
+/** Tra họ tên quân nhân theo id; chuỗi rỗng nếu lỗi hoặc không tìm thấy. */
 const queryPersonnelName = async (personnelId: string, prisma: PrismaClient): Promise<string> => {
   if (!personnelId) return '';
   try {
@@ -109,6 +115,7 @@ const queryPersonnelName = async (personnelId: string, prisma: PrismaClient): Pr
   }
 };
 
+/** Tra tên chức vụ kèm tên đơn vị theo id chức vụ; trả về cả hai chuỗi rỗng nếu lỗi. */
 const queryPositionInfo = async (
   chucVuId: string,
   prisma: PrismaClient
@@ -140,6 +147,7 @@ const queryPositionInfo = async (
   }
 };
 
+/** Chạy callback với prisma client; trả về null nếu callback ném lỗi (best-effort). */
 const withPrisma = async <T>(callback: (prisma: PrismaClient) => Promise<T>): Promise<T | null> => {
   try {
     return await callback(prisma);
@@ -149,6 +157,7 @@ const withPrisma = async <T>(callback: (prisma: PrismaClient) => Promise<T>): Pr
   }
 };
 
+/** Dựng chuỗi mô tả khoảng thời gian (từ/đến/chưa kết thúc) cho mô tả audit-log. */
 const formatDateRange = (
   ngayBatDau: string | null | undefined,
   ngayKetThuc?: string | null | undefined
@@ -175,7 +184,7 @@ const formatDateRange = (
   return '';
 };
 
-/** Safely cast unknown to Record for property access; returns null if not an object */
+/** Ép kiểu an toàn unknown sang Record để truy cập thuộc tính; null nếu không phải object. */
 const asRecord = (value: unknown): Record<string, unknown> | null => {
   if (value && typeof value === 'object' && !Array.isArray(value)) {
     return value as Record<string, unknown>;
@@ -183,7 +192,7 @@ const asRecord = (value: unknown): Record<string, unknown> | null => {
   return null;
 };
 
-/** Decodes multer filename from latin1 to utf8 for proper Vietnamese display. */
+/** Giải mã tên file multer từ latin1 sang utf8 để hiển thị tiếng Việt đúng. */
 const getFileName = (req: { file?: { originalname?: string } }): string => {
   if (!req.file?.originalname) return FALLBACK.NO_FILE;
   try {

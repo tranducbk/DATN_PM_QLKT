@@ -1,7 +1,7 @@
 /*
- * ADHOC AWARD CONTROLLER — khen thưởng đột xuất.
- * Multipart upload (ảnh + doc + xls 50MB). ADMIN only.
- * Method: CRUD + downloadFile cho từng attachment.
+ * Controller khen thưởng đột xuất (DOT_XUAT).
+ * Admin thêm trực tiếp, không qua chuỗi điều kiện như khen thưởng hằng năm.
+ * Nhận multipart (file quyết định + file đính kèm). CRUD + lọc theo quân nhân/đơn vị.
  */
 
 import { Request, Response } from 'express';
@@ -67,6 +67,7 @@ interface GetAdhocAwardsByUnitQuery {
 }
 
 class AdhocAwardController {
+  /** Tạo khen thưởng đột xuất cho cá nhân hoặc tập thể (kèm file đính kèm). */
   createAdhocAward = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const adminId = user.id;
@@ -106,6 +107,7 @@ class AdhocAwardController {
       return ResponseHelper.badRequest(res, 'Thiếu thông tin bắt buộc (awardForm, year)');
     }
 
+    // Tách file đính kèm (nhiều) và file quyết định (chỉ lấy file đầu) từ multipart
     const files = req.files as Record<string, Express.Multer.File[]> | undefined;
     const attachedFiles = files?.attachedFiles || [];
     const decisionFile = files?.decisionFiles?.[0];
@@ -138,6 +140,7 @@ class AdhocAwardController {
     });
   });
 
+  /** Danh sách khen thưởng đột xuất có phân trang; Manager bị giới hạn theo đơn vị. */
   getAdhocAwards = catchAsync(async (req: Request, res: Response) => {
     const user = req.user;
     const query = req.query as GetAdhocAwardsQuery;
@@ -156,6 +159,7 @@ class AdhocAwardController {
       limit: limitNum,
     };
 
+    // Manager chỉ thấy khen thưởng trong phạm vi đơn vị mình quản lý
     if (userRole === ROLES.MANAGER) {
       if (!userQuanNhanId) {
         return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin quân nhân');
@@ -166,6 +170,7 @@ class AdhocAwardController {
         return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
       }
 
+      // Manager cấp CQDV: gom cả CQDV cha + các DVTT con; cấp DVTT: chỉ đơn vị đó
       if (managerUnit.co_quan_don_vi_id) {
         filterOptions.managerCoQuanId = managerUnit.co_quan_don_vi_id;
         filterOptions.managerDonViTrucThuocIds = await getSubordinateUnitIds(
@@ -187,6 +192,7 @@ class AdhocAwardController {
     });
   });
 
+  /** Chi tiết một khen thưởng đột xuất theo id. */
   getAdhocAwardById = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const id = normalizeParam(params.id);
@@ -201,6 +207,7 @@ class AdhocAwardController {
     });
   });
 
+  /** Cập nhật khen thưởng đột xuất; thêm file mới và xóa file đính kèm theo chỉ số. */
   updateAdhocAward = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const user = req.user!;
@@ -226,6 +233,7 @@ class AdhocAwardController {
       note,
       decisionNumber,
       attachedFiles,
+      // FE gửi danh sách chỉ số file cần xóa dưới dạng chuỗi JSON
       removeAttachedFileIndexes: removeAttachedFileIndexes
         ? JSON.parse(removeAttachedFileIndexes)
         : [],
@@ -237,6 +245,7 @@ class AdhocAwardController {
     });
   });
 
+  /** Xóa khen thưởng đột xuất theo id. */
   deleteAdhocAward = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const user = req.user!;
@@ -254,6 +263,7 @@ class AdhocAwardController {
     });
   });
 
+  /** Khen thưởng đột xuất của một quân nhân; người dùng thường chỉ xem của chính mình. */
   getAdhocAwardsByPersonnel = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as PersonnelIdParams;
     const user = req.user!;
@@ -264,6 +274,7 @@ class AdhocAwardController {
     const userPersonnelId = user.quan_nhan_id;
     const userRole = user.role;
 
+    // User thường chỉ xem được của mình; Admin/Manager xem được của quân nhân khác
     if (
       personnelId !== userPersonnelId &&
       !([ROLES.SUPER_ADMIN, ROLES.ADMIN, ROLES.MANAGER] as string[]).includes(userRole)
@@ -279,6 +290,7 @@ class AdhocAwardController {
     });
   });
 
+  /** Khen thưởng đột xuất của một đơn vị; cần unitType để phân biệt CQDV/DVTT. */
   getAdhocAwardsByUnit = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as UnitIdParams;
     const query = req.query as GetAdhocAwardsByUnitQuery;

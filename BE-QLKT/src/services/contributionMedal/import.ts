@@ -34,6 +34,19 @@ import { aggregatePositionMonthsByGroup } from '../eligibility/contributionMonth
 import { buildCutoffDate } from '../../helpers/serviceYearsHelper';
 import type { ContributionAwardValidItem } from './types';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  HCBVTQ (cống hiến) IMPORT — preview (validate) + confirm (ghi DB)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Cùng khung 2-bước như annualReward, NHƯNG đặc thù HCBVTQ:
+ *   • 3 hạng Ba → Nhì → Nhất, nhận theo thứ tự, KHÔNG được nhảy/hạ bậc → confirm
+ *     có downgrade check (xem block downgradeErrors).
+ *   • Điều kiện dựa trên THỜI GIAN CỐNG HIẾN (cần lịch sử chức vụ) → preview phải
+ *     query position history để tính, không chỉ đọc file.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /**
  * Previews HCBVTQ import from Excel (validation only, no DB writes).
  * @param buffer - Raw Excel file buffer
@@ -41,6 +54,8 @@ import type { ContributionAwardValidItem } from './types';
  */
 export async function previewImport(buffer: Buffer) {
   const workbook = await loadWorkbook(buffer);
+  // sheetName cố định (không auto-pick) → ép admin dùng đúng mẫu HCBVTQ, tránh
+  // nhầm sheet loại khác.
   const worksheet = getAndValidateWorksheet(workbook, {
     sheetName: AWARD_EXCEL_SHEETS.HCBVTQ,
   });
@@ -71,6 +86,7 @@ export async function previewImport(buffer: Buffer) {
   const seenInFile = new Set();
   const currentYear = new Date().getFullYear();
 
+  // Quét trước toàn bộ mã quân nhân trong file để batch-query (tránh N+1 trong loop chính).
   const allPersonnelIds = new Set<string>();
   for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
     const row = worksheet.getRow(rowNumber);
@@ -81,6 +97,8 @@ export async function previewImport(buffer: Buffer) {
     }
   }
 
+  // 5 nguồn dữ liệu chạy song song: hồ sơ quân nhân, HCBVTQ đã có, lịch sử chức vụ
+  // (để tính thời gian cống hiến), số QĐ hợp lệ, và đề xuất cống hiến đang chờ duyệt.
   const [
     personnelList,
     existingAwardsList,
@@ -121,6 +139,7 @@ export async function previewImport(buffer: Buffer) {
 
   const personnelMap = new Map(personnelList.map(p => [p.id, p]));
   const existingAwardsMap = new Map(existingAwardsList.map(a => [a.quan_nhan_id, a]));
+  // Gom lịch sử chức vụ theo quân nhân để tra nhanh khi tính thời gian giữ chức.
   const positionHistoriesMap = new Map<string, typeof allPositionHistories>();
   for (const h of allPositionHistories) {
     const list = positionHistoriesMap.get(h.quan_nhan_id) ?? [];
@@ -129,12 +148,14 @@ export async function previewImport(buffer: Buffer) {
   }
   const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
+  // Tập id quân nhân đang có đề xuất HCBVTQ (cống hiến) chờ duyệt.
   const pendingPersonnelIds = buildPendingKeys(
     pendingProposals as Array<Record<string, unknown>>,
     'data_cong_hien',
     item => (item.personnel_id ? String(item.personnel_id) : null)
   );
 
+  // Duyệt từng dòng: validate tuần tự; lỗi gom vào errors (số dòng + lý do) và bỏ qua dòng.
   for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
     const row = worksheet.getRow(rowNumber);
     const idValue = idCol ? row.getCell(idCol).value : null;
@@ -149,8 +170,10 @@ export async function previewImport(buffer: Buffer) {
     const thangVal = thangCol ? row.getCell(thangCol).value : null;
     const ghi_chu = ghiChuCol ? String(row.getCell(ghiChuCol).value ?? '').trim() : null;
 
+    // Dòng trống hoàn toàn → bỏ qua.
     if (!idValue && !namVal && !danh_hieu_raw) continue;
 
+    // Có mã nhưng bỏ trống danh hiệu → coi như dòng để trống cố ý, báo "bỏ qua".
     if (idValue && !danh_hieu_raw) {
       const skipName = hoTenCol ? String(row.getCell(hoTenCol).value ?? '').trim() : '';
       errors.push({
@@ -203,6 +226,7 @@ export async function previewImport(buffer: Buffer) {
       continue;
     }
 
+    // Họ tên trong file phải khớp hồ sơ (chống dán nhầm mã của người khác).
     const nameMismatch = validatePersonnelNameMatch(ho_ten, personnel.ho_ten);
     if (nameMismatch) {
       errors.push({
@@ -215,6 +239,7 @@ export async function previewImport(buffer: Buffer) {
       continue;
     }
 
+    // Năm phải là số nguyên và nằm trong [1900, năm hiện tại].
     const nam = parseInt(String(namVal), 10);
     if (!Number.isInteger(nam)) {
       errors.push({
@@ -237,6 +262,7 @@ export async function previewImport(buffer: Buffer) {
       continue;
     }
 
+    // HCBVTQ tính theo mốc tháng/năm nhận → bắt buộc có tháng hợp lệ (1-12).
     const thang = thangVal ? parseInt(String(thangVal), 10) : null;
     if (!thang || thang < 1 || thang > 12) {
       errors.push({
@@ -249,6 +275,7 @@ export async function previewImport(buffer: Buffer) {
       continue;
     }
 
+    // Danh hiệu phải thuộc HCBVTQ (3 hạng Ba/Nhì/Nhất).
     const resolvedDanhHieu = resolveDanhHieuCode(danh_hieu_raw);
     if (!validDanhHieu.includes(resolvedDanhHieu)) {
       errors.push({
@@ -262,6 +289,7 @@ export async function previewImport(buffer: Buffer) {
     }
     const danh_hieu = resolvedDanhHieu;
 
+    // Số quyết định bắt buộc + phải tồn tại trên hệ thống.
     if (!so_quyet_dinh) {
       errors.push({ row: rowNumber, ho_ten, nam, danh_hieu, message: 'Thiếu số quyết định' });
       continue;
@@ -290,6 +318,7 @@ export async function previewImport(buffer: Buffer) {
     }
     seenInFile.add(personnelId);
 
+    // Đang có đề xuất cống hiến chờ duyệt → chặn để tránh trao trùng.
     if (pendingPersonnelIds.has(personnelId)) {
       errors.push({
         row: rowNumber,
@@ -314,6 +343,9 @@ export async function previewImport(buffer: Buffer) {
       continue;
     }
 
+    // Điều kiện HCBVTQ = tổng thời gian giữ chức vụ ở từng nhóm hệ số (0.7 / 0.8 /
+    // 0.9-1.0), tính đến mốc tháng/năm nhận. evaluateHCBVTQRank chấm đủ ĐK theo hạng
+    // + giới tính (nữ có ngưỡng riêng) và trả về số tháng yêu cầu.
     const positionHistories = positionHistoriesMap.get(personnelId) ?? [];
     const monthsByGroup = aggregatePositionMonthsByGroup(
       positionHistories,
@@ -338,6 +370,8 @@ export async function previewImport(buffer: Buffer) {
       continue;
     }
 
+    // Phải nhận đúng hạng CAO NHẤT mà thời gian cống hiến cho phép → chặn nếu chọn
+    // hạng thấp hơn mức đủ điều kiện.
     const downgradeError = validateHCBVTQHighestRank(danh_hieu, monthsByGroup, baseMonths);
     if (downgradeError) {
       errors.push({
@@ -350,8 +384,10 @@ export async function previewImport(buffer: Buffer) {
       continue;
     }
 
+    // HCBVTQ chỉ nhận 1 lần/đời nên không có lịch sử trước đó để hiển thị.
     const history: { nam: number; danh_hieu: string; so_quyet_dinh: string | null }[] = [];
 
+    // Tên/cấp bậc/chức vụ: ưu tiên giá trị trong file, thiếu thì lấy từ hồ sơ.
     const {
       hoTen,
       capBac,
@@ -369,6 +405,7 @@ export async function previewImport(buffer: Buffer) {
       continue;
     }
 
+    // Dòng hợp lệ → đưa vào danh sách valid cho FE xem trước.
     valid.push({
       row: rowNumber,
       personnel_id: personnelId,
@@ -396,6 +433,8 @@ export async function previewImport(buffer: Buffer) {
 export async function confirmImport(validItems: ContributionAwardValidItem[]) {
   const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
 
+  // RE-VALIDATE trước khi ghi (không tin dữ liệu preview): tải lại đề xuất chờ duyệt
+  // + HCBVTQ đã có để chặn trao trùng nếu DB đã đổi giữa lúc preview và confirm.
   const [pendingProposals, existingRecords] = await Promise.all([
     proposalRepository.findManyRaw({
       where: { loai_de_xuat: PROPOSAL_TYPES.CONG_HIEN, status: PROPOSAL_STATUS.PENDING },
@@ -406,6 +445,7 @@ export async function confirmImport(validItems: ContributionAwardValidItem[]) {
     }),
   ]);
 
+  // Quân nhân đang có đề xuất cống hiến chờ duyệt → gom xung đột rồi throw chặn cả lô.
   const pendingPersonnelIds = buildPendingKeys(
     pendingProposals as Array<Record<string, unknown>>,
     'data_cong_hien',
@@ -422,6 +462,7 @@ export async function confirmImport(validItems: ContributionAwardValidItem[]) {
   }
   const existingMap = new Map(existingRecords.map(r => [r.quan_nhan_id, r]));
 
+  // HCBVTQ là huân chương 1 lần/đời → đã có bản ghi thì chặn, không trao lần 2.
   const conflicts: string[] = [];
   for (const item of validItems) {
     const existing = existingMap.get(item.personnel_id);
@@ -433,6 +474,8 @@ export async function confirmImport(validItems: ContributionAwardValidItem[]) {
     throw new ValidationError(conflicts.join('; '));
   }
 
+  // Tải lại giới tính + lịch sử chức vụ để chấm lại downgrade ngay tại confirm
+  // (không tin số tháng đã tính ở preview).
   const [personnelInfos, positionRows] = await Promise.all([
     quanNhanRepository.findManyRaw({
       where: { id: { in: personnelIds } },
@@ -450,6 +493,9 @@ export async function confirmImport(validItems: ContributionAwardValidItem[]) {
     list.push(h);
     positionsMap.set(h.quan_nhan_id, list);
   }
+  // Downgrade check: HCBVTQ xét theo thời gian giữ chức vụ ở từng nhóm hệ số
+  // (LEVEL_07/08/09_10). Tính tổng tháng mỗi nhóm rồi đối chiếu ngưỡng yêu cầu
+  // (nữ có ngưỡng riêng) → chặn nhập hạng cao hơn mức thời gian cho phép.
   const downgradeErrors: string[] = [];
   for (const item of validItems) {
     const histories = positionsMap.get(item.personnel_id) ?? [];
@@ -467,6 +513,12 @@ export async function confirmImport(validItems: ContributionAwardValidItem[]) {
     throw new ValidationError(downgradeErrors.join('; '));
   }
 
+  // ─── TRANSACTION CONFIRM: INSERT HCBVTQ theo lô ───
+  // validItems đã qua validation (chặn trùng + chặn HẠ hạng — xem validateHCBVTQHighestRank),
+  // nên ở đây chỉ INSERT từng dòng trong 1 transaction → cả lô nguyên tử.
+  // SQL minh hoạ:
+  //   INSERT INTO "KhenThuongHCBVTQ" (quan_nhan_id, danh_hieu, nam, thang, cap_bac, so_quyet_dinh, ...)
+  //     VALUES (...);
   return await prisma.$transaction(
     async prismaTx => {
       const results = [];

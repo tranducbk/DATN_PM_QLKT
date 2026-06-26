@@ -10,11 +10,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+/// Cơ quan đơn vị (CQDV) — đơn vị cấp cha, chứa nhiều đơn vị trực thuộc.
 model CoQuanDonVi {
   id         String   @id @default(cuid()) @db.VarChar(30)
   ma_don_vi  String   @unique @db.VarChar(50)
   ten_don_vi String   @db.VarChar(255)
-  so_luong   Int      @default(0)
+  so_luong   Int      @default(0)  // Số quân nhân thuộc đơn vị (cache, cập nhật khi thêm/đổi đơn vị).
   createdAt  DateTime @default(now()) @db.Timestamp(0)
   updatedAt  DateTime @updatedAt @db.Timestamp(0)
 
@@ -29,12 +30,13 @@ model CoQuanDonVi {
   @@map("CoQuanDonVi")
 }
 
+/// Đơn vị trực thuộc (DVTT) — đơn vị con thuộc một CQDV.
 model DonViTrucThuoc {
   id                String   @id @default(cuid()) @db.VarChar(30)
   co_quan_don_vi_id String   @db.VarChar(30)
   ma_don_vi         String   @unique @db.VarChar(50)
   ten_don_vi        String   @db.VarChar(255)
-  so_luong          Int      @default(0)
+  so_luong          Int      @default(0)  // Số quân nhân thuộc đơn vị (cache).
   createdAt         DateTime @default(now()) @db.Timestamp(0)
   updatedAt         DateTime @updatedAt @db.Timestamp(0)
 
@@ -49,13 +51,14 @@ model DonViTrucThuoc {
   @@map("DonViTrucThuoc")
 }
 
+/// Chức vụ — gắn với CQDV hoặc DVTT; he_so_chuc_vu nuôi tính khen thưởng cống hiến.
 model ChucVu {
   id                   String   @id @default(cuid()) @db.VarChar(30)
   co_quan_don_vi_id    String?  @db.VarChar(30)
   don_vi_truc_thuoc_id String?  @db.VarChar(30)
   ten_chuc_vu          String   @db.VarChar(255)
-  is_manager           Boolean  @default(false)
-  he_so_chuc_vu        Float    @default(0)
+  is_manager           Boolean  @default(false)  // true = vai trò chỉ huy (tài khoản role MANAGER).
+  he_so_chuc_vu        Float    @default(0)  // Hệ số chức vụ (1 chữ số thập phân; rule ở tầng validation).
   createdAt            DateTime @default(now()) @db.Timestamp(0)
   updatedAt            DateTime @updatedAt @db.Timestamp(0)
 
@@ -69,27 +72,28 @@ model ChucVu {
   @@map("ChucVu")
 }
 
+/// Quân nhân — hồ sơ nhân sự gốc, tâm điểm của mọi quan hệ khen thưởng.
 model QuanNhan {
   id                       String    @id @default(cuid()) @db.VarChar(30)
   cccd                     String?   @unique @db.VarChar(20)
   ho_ten                   String    @db.VarChar(255)
-  gioi_tinh                String?   @db.VarChar(10)
+  gioi_tinh                String?   @db.VarChar(10)  // "NAM" | "NU".
   ngay_sinh                DateTime? @db.Date
   que_quan_2_cap           String?   @db.VarChar(255)
   que_quan_3_cap           String?   @db.VarChar(255)
   tru_quan                 String?   @db.VarChar(255)
   cho_o_hien_nay           String?   @db.VarChar(255)
-  co_quan_don_vi           Json?
-  ngay_nhap_ngu            DateTime? @db.Date
-  ngay_xuat_ngu            DateTime? @db.Date
+  co_quan_don_vi           Json?  // Snapshot JSON thông tin đơn vị (hiển thị nhanh, đỡ join).
+  ngay_nhap_ngu            DateTime? @db.Date  // Mốc tính thời gian phục vụ cho khen thưởng cống hiến (HCBVTQ).
+  ngay_xuat_ngu            DateTime? @db.Date  // Mốc tính niên hạn KNC (nam >= 25 năm, nữ >= 20 năm).
   ngay_vao_dang            DateTime? @db.Date
   ngay_vao_dang_chinh_thuc DateTime? @db.Date
   so_the_dang_vien         String?   @db.VarChar(50)
   so_dien_thoai            String?   @db.VarChar(20)
-  cap_bac                  String?   @db.VarChar(50)
-  co_quan_don_vi_id        String?   @db.VarChar(30)
+  cap_bac                  String?   @db.VarChar(50)  // Quân hàm: Binh nhì ... Đại tướng.
+  co_quan_don_vi_id        String?   @db.VarChar(30)  // FK đơn vị — quân nhân ở đơn vị con lưu CẢ 2 (CQDV cha + DVTT con).
   don_vi_truc_thuoc_id     String?   @db.VarChar(30)
-  chuc_vu_id               String    @db.VarChar(30)
+  chuc_vu_id               String    @db.VarChar(30)  // FK chức vụ hiện tại (onDelete Restrict: chặn xóa chức vụ đang dùng).
   createdAt                DateTime  @default(now()) @db.Timestamp(0)
   updatedAt                DateTime  @updatedAt @db.Timestamp(0)
 
@@ -113,14 +117,15 @@ model QuanNhan {
   @@map("QuanNhan")
 }
 
+/// Tài khoản đăng nhập — mỗi quân nhân có 0..1 tài khoản; phân quyền theo role.
 model TaiKhoan {
   id            String   @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id  String?  @unique @db.VarChar(30)
   username      String   @unique @db.VarChar(100)
   password_hash String   @db.VarChar(255)
-  role          String   @db.VarChar(20)
+  role          String   @db.VarChar(20)  // "SUPER_ADMIN" | "ADMIN" | "MANAGER" | "USER".
   refreshToken  String?  @db.Text
-  prevRefreshToken String? @db.Text
+  prevRefreshToken String? @db.Text  // Refresh token trước đó, chấp nhận trong cửa sổ grace ngắn (tránh rớt phiên khi rotate).
   createdAt     DateTime @default(now()) @db.Timestamp(0)
   updatedAt     DateTime @updatedAt @db.Timestamp(0)
 
@@ -135,14 +140,15 @@ model TaiKhoan {
   @@map("TaiKhoan")
 }
 
+/// Lịch sử chức vụ (sổ cái append-only) — nuôi tính thời gian & hệ số cho khen thưởng.
 model LichSuChucVu {
   id                 String    @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id       String    @db.VarChar(30)
   chuc_vu_id         String?   @db.VarChar(30)
-  he_so_chuc_vu      Float     @default(0)
-  ten_chuc_vu          String?   @db.VarChar(255)
-  ten_co_quan_don_vi   String?   @db.VarChar(255)
-  ten_don_vi_truc_thuoc String?  @db.VarChar(255)
+  he_so_chuc_vu      Float     @default(0)  // Snapshot hệ số — frozen (chỉ dòng đang mở mới sync; dòng đã đóng giữ nguyên).
+  ten_chuc_vu          String?   @db.VarChar(255)  // Snapshot tên (freeze-on-delete) — hiển thị khi chức vụ nguồn bị xóa.
+  ten_co_quan_don_vi   String?   @db.VarChar(255)  // Snapshot tên CQDV (freeze-on-delete).
+  ten_don_vi_truc_thuoc String?  @db.VarChar(255)  // Snapshot tên DVTT (freeze-on-delete).
   ngay_bat_dau       DateTime  @db.Date
   ngay_ket_thuc      DateTime? @db.Date
   so_thang           Int?
@@ -150,19 +156,20 @@ model LichSuChucVu {
   updatedAt          DateTime  @updatedAt @db.Timestamp(0)
 
   QuanNhan QuanNhan @relation(fields: [quan_nhan_id], references: [id], onDelete: Cascade)
-  ChucVu   ChucVu?  @relation(fields: [chuc_vu_id], references: [id], onDelete: SetNull)
+  ChucVu   ChucVu?  @relation(fields: [chuc_vu_id], references: [id], onDelete: SetNull)  // Nullable + SetNull: xóa chức vụ thì dòng lịch sử vẫn sống (dùng snapshot ten_*).
 
   @@map("LichSuChucVu")
 }
 
+/// Thành tích NCKH (đề tài/sáng kiến) — điều kiện kèm của chuỗi danh hiệu cá nhân.
 model ThanhTichKhoaHoc {
   id            String   @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id  String   @db.VarChar(30)
   nam           Int
-  loai          String   @db.VarChar(10)
+  loai          String   @db.VarChar(10)  // "DTKH" (đề tài) | "SKKH" (sáng kiến).
   mo_ta         String   @db.VarChar(500)
-  cap_bac       String?  @db.VarChar(50)
-  chuc_vu       String?  @db.VarChar(255)
+  cap_bac       String?  @db.VarChar(50)  // Snapshot cấp bậc tại thời điểm đề xuất.
+  chuc_vu       String?  @db.VarChar(255)  // Snapshot chức vụ tại thời điểm đề xuất (text tự do).
   ghi_chu       String?  @db.Text
   so_quyet_dinh String?  @db.VarChar(100)
   createdAt     DateTime @default(now()) @db.Timestamp(0)
@@ -176,22 +183,23 @@ model ThanhTichKhoaHoc {
   @@map("ThanhTichKhoaHoc")
 }
 
+/// Danh hiệu thi đua cá nhân theo năm — vừa INPUT (xét chuỗi) vừa OUTPUT (đã trao).
 model DanhHieuHangNam {
   id                   String   @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id         String   @db.VarChar(30)
   nam                  Int
-  danh_hieu            String?  @db.VarChar(20)
+  danh_hieu            String?  @db.VarChar(20)  // "CSTDCS" | "CSTT" (null = năm đó không đạt).
   cap_bac              String?  @db.VarChar(50)
   chuc_vu              String?  @db.VarChar(255)
   ghi_chu              String?  @db.Text
   so_quyet_dinh        String?  @db.VarChar(100)
-  nhan_bkbqp           Boolean  @default(false)
+  nhan_bkbqp           Boolean  @default(false)  // Cờ đã nhận Bằng khen BQP (mốc chuỗi).
   so_quyet_dinh_bkbqp  String?  @db.VarChar(100)
   ghi_chu_bkbqp        String?  @db.Text
-  nhan_cstdtq          Boolean  @default(false)
+  nhan_cstdtq          Boolean  @default(false)  // Cờ đã nhận CSTĐ toàn quân (mốc chuỗi).
   so_quyet_dinh_cstdtq String?  @db.VarChar(100)
   ghi_chu_cstdtq       String?  @db.Text
-  nhan_bkttcp          Boolean  @default(false)
+  nhan_bkttcp          Boolean  @default(false)  // Cờ đã nhận Bằng khen Thủ tướng CP (mốc chuỗi, lifetime).
   so_quyet_dinh_bkttcp String?  @db.VarChar(100)
   ghi_chu_bkttcp       String?  @db.Text
   createdAt            DateTime @default(now()) @db.Timestamp(0)
@@ -211,19 +219,20 @@ model DanhHieuHangNam {
   @@map("DanhHieuHangNam")
 }
 
+/// Huân chương Bảo vệ Tổ quốc (khen thưởng cống hiến) — mỗi quân nhân tối đa 1.
 model KhenThuongHCBVTQ {
   id                     String   @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id           String   @unique @db.VarChar(30)
-  danh_hieu              String   @db.VarChar(20)
+  danh_hieu              String   @db.VarChar(20)  // "HCBVTQ_HANG_BA" | "_HANG_NHI" | "_HANG_NHAT".
   nam                    Int
-  thang                  Int
+  thang                  Int  // Tháng trao (bắt buộc nhập khi duyệt).
   cap_bac                String?  @db.VarChar(50)
   chuc_vu                String?  @db.VarChar(255)
   ghi_chu                String?  @db.Text
   so_quyet_dinh          String?  @db.VarChar(100)
-  thoi_gian_nhom_0_7     Json?
-  thoi_gian_nhom_0_8     Json?
-  thoi_gian_nhom_0_9_1_0 Json?
+  thoi_gian_nhom_0_7     Json?  // Thời gian tích lũy ở nhóm hệ số >= 0.7 (JSON).
+  thoi_gian_nhom_0_8     Json?  // Thời gian tích lũy ở nhóm hệ số >= 0.8 (JSON).
+  thoi_gian_nhom_0_9_1_0 Json?  // Thời gian tích lũy ở nhóm hệ số 0.9-1.0 (JSON).
   createdAt              DateTime @default(now()) @db.Timestamp(0)
   updatedAt              DateTime @updatedAt @db.Timestamp(0)
 
@@ -234,16 +243,17 @@ model KhenThuongHCBVTQ {
   @@map("KhenThuongHCBVTQ")
 }
 
+/// Huân chương Quân kỳ Quyết thắng — theo số năm phục vụ; mỗi quân nhân tối đa 1.
 model HuanChuongQuanKyQuyetThang {
   id            String   @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id  String   @unique @db.VarChar(30)
   nam           Int
-  thang         Int
+  thang         Int  // Tháng trao (bắt buộc nhập khi duyệt).
   cap_bac       String?  @db.VarChar(50)
   chuc_vu       String?  @db.VarChar(255)
   ghi_chu       String?  @db.Text
   so_quyet_dinh String?  @db.VarChar(100)
-  thoi_gian     Json?
+  thoi_gian     Json?  // { total_months, years, months, display } tính từ ngày nhập ngũ.
   createdAt     DateTime @default(now()) @db.Timestamp(0)
   updatedAt     DateTime @updatedAt @db.Timestamp(0)
 
@@ -254,16 +264,17 @@ model HuanChuongQuanKyQuyetThang {
   @@map("HuanChuongQuanKyQuyetThang")
 }
 
+/// Kỷ niệm chương Vì sự nghiệp xây dựng QĐNDVN — lifetime, mỗi quân nhân tối đa 1.
 model KyNiemChuongVSNXDQDNDVN {
   id            String   @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id  String   @unique @db.VarChar(30)
   nam           Int
-  thang         Int
+  thang         Int  // Tháng trao (bắt buộc nhập khi duyệt).
   cap_bac       String?  @db.VarChar(50)
   chuc_vu       String?  @db.VarChar(255)
   ghi_chu       String?  @db.Text
   so_quyet_dinh String?  @db.VarChar(100)
-  thoi_gian     Json?
+  thoi_gian     Json?  // { total_months, years, months, display } tính từ ngày nhập ngũ.
   createdAt     DateTime @default(now()) @db.Timestamp(0)
   updatedAt     DateTime @updatedAt @db.Timestamp(0)
 
@@ -274,17 +285,18 @@ model KyNiemChuongVSNXDQDNDVN {
   @@map("KyNiemChuongVSNXDQDNDVN")
 }
 
+/// Huy chương Chiến sĩ vẻ vang — 3 hạng (Ba/Nhì/Nhất); mỗi quân nhân tối đa 1 bản ghi mỗi hạng.
 model KhenThuongHCCSVV {
   id            String   @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id  String   @db.VarChar(30)
-  danh_hieu     String   @db.VarChar(20)
+  danh_hieu     String   @db.VarChar(20)  // "HCCSVV_HANG_BA" | "_HANG_NHI" | "_HANG_NHAT".
   nam           Int
-  thang         Int
+  thang         Int  // Tháng trao (bắt buộc nhập khi duyệt).
   cap_bac       String?  @db.VarChar(50)
   chuc_vu       String?  @db.VarChar(255)
   ghi_chu       String?  @db.Text
   so_quyet_dinh String?  @db.VarChar(100)
-  thoi_gian     Json?
+  thoi_gian     Json?  // { total_months, years, months, display } tính từ ngày nhập ngũ.
   createdAt     DateTime @default(now()) @db.Timestamp(0)
   updatedAt     DateTime @updatedAt @db.Timestamp(0)
 
@@ -296,20 +308,21 @@ model KhenThuongHCCSVV {
   @@map("KhenThuongHCCSVV")
 }
 
+/// Khen thưởng đột xuất — Admin tạo trực tiếp (cá nhân hoặc tập thể), KHÔNG qua quy trình duyệt.
 model KhenThuongDotXuat {
   id                    String   @id @default(cuid()) @db.VarChar(30)
   loai                  String   @default("KHEN_THUONG_DOT_XUAT") @db.VarChar(30)
-  doi_tuong             String   @default("CA_NHAN") @db.VarChar(20)
-  quan_nhan_id          String?  @db.VarChar(30)
-  co_quan_don_vi_id     String?  @db.VarChar(30)
-  don_vi_truc_thuoc_id  String?  @db.VarChar(30)
-  hinh_thuc_khen_thuong String   @db.VarChar(255)
+  doi_tuong             String   @default("CA_NHAN") @db.VarChar(20)  // "CA_NHAN" | "TAP_THE".
+  quan_nhan_id          String?  @db.VarChar(30)  // Có giá trị khi doi_tuong = CA_NHAN (chỉ 1 trong 3 FK đối tượng).
+  co_quan_don_vi_id     String?  @db.VarChar(30)  // Có giá trị khi tập thể là CQDV.
+  don_vi_truc_thuoc_id  String?  @db.VarChar(30)  // Có giá trị khi tập thể là DVTT.
+  hinh_thuc_khen_thuong String   @db.VarChar(255)  // Vd: "Giấy khen của HV", "Bằng khen của TC".
   nam                   Int
   cap_bac               String?  @db.VarChar(50)
   chuc_vu               String?  @db.VarChar(255)
   ghi_chu               String?  @db.Text
   so_quyet_dinh         String?  @db.VarChar(100)
-  files_dinh_kem        Json?
+  files_dinh_kem        Json?  // File đính kèm (JSON).
   createdAt             DateTime @default(now()) @db.Timestamp(0)
   updatedAt             DateTime @updatedAt @db.Timestamp(0)
 
@@ -325,18 +338,19 @@ model KhenThuongDotXuat {
   @@map("KhenThuongDotXuat")
 }
 
+/// Hồ sơ niên hạn (OUTPUT, cache) — trạng thái đủ điều kiện HCCSVV theo từng hạng.
 model HoSoNienHan {
   id           String @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id String @unique @db.VarChar(30)
 
-  hccsvv_hang_ba_status   String    @default("CHUA_DU") @db.VarChar(20)
+  hccsvv_hang_ba_status   String    @default("CHUA_DU") @db.VarChar(20)  // "CHUA_DU" | "DU_DIEU_KIEN" | "DA_NHAN" (áp dụng cho cả 3 hạng).
   hccsvv_hang_ba_ngay     DateTime? @db.Date
   hccsvv_hang_nhi_status  String    @default("CHUA_DU") @db.VarChar(20)
   hccsvv_hang_nhi_ngay    DateTime? @db.Date
   hccsvv_hang_nhat_status String    @default("CHUA_DU") @db.VarChar(20)
   hccsvv_hang_nhat_ngay   DateTime? @db.Date
 
-  goi_y     String?  @db.Text
+  goi_y     String?  @db.Text  // Gợi ý hiển thị cho người dùng (text build sẵn ở BE).
   createdAt DateTime @default(now()) @db.Timestamp(0)
   updatedAt DateTime @updatedAt @db.Timestamp(0)
 
@@ -345,22 +359,23 @@ model HoSoNienHan {
   @@map("HoSoNienHan")
 }
 
+/// Hồ sơ cống hiến (OUTPUT, cache) — trạng thái đủ điều kiện HCBVTQ theo từng hạng.
 model HoSoCongHien {
   id           String @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id String @unique @db.VarChar(30)
 
-  hcbvtq_total_months     Int       @default(0)
-  months_07               Int       @default(0)
-  months_08               Int       @default(0)
-  months_0910             Int       @default(0)
-  hcbvtq_hang_ba_status   String    @default("CHUA_DU") @db.VarChar(20)
+  hcbvtq_total_months     Int       @default(0)  // Tổng số tháng phục vụ tính cho cống hiến.
+  months_07               Int       @default(0)  // Số tháng giữ hệ số >= 0.7.
+  months_08               Int       @default(0)  // Số tháng giữ hệ số >= 0.8.
+  months_0910             Int       @default(0)  // Số tháng giữ hệ số 0.9-1.0.
+  hcbvtq_hang_ba_status   String    @default("CHUA_DU") @db.VarChar(20)  // "CHUA_DU" | "DU_DIEU_KIEN" | "DA_NHAN" (áp dụng cho cả 3 hạng).
   hcbvtq_hang_ba_ngay     DateTime? @db.Date
   hcbvtq_hang_nhi_status  String    @default("CHUA_DU") @db.VarChar(20)
   hcbvtq_hang_nhi_ngay    DateTime? @db.Date
   hcbvtq_hang_nhat_status String    @default("CHUA_DU") @db.VarChar(20)
   hcbvtq_hang_nhat_ngay   DateTime? @db.Date
 
-  goi_y     String?  @db.Text
+  goi_y     String?  @db.Text  // Gợi ý hiển thị cho người dùng (text build sẵn ở BE).
   createdAt DateTime @default(now()) @db.Timestamp(0)
   updatedAt DateTime @updatedAt @db.Timestamp(0)
 
@@ -369,21 +384,22 @@ model HoSoCongHien {
   @@map("HoSoCongHien")
 }
 
+/// Hồ sơ hằng năm (OUTPUT, cache) — số liệu nuôi xét chuỗi danh hiệu cá nhân.
 model HoSoHangNam {
   id                  String   @id @default(cuid()) @db.VarChar(30)
   quan_nhan_id        String   @unique @db.VarChar(30)
   tong_cstdcs         Int      @default(0)
   tong_nckh           Int      @default(0)
-  tong_cstdcs_json    Json?
-  tong_nckh_json      Json?
-  cstdcs_lien_tuc     Int      @default(0)
+  tong_cstdcs_json    Json?  // Chi tiết các năm CSTDCS (JSON).
+  tong_nckh_json      Json?  // Chi tiết các năm NCKH (JSON).
+  cstdcs_lien_tuc     Int      @default(0)  // Số năm CSTDCS liên tục (nuôi xét chuỗi).
   nckh_lien_tuc       Int      @default(0)
   bkbqp_lien_tuc      Int      @default(0)
   cstdtq_lien_tuc     Int      @default(0)
-  du_dieu_kien_bkbqp  Boolean  @default(false)
+  du_dieu_kien_bkbqp  Boolean  @default(false)  // Cache cờ đủ điều kiện đề xuất (recalc, không nhập tay).
   du_dieu_kien_cstdtq Boolean  @default(false)
   du_dieu_kien_bkttcp Boolean  @default(false)
-  goi_y               String?  @db.Text
+  goi_y               String?  @db.Text  // Gợi ý hiển thị cho người dùng (text build sẵn ở BE).
   createdAt           DateTime @default(now()) @db.Timestamp(0)
   updatedAt           DateTime @updatedAt @db.Timestamp(0)
 
@@ -392,15 +408,16 @@ model HoSoHangNam {
   @@map("HoSoHangNam")
 }
 
+/// Nhật ký hệ thống (audit log) — append-only.
 model SystemLog {
   id                 String   @id @default(cuid()) @db.VarChar(30)
-  nguoi_thuc_hien_id String?  @db.VarChar(30)
+  nguoi_thuc_hien_id String?  @db.VarChar(30)  // null = hành động do hệ thống (SYSTEM).
   actor_role         String   @db.VarChar(20)
-  action             String   @db.VarChar(50)
-  resource           String   @db.VarChar(50)
-  tai_nguyen_id      String?  @db.VarChar(30)
+  action             String   @db.VarChar(50)  // "CREATE" | "UPDATE" | "DELETE" | "LOGIN" | ...
+  resource           String   @db.VarChar(50)  // Nhóm tài nguyên: "accounts", "personnel", ...
+  tai_nguyen_id      String?  @db.VarChar(30)  // Id tài nguyên bị tác động.
   description        String   @db.VarChar(500)
-  payload            Json?
+  payload            Json?  // Chi tiết before/after (JSON).
   ip_address         String?  @db.VarChar(45)
   user_agent         String?  @db.Text
   createdAt          DateTime @default(now()) @db.Timestamp(0)
@@ -414,18 +431,19 @@ model SystemLog {
   @@map("SystemLog")
 }
 
+/// Thông báo realtime cho người dùng (đẩy qua Socket.IO).
 model ThongBao {
   id                  String    @id @default(cuid()) @db.VarChar(30)
   nguoi_nhan_id       String?   @db.VarChar(30)
   recipient_role      String    @db.VarChar(20)
-  type                String    @db.VarChar(50)
+  type                String    @db.VarChar(50)  // Loại thông báo: "APPROVAL_PENDING", "NEW_PERSONNEL", ...
   title               String    @db.VarChar(255)
   message             String    @db.VarChar(500)
   resource            String?   @db.VarChar(50)
   tai_nguyen_id       String?   @db.VarChar(30)
   link                String?   @db.VarChar(255)
   is_read             Boolean   @default(false)
-  nhat_ky_he_thong_id String?   @db.VarChar(30)
+  nhat_ky_he_thong_id String?   @db.VarChar(30)  // Log nguồn sinh ra thông báo (nếu có).
   createdAt           DateTime  @default(now()) @db.Timestamp(0)
   readAt              DateTime? @db.Timestamp(0)
 
@@ -438,23 +456,24 @@ model ThongBao {
   @@map("ThongBao")
 }
 
+/// Đề xuất khen thưởng — Manager nộp, Admin duyệt; payload theo loai_de_xuat ở các cột data_*.
 model BangDeXuat {
   id                   String    @id @default(cuid()) @db.VarChar(30)
   co_quan_don_vi_id    String?   @db.VarChar(30)
   don_vi_truc_thuoc_id String?   @db.VarChar(30)
-  nguoi_de_xuat_id     String?   @db.VarChar(30)
-  loai_de_xuat         String    @db.VarChar(20)
+  nguoi_de_xuat_id     String?   @db.VarChar(30)  // Nullable + SetNull: giữ đề xuất khi tài khoản người nộp bị xóa.
+  loai_de_xuat         String    @db.VarChar(20)  // CA_NHAN_HANG_NAM | DON_VI_HANG_NAM | NIEN_HAN | CONG_HIEN | DOT_XUAT | NCKH.
   nam                  Int
-  thang                Int?
-  status               String    @default("PENDING") @db.VarChar(20)
-  data_danh_hieu       Json?
-  data_thanh_tich      Json?
-  data_nien_han        Json?
-  data_cong_hien       Json?
-  files_attached       Json?
-  files_attached_admin Json?
+  thang                Int?  // Chỉ bắt buộc cho HCCSVV/HC_QKQT/KNC.
+  status               String    @default("PENDING") @db.VarChar(20)  // "PENDING" | "APPROVED" | "REJECTED".
+  data_danh_hieu       Json?  // Payload danh hiệu (JSON) — dùng cho HANG_NAM.
+  data_thanh_tich      Json?  // Payload thành tích NCKH (JSON).
+  data_nien_han        Json?  // Payload niên hạn (JSON) — HCCSVV/HC_QKQT/KNC.
+  data_cong_hien       Json?  // Payload cống hiến (JSON) — HCBVTQ.
+  files_attached       Json?  // File Manager đính kèm (JSON).
+  files_attached_admin Json?  // File Admin đính kèm khi duyệt (JSON).
   ghi_chu              String?   @db.Text
-  rejection_reason     String?   @db.Text
+  rejection_reason     String?   @db.Text  // Lý do khi status = REJECTED.
   nguoi_duyet_id       String?   @db.VarChar(30)
   ngay_duyet           DateTime? @db.Timestamp(0)
   createdAt            DateTime  @default(now()) @db.Timestamp(0)
@@ -469,15 +488,16 @@ model BangDeXuat {
   @@map("BangDeXuat")
 }
 
+/// Hồ sơ đơn vị hằng năm (OUTPUT, cache) — số liệu nuôi xét chuỗi danh hiệu cấp đơn vị.
 model HoSoDonViHangNam {
   id                        String   @id @default(cuid()) @db.VarChar(30)
   co_quan_don_vi_id         String?  @db.VarChar(30)
   don_vi_truc_thuoc_id      String?  @db.VarChar(30)
   nam                       Int
-  tong_dvqt                 Int      @default(0)
-  tong_dvqt_json            Json?
-  dvqt_lien_tuc             Int      @default(0)
-  du_dieu_kien_bkbqp  Boolean  @default(false)
+  tong_dvqt                 Int      @default(0)  // Tổng số năm Đơn vị Quyết thắng (ĐVQT).
+  tong_dvqt_json            Json?  // Chi tiết các năm ĐVQT (JSON).
+  dvqt_lien_tuc             Int      @default(0)  // Số năm ĐVQT liên tục.
+  du_dieu_kien_bkbqp  Boolean  @default(false)  // Cache cờ đủ điều kiện (recalc).
   du_dieu_kien_bkttcp Boolean  @default(false)
   goi_y                     String?  @db.Text
   createdAt                 DateTime @default(now()) @db.Timestamp(0)
@@ -493,17 +513,18 @@ model HoSoDonViHangNam {
   @@map("HoSoDonViHangNam")
 }
 
+/// Danh hiệu thi đua cấp ĐƠN VỊ (tập thể) theo năm.
 model DanhHieuDonViHangNam {
   id                   String    @id @default(cuid()) @db.VarChar(30)
   co_quan_don_vi_id    String?   @db.VarChar(30)
   don_vi_truc_thuoc_id String?   @db.VarChar(30)
   nam                  Int
-  danh_hieu            String?   @db.VarChar(50)
+  danh_hieu            String?   @db.VarChar(50)  // Danh hiệu thi đua đơn vị (vd "DVQT").
   so_quyet_dinh        String?   @db.VarChar(100)
-  nhan_bkbqp           Boolean   @default(false)
+  nhan_bkbqp           Boolean   @default(false)  // Cờ mốc chuỗi đơn vị (đơn vị KHÔNG có CSTDTQ).
   so_quyet_dinh_bkbqp  String?   @db.VarChar(100)
   ghi_chu_bkbqp        String?   @db.Text
-  nhan_bkttcp          Boolean   @default(false)
+  nhan_bkttcp          Boolean   @default(false)  // Cờ đã nhận Bằng khen TTCP cấp đơn vị.
   so_quyet_dinh_bkttcp String?   @db.VarChar(100)
   ghi_chu_bkttcp       String?   @db.Text
   nguoi_tao_id         String?   @db.VarChar(30)
@@ -531,6 +552,10 @@ model DanhHieuDonViHangNam {
   @@map("DanhHieuDonViHangNam")
 }
 
+// Registry trung tâm cho số quyết định: 8 bảng khen thưởng FK tới đây qua
+// so_quyet_dinh. file_path lưu đường dẫn tương đối tới PDF (không lưu binary);
+// nhiều danh hiệu có thể dùng chung 1 số QĐ → chỉ 1 file. Sync khi duyệt đề
+// xuất qua decisionMappings.syncDecisionFiles.
 model FileQuyetDinh {
   id               String   @id @default(cuid()) @db.VarChar(30)
   so_quyet_dinh    String   @unique @db.VarChar(100)
@@ -543,6 +568,7 @@ model FileQuyetDinh {
   createdAt        DateTime @default(now()) @db.Timestamp(0)
   updatedAt        DateTime @updatedAt @db.Timestamp(0)
 
+  // Reverse relations (hard FK from 8 award tables — onUpdate: Cascade for rename, onDelete: Restrict to block deleting in-use decisions)
   ThanhTichKhoaHoc           ThanhTichKhoaHoc[]           @relation("ThanhTichKhoaHoc_so_quyet_dinh")
   DanhHieuHangNamMain        DanhHieuHangNam[]            @relation("DanhHieuHangNam_so_quyet_dinh")
   DanhHieuHangNamBkbqp       DanhHieuHangNam[]            @relation("DanhHieuHangNam_so_quyet_dinh_bkbqp")
@@ -563,6 +589,7 @@ model FileQuyetDinh {
   @@map("FileQuyetDinh")
 }
 
+/// Cấu hình hệ thống dạng key-value.
 model SystemSetting {
   id        String   @id @default(cuid()) @db.VarChar(30)
   key       String   @unique @db.VarChar(100)

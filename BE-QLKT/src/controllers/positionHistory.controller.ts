@@ -43,6 +43,10 @@ interface UpdatePositionHistoryBody {
 }
 
 class PositionHistoryController {
+  /**
+   * Lấy lịch sử chức vụ của một quân nhân, sắp theo thời gian.
+   * Có thể yêu cầu tính lại hồ sơ cống hiến (HCBVTQ) trước khi trả về.
+   */
   getPositionHistory = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetPositionHistoryQuery;
     const { personnel_id, recalculate } = query;
@@ -54,6 +58,7 @@ class PositionHistoryController {
       req.user?.role,
       req.user?.quan_nhan_id
     );
+    // Tính lại hồ sơ cống hiến là best-effort: lỗi chỉ ghi log, không chặn trả dữ liệu
     if (recalculate === 'true') {
       try {
         await profileService.recalculateContributionProfile(personnel_id);
@@ -72,6 +77,10 @@ class PositionHistoryController {
     });
   });
 
+  /**
+   * Thêm một dòng lịch sử chức vụ mới cho quân nhân.
+   * Để trống ngay_ket_thuc nghĩa là chức vụ đang giữ (dòng đang mở).
+   */
   createPositionHistory = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as CreatePositionHistoryParams;
     const body = req.body as CreatePositionHistoryBody;
@@ -107,6 +116,10 @@ class PositionHistoryController {
     });
   });
 
+  /**
+   * Cập nhật một dòng lịch sử chức vụ theo id.
+   * Tính lại hồ sơ hằng năm cho quân nhân lấy từ kết quả cập nhật.
+   */
   updatePositionHistory = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const body = req.body as UpdatePositionHistoryBody;
@@ -137,6 +150,10 @@ class PositionHistoryController {
     });
   });
 
+  /**
+   * Xóa một dòng lịch sử chức vụ theo id.
+   * Chỉ tính lại hồ sơ khi service trả về quan_nhan_id của dòng vừa xóa.
+   */
   deletePositionHistory = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const id = normalizeParam(params.id);

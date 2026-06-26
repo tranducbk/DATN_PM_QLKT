@@ -22,6 +22,18 @@ import {
 import type { DanhHieuHangNam, Prisma } from '../../generated/prisma';
 import type { BulkCreateData } from './types';
 
+/**
+ * Gán hàng loạt 1 danh hiệu (cùng năm) cho nhiều quân nhân trong 1 transaction.
+ *
+ *  LUỒNG: validate danh hiệu → batch query (tránh N+1) → tính sẵn eligibility
+ *  song song → lặp từng quân nhân trong transaction (lỗi 1 người chỉ skip người
+ *  đó, người hợp lệ vẫn được tạo) → recalc hồ sơ NGOÀI transaction.
+ *
+ *  PARTIAL SUCCESS: gom lỗi vào `errors[]` + `continue`, không throw cả lô. Các
+ *  insert/update thành công vẫn atomic với nhau qua `$transaction`.
+ * @param data - personnel_ids + override từng người + danh hiệu/năm/QĐ chung
+ * @returns Số tạo thành công, số lỗi, và chi tiết (created rows + errors)
+ */
 export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
   success: number;
   errors: number;
@@ -41,6 +53,8 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
     chuc_vu,
   } = data;
 
+  // Guard whitelist: chỉ nhận danh hiệu cá nhân hằng năm hợp lệ, chặn sớm trước
+  // khi tốn query — fail nhanh cho cả lô nếu loại danh hiệu sai.
   const allowedDanhHieu = Object.values(DANH_HIEU_CA_NHAN_HANG_NAM) as string[];
   if (!allowedDanhHieu.includes(danh_hieu)) {
     throw new ValidationError(
@@ -50,6 +64,7 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
 
   const errors: { personnelId: string; error: string }[] = [];
 
+  // Override riêng từng người (số QĐ/cấp bậc/chức vụ) — fallback giá trị chung khi trống.
   const personnelDataMap: Record<
     string,
     { so_quyet_dinh?: string; cap_bac?: string; chuc_vu?: string }
@@ -62,9 +77,12 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
     });
   }
 
+  // Chuẩn hoá id về string + loại rỗng (payload có thể lẫn null/number).
   const personnelIds = personnel_ids.map(id => String(id)).filter(Boolean);
   const namInt = nam;
 
+  // Batch 3 nguồn 1 lần (tránh N+1 trong vòng lặp): quân nhân, danh hiệu đã có
+  // cùng năm, và đề xuất CA_NHAN_HANG_NAM đang PENDING cùng năm.
   const [allPersonnel, existingRewards, pendingProposals] = await Promise.all([
     quanNhanRepository.findManyByIds(personnelIds),
     danhHieuHangNamRepository.findMany({
@@ -79,8 +97,12 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
     }),
   ]);
 
+  // Index kết quả batch theo id để tra O(1) trong vòng lặp (thay vì .find mỗi lần).
   const personnelMap = new Map(allPersonnel.map(p => [p.id, p] as const));
   const existingRewardMap = new Map(existingRewards.map(r => [r.quan_nhan_id, r] as const));
+  // "Đã có danh hiệu này" — mỗi quân nhân chỉ 1 dòng/năm, nhưng bằng khen lưu
+  // dạng flag (nhan_bkbqp/cstdtq/bkttcp) chứ không phải cột danh_hieu, nên phải
+  // soi cả flag mới biết đã trao chưa.
   const existingAwardSet = new Set(
     existingRewards
       .filter(r => {
@@ -92,11 +114,15 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
       })
       .map(r => r.quan_nhan_id)
   );
+  // Quân nhân đang có đề xuất PENDING cùng danh hiệu → chặn để khỏi trao trùng
+  // (đề xuất chờ duyệt vẫn có thể được approve sau).
   const pendingProposalPersonnelSet = collectPendingProposalPersonnelIdsForAward(
     pendingProposals as Array<{ data_danh_hieu: unknown }>,
     danh_hieu
   );
 
+  // Chỉ chuỗi danh hiệu (BKBQP/CSTDTQ/BKTTCP) mới cần xét đủ điều kiện. Tính sẵn
+  // song song NGOÀI transaction để không await DB lồng trong vòng lặp tx.
   const eligibilityMap = new Map<string, { eligible: boolean; reason: string }>();
   if (isPersonalChainAward(danh_hieu)) {
     const eligibilityResults = await Promise.all(
@@ -110,15 +136,20 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
     }
   }
 
+  // 1 transaction cho toàn lô: các insert/update hợp lệ commit cùng nhau, còn
+  // người lỗi chỉ bị skip (continue) chứ không rollback cả lô.
   const created = await prisma.$transaction(async prismaTx => {
     const txCreated: DanhHieuHangNam[] = [];
 
     for (const personnelId of personnelIds) {
+      // Giá trị riêng từng người ưu tiên, rơi về giá trị chung của cả lô khi trống.
       const personnelData = personnelDataMap[personnelId] || {};
       const individualSoQuyetDinh = personnelData.so_quyet_dinh || so_quyet_dinh;
       const individualCapBac = personnelData.cap_bac || cap_bac;
       const individualChucVu = personnelData.chuc_vu || chuc_vu;
 
+      // Gauntlet 4 chốt chặn: không tồn tại → đã có → đang đề xuất → chưa đủ ĐK.
+      // Rớt chốt nào thì gom lỗi + bỏ qua người đó, không dừng cả lô.
       const personnel = personnelMap.get(personnelId);
 
       if (!personnel) {
@@ -155,10 +186,14 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
         }
       }
 
+      // Số QĐ nằm ở cột khác nhau tuỳ loại: danh hiệu cơ bản (CSTDCS/CSTT) dùng
+      // so_quyet_dinh; bằng khen dùng so_quyet_dinh_{bkbqp,cstdtq,bkttcp}.
       const isCoBanRow = DANH_HIEU_CA_NHAN_CO_BAN.has(danh_hieu);
       const isBkbqpRow = danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP;
       const isCstdtqRow = danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ;
       const isBkttcpRow = danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP;
+      // Validate số QĐ đúng cột theo loại đang trao; chỉ bật field khớp loại,
+      // các field khác để null để khỏi bắt nhầm "thiếu số QĐ".
       const decisionErrors = validateDecisionNumbers(
         {
           danh_hieu: isCoBanRow ? danh_hieu : null,
@@ -179,6 +214,8 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
 
       const existingReward = existingRewardMap.get(personnelId) ?? null;
 
+      // Phân loại nơi lưu: cơ bản → ghi vào cột danh_hieu; bằng khen → bật cờ
+      // nhan_* tương ứng (BKBQP/CSTDTQ/BKTTCP lưu dạng flag, không phải danh_hieu).
       let finalDanhHieu: string | null = null;
       let nhanBKBQP = false;
       let nhanCSTDTQ = false;
@@ -196,6 +233,9 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
 
       let rewardRecord: DanhHieuHangNam;
 
+      // Đã có dòng năm đó → MERGE vào dòng cũ (1 quân nhân/năm chỉ 1 dòng):
+      //  - bằng khen: luôn merge được (gắn flag lên dòng cơ bản sẵn có).
+      //  - cơ bản: chỉ ghi khi dòng cũ CHƯA có danh hiệu cơ bản (tránh ghi đè).
       if (existingReward) {
         const isBangKhen = DANH_HIEU_CA_NHAN_BANG_KHEN.has(danh_hieu);
         const isCoBan = DANH_HIEU_CA_NHAN_CO_BAN.has(danh_hieu);
@@ -225,6 +265,7 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
 
         if (individualCapBac) updateData.cap_bac = individualCapBac;
         if (individualChucVu) updateData.chuc_vu = individualChucVu;
+        // Ghi chú cũng tách cột theo bằng khen; danh hiệu cơ bản dùng cột ghi_chu chung.
         if (ghi_chu) {
           if (nhanBKBQP) updateData.ghi_chu_bkbqp = ghi_chu;
           else if (nhanCSTDTQ) updateData.ghi_chu_cstdtq = ghi_chu;
@@ -237,6 +278,8 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
           data: updateData,
         }, prismaTx);
       } else {
+        // Chưa có dòng năm đó → tạo mới. ghi_chu chung để null khi là bằng khen
+        // (ghi chú đã đi vào cột ghi_chu_* riêng ngay bên dưới).
         const createData: Prisma.DanhHieuHangNamUncheckedCreateInput = {
           quan_nhan_id: personnelId,
           nam: namInt,
@@ -252,6 +295,7 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
           ...(nhanBKTTCP && ghi_chu && { ghi_chu_bkttcp: ghi_chu }),
         };
 
+        // Số QĐ vào đúng cột theo loại; cơ bản dùng cột so_quyet_dinh chung.
         if (nhanBKBQP) {
           createData.so_quyet_dinh_bkbqp = individualSoQuyetDinh || null;
         } else if (nhanCSTDTQ) {
@@ -273,6 +317,8 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
     return txCreated;
   });
 
+  // Recalc hồ sơ sau khi commit: thêm danh hiệu làm đổi chuỗi/đủ ĐK. Chạy ngoài
+  // transaction vì là side-effect tổng hợp, không cần atomic với insert.
   for (const rewardRecord of created) {
     await safeRecalculateAnnualProfile(rewardRecord.quan_nhan_id);
   }

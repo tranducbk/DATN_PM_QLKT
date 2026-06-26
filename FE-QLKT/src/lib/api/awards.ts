@@ -1,6 +1,7 @@
 import axiosInstance from '@/lib/http/axiosInstance';
 import { getApiErrorMessage } from '@/lib/http/apiError';
 import type { ApiResponse } from '@/lib/types/common';
+// Factory dựng sẵn hàm gọi API import (tách ở ./importFactory để 6+ loại khen thưởng tái dùng).
 import { createPreviewImport, createConfirmImport } from './importFactory';
 
 export * from './annualAwards';
@@ -366,6 +367,10 @@ export async function getCommemorationMedalsByPersonnel(personnelId: string): Pr
   }
 }
 
+// Luồng import 2 bước — 6+ loại khen thưởng dùng chung factory (createPreviewImport/
+// createConfirmImport ở ./importFactory), chỉ khác URL. Mỗi loại bind sẵn endpoint:
+// • PREVIEW gửi FILE qua multipart/form-data (BE parse + validate, không ghi DB).
+// • CONFIRM gửi JSON { items } (dòng admin đã chọn) → BE ghi DB.
 export const previewTenureMedalsImport = createPreviewImport('/api/tenure-medals/import/preview');
 export const confirmTenureMedalsImport = createConfirmImport('/api/tenure-medals/import/confirm');
 

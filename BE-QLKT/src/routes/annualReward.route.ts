@@ -1,3 +1,10 @@
+/*
+ * ANNUAL REWARD ROUTE — CRUD khen thưởng hàng năm cá nhân (DanhHieuHangNam).
+ * Bao gồm: list, create, update, delete, check, bulk, statistics.
+ * Excel: /template, /import (preview + confirm + legacy), /export.
+ * Mỗi quân nhân chỉ 1 row/năm (upsert by quan_nhan_id + nam unique).
+ */
+
 import { Router } from 'express';
 import annualRewardController from '../controllers/annualReward.controller';
 import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
@@ -20,6 +27,7 @@ const router = Router();
  * @desc    List annual reward titles with filters and pagination
  * @access  Private - ADMIN, MANAGER
  */
+// Liệt kê danh hiệu hằng năm; MANAGER được xem (chỉ thấy đơn vị mình) → ADMIN+MANAGER.
 router.get(
   '/',
   verifyToken,
@@ -33,6 +41,7 @@ router.get(
  * @desc    Create an annual reward title
  * @access  Private - ADMIN, MANAGER
  */
+// Tạo danh hiệu hằng năm; MANAGER cũng tạo cho đơn vị mình → ADMIN+MANAGER.
 router.post(
   '/',
   verifyToken,
@@ -52,6 +61,7 @@ router.post(
  * @desc    Update an annual reward title
  * @access  Private - ADMIN only
  */
+// Sửa danh hiệu: chỉ ADMIN (không cho MANAGER chỉnh số liệu đã chốt).
 router.put(
   '/:id',
   verifyToken,
@@ -71,6 +81,7 @@ router.put(
  * @desc    Delete an annual reward title
  * @access  Private - ADMIN only
  */
+// Xóa danh hiệu: chỉ ADMIN.
 router.delete(
   '/:id',
   verifyToken,
@@ -89,6 +100,7 @@ router.delete(
  * @desc    Validate annual rewards before bulk operations
  * @access  Private - ADMIN only
  */
+// Kiểm tra hợp lệ trước khi tạo hàng loạt: chỉ ADMIN.
 router.post(
   '/check',
   verifyToken,
@@ -102,6 +114,7 @@ router.post(
  * @desc    Bulk create annual reward titles
  * @access  Private - ADMIN only
  */
+// Tạo hàng loạt danh hiệu (kèm PDF quyết định đính kèm): chỉ ADMIN.
 router.post(
   '/bulk',
   verifyToken,
@@ -122,6 +135,7 @@ router.post(
  * @desc    Preview annual reward import from Excel — validate only, no DB write
  * @access  Private - ADMIN only
  */
+// Xem trước import Excel (chỉ validate, chưa ghi DB): import là ADMIN-only.
 router.post(
   '/import/preview',
   verifyToken,
@@ -135,6 +149,7 @@ router.post(
  * @desc    Confirm annual reward import — persist validated data to DB
  * @access  Private - ADMIN only
  */
+// Xác nhận import (ghi vào DB dữ liệu đã validate): ADMIN-only.
 router.post(
   '/import/confirm',
   verifyToken,
@@ -148,6 +163,7 @@ router.post(
  * @desc    Import annual rewards from Excel (legacy direct import)
  * @access  Private - ADMIN only (Excel import is ADMIN-only)
  */
+// Import trực tiếp từ Excel (luồng cũ, không qua preview/confirm): ADMIN-only.
 router.post(
   '/import',
   verifyToken,
@@ -167,6 +183,7 @@ router.post(
  * @desc    Download Excel template for annual reward import
  * @access  Private - ADMIN, MANAGER
  */
+// Tải file Excel mẫu để nhập liệu: chỉ ADMIN.
 router.get('/template', verifyToken, requireAdminOnly, annualRewardController.getTemplate);
 
 /**
@@ -174,6 +191,7 @@ router.get('/template', verifyToken, requireAdminOnly, annualRewardController.ge
  * @desc    Export annual rewards to Excel
  * @access  Private - ADMIN, MANAGER
  */
+// Xuất danh hiệu ra Excel: chỉ ADMIN.
 router.get(
   '/export',
   verifyToken,
@@ -187,6 +205,7 @@ router.get(
  * @desc    Get annual reward statistics
  * @access  Private - ADMIN, MANAGER
  */
+// Thống kê danh hiệu hằng năm: ADMIN+MANAGER (MANAGER chỉ thấy đơn vị mình).
 router.get(
   '/statistics',
   verifyToken,

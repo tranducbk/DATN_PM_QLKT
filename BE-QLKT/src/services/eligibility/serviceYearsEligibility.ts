@@ -8,6 +8,47 @@ import { GENDER } from '../../constants/gender.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { calculateServiceMonths, formatServiceDuration } from '../../helpers/serviceYearsHelper';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  SERVICE YEARS ELIGIBILITY — eligibility theo SỐ NĂM PHỤC VỤ
+ *  (dùng chung cho HC_QKQT và KNC_VSNXD_QDNDVN)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  CẢ 2 LOẠI HUÂN CHƯƠNG đều xét trên cùng tiêu chí cơ bản:
+ *  "Quân nhân đã phục vụ ≥ N năm trong quân ngũ" (lifetime, 1 lần).
+ *
+ *  NGƯỠNG (constants):
+ *      HCQKQT_YEARS_REQUIRED = 25 năm  (Huân chương Quân kỳ Quyết thắng,
+ *                                       sĩ quan — không phân biệt nam/nữ)
+ *      KNC_YEARS_REQUIRED_NAM = 25 năm (Kỷ niệm chương vì sự nghiệp xây
+ *                                       dựng QĐNDVN — nam giới)
+ *      KNC_YEARS_REQUIRED_NU  = 20 năm (KNC — nữ giới, ưu đãi giới)
+ *
+ *  CÔNG THỨC:
+ *      totalMonths = calculateServiceMonths(ngay_nhap_ngu, ngay_xuat_ngu ?? refDate)
+ *      eligible    = totalMonths >= requiredYears * 12
+ *
+ *      refDate = ngày tham chiếu (thường = ngày cuối tháng đề xuất).
+ *      Quân nhân chưa xuất ngũ (ngay_xuat_ngu=null) → tính đến refDate.
+ *      Quân nhân đã xuất ngũ → tính đến ngày xuất ngũ (đóng băng số tháng).
+ *
+ *  PHÂN BIỆT REASON CODE (cho i18n + format message):
+ *      NOT_FOUND        → personnel không tồn tại trong DB (có thể bị xoá
+ *                         giữa chừng — không leak CUID, hướng dẫn tải lại)
+ *      MISSING_GENDER   → KNC bắt buộc giới tính (vì threshold khác nhau);
+ *                         HC_QKQT bỏ qua check này
+ *      MISSING_NHAP_NGU → thiếu ngày nhập ngũ (không thể tính số tháng)
+ *      NOT_ENOUGH_YEARS → service time < threshold
+ *
+ *  PURE FUNCTION DESIGN:
+ *  evaluateServiceYears KHÔNG query DB — caller (strategy) phải load
+ *  personnel + truyền vào. Lý do:
+ *    - Test dễ (chỉ cần inject fixture).
+ *    - Caller có thể batch load nhiều personnel cùng lúc (batchEvaluate-
+ *      ServiceYears dùng findMany({in: [...]})) thay vì N+1 query trong loop.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 type ServiceYearsProposalType = 'HC_QKQT' | 'KNC_VSNXD_QDNDVN';
 
 /** Vietnamese display label per proposal type — used in unified error messages. */
@@ -54,8 +95,8 @@ export function requiredServiceYears(
   proposalType: ServiceYearsProposalType,
   gioiTinh: string | null | undefined
 ): number {
-  if (proposalType === PROPOSAL_TYPES.HC_QKQT) return HCQKQT_YEARS_REQUIRED;
-  return gioiTinh === GENDER.FEMALE ? KNC_YEARS_REQUIRED_NU : KNC_YEARS_REQUIRED_NAM;
+  if (proposalType === PROPOSAL_TYPES.HC_QKQT) return HCQKQT_YEARS_REQUIRED; // HC QKQT: 25 năm, không phân biệt giới
+  return gioiTinh === GENDER.FEMALE ? KNC_YEARS_REQUIRED_NU : KNC_YEARS_REQUIRED_NAM; // KNC: nữ 20 năm, nam 25 năm
 }
 
 /**
@@ -73,6 +114,7 @@ export function evaluateServiceYears(
   proposalType: ServiceYearsProposalType,
   refDate: Date
 ): ServiceYearsEligibilityResult {
+  // Không tìm thấy quân nhân (có thể bị xoá giữa chừng) → NOT_FOUND.
   if (!personnel) {
     return {
       personnelId,
@@ -83,6 +125,7 @@ export function evaluateServiceYears(
       requiredYears: null,
     };
   }
+  // KNC bắt buộc có giới tính vì ngưỡng nam/nữ khác nhau; HC_QKQT thì bỏ qua bước này.
   if (proposalType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN) {
     const gender = personnel.gioi_tinh;
     if (!gender || (gender !== GENDER.MALE && gender !== GENDER.FEMALE)) {
@@ -96,6 +139,7 @@ export function evaluateServiceYears(
       };
     }
   }
+  // Thiếu ngày nhập ngũ → không thể tính số tháng phục vụ → MISSING_NHAP_NGU.
   if (!personnel.ngay_nhap_ngu) {
     return {
       personnelId,
@@ -108,10 +152,12 @@ export function evaluateServiceYears(
   }
 
   const ngayNhapNgu = new Date(personnel.ngay_nhap_ngu);
+  // Đã xuất ngũ → tính đến ngày xuất ngũ (đóng băng); còn tại ngũ → tính đến refDate.
   const ngayKetThuc = personnel.ngay_xuat_ngu ? new Date(personnel.ngay_xuat_ngu) : refDate;
-  const totalMonths = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
-  const requiredYears = requiredServiceYears(proposalType, personnel.gioi_tinh);
+  const totalMonths = calculateServiceMonths(ngayNhapNgu, ngayKetThuc); // tổng số tháng phục vụ
+  const requiredYears = requiredServiceYears(proposalType, personnel.gioi_tinh); // ngưỡng năm theo loại + giới
 
+  // Quy ngưỡng năm ra tháng (×12) để so trực tiếp; thiếu → NOT_ENOUGH_YEARS.
   if (totalMonths < requiredYears * 12) {
     return {
       personnelId,

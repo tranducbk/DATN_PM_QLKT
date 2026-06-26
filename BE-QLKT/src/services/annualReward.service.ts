@@ -28,6 +28,11 @@ import type {
   StatisticsFilters,
 } from './annualReward/types';
 
+/**
+ * Facade gom các module con của khen thưởng hằng năm (crud, import, excel)
+ * thành một entry point ổn định, để controller chỉ phụ thuộc vào một chỗ
+ * thay vì import rải rác từ nhiều file trong ./annualReward/*.
+ */
 class AnnualRewardService {
   async getAnnualRewards(personnelId: string): Promise<DanhHieuHangNam[]> {
     return getAnnualRewards(personnelId);

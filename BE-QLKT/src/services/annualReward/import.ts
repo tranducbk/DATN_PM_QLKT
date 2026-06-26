@@ -43,11 +43,41 @@ import type {
   ConfirmImportItem,
 } from './types';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  ANNUAL REWARD IMPORT — 2 flow: PREVIEW (chỉ validate) + CONFIRM (ghi DB)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Vì sao tách 2 bước? Import hàng loạt rủi ro cao — tách để admin THẤY TRƯỚC kết
+ *  quả validate (dòng nào hợp lệ/lỗi vì sao) rồi mới chọn dòng để ghi:
+ *
+ *   • previewImport(buffer): đọc file → validate TỪNG dòng → trả {valid[], errors[]}.
+ *     KHÔNG ghi DB. FE lưu kết quả vào sessionStorage, render bảng review.
+ *   • confirmImport(validItems): nhận lại dòng admin đã chọn → RE-VALIDATE (dữ liệu
+ *     có thể đổi giữa 2 bước) → ghi trong transaction (all-or-nothing).
+ *   • importFromExcelBuffer(buffer): đường import 1-bước (validate + ghi luôn),
+ *     dùng cho luồng cũ/không cần review.
+ *
+ *  Cả 3 dùng chung resolveAnnualRewardImportContext để parse + batch-query 1 lần.
+ *  THỨ TỰ validate (preview): file rỗng → cờ chuỗi → thiếu field → ID có thật →
+ *  tên khớp → năm hợp lệ → danh hiệu hợp lệ → số QĐ tồn tại → trùng trong file →
+ *  trùng DB → đang chờ duyệt. Mỗi lỗi `continue` sang dòng kế (gom hết lỗi, không
+ *  dừng ở lỗi đầu) để admin sửa 1 lần.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 async function resolveAnnualRewardImportContext(
   buffer: Buffer
 ): Promise<AnnualRewardImportContext> {
   const parsed = await parseAnnualRewardImport(buffer);
 
+  // Batch query (tránh N+1): gom id từ file rồi 2 query song song theo `IN (...)`,
+  // thay vì query từng dòng. SQL minh hoạ:
+  //   SELECT q.*, c.ten_chuc_vu FROM "QuanNhan" q
+  //     LEFT JOIN "ChucVu" c ON q.chuc_vu_id = c.id
+  //     WHERE q.id IN ('id1','id2', ...);            -- quân nhân có trong file
+  //   SELECT * FROM "DanhHieuHangNam"
+  //     WHERE quan_nhan_id IN ('id1','id2', ...);     -- danh hiệu đã có (đối chiếu trùng năm)
   const [personnelList, existingRewards] = await Promise.all([
     quanNhanRepository.findManyRaw({
       where: { id: { in: parsed.personnelIds } },
@@ -79,6 +109,8 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
   } = columns;
   const { personnelMap: personnelById, existingAwardKeys, existingRewardByKey } = batchMaps;
 
+  // Đề xuất khen thưởng hằng năm đang CHỜ DUYỆT cho các năm có trong file — dùng để
+  // chặn import trùng với đề xuất đang chờ.
   const pendingProposals = await proposalRepository.findManyRaw({
     where: {
       loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
@@ -86,6 +118,7 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
       status: PROPOSAL_STATUS.PENDING,
     },
   });
+  // Gom đề xuất theo năm (Map) để trong vòng lặp tra nhanh, không quét lại cả mảng.
   const proposalsByYear = new Map<number, typeof pendingProposals>();
   for (const proposal of pendingProposals) {
     if (proposal.nam == null) continue;
@@ -113,6 +146,8 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
   }[] = [];
   const seenInFile = new Set<string>();
 
+  // Duyệt từng dòng dữ liệu (bỏ dòng tiêu đề ở rowNumber=1): đọc ô → validate tuần
+  // tự; gặp lỗi thì gom vào errors và bỏ qua dòng (continue), không dừng cả file.
   for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
     const row = worksheet.getRow(rowNumber);
     const idValue = idCol ? row.getCell(idCol).value : null;
@@ -122,14 +157,17 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
     const cap_bac = capBacCol ? String(row.getCell(capBacCol).value || '').trim() : null;
     const chuc_vu = chucVuCol ? String(row.getCell(chucVuCol).value || '').trim() : null;
     const ghi_chu = ghiChuCol ? String(row.getCell(ghiChuCol).value || '').trim() : null;
+    // Đường import 1-bước này CHẤP NHẬN cờ chuỗi từ file (khác previewImport chặn lại).
     const nhan_bkbqp = bkbqpCol ? parseBooleanValue(row.getCell(bkbqpCol).value) : false;
     const nhan_cstdtq = cstdtqCol ? parseBooleanValue(row.getCell(cstdtqCol).value) : false;
     const nhan_bkttcp = bkttcpCol ? parseBooleanValue(row.getCell(bkttcpCol).value) : false;
 
+    // Dòng trống hoàn toàn (không mã, không năm, không danh hiệu) → bỏ qua, không tính.
     if (!idValue && !namVal && !danh_hieu_raw) continue;
 
     total++;
 
+    // Bắt buộc: mã quân nhân + năm + danh hiệu.
     const missingFields: string[] = [];
     if (!idValue) missingFields.push('mã quân nhân');
     if (!namVal) missingFields.push('năm');
@@ -144,12 +182,14 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
       errors.push(`Dòng ${rowNumber}: Mã quân nhân không hợp lệ.`);
       continue;
     }
+    // Mã phải khớp 1 quân nhân đã batch-query sẵn (không query lại trong vòng lặp).
     const personnel = personnelById.get(personnelId);
     if (!personnel) {
       errors.push(`Dòng ${rowNumber}: Không tìm thấy quân nhân tương ứng với mã trong file.`);
       continue;
     }
 
+    // Năm phải là số nguyên và nằm trong [1900, năm hiện tại].
     const nam = parseInt(String(namVal), 10);
     if (!Number.isInteger(nam)) {
       errors.push(`Dòng ${rowNumber}: Giá trị năm không hợp lệ`);
@@ -161,6 +201,7 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
       continue;
     }
 
+    // Chuẩn hóa tên danh hiệu nhập tay về mã; không thuộc tập hợp lệ → lỗi.
     const resolvedDanhHieu = resolveDanhHieuCode(danh_hieu_raw);
     if (!validDanhHieu.has(resolvedDanhHieu)) {
       errors.push(
@@ -170,6 +211,7 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
     }
     const danh_hieu = resolvedDanhHieu;
 
+    // Mỗi quân nhân chỉ 1 danh hiệu/năm → chặn trùng trong cùng file (key = id_năm).
     const fileKey = `${personnel.id}_${nam}`;
     if (seenInFile.has(fileKey)) {
       errors.push(
@@ -180,12 +222,14 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
     seenInFile.add(fileKey);
 
     if (danh_hieu) {
+      // Đã có danh hiệu này (đã duyệt trước đó) → không import lại.
       if (existingAwardKeys.has(`${personnel.id}_${nam}_${danh_hieu}`)) {
         errors.push(
           `Dòng ${rowNumber}: ${ho_ten} đã có ${getDanhHieuName(danh_hieu)} năm ${nam} (đã được duyệt trước đó)`
         );
         continue;
       }
+      // Đang có đề xuất chờ duyệt trùng quân nhân + danh hiệu + năm → cũng bỏ qua.
       const proposalsForYear = proposalsByYear.get(nam) ?? [];
       const hasPendingProposal = proposalsForYear.some(p => {
         const dataDanhHieu = (p.data_danh_hieu as Array<Record<string, unknown>>) ?? [];
@@ -201,6 +245,8 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
       }
     }
 
+    // Tên/cấp bậc/chức vụ: ưu tiên giá trị trong file, thiếu thì lấy từ hồ sơ; vẫn
+    // thiếu ở cả hai → lỗi.
     const {
       hoTen,
       capBac,
@@ -214,6 +260,7 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
       continue;
     }
 
+    // Dòng hợp lệ → xếp vào danh sách chờ ghi (chưa đụng DB ở pha này).
     rowsToProcess.push({
       personnel,
       nam,
@@ -228,6 +275,14 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
     });
   }
 
+  // ─── TRANSACTION CONFIRM IMPORT: ghi cả lô trong 1 transaction ───
+  // Lặp từng dòng đã validate: chưa có (key quan_nhan_id+nam) → INSERT, đã có → UPDATE.
+  // Bọc transaction để cả file import "tất cả hoặc không gì" — lỗi giữa chừng không
+  // để lại nửa danh sách (rollback hết). SQL minh hoạ mỗi dòng:
+  //   -- dòng mới:
+  //   INSERT INTO "DanhHieuHangNam" (quan_nhan_id, nam, danh_hieu, cap_bac, ...) VALUES (...);
+  //   -- dòng đã tồn tại (cùng quan_nhan_id + nam):
+  //   UPDATE "DanhHieuHangNam" SET danh_hieu = $dh, cap_bac = $cb, ... WHERE id = $existingId;
   const { created, updated } = await prisma.$transaction(
     async prismaTx => {
       const txCreated: string[] = [];
@@ -246,6 +301,7 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
           nhan_bkttcp,
         } = rowData;
 
+        // Đã có bản ghi (key id_năm) → UPDATE, chưa có → INSERT (upsert thủ công).
         const existing = existingRewardByKey.get(`${personnel.id}_${nam}`) ?? null;
 
         if (!existing) {
@@ -287,6 +343,7 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
 
         selectedPersonnelIdSet.add(personnel.id);
 
+        // Gom dữ liệu danh hiệu vừa ghi để trả về cho bước đồng bộ/thông báo sau.
         titleData.push({
           personnelId: personnel.id,
           quan_nhan_id: personnel.id,
@@ -309,11 +366,13 @@ export async function importFromExcelBuffer(buffer: Buffer): Promise<ImportResul
 
   const selectedPersonnelIds = [...selectedPersonnelIdSet];
 
+  // Sau khi ghi xong, tính lại hồ sơ chuỗi danh hiệu cho từng quân nhân bị ảnh hưởng.
   for (const personnelId of selectedPersonnelIds) {
     await safeRecalculateAnnualProfile(personnelId);
   }
 
   const imported = created.length + updated.length;
+  // Ghi log kết quả import: số dòng thành công/tổng + tối đa 10 lỗi đầu để tra cứu.
   void writeSystemLog({
     action: AUDIT_ACTIONS.IMPORT,
     resource: AWARD_SLUGS.ANNUAL_REWARDS,
@@ -360,11 +419,13 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
     decisionFileRepository.findManyRaw({ select: { so_quyet_dinh: true } }),
   ]);
 
+  // Quy đổi đề xuất chờ duyệt thành tập key "personnelId_năm" để tra O(1) trong loop.
   const pendingKeys = buildPendingKeys(
     pendingProposals as Array<Record<string, unknown>>,
     'data_danh_hieu',
     (item, proposal) => (item.personnel_id ? `${item.personnel_id}_${proposal.nam}` : null)
   );
+  // Tập số quyết định hợp lệ đang có trên hệ thống (đối chiếu số QĐ trong file).
   const validDecisionNumbers = new Set(existingDecisions.map(d => d.so_quyet_dinh));
 
   const errors: PreviewError[] = [];
@@ -372,6 +433,8 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
   let total = 0;
   const seenInFile = new Set<string>();
 
+  // Duyệt từng dòng (bỏ tiêu đề): đọc ô → validate tuần tự; lỗi thì đẩy vào errors
+  // (kèm số dòng + lý do) và bỏ qua dòng, để admin xem trước rồi mới ghi ở confirm.
   for (let rowNumber = 2; rowNumber <= worksheet.rowCount; rowNumber++) {
     const row = worksheet.getRow(rowNumber);
     const idValue = idCol ? row.getCell(idCol).value : null;
@@ -389,8 +452,10 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
     const cstdtqRaw = cstdtqCol ? String(row.getCell(cstdtqCol).value ?? '').trim() : '';
     const bkttcpRaw = bkttcpCol ? String(row.getCell(bkttcpCol).value ?? '').trim() : '';
 
+    // Dòng trống hoàn toàn → bỏ qua, không tính.
     if (!idValue && !namVal && !danh_hieu_raw) continue;
 
+    // Có mã quân nhân nhưng bỏ trống danh hiệu → coi như dòng cố ý để trống, báo "bỏ qua".
     if (idValue && !danh_hieu_raw) {
       const skipName = hoTenCol ? String(row.getCell(hoTenCol).value ?? '').trim() : '';
       errors.push({
@@ -405,6 +470,9 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
 
     total++;
 
+    // Cờ chuỗi BKBQP/CSTDTQ/BKTTCP cố ý KHÔNG cho import qua Excel — chúng cần số
+    // QĐ riêng + ràng buộc điều kiện chuỗi phức tạp, bắt nhập trên màn hình để
+    // validate đúng. Phát hiện cờ bật trong file → báo lỗi dòng đó ngay.
     if (parseBooleanValue(bkbqpRaw)) {
       errors.push({
         row: rowNumber,
@@ -474,6 +542,7 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
       continue;
     }
 
+    // Họ tên trong file phải khớp hồ sơ (chống dán nhầm mã của người khác).
     const nameMismatch = validatePersonnelNameMatch(ho_ten, personnel.ho_ten);
     if (nameMismatch) {
       errors.push({
@@ -486,6 +555,7 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
       continue;
     }
 
+    // Năm phải là số nguyên và nằm trong [1900, năm hiện tại].
     const nam = parseInt(String(namVal), 10);
     if (!Number.isInteger(nam)) {
       errors.push({
@@ -521,6 +591,7 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
     }
     const danh_hieu = resolvedDanhHieu;
 
+    // Số quyết định bắt buộc và phải tồn tại trên hệ thống (file QĐ đã được tạo trước).
     if (!so_quyet_dinh) {
       errors.push({ row: rowNumber, ho_ten, nam, danh_hieu, message: 'Thiếu số quyết định' });
       continue;
@@ -536,6 +607,7 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
       continue;
     }
 
+    // Chặn trùng trong cùng file: mỗi quân nhân chỉ 1 danh hiệu/năm (key = id_năm).
     const fileKey = `${personnel.id}_${nam}`;
     if (seenInFile.has(fileKey)) {
       errors.push({
@@ -549,6 +621,7 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
     }
     seenInFile.add(fileKey);
 
+    // Đã có đúng danh hiệu đó cho năm đó trong DB → không nhập lại.
     const existingReward = rewardByKey.get(`${personnel.id}_${nam}`);
     if (existingReward && existingReward.danh_hieu === danh_hieu) {
       errors.push({
@@ -561,6 +634,7 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
       continue;
     }
 
+    // Đang có đề xuất chờ duyệt cho quân nhân + năm đó → chặn để khỏi đụng đề xuất.
     if (pendingKeys.has(`${personnel.id}_${nam}`)) {
       errors.push({
         row: rowNumber,
@@ -572,6 +646,7 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
       continue;
     }
 
+    // 5 danh hiệu gần nhất để hiển thị bối cảnh ở bảng preview (không ảnh hưởng validate).
     const allRecords = rewardsByPersonnel.get(personnel.id) || [];
     const history = [...allRecords]
       .sort((a, b) => b.nam - a.nam)
@@ -602,6 +677,7 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
       continue;
     }
 
+    // Dòng hợp lệ → đưa vào danh sách valid kèm history để FE render bảng xem trước.
     valid.push({
       row: rowNumber,
       personnel_id: personnel.id,
@@ -622,9 +698,12 @@ export async function previewImport(buffer: Buffer): Promise<PreviewResult> {
 export async function confirmImport(
   validItems: ConfirmImportItem[]
 ): Promise<{ imported: number }> {
+  // Khử trùng id + năm từ các dòng admin chọn để batch-query gọn.
   const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
   const uniqueYears = [...new Set(validItems.map(item => item.nam))];
 
+  // 3 query song song phục vụ RE-VALIDATE: đề xuất chờ duyệt, danh hiệu đã có, và
+  // tên quân nhân (để dựng thông báo lỗi thân thiện).
   const [pendingProposals, existingRecords, personnelList] = await Promise.all([
     proposalRepository.findManyRaw({
       where: {
@@ -659,6 +738,9 @@ export async function confirmImport(
     'data_danh_hieu',
     (item, proposal) => (item.personnel_id ? `${item.personnel_id}_${proposal.nam}` : null)
   );
+  // RE-VALIDATE ở confirm (không tin dữ liệu preview): giữa lúc admin xem preview
+  // và bấm xác nhận, người khác có thể đã tạo đề xuất chờ duyệt cho cùng quân
+  // nhân+năm → chặn ghi đè. Gom hết xung đột rồi throw 1 lần (không ghi nửa vời).
   const pendingConflicts: string[] = [];
   for (const item of validItems) {
     if (pendingKeys.has(`${item.personnel_id}_${item.nam}`)) {
@@ -672,6 +754,7 @@ export async function confirmImport(
   }
   const existingMap = new Map(existingRecords.map(r => [`${r.quan_nhan_id}|${r.nam}`, r]));
 
+  // Xung đột danh hiệu: cùng năm đã có danh hiệu KHÁC → không cho ghi đè.
   const conflicts: string[] = [];
   for (const item of validItems) {
     const existing = existingMap.get(`${item.personnel_id}|${item.nam}`);
@@ -688,8 +771,12 @@ export async function confirmImport(
     throw new ValidationError(conflicts.join('; '));
   }
 
+  // Mỗi danh hiệu/cờ chuỗi cần đúng số quyết định kèm theo → validateDecisionNumbers
+  // kiểm tra từng item; gom hết lỗi rồi throw một lần.
   const decisionErrors: string[] = [];
   for (const item of validItems) {
+    // "Bằng khen" lưu danh_hieu = null; cờ BKBQP/CSTDTQ/BKTTCP suy ra từ danh_hieu hoặc
+    // cờ rời để biết cần kiểm số QĐ nào.
     const isBangKhen = DANH_HIEU_CA_NHAN_BANG_KHEN.has(item.danh_hieu);
     const nhanBKBQP = item.nhan_bkbqp || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP;
     const nhanCSTDTQ = item.nhan_cstdtq || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ;
@@ -717,16 +804,22 @@ export async function confirmImport(
     throw new ValidationError(decisionErrors.join('\n'));
   }
 
+  // Ghi cả lô trong 1 transaction (all-or-nothing). upsertRaw theo unique key
+  // (quan_nhan_id, nam): chưa có → create, đã có → update. Mỗi item suy ra cờ
+  // chuỗi từ danh_hieu (BKBQP/CSTDTQ/BKTTCP) và spread điều kiện số QĐ tương ứng;
+  // danh hiệu dạng "bằng khen" thì danh_hieu lưu null (chỉ set cờ + số QĐ riêng).
   return await prisma.$transaction(
     async prismaTx => {
       const results: DanhHieuHangNam[] = [];
       for (const item of validItems) {
+        // Suy lại cờ chuỗi + chốt danh_hieu cuối (bằng khen → null) trước khi upsert.
         const isBangKhen = DANH_HIEU_CA_NHAN_BANG_KHEN.has(item.danh_hieu);
         const nhanBKBQP = item.nhan_bkbqp || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP;
         const nhanCSTDTQ = item.nhan_cstdtq || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ;
         const nhanBKTTCP = item.nhan_bkttcp || item.danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP;
         const finalDanhHieu = isBangKhen ? null : item.danh_hieu;
 
+        // Field chung; mỗi cờ bật thì spread thêm số QĐ + ghi chú riêng cho cờ đó.
         const sharedData = {
           cap_bac: item.cap_bac ?? null,
           chuc_vu: item.chuc_vu ?? null,

@@ -1,7 +1,8 @@
 /*
- * NCKH CONTROLLER — Thành tích Nghiên cứu Khoa học.
- * CRUD + Excel preview/confirm. Insert tự trigger annual profile recalc.
- * Duplicate check: (personnel_id, nam, mo_ta) composite.
+ * Controller thành tích NCKH (Nghiên cứu khoa học).
+ * Gồm CRUD + Excel preview/confirm. Khi thêm mới sẽ tự kích hoạt tính lại
+ * hồ sơ khen thưởng hằng năm.
+ * Chống trùng theo bộ ba (personnel_id, nam, mo_ta).
  */
 
 import { Request, Response } from 'express';
@@ -56,6 +57,7 @@ interface ConfirmImportBody {
 }
 
 class ScientificAchievementController {
+  /** Lấy danh sách thành tích NCKH: theo 1 quân nhân hoặc danh sách phân trang. */
   getAchievements = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetAchievementsQuery;
     const { personnel_id, page, limit, nam, loai, ho_ten } = query;
@@ -74,6 +76,7 @@ class ScientificAchievementController {
     const { page: pageNum, limit: limitNum } = parsePagination({ page, limit });
     const quanNhanFilter: Record<string, unknown> = {};
     if (ho_ten) quanNhanFilter.ho_ten = { contains: ho_ten, mode: 'insensitive' };
+    // MANAGER chỉ thấy quân nhân trong đơn vị mình; trả null nếu không giới hạn
     const managerQuanNhanWhere = await buildManagerQuanNhanFilter(req, quanNhanFilter);
     const quanNhanWhere =
       managerQuanNhanWhere ?? (Object.keys(quanNhanFilter).length > 0 ? quanNhanFilter : null);
@@ -95,6 +98,7 @@ class ScientificAchievementController {
     });
   });
 
+  /** Xóa 1 thành tích NCKH theo id. */
   deleteAchievement = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const id = normalizeParam(params.id);
@@ -106,6 +110,7 @@ class ScientificAchievementController {
     return ResponseHelper.success(res, { message: result.message, data: result.achievement });
   });
 
+  /** Xuất danh sách thành tích NCKH ra file Excel theo bộ lọc. */
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as ExportToExcelQuery;
     const user = req.user;
@@ -116,6 +121,7 @@ class ScientificAchievementController {
       nam,
       loai,
     };
+    // MANAGER chỉ xuất dữ liệu trong phạm vi đơn vị mình
     if (role === ROLES.MANAGER && userUnitId) filters.don_vi_id = userUnitId;
     const workbook = await scientificAchievementService.exportToExcel(filters);
     res.setHeader(
@@ -130,9 +136,11 @@ class ScientificAchievementController {
     return res.send(buffer);
   });
 
+  /** Tạo file Excel mẫu để nhập thành tích NCKH (theo danh sách quân nhân). */
   getTemplate = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetTemplateQuery;
     const personnelIds = parsePersonnelIdsFromQuery(query);
+    // repeat_map: JSON {personnel_id: số dòng lặp} để chừa sẵn nhiều dòng/quân nhân
     const repeatMap: Record<string, number> = {};
     if (query.repeat_map) {
       try {
@@ -158,6 +166,7 @@ class ScientificAchievementController {
     return res.send(buffer);
   });
 
+  /** Đọc thử file Excel tải lên, trả về kết quả xem trước trước khi nhập thật. */
   previewImport = catchAsync(async (req: Request, res: Response) => {
     const file = req.file;
     if (!file) {
@@ -174,6 +183,7 @@ class ScientificAchievementController {
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 
+  /** Xác nhận nhập danh sách thành tích NCKH đã xem trước vào hệ thống. */
   confirmImport = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const body = req.body as ConfirmImportBody;

@@ -1,7 +1,7 @@
 /*
- * UNIT CONTROLLER — đơn vị 2 cấp CRUD.
- * Method: getAllUnits, getAllSubUnits, getById, create, update, delete.
- * Hierarchy mode: ?hierarchy=true → trả về tree CQDV + DVTT con.
+ * CONTROLLER ĐƠN VỊ — CRUD đơn vị 2 cấp.
+ * Các method: getAllUnits, getAllSubUnits, getById, create, update, delete.
+ * Chế độ cây: ?hierarchy=true → trả về cây CQDV (cha) kèm DVTT (con).
  */
 
 import { Request, Response } from 'express';
@@ -30,6 +30,7 @@ interface GetAllSubUnitsQuery {
 }
 
 class UnitController {
+  /** Lấy danh sách đơn vị (có phân trang); hierarchy=true trả cây cha-con. */
   getAllUnits = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetAllUnitsQuery;
     const { hierarchy } = query;
@@ -44,6 +45,7 @@ class UnitController {
     });
   });
 
+  /** Tạo đơn vị mới; có co_quan_don_vi_id → là DVTT (con), không có → là CQDV (cha). */
   createUnit = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as UnitBody;
     const { ma_don_vi, ten_don_vi, co_quan_don_vi_id } = body;
@@ -60,6 +62,7 @@ class UnitController {
     });
   });
 
+  /** Cập nhật đơn vị theo id; cho phép sửa một phần thông tin. */
   updateUnit = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const body = req.body as UnitBody;
@@ -68,6 +71,7 @@ class UnitController {
       return ResponseHelper.badRequest(res, 'Thiếu id đơn vị');
     }
     const { ma_don_vi, ten_don_vi, co_quan_don_vi_id } = body;
+    // Phải có ít nhất một trường để cập nhật (co_quan_don_vi_id null vẫn hợp lệ).
     if (!ma_don_vi && !ten_don_vi && co_quan_don_vi_id === undefined) {
       return ResponseHelper.badRequest(res, 'Vui lòng cung cấp thông tin cần cập nhật');
     }
@@ -78,6 +82,7 @@ class UnitController {
     });
   });
 
+  /** Lấy danh sách DVTT (đơn vị con); lọc theo CQDV cha nếu có co_quan_don_vi_id. */
   getAllSubUnits = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetAllSubUnitsQuery;
     const { co_quan_don_vi_id } = query;
@@ -88,6 +93,7 @@ class UnitController {
     });
   });
 
+  /** Lấy thông tin chi tiết một đơn vị theo id. */
   getUnitById = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const id = normalizeParam(params.id);
@@ -101,6 +107,7 @@ class UnitController {
     });
   });
 
+  /** Xóa đơn vị theo id; service chặn xóa khi còn quân nhân hoặc DVTT con. */
   deleteUnit = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const id = normalizeParam(params.id);
@@ -118,6 +125,7 @@ class UnitController {
     });
   });
 
+  /** Lấy các đơn vị mà Manager đang phụ trách, suy ra từ quân nhân của tài khoản. */
   getMyUnits = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const userQuanNhanId = user.quan_nhan_id;

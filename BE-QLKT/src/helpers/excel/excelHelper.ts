@@ -1,7 +1,28 @@
 import { Worksheet, CellValue } from 'exceljs';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  EXCEL HELPER — tiện ích PURE dùng chung cho cả import lẫn export
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Đặc điểm: TẤT CẢ hàm ở đây đều pure (không đụng DB / không I/O). Service
+ *  fetch dữ liệu rồi truyền vào — giữ helper test được độc lập (đúng rule AP-3).
+ *
+ *  Gom 3 nhóm việc nhỏ hay lặp khi làm Excel:
+ *   1. Đọc HEADER linh hoạt: file người dùng tự sửa → tên cột lệch dấu/khoảng
+ *      trắng. parseHeaderMap + getHeaderCol chuẩn hoá về key ASCII để khớp.
+ *   2. Ép kiểu CELL về primitive an toàn: parseBooleanValue cho cột cờ.
+ *   3. BẢO MẬT: sanitizeRowData chống formula-injection khi GHI dữ liệu user
+ *      ra file; validatePersonnelNameMatch chống gán nhầm ID ↔ tên.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 /** Removes Vietnamese accents and returns ASCII text. */
 function removeVietnameseAccents(str: string): string {
+  // NFD tách ký tự gốc khỏi dấu (vd "ế" → "e" + "◌́"); regex [̀-ͯ]
+  // dùng cú pháp [A-B] = "ký tự nằm trong dải mã từ A đến B", ở đây là toàn bộ
+  // dấu kết hợp U+0300..U+036F → xoá sạch. đ/Đ là chữ riêng, không nằm trong dải
+  // đó nên NFD không tách được dấu → phải thay tay bằng 2 .replace cuối.
   return str
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -16,24 +37,29 @@ function removeVietnameseAccents(str: string): string {
  */
 /** Normalizes a header label into a match key (lowercase, accent-free, spaces → `_`). */
 function normalizeHeaderKey(text: string): string {
+  // Chuẩn hoá 1 header: "Họ và tên " → "ho_va_ten". Bỏ dấu → snake_case → bỏ ký
+  // tự lạ → gộp/cắt gạch dưới thừa. Nhờ vậy gõ hoa/thường/thừa space vẫn ra cùng key.
   return removeVietnameseAccents(
     String(text ?? '')
       .trim()
       .toLowerCase()
   )
-    .replace(/\s+/g, '_')
-    .replace(/[^a-z0-9_]/g, '')
-    .replace(/_+/g, '_')
-    .replace(/^_|_$/g, '');
+    .replace(/\s+/g, '_') // \s+ = cụm khoảng trắng (1 hoặc nhiều) → "_": "ho va ten" thành "ho_va_ten"
+    .replace(/[^a-z0-9_]/g, '') // [^...] = KHÔNG phải chữ/số/"_" → xoá ký tự lạ như ( ) . / %
+    .replace(/_+/g, '_') // _+ = nhiều "_" liền nhau → gộp lại còn 1: "ho__ten" thành "ho_ten"
+    .replace(/^_|_$/g, ''); // ^_ = "_" ở đầu chuỗi, _$ = "_" ở cuối → cắt "_" thừa 2 rìa
 }
 
 function parseHeaderMap(worksheet: Worksheet): Record<string, number> {
+  // Đọc dòng 1 (header) → trả map { ho_va_ten: 2, nam: 5, ... } để hàm khác
+  // tra cột theo TÊN thay vì index cứng — file thêm/bớt cột vẫn map đúng.
   const headerRow = worksheet.getRow(1);
   const headerMap: Record<string, number> = {};
 
   headerRow.eachCell((cell, colNumber) => {
+    // Mỗi ô trên dòng header → 1 key chuẩn hoá; colNumber là số cột (1-based).
     const key = normalizeHeaderKey(String(cell.value ?? ''));
-    if (key) headerMap[key] = colNumber;
+    if (key) headerMap[key] = colNumber; // bỏ ô header rỗng, chỉ lưu cột có tên
   });
 
   return headerMap;
@@ -47,8 +73,13 @@ function resolveTemplateColumns(
   headerMap: Record<string, number>,
   columns: readonly { header: string; key: string }[]
 ): Record<string, number | null> {
+  // Lấy luôn danh sách cột kỳ vọng từ config export (cùng nguồn dùng để DỰNG
+  // template) → import khớp đúng header đã xuất, đổi tên cột chỉ sửa 1 chỗ.
+  // Chuẩn hoá header config qua cùng normalizeHeaderKey để so khớp bất kể dấu/hoa
+  // thường. Cột không có trong file → null, caller tự xử (báo thiếu / bỏ qua).
   const result: Record<string, number | null> = {};
   for (const col of columns) {
+    // Dò số cột trong file theo header config (đã chuẩn hoá); không thấy → null.
     result[col.key] = headerMap[normalizeHeaderKey(col.header)] ?? null;
   }
   return result;
@@ -64,6 +95,9 @@ function getHeaderCol(
   headerMap: Record<string, number>,
   variations: readonly string[]
 ): number | null {
+  // Một cột có thể được người dùng đặt nhiều cách: ['ho_ten','hoten','ten'].
+  // Thử lần lượt, trúng biến thể nào trả luôn cột đó; không trúng → null để
+  // caller tự quyết (báo thiếu cột bắt buộc, hoặc bỏ qua cột tuỳ chọn).
   for (const v of variations) {
     if (headerMap[v]) return headerMap[v];
   }
@@ -76,9 +110,10 @@ function getHeaderCol(
  * @returns True when value represents an affirmative flag
  */
 function parseBooleanValue(value: CellValue | null | undefined): boolean {
-  if (value === null || value === undefined) return false;
+  if (value === null || value === undefined) return false; // ô trống = chưa tick = false
+  // Cột cờ trong Excel người dùng gõ tự do — chấp nhận nhiều cách viết "đồng ý".
   const strVal = String(value).trim().toLowerCase();
-  return ['có', 'co', 'true', '1', 'x'].includes(strVal);
+  return ['có', 'co', 'true', '1', 'x'].includes(strVal); // khớp 1 trong các cách viết → true
 }
 
 /**
@@ -91,10 +126,14 @@ function resolvePersonnelInfo(
   row: { ho_ten?: string | null; cap_bac?: string | null; chuc_vu?: string | null },
   personnel: { ho_ten: string; cap_bac?: string | null; ChucVu?: { ten_chuc_vu: string } | null }
 ): { hoTen: string | null; capBac: string | null; chucVu: string | null; missingFields: string[] } {
+  // Ưu tiên giá trị trong FILE; trống thì fallback về DB. Lý do: file là dữ
+  // liệu mới nhất admin gõ; nhưng nếu admin bỏ trống ô thì dùng cái DB đang có
+  // thay vì báo thiếu — đỡ phải nhập lại thông tin đã có sẵn.
   const hoTen = row.ho_ten || personnel.ho_ten;
   const capBac = row.cap_bac || personnel.cap_bac || null;
   const chucVu = row.chuc_vu || personnel.ChucVu?.ten_chuc_vu || null;
 
+  // Sau khi fallback mà VẪN trống → đây mới là thiếu thật, gom tên field để báo.
   const missingFields: string[] = [];
   if (!hoTen) missingFields.push('Họ tên');
   if (!capBac) missingFields.push('Cấp bậc');
@@ -115,11 +154,14 @@ function buildPendingKeys(
   dataField: string,
   keyBuilder: (item: Record<string, unknown>, proposal: Record<string, unknown>) => string | null
 ): Set<string> {
+  // Đề xuất đang chờ duyệt lưu danh sách trong cột JSON (vd data_danh_hieu).
+  // Duyệt 1 lần, "phẳng hoá" mọi item thành key (vd `${personnel_id}_${nam}`)
+  // bỏ vào Set → check trùng sau này là O(1) thay vì lồng 2 vòng for O(n²).
   const keys = new Set<string>();
   for (const proposal of proposals) {
-    const data = (proposal[dataField] as Array<Record<string, unknown>>) || [];
+    const data = (proposal[dataField] as Array<Record<string, unknown>>) || []; // list nằm trong cột JSON
     for (const item of data) {
-      const key = keyBuilder(item, proposal);
+      const key = keyBuilder(item, proposal); // tạo khoá định danh cho 1 dòng đề xuất
       if (key) keys.add(key);
     }
   }
@@ -133,9 +175,16 @@ function buildPendingKeys(
  * @returns New object with all string values escaped
  */
 function sanitizeRowData<T extends Record<string, unknown>>(row: T): T {
+  // BẢO MẬT — Formula injection: nếu giá trị user nhập bắt đầu bằng = + - @ | ...
+  // Excel sẽ coi cả ô là CÔNG THỨC khi mở file (vd `=HYPERLINK(...)`,
+  // `=cmd|'/c calc'`). Thêm dấu nháy ' ở đầu → Excel hiển thị as-text, không
+  // thực thi. Chỉ xử lý string; số/Date để nguyên. Trả object MỚI (không mutate).
   const result = {} as Record<string, unknown>;
   for (const key of Object.keys(row)) {
     const value = row[key];
+    // /^[...]/ → ^ neo đầu chuỗi, [...] = nhóm ký tự đầu nguy hiểm: = + - @ |
+    // \t (tab) \r (xuống dòng). \- phải escape để không bị hiểu là dải "từ-đến".
+    // .test(value) trả true/false (khác .replace), true = ký tự đầu khớp nhóm này.
     if (typeof value === 'string' && /^[=+\-@|\t\r]/.test(value)) {
       result[key] = `'${value}`;
     } else {
@@ -155,10 +204,17 @@ function validatePersonnelNameMatch(
   excelName: string | null | undefined,
   dbName: string
 ): string | null {
+  // Cột tên trong file chỉ để ĐỐI CHIẾU, không phải nguồn ghi. Nếu admin để
+  // trống thì bỏ qua (đã có ID là đủ định danh).
   if (!excelName || !excelName.trim()) return null;
+  // So khớp "mềm": bỏ hoa/thường + gộp khoảng trắng thừa, tránh báo sai chỉ vì
+  // gõ 2 dấu cách. Lệch thật → cảnh báo admin gõ nhầm ID của người khác.
+  // .replace(/\s+/g, ' ') = gộp mọi cụm khoảng trắng về ĐÚNG 1 dấu cách (khác chỗ
+  // header gộp về "_"): "Nguyễn  Văn   A" → "nguyễn văn a" trước khi đem so sánh.
   const normalizedExcel = excelName.trim().toLowerCase().replace(/\s+/g, ' ');
   const normalizedDb = dbName.trim().toLowerCase().replace(/\s+/g, ' ');
   if (normalizedExcel !== normalizedDb) {
+    // Tên trong file khác tên DB → khả năng cao admin gõ nhầm ID của người khác.
     return `Tên "${excelName.trim()}" không khớp với tên trong hệ thống "${dbName}". Vui lòng kiểm tra lại ID.`;
   }
   return null;

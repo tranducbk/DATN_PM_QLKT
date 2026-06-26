@@ -1,6 +1,6 @@
 /*
- * POSITION CONTROLLER — master data ChucVu CRUD.
- * Đổi hệ số → eligibility HCBVTQ thay đổi → cần bulk recalc.
+ * CONTROLLER CHỨC VỤ — CRUD dữ liệu danh mục ChucVu.
+ * Đổi hệ số chức vụ → điều kiện HCBVTQ thay đổi → cần tính lại hàng loạt.
  */
 
 import { Request, Response } from 'express';
@@ -32,6 +32,7 @@ interface UpdatePositionBody {
 }
 
 class PositionController {
+  /** Lấy danh sách chức vụ, có thể gồm chức vụ của đơn vị con. */
   getPositions = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetPositionsQuery;
     const { unit_id, include_children } = query;
@@ -46,8 +47,10 @@ class PositionController {
     });
   });
 
+  /** Tạo chức vụ mới cho một đơn vị. */
   createPosition = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as CreatePositionBody;
+    // he_so_chuc_vu: hệ số dùng tính điều kiện khen thưởng (HCBVTQ)
     const { unit_id, ten_chuc_vu, is_manager, he_so_chuc_vu } = body;
     if (!unit_id || !ten_chuc_vu) {
       return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ thông tin: đơn vị và tên chức vụ');
@@ -61,6 +64,7 @@ class PositionController {
     return ResponseHelper.created(res, { message: 'Tạo chức vụ thành công', data: result });
   });
 
+  /** Cập nhật chức vụ; đổi hệ số sẽ kéo theo tính lại điều kiện khen thưởng. */
   updatePosition = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const body = req.body as UpdatePositionBody;
@@ -80,6 +84,7 @@ class PositionController {
     });
   });
 
+  /** Xóa chức vụ; service chặn xóa khi còn quân nhân đang giữ chức vụ này. */
   deletePosition = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const id = normalizeParam(params.id);

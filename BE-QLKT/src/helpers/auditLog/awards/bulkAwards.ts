@@ -1,3 +1,4 @@
+// Builder mô tả log audit cho thao tác thêm khen thưởng hàng loạt (bulk).
 import { Request, Response } from 'express';
 import { parseResponseData, asRecord } from '../constants';
 import { getDanhHieuName } from '../../../constants/danhHieu.constants';
@@ -5,9 +6,11 @@ import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import { getAwardLabelByProposalType } from '../../../constants/awardResource.constants';
 
 /**
- * Builds the standard "bulk award add" description.
- * Used by both BULK (normal admin path) and BULK_BYPASS (SUPER_ADMIN adds legacy data) — the
- * BULK_BYPASS handler wraps this and prepends a "Thêm dữ liệu cũ" marker.
+ * Dựng mô tả chuẩn cho thao tác thêm khen thưởng hàng loạt.
+ * @param req - Request chứa payload bulk (type, nam, danh sách quân nhân/đơn vị, title_data)
+ * @param res - Response của thao tác bulk
+ * @param responseData - Dữ liệu trả về của thao tác (số thêm thành công, số lỗi, ...)
+ * @returns Câu mô tả tiếng Việt cho bản ghi log audit
  */
 async function buildBulkDescription(
   req: Request,
@@ -33,7 +36,7 @@ async function buildBulkDescription(
         parsedSelectedPersonnel = JSON.parse(selectedPersonnel);
       } catch (error) {
         console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-        // best-effort — audit description must not throw
+        // best-effort: mô tả log không được phép throw
       }
     }
 
@@ -42,7 +45,7 @@ async function buildBulkDescription(
         parsedSelectedUnits = JSON.parse(selectedUnits);
       } catch (error) {
         console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-        // best-effort — audit description must not throw
+        // best-effort: mô tả log không được phép throw
       }
     }
 
@@ -51,7 +54,7 @@ async function buildBulkDescription(
         parsedTitleData = JSON.parse(titleData);
       } catch (error) {
         console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-        // best-effort — audit description must not throw
+        // best-effort: mô tả log không được phép throw
       }
     }
 
@@ -69,6 +72,7 @@ async function buildBulkDescription(
       soLuong = Array.isArray(parsedSelectedUnits) ? parsedSelectedUnits.length : 0;
       donViText = soLuong > 0 ? `${soLuong} đơn vị` : '';
 
+      // Gom nhiều đơn vị trong 1 log: dồn các danh hiệu khác nhau, bỏ trùng
       if (Array.isArray(parsedTitleData) && parsedTitleData.length > 0) {
         const danhHieus = new Set<string>();
         parsedTitleData.forEach((item: Record<string, unknown>) => {
@@ -88,6 +92,7 @@ async function buildBulkDescription(
           : importedCount || 0;
       donViText = soLuong > 0 ? `${soLuong} quân nhân` : '';
 
+      // Gom nhiều quân nhân trong 1 log: dồn các danh hiệu/loại, bỏ trùng
       if (Array.isArray(parsedTitleData) && parsedTitleData.length > 0) {
         if (type === PROPOSAL_TYPES.NCKH) {
           const loais = new Set<string>();
@@ -144,6 +149,11 @@ async function buildBulkDescription(
   }
 }
 
+/**
+ * Map builder mô tả log theo action thêm hàng loạt.
+ * BULK là luồng admin thường; BULK_BYPASS là SUPER_ADMIN thêm dữ liệu cũ,
+ * dùng lại mô tả BULK và gắn thêm tiền tố đánh dấu bỏ qua kiểm tra.
+ */
 export const awards: Record<
   string,
   (req: Request, res: Response, responseData: unknown) => Promise<string>

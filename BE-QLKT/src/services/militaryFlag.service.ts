@@ -1,3 +1,27 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  MILITARY FLAG SERVICE — CRUD + Excel I/O cho HC_QKQT
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  HC_QKQT = Huân chương Quân kỳ Quyết thắng.
+ *
+ *  ĐIỀU KIỆN:
+ *  - Sĩ quan/QNCN đủ 25 năm phục vụ.
+ *  - LIFETIME — 1 quân nhân chỉ nhận 1 lần (unique trên quan_nhan_id).
+ *  - Không phân biệt giới tính (khác KNC).
+ *
+ *  ELIGIBILITY:
+ *  Dùng `serviceYearsEligibility.evaluateServiceYears` để check thâm niên.
+ *  Throw nếu chưa đủ 25 năm hoặc thiếu ngay_nhap_ngu.
+ *
+ *  EXCEL IMPORT: 2-step preview + confirm. Validate CCCD + năm nhận
+ *  trước khi commit.
+ *
+ *  RECALC: không có hồ sơ riêng cho HC_QKQT (1 record = đủ, không cần
+ *  profile aggregate). FE query trực tiếp khi cần.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { buildMedalListWhere } from '../helpers/unitHelper';
 import { militaryFlagRepository } from '../repositories/militaryFlag.repository';
@@ -41,6 +65,8 @@ class MilitaryFlagService {
     return runConfirmImport(validItems);
   }
 
+  // HC QKQT cũng 1 hạng duy nhất → không dropdown danh hiệu, 1 cột điền ('K').
+  // Cùng khuôn template chung qua buildTemplate.
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const { personnelList, decisionNumbers } = await fetchTemplateData({
       personnelIds,
@@ -57,8 +83,10 @@ class MilitaryFlagService {
   }
 
   async getAll(filters: MilitaryFlagFilters = {}, page: number = 1, limit: number = 50) {
+    // buildMedalListWhere: ráp điều kiện lọc + phạm vi đơn vị (gồm cả ĐVTT con nếu cần)
     const where = await buildMedalListWhere(filters as Record<string, unknown>);
 
+    // Song song: lấy 1 trang dữ liệu + đếm tổng số bản ghi (phục vụ phân trang)
     const [data, total] = await Promise.all([
       militaryFlagRepository.findManyRaw({
         where,
@@ -92,6 +120,7 @@ class MilitaryFlagService {
     };
   }
 
+  // Export HC QKQT theo khuôn chung (getAll → buildAwardExportBuffer).
   async exportToExcel(filters: MilitaryFlagFilters = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
     return buildAwardExportBuffer(
@@ -132,6 +161,7 @@ class MilitaryFlagService {
   }
 
   async getByPersonnelId(personnelId: string) {
+    // HC_QKQT là lifetime → mỗi quân nhân tối đa 1 bản ghi (unique theo quan_nhan_id)
     const result = await militaryFlagRepository.findUniqueRaw({
       where: { quan_nhan_id: personnelId },
       include: {
@@ -147,6 +177,7 @@ class MilitaryFlagService {
         },
       },
     });
+    // Bọc thành mảng (0 hoặc 1 phần tử) để FE dùng chung kiểu danh sách
     return result ? [result] : [];
   }
 
@@ -173,6 +204,7 @@ class MilitaryFlagService {
       throw new NotFoundError('Bản ghi khen thưởng');
     }
 
+    // HC_QKQT không có hồ sơ aggregate riêng → KHÔNG truyền recalcProfile (khác HCBVTQ)
     return finalizeMedalAwardDeletion({
       id,
       award,
@@ -192,11 +224,15 @@ class MilitaryFlagService {
    * @returns `{ alreadyReceived, reason, award?/proposal? }`
    */
   async checkAlreadyReceived(personnelId: string) {
+    // Đã có bản ghi HC_QKQT → đã nhận (lifetime, không cấp lại)
     const existingAward = await militaryFlagRepository.findUniqueRaw({
       where: { quan_nhan_id: personnelId },
     });
     if (existingAward) return { alreadyReceived: true, reason: 'Đã nhận', award: existingAward };
 
+    // loai_de_xuat = HC_QKQT khoá đúng loại; data_nien_han là cột JSON chia sẻ (cùng
+    // cấu trúc với KNC/HCCSVV, không phải logic niên hạn). array_contains tìm đề xuất
+    // đang chờ duyệt có chứa quân nhân này.
     const pendingProposal = await proposalRepository.findFirstRaw({
       where: {
         loai_de_xuat: PROPOSAL_TYPES.HC_QKQT,

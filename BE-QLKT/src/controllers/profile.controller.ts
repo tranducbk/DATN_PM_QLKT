@@ -42,17 +42,20 @@ interface UpdateTenureProfileBody {
 }
 
 class ProfileController {
+  /** Lấy hồ sơ hằng năm của một quân nhân (chuỗi CSTDCS); recalc trước nếu có truyền năm. */
   getAnnualProfile = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as PersonnelIdParams;
     const query = req.query as YearQuery;
     const { personnel_id } = params;
     const { year } = query;
+    // USER chỉ được xem hồ sơ của chính mình; vai trò cao hơn xem theo phạm vi đơn vị
     await personnelService.assertCanViewPersonnel(
       personnel_id,
       req.user?.role,
       req.user?.quan_nhan_id
     );
     const yearNumber = year ? parseInt(year, 10) : null;
+    // Có năm thì tính lại hồ sơ năm đó trước khi trả về (đảm bảo dữ liệu mới nhất)
     if (yearNumber) await profileService.recalculateAnnualProfile(personnel_id, yearNumber);
     const result = await profileService.getAnnualProfile(personnel_id);
     return ResponseHelper.success(res, {
@@ -61,9 +64,11 @@ class ProfileController {
     });
   });
 
+  /** Lấy hồ sơ niên hạn (HCCSVV) của một quân nhân; luôn recalc trước khi trả về. */
   getTenureProfile = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as PersonnelIdParams;
     const { personnel_id } = params;
+    // USER chỉ được xem hồ sơ của chính mình
     await personnelService.assertCanViewPersonnel(
       personnel_id,
       req.user?.role,
@@ -77,9 +82,11 @@ class ProfileController {
     });
   });
 
+  /** Lấy hồ sơ cống hiến (HCBVTQ) của một quân nhân; luôn recalc trước khi trả về. */
   getContributionProfile = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as PersonnelIdParams;
     const { personnel_id } = params;
+    // USER chỉ được xem hồ sơ của chính mình
     await personnelService.assertCanViewPersonnel(
       personnel_id,
       req.user?.role,
@@ -93,11 +100,13 @@ class ProfileController {
     });
   });
 
+  /** Tính lại hồ sơ hằng năm của một quân nhân theo yêu cầu (force refresh). */
   recalculateProfile = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as PersonnelIdParams;
     const query = req.query as YearQuery;
     const { personnel_id } = params;
     const { year } = query;
+    // USER chỉ được tính lại hồ sơ của chính mình
     await personnelService.assertCanViewPersonnel(
       personnel_id,
       req.user?.role,
@@ -108,6 +117,7 @@ class ProfileController {
     return ResponseHelper.success(res, { message: result.message });
   });
 
+  /** Tính lại toàn bộ hồ sơ của tất cả quân nhân (chỉ ADMIN dùng khi cần đồng bộ lại). */
   recalculateAll = catchAsync(async (req: Request, res: Response) => {
     const result = await profileService.recalculateAll();
     return ResponseHelper.success(res, {
@@ -116,6 +126,7 @@ class ProfileController {
     });
   });
 
+  /** Kiểm tra điều kiện khen thưởng hàng loạt cho cả cá nhân lẫn đơn vị trong 1 lần gọi. */
   checkEligibility = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as CheckEligibilityBody;
     const { items } = body;
@@ -124,6 +135,7 @@ class ProfileController {
     }
     const results = await Promise.all(
       items.map(async item => {
+        // Mục đơn vị: kiểm tra theo phạm vi đơn vị rồi xét điều kiện khen thưởng đơn vị
         if (item.type === 'DON_VI' && item.don_vi_id) {
           await unitAnnualAwardService.assertUnitInScope(
             item.don_vi_id,
@@ -143,6 +155,7 @@ class ProfileController {
             ...result,
           };
         }
+        // Mặc định coi là mục cá nhân: USER chỉ kiểm tra được cho chính mình
         await personnelService.assertCanViewPersonnel(
           item.personnel_id,
           req.user?.role,
@@ -168,6 +181,7 @@ class ProfileController {
     });
   });
 
+  /** Lấy danh sách hồ sơ niên hạn (HCCSVV) của tất cả quân nhân. */
   getAllTenureProfiles = catchAsync(async (req: Request, res: Response) => {
     const result = await profileService.getAllTenureProfiles();
     return ResponseHelper.success(res, {
@@ -176,6 +190,7 @@ class ProfileController {
     });
   });
 
+  /** Cập nhật thủ công hồ sơ niên hạn (HCCSVV) của một quân nhân. */
   updateTenureProfile = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as PersonnelIdParams;
     const body = req.body as UpdateTenureProfileBody;

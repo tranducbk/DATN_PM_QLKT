@@ -64,6 +64,8 @@ export function collectDuplicateCaNhanPayload(
   items: PayloadCaNhanDanhHieuItem[],
   resolveName: (personnelId: string) => string
 ): string[] {
+  // Phát hiện trùng NGAY TRONG 1 payload: cùng (personnel_id + danh_hieu) xuất hiện
+  // 2 lần → key đã có trong Set → đẩy vào danh sách trùng (hiện tên cho dễ đọc).
   const payloadKeys = new Set<string>();
   const duplicatePayloadItems: string[] = [];
   for (const item of items) {
@@ -82,6 +84,7 @@ export function collectDuplicateCaNhanPayload(
  * Detects duplicate unit-award pairs within one payload.
  */
 export function collectDuplicateDonViPayload(items: PayloadDonViDanhHieuItem[]): string[] {
+  // Phát hiện trùng trong 1 payload đơn vị: key = don_vi_type + don_vi_id + danh_hieu.
   const payloadKeys = new Set<string>();
   const duplicatePayloadItems: string[] = [];
   for (const item of items) {
@@ -105,6 +108,8 @@ async function findPendingProposalWithItem(
   excludeProposalId: string | null,
   status: string = PROPOSAL_STATUS.PENDING
 ) {
+  // Quét các đề xuất CÙNG loại + CÙNG năm đang PENDING (loại trừ chính nó khi sửa),
+  // tìm item nào khớp `match` chưa → chặn 2 đề xuất trùng cùng chờ duyệt.
   const proposals = await proposalRepository.findManyRaw({
     where: {
       loai_de_xuat: proposalType,
@@ -137,8 +142,28 @@ export async function checkDuplicateAward(
   status: string | null = null,
   excludeProposalId: string | null = null
 ): Promise<DuplicateCheckResult> {
+  // Mỗi loại đề xuất kiểm 2 nguồn: (1) bảng khen thưởng đích — đã trao thật chưa;
+  // (2) đề xuất khác đang PENDING — chặn 2 đề xuất trùng cùng người/năm/danh hiệu.
   if (proposalType === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
+    // ─── RACE WINDOW NOTE ─────────────────────────────────────────
+    // Check duplicate ở app layer KHÔNG đảm bảo race-safe 100%:
+    //   T1: findFirst → null (chưa có)
+    //   T2: findFirst → null (cũng chưa có, vì T1 chưa commit)
+    //   T1: insert
+    //   T2: insert → CÓ THỂ tạo 2 record cùng key
+    //
+    // Mitigation 1 (đã có): DB level UNIQUE constraint trên
+    //   DanhHieuHangNam (quan_nhan_id, nam) → 1 trong 2 insert sẽ
+    //   throw P2002 → service catch và trả lỗi friendly.
+    //
+    // Mitigation 2 (hiện không dùng): SELECT FOR UPDATE để lock row
+    //   trước insert. Overkill cho scale hiện tại.
+    //
+    // → App-layer check chính là để TRẢ MESSAGE RÕ RÀNG cho 99% case;
+    // DB constraint là safety net cho race còn lại 1%.
     const isBangKhen = DANH_HIEU_CA_NHAN_BANG_KHEN.has(danhHieu);
+    // BKBQP/CSTDTQ/BKTTCP lưu thành CỜ boolean trên dòng DanhHieuHangNam → match
+    // theo flag tương ứng; CSTDCS/CSTT là danh hiệu thường → match theo cột danh_hieu.
     const whereClause = isBangKhen
       ? {
           quan_nhan_id: personnelId,
@@ -325,6 +350,7 @@ export async function checkDuplicateUnitAward(
       };
     }
 
+    // Đã trao thật chưa? don_vi_id có thể là CQĐV hoặc DVTT → OR cả 2 cột FK.
     const existingAward = await danhHieuDonViHangNamRepository.findFirst({
       where: {
         OR: [
@@ -336,6 +362,8 @@ export async function checkDuplicateUnitAward(
     });
 
     if (existingAward) {
+      // Danh hiệu cơ bản (ĐVQT/ĐVTT) chỉ 1/đơn vị/năm; bằng khen (BKBQP/BKTTCP)
+      // lưu thành cờ nhan_bkbqp/nhan_bkttcp trên cùng dòng → kiểm theo từng loại.
       const isDv = DANH_HIEU_DON_VI_CO_BAN.has(danhHieu);
       const isBk = DANH_HIEU_DON_VI_BANG_KHEN.has(danhHieu);
 

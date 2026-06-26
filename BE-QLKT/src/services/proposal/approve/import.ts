@@ -61,8 +61,27 @@ const PRIMARY_IMPORT_DEFAULT: PrimaryImportEntry = {
   field: 'data_danh_hieu',
 };
 
-/**
- * Runs all per-type imports inside a single transaction and finalizes proposal status.
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  APPROVE TRANSACTION — duyệt đề xuất = ghi NHIỀU BẢNG nguyên tử (all-or-nothing)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Toàn bộ nằm trong 1 prisma.$transaction → thành công HẾT hoặc rollback HẾT
+ *  (không có trạng thái "duyệt một nửa": vd đã insert khen thưởng nhưng đề xuất
+ *  vẫn PENDING). Bất kỳ throw nào bên trong → Prisma tự ROLLBACK mọi INSERT/UPDATE.
+ *
+ *  CÁC BƯỚC (theo thứ tự, vì có ràng buộc FK + nghiệp vụ):
+ *  1. syncDecisionFiles: tạo/ghi FileQuyetDinh TRƯỚC — bảng khen thưởng tham chiếu
+ *     so_quyet_dinh qua hard FK, insert award trước sẽ vi phạm khoá ngoại.
+ *  2. importInTransaction theo strategy ứng loại đề xuất (đơn vị / cống hiến /
+ *     cá nhân) — mỗi strategy INSERT vào bảng khen thưởng của nó.
+ *  3. Loại "niên hạn" (HCCSVV/HCQKQT/KNC) → import thêm bản ghi huân chương.
+ *  4. NCKH (thành tích KH) có thể kèm bất kỳ loại nào → import thêm.
+ *  5. Có lỗi tích luỹ (acc.errors) → throw → rollback (không duyệt nửa vời).
+ *  6. Chốt status bằng OPTIMISTIC LOCK (xem comment trong hàm).
+ *
+ *  Tham số chính: ctx (proposal + admin + năm), *Data (các mảng đã admin chỉnh),
+ *  decisions/mappings/pdfPaths (số QĐ + file đính kèm), acc (gom kết quả + lỗi).
  */
 export async function runImportTransaction(
   ctx: ProposalContext,
@@ -80,6 +99,7 @@ export async function runImportTransaction(
 
   await prisma.$transaction(
     async prismaTx => {
+      // Đóng gói context dùng chung cho mọi strategy (năm/tháng/refDate/map tên/QĐ).
       const approveCtx: ProposalApproveContext = {
         proposalId: ctx.proposalId,
         adminId: ctx.adminId,
@@ -100,6 +120,8 @@ export async function runImportTransaction(
       // FileQuyetDinh rows must exist before award rows can reference them via hard FK.
       await syncDecisionFiles(ctx, danhHieuData, thanhTichData, decisions, pdfPaths, prismaTx);
 
+      // Helper gọi strategy.importInTransaction với CÙNG prismaTx → mọi insert
+      // nằm chung 1 transaction, throw ở bất kỳ strategy nào = rollback tất cả.
       const runStrategyImport = (strategy: ProposalStrategy, editedData: EditedProposalData) =>
         strategy.importInTransaction(
           editedData,
@@ -110,6 +132,8 @@ export async function runImportTransaction(
           prismaTx
         );
 
+      // Chọn strategy + field payload theo loại đề xuất qua registry; loại không
+      // khai báo → mặc định cá nhân hằng năm (caNhanHangNamStrategy + data_danh_hieu).
       const primary =
         PRIMARY_IMPORT[proposal.loai_de_xuat as ProposalType] ?? PRIMARY_IMPORT_DEFAULT;
       const payloadByField = { data_danh_hieu: danhHieuData, data_cong_hien: congHienData };
@@ -130,12 +154,21 @@ export async function runImportTransaction(
         data_thanh_tich: thanhTichData,
       } as EditedProposalData);
 
+      // Bất kỳ item nào bị strategy đẩy vào acc.errors → throw để Prisma ROLLBACK
+      // toàn bộ (không duyệt nửa vời: đã insert vài award mà đề xuất vẫn PENDING).
       if (acc.errors.length > 0) {
         throw new ValidationError(
           `Không thể phê duyệt đề xuất do có ${acc.errors.length} lỗi khi thêm khen thưởng:\n${acc.errors.join('\n')}`
         );
       }
 
+      // OPTIMISTIC LOCK: chỉ chốt nếu đề xuất VẪN còn PENDING. Nếu 2 admin cùng
+      // bấm duyệt: người đầu đổi status → người sau updateMany khớp 0 dòng
+      // (count=0) → throw → rollback cả transaction (không duyệt 2 lần / ghi đè).
+      // SQL minh hoạ:
+      //   UPDATE "BangDeXuat" SET status = 'APPROVED', ...
+      //     WHERE id = $proposalId AND status = 'PENDING';
+      //   -- count = số dòng khớp; = 0 ⇒ status đã bị người khác đổi trước đó.
       const updateResult = await proposalRepository.updateMany(
         { id: proposalId, status: PROPOSAL_STATUS.PENDING },
         updateData,

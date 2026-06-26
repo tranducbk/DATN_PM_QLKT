@@ -56,11 +56,14 @@ interface CheckContributionEligibilityBody {
 }
 
 class PersonnelController {
+  /** Lấy danh sách quân nhân (phân trang, lọc theo từ khóa + đơn vị; MANAGER chỉ thấy đơn vị mình). */
   getPersonnel = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetPersonnelQuery;
     const user = req.user!;
     const { page, limit } = parsePagination(query);
+    // Bóc bộ lọc tìm kiếm và đơn vị từ query string
     const { search, unit_id } = query;
+    // Service tự giới hạn phạm vi theo vai trò: MANAGER chỉ thấy quân nhân trong đơn vị mình
     const userRole = user.role;
     const userQuanNhanId = user.quan_nhan_id;
     const { personnel, pagination } = await personnelService.getPersonnel(
@@ -79,6 +82,7 @@ class PersonnelController {
     });
   });
 
+  /** Lấy chi tiết một quân nhân theo ID (service kiểm tra MANAGER có quyền xem đơn vị này không). */
   getPersonnelById = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const user = req.user!;
@@ -93,8 +97,10 @@ class PersonnelController {
     });
   });
 
+  /** Thêm quân nhân mới đồng thời tạo tài khoản đăng nhập (username = CCCD). */
   createPersonnel = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as CreatePersonnelBody;
+    // CCCD vừa là định danh quân nhân vừa là username tài khoản nên bắt buộc phải có
     const { cccd, unit_id, position_id, role } = body;
     if (!cccd || !unit_id || !position_id) {
       return ResponseHelper.badRequest(
@@ -109,8 +115,10 @@ class PersonnelController {
     });
   });
 
+  /** Người dùng tự cập nhật hồ sơ quân nhân của chính mình. */
   updateMyProfile = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
+    // Tài khoản phải gắn với hồ sơ quân nhân mới có gì để cập nhật
     if (!user.quan_nhan_id) {
       return ResponseHelper.badRequest(res, 'Tài khoản chưa gắn với hồ sơ quân nhân');
     }
@@ -122,6 +130,7 @@ class PersonnelController {
     return ResponseHelper.success(res, { data: result, message: 'Cập nhật thông tin thành công' });
   });
 
+  /** Cập nhật thông tin quân nhân (admin/manager); service kiểm tra quyền theo đơn vị. */
   updatePersonnel = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const user = req.user!;
@@ -159,6 +168,7 @@ class PersonnelController {
     const result = await personnelService.updatePersonnel(
       personnelId,
       {
+        // FE gửi đơn vị qua nhiều tên field khác nhau nên gộp về cơ quan đơn vị
         co_quan_don_vi_id: co_quan_don_vi_id || don_vi_id || unit_id,
         don_vi_truc_thuoc_id,
         position_id: chuc_vu_id || position_id,
@@ -185,6 +195,7 @@ class PersonnelController {
     return ResponseHelper.success(res, { data: result, message: 'Cập nhật quân nhân thành công' });
   });
 
+  /** Xóa quân nhân theo ID; service kiểm tra quyền theo đơn vị trước khi xóa. */
   deletePersonnel = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const params = req.params as IdParams;
@@ -201,6 +212,7 @@ class PersonnelController {
     return ResponseHelper.success(res, { data: result, message: 'Xóa quân nhân thành công' });
   });
 
+  /** Kiểm tra điều kiện xét Huân chương Cống hiến cho danh sách quân nhân được chọn. */
   checkContributionEligibility = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as CheckContributionEligibilityBody;
     const { personnel_ids: personnelIds } = body;

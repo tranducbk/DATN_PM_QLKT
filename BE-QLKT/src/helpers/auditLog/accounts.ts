@@ -1,3 +1,5 @@
+// Bộ dựng mô tả audit-log cho thao tác tài khoản: từ action + request + dữ liệu
+// phản hồi sinh ra chuỗi mô tả tiếng Việt để ghi vào system log.
 import type { Prisma } from '../../generated/prisma';
 import { Request, Response } from 'express';
 import { normalizeParam } from '../paginationHelper';
@@ -9,6 +11,13 @@ type TaiKhoanHoTenSelect = Prisma.TaiKhoanGetPayload<{
   select: { username: true; QuanNhan: { select: { ho_ten: true } } };
 }>;
 
+/**
+ * Bản đồ action tài khoản sang hàm dựng mô tả audit-log tiếng Việt.
+ * @param req - Request chứa body/params của thao tác
+ * @param res - Response của thao tác
+ * @param responseData - Dữ liệu controller trả về (chuỗi JSON hoặc object)
+ * @returns Chuỗi mô tả tiếng Việt để ghi system log
+ */
 const accounts: Record<
   string,
   (req: Request, res: Response, responseData: unknown) => string | Promise<string>
@@ -52,6 +61,7 @@ const accounts: Record<
       console.error('[auditLog/accounts:UPDATE] failed to parse response data:', error);
     }
 
+    // Khi responseData thiếu username/họ tên thì truy vấn bù từ DB (tài khoản còn tồn tại).
     if ((!username || !hoTen) && accountId) {
       try {
         const account = (await accountRepository.findUniqueRaw({
@@ -91,6 +101,8 @@ const accounts: Record<
     let username = '';
     let hoTen = '';
 
+    // Lấy thông tin từ responseData (bản ghi đã xóa do service trả về),
+    // không truy vấn DB vì tài khoản đã bị xóa.
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       username = data?.data?.username || '';

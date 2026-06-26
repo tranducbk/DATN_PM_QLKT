@@ -10,6 +10,18 @@ import {
   donViTrucThuocRepository,
 } from '../../../repositories/unit.repository';
 
+/**
+ * Builder mô tả audit log cho khen thưởng đột xuất (DOT_XUAT).
+ * Mỗi action (CREATE/UPDATE/DELETE) sinh câu mô tả tiếng Việt cho nhật ký hệ thống.
+ */
+
+/**
+ * Sinh mô tả cho hành động tạo khen thưởng đột xuất.
+ * @param req - Request chứa thông tin loại, hình thức, năm và đối tượng được khen
+ * @param res - Response (không dùng trực tiếp, giữ cho đồng nhất chữ ký builder)
+ * @param responseData - Dữ liệu trả về để lấy tên quân nhân/đơn vị
+ * @returns Câu mô tả audit log
+ */
 export const adhocAwards: Record<
   string,
   (req: Request, res: Response, responseData: unknown) => Promise<string>
@@ -30,9 +42,10 @@ export const adhocAwards: Record<
       ({ hoTen, tenDonVi } = resolveAwardSubject(data?.data || data));
     } catch (error) {
       console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-      // best-effort — audit description must not throw
+      // best-effort — mô tả audit không được phép throw
     }
 
+    // Khi responseData không có tên, truy ngược tên quân nhân/đơn vị từ ID trong request
     if (!hoTen && !tenDonVi) {
       try {
         if (type === 'cá nhân' && personnelId) {
@@ -69,6 +82,13 @@ export const adhocAwards: Record<
 
     return description;
   },
+  /**
+   * Sinh mô tả cho hành động cập nhật khen thưởng đột xuất.
+   * @param req - Request chứa ID bản ghi và hình thức khen thưởng mới
+   * @param res - Response (không dùng trực tiếp, giữ cho đồng nhất chữ ký builder)
+   * @param responseData - Dữ liệu trả về để lấy hình thức và tên đối tượng được khen
+   * @returns Câu mô tả audit log
+   */
   UPDATE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     const awardId = routeParamId(req.params?.id);
     let awardForm: string = req.body?.awardForm || FALLBACK.UNKNOWN;
@@ -85,9 +105,10 @@ export const adhocAwards: Record<
       ({ hoTen, tenDonVi } = resolveAwardSubject(award));
     } catch (error) {
       console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-      // best-effort — audit description must not throw
+      // best-effort — mô tả audit không được phép throw
     }
 
+    // Khi responseData không có tên, truy ngược từ bản ghi qua các quan hệ trong DB
     if (!hoTen && !tenDonVi && awardId) {
       try {
         const award = (await adhocAwardRepository.findUniqueRaw({
@@ -102,7 +123,7 @@ export const adhocAwards: Record<
         ({ hoTen, tenDonVi } = resolveAwardSubject(award));
       } catch (error) {
         console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-        // best-effort — audit description must not throw
+        // best-effort — mô tả audit không được phép throw
       }
     }
 
@@ -116,11 +137,19 @@ export const adhocAwards: Record<
 
     return description;
   },
+  /**
+   * Sinh mô tả cho hành động xóa khen thưởng đột xuất.
+   * @param req - Request (không dùng trực tiếp, giữ cho đồng nhất chữ ký builder)
+   * @param res - Response (không dùng trực tiếp, giữ cho đồng nhất chữ ký builder)
+   * @param responseData - Bản ghi đã xóa để lấy hình thức và tên đối tượng được khen
+   * @returns Câu mô tả audit log
+   */
   DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     let awardForm: string = FALLBACK.UNKNOWN;
     let hoTen = '';
     let tenDonVi = '';
 
+    // Đọc từ responseData (bản ghi controller trả về), không query lại DB vì đã bị xóa
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       const award = data?.data || data;
@@ -131,7 +160,7 @@ export const adhocAwards: Record<
       ({ hoTen, tenDonVi } = resolveAwardSubject(award));
     } catch (error) {
       console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-      // best-effort — audit description must not throw
+      // best-effort — mô tả audit không được phép throw
     }
 
     let description = `Xóa khen thưởng đột xuất: ${awardForm}`;

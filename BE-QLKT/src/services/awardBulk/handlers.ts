@@ -35,15 +35,23 @@ import { throwValidationErrors } from './validation';
 
 const CONTRIBUTION_LABEL = getLoaiDeXuatName(PROPOSAL_TYPES.CONG_HIEN);
 
-/** Build the JSON service-time payload, counting service up to cutoffDate (the award date). */
+/**
+ * Tính khối JSON thời gian phục vụ, đếm tới mốc cutoffDate (ngày trao thưởng).
+ * @param quanNhan - Quân nhân cần tính thời gian phục vụ
+ * @param cutoffDate - Mốc cắt để đếm thời gian, mặc định là hiện tại
+ * @returns Khối JSON thời gian phục vụ, hoặc null nếu chưa có ngày nhập ngũ
+ */
 export function calculateThoiGian(
   quanNhan: QuanNhan,
   cutoffDate: Date = new Date()
 ): ServiceTimeJson | null {
+  // Không có ngày nhập ngũ thì không xác định được thời gian phục vụ.
   if (!quanNhan.ngay_nhap_ngu) return null;
 
   const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
+  // Đã xuất ngũ thì đếm tới ngày xuất ngũ, còn tại ngũ thì đếm tới mốc cắt.
   const rawEnd = quanNhan.ngay_xuat_ngu ? new Date(quanNhan.ngay_xuat_ngu) : cutoffDate;
+  // Chặn không cho vượt mốc cắt: tránh đếm dư thời gian sau ngày trao thưởng.
   const ngayKetThuc = rawEnd > cutoffDate ? cutoffDate : rawEnd;
 
   const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
@@ -95,18 +103,23 @@ async function bulkUpsertMedalAward(
 ): Promise<{ importedCount: number; affectedPersonnelIds: Set<string> }> {
   const importedCount = { value: 0 };
   const affectedPersonnelIds = new Set<string>();
+  // Mốc cắt = năm/tháng quyết định → thời gian phục vụ tính đúng tới ngày trao.
   const cutoffDate = buildCutoffDate(nam, thang ?? null);
 
   for (const item of titleData) {
     const quanNhan = personnelMap.get(item.personnel_id);
 
+    // Thiếu quân nhân trong map là lỗi dữ liệu nặng → throw để rollback cả lô,
+    // không cấp huân chương cho bản ghi không xác định được người.
     if (!quanNhan) {
       console.error('[bulkCreateAwards] personnel not found for medal upsert:', item.personnel_id);
       throw new NotFoundError('Thông tin một quân nhân');
     }
 
     const thoiGian = calculateThoiGian(quanNhan, cutoffDate);
+    // buildWhere quyết định khoá UPSERT theo từng loại huân chương (xem dispatch).
     const where = buildWhere(item.personnel_id, item.danh_hieu);
+    // extraDataBuilder bơm thêm cột riêng của loại (vd danh_hieu cho HCCSVV).
     const extraData = extraDataBuilder ? extraDataBuilder(item) : {};
 
     const baseData: Record<string, unknown> = {
@@ -119,6 +132,7 @@ async function bulkUpsertMedalAward(
       thoi_gian: thoiGian,
       ...extraData,
     };
+    // Chỉ set thang khi caller có truyền: bảng nào không có cột thang thì bỏ qua.
     if (thang != null) baseData.thang = thang;
 
     // UPSERT từng người: where khớp → UPDATE (nâng hạng / cấp lại), không khớp
@@ -136,6 +150,11 @@ async function bulkUpsertMedalAward(
   return { importedCount: importedCount.value, affectedPersonnelIds };
 }
 
+/**
+ * Cấp danh hiệu cá nhân hằng năm cho cả lô, uỷ thác cho annualRewardService.
+ * @param ctx - Bối cảnh bulk: titleData, danh sách người, năm, ghi chú, accumulator
+ * @returns Promise hoàn tất; kết quả được ghi trực tiếp vào ctx
+ */
 async function handleCaNhanHangNam(ctx: BulkCreateContext): Promise<void> {
   const { titleData, selectedPersonnel, nam, ghiChu } = ctx;
   const personnelRewardsData = titleData.map(item => ({
@@ -145,6 +164,7 @@ async function handleCaNhanHangNam(ctx: BulkCreateContext): Promise<void> {
     chuc_vu: item.chuc_vu || null,
   }));
 
+  // Cả lô cùng 1 danh hiệu nên lấy danh_hieu từ item đầu làm đại diện.
   const firstItem = titleData[0];
   const result = await annualRewardService.bulkCreateAnnualRewards({
     personnel_ids: selectedPersonnel,
@@ -156,6 +176,7 @@ async function handleCaNhanHangNam(ctx: BulkCreateContext): Promise<void> {
 
   ctx.importedCount.value = result.details.created.length;
   ctx.createdRecords.push(...result.details.created);
+  // Service đã gom lỗi từng người → trả ngược về accumulator, không dừng cả lô.
   if (result.details.errors.length > 0) {
     ctx.errorDetails.push(...result.details.errors);
     ctx.errors.push(...result.details.errors.map(e => e.error));
@@ -163,9 +184,15 @@ async function handleCaNhanHangNam(ctx: BulkCreateContext): Promise<void> {
   selectedPersonnel.forEach(id => ctx.affectedPersonnelIds.add(id));
 }
 
+/**
+ * Cấp danh hiệu đơn vị hằng năm cho từng đơn vị qua unitAnnualAwardService.upsert.
+ * @param ctx - Bối cảnh bulk: titleData (theo đơn vị), năm, ghi chú, adminId
+ * @returns Promise hoàn tất; bản ghi và lỗi ghi vào ctx
+ */
 async function handleDonViHangNam(ctx: BulkCreateContext): Promise<void> {
   const { titleData, nam, ghiChu, adminId } = ctx;
   for (const item of titleData) {
+    // try/catch từng đơn vị: lỗi 1 đơn vị không làm hỏng cả lô, gom lỗi để báo cuối.
     try {
       const record = await unitAnnualAwardService.upsert({
         don_vi_id: item.don_vi_id,
@@ -181,6 +208,7 @@ async function handleDonViHangNam(ctx: BulkCreateContext): Promise<void> {
         ctx.affectedUnitIds.add(item.don_vi_id);
       }
     } catch (error) {
+      // Log chi tiết kỹ thuật vào console, chỉ đẩy message chung cho người dùng.
       console.error('[bulkCreateAwards] unit award error', { don_vi_id: item.don_vi_id, error });
       const unitMsg = 'Có lỗi xảy ra khi lưu khen thưởng cho một đơn vị, vui lòng thử lại.';
       ctx.errors.push(unitMsg);
@@ -189,9 +217,15 @@ async function handleDonViHangNam(ctx: BulkCreateContext): Promise<void> {
   }
 }
 
+/**
+ * Tạo thành tích nghiên cứu khoa học cho từng quân nhân trong lô.
+ * @param ctx - Bối cảnh bulk: titleData (loai, mo_ta), năm, ghi chú, personnelMap
+ * @returns Promise hoàn tất; bản ghi và lỗi ghi vào ctx
+ */
 async function handleNCKH(ctx: BulkCreateContext): Promise<void> {
   const { titleData, nam, ghiChu } = ctx;
   for (const item of titleData) {
+    // try/catch từng người: lỗi tạo của một người không chặn những người còn lại.
     try {
       const record = await scientificAchievementService.createAchievement({
         personnel_id: item.personnel_id,
@@ -207,6 +241,7 @@ async function handleNCKH(ctx: BulkCreateContext): Promise<void> {
       ctx.importedCount.value++;
       ctx.affectedPersonnelIds.add(item.personnel_id);
     } catch (error) {
+      // Log kỹ thuật vào console; message cho user kèm tên, fallback "một quân nhân".
       console.error('[bulkCreateAwards] NCKH error', { personnel_id: item.personnel_id, error });
       const name = ctx.personnelMap.get(item.personnel_id)?.ho_ten ?? 'một quân nhân';
       const nckhMsg = `Có lỗi xảy ra khi lưu thành tích khoa học cho ${name}, vui lòng thử lại.`;
@@ -216,11 +251,18 @@ async function handleNCKH(ctx: BulkCreateContext): Promise<void> {
   }
 }
 
+/**
+ * Cấp Huân chương Quân kỳ quyết thắng (1 bản ghi/người) cho cả lô trong 1 transaction.
+ * @param ctx - Bối cảnh bulk: titleData, personnelMap, năm, tháng, ghi chú
+ * @returns Promise hoàn tất; số lượng và người ảnh hưởng cộng vào ctx
+ */
 async function handleHCQKQT(ctx: BulkCreateContext): Promise<void> {
   const { titleData, personnelMap, nam, ghiChu, thang } = ctx;
+  // Bọc cả lô trong 1 transaction: hoặc cấp hết, hoặc rollback toàn bộ.
   await prisma.$transaction(async prismaTx => {
     const result = await bulkUpsertMedalAward(
       prismaTx.huanChuongQuanKyQuyetThang,
+      // Khoá UPSERT chỉ theo người: mỗi quân nhân chỉ 1 HCQKQT (loại 1 bản ghi/người).
       personnelId => ({ quan_nhan_id: personnelId }),
       titleData,
       personnelMap,
@@ -234,11 +276,18 @@ async function handleHCQKQT(ctx: BulkCreateContext): Promise<void> {
   });
 }
 
+/**
+ * Cấp Kỷ niệm chương (1 bản ghi/người) cho cả lô trong 1 transaction.
+ * @param ctx - Bối cảnh bulk: titleData, personnelMap, năm, tháng, ghi chú
+ * @returns Promise hoàn tất; số lượng và người ảnh hưởng cộng vào ctx
+ */
 async function handleKNC(ctx: BulkCreateContext): Promise<void> {
   const { titleData, personnelMap, nam, ghiChu, thang } = ctx;
+  // Bọc cả lô trong 1 transaction: hoặc cấp hết, hoặc rollback toàn bộ.
   await prisma.$transaction(async prismaTx => {
     const result = await bulkUpsertMedalAward(
       prismaTx.kyNiemChuongVSNXDQDNDVN,
+      // Khoá UPSERT chỉ theo người: mỗi quân nhân chỉ 1 kỷ niệm chương loại này.
       personnelId => ({ quan_nhan_id: personnelId }),
       titleData,
       personnelMap,
@@ -252,8 +301,15 @@ async function handleKNC(ctx: BulkCreateContext): Promise<void> {
   });
 }
 
+/**
+ * Cấp Huy chương Chiến sĩ vẻ vang (HCCSVV) hàng loạt: validate danh hiệu + thứ tự hạng rồi UPSERT.
+ * @param ctx - Bối cảnh bulk: titleData, personnelMap, năm, tháng, ghi chú, errors
+ * @returns Promise hoàn tất; số lượng và người ảnh hưởng cộng vào ctx
+ * @throws ValidationError - Khi có danh hiệu sai hoặc sai thứ tự hạng (qua throwValidationErrors)
+ */
 async function handleNienHan(ctx: BulkCreateContext): Promise<void> {
   const { titleData, personnelMap, nam, thang, ghiChu, type, adminId, errors } = ctx;
+  // Chốt 1: danh hiệu phải có và nằm trong tập HCCSVV hợp lệ.
   const allowedDanhHieus: string[] = Object.values(DANH_HIEU_HCCSVV);
   for (const item of titleData) {
     if (!item.danh_hieu) {
@@ -265,10 +321,12 @@ async function handleNienHan(ctx: BulkCreateContext): Promise<void> {
       );
     }
   }
+  // Dừng ngay nếu có lỗi danh hiệu — không chạy tiếp validate hạng trên dữ liệu xấu.
   if (errors.length > 0) {
     throwValidationErrors(errors, type, nam, adminId);
   }
 
+  // Chốt 2: gom HCCSVV đã có của từng người để kiểm tra đúng thứ tự hạng (Ba → Nhì → Nhất).
   const nienHanPersonnelIds = titleData.map(item => item.personnel_id).filter(Boolean);
   const existingHCCSVV = await tenureMedalRepository.findManyRaw({
     where: { quan_nhan_id: { in: nienHanPersonnelIds } },
@@ -282,6 +340,7 @@ async function handleNienHan(ctx: BulkCreateContext): Promise<void> {
   }
   for (const item of titleData) {
     const existing = hccsvvByPersonnel.get(item.personnel_id) || [];
+    // Chặn cấp nhảy/lùi hạng so với những hạng đã trao trước đó.
     const orderError = validateHCCSVVRankOrder(item.danh_hieu, nam, existing);
     if (orderError) {
       const qn = personnelMap.get(item.personnel_id);
@@ -296,6 +355,7 @@ async function handleNienHan(ctx: BulkCreateContext): Promise<void> {
   await prisma.$transaction(async prismaTx => {
     const result = await bulkUpsertMedalAward(
       prismaTx.khenThuongHCCSVV,
+      // Khoá UPSERT theo cặp (người, danh_hieu): mỗi người có thể giữ nhiều hạng HCCSVV.
       (personnelId, danhHieu) => ({
         quan_nhan_id_danh_hieu: { quan_nhan_id: personnelId, danh_hieu: danhHieu },
       }),
@@ -303,6 +363,7 @@ async function handleNienHan(ctx: BulkCreateContext): Promise<void> {
       personnelMap,
       nam,
       ghiChu,
+      // Bơm thêm cột danh_hieu vì HCCSVV phân biệt theo hạng.
       item => ({ danh_hieu: item.danh_hieu }),
       thang
     );
@@ -311,8 +372,17 @@ async function handleNienHan(ctx: BulkCreateContext): Promise<void> {
   });
 }
 
+/**
+ * Cấp Huân chương Bảo vệ Tổ quốc (HCBVTQ - cống hiến) hàng loạt qua nhiều tầng kiểm tra ĐK.
+ * Tuần tự: validate danh hiệu → đủ thời gian theo nhóm hệ số → chặn lùi/trùng hạng →
+ * chặn cấp dưới hạng cao nhất đủ ĐK → UPSERT trong transaction.
+ * @param ctx - Bối cảnh bulk: titleData, năm, tháng, ghi chú, personnelMap, errors
+ * @returns Promise hoàn tất; số lượng và người ảnh hưởng cộng vào ctx
+ * @throws ValidationError - Khi không còn ai đủ ĐK mà vẫn có lỗi (qua throwValidationErrors)
+ */
 async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
   const { titleData, nam, thang, ghiChu, type, adminId, errors } = ctx;
+  // Tầng 1: danh hiệu phải có và thuộc tập HCBVTQ hợp lệ.
   const allowedDanhHieus: string[] = Object.values(DANH_HIEU_HCBVTQ);
   for (const item of titleData) {
     if (!item.danh_hieu) {
@@ -330,6 +400,8 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
 
   const congHienPersonnelIds = titleData.map(item => item.personnel_id).filter(Boolean);
 
+  // HCBVTQ tính ĐK theo thời gian giữ chức theo nhóm hệ số → cần cả lịch sử chức vụ
+  // và giới tính (nữ giảm 1/3 thời gian). Lấy song song để bớt round-trip DB.
   const [congHienPersonnel, allPositionHistories] = await Promise.all([
     quanNhanRepository.findManyRaw({
       where: { id: { in: congHienPersonnelIds } },
@@ -352,6 +424,7 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
     personnelGenderMap.set(p.id, { gioi_tinh: p.gioi_tinh, ho_ten: p.ho_ten });
   }
 
+  // Gom lịch sử chức vụ theo người (1 query rồi index) để tránh N+1 trong vòng đánh giá.
   const historiesByPersonnel = new Map<string, typeof allPositionHistories>();
   for (const h of allPositionHistories) {
     const list = historiesByPersonnel.get(h.quan_nhan_id) ?? [];
@@ -362,13 +435,18 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
   // Cap recalculated months at the proposal cutoff date so admin bulk respects
   // the same eligibility window as submit/approve (drift unification — see Phase 5b).
   const cutoffDate = buildCutoffDate(nam, thang ?? null);
+  // Tổng hợp số tháng giữ chức theo nhóm hệ số cho từng người, cắt tại mốc quyết định.
   const monthsByPersonnel = new Map<string, PositionMonthsByGroup>();
   for (const [personnelId, histories] of historiesByPersonnel) {
     monthsByPersonnel.set(personnelId, aggregatePositionMonthsByGroup(histories, cutoffDate));
   }
 
+  // Mốc rỗng dùng làm fallback cho người chưa có lịch sử chức vụ (0 tháng mọi nhóm).
   const emptyMonthsByGroup = aggregatePositionMonthsByGroup([], cutoffDate);
 
+  // Tầng 2: lọc theo điều kiện thời gian. Item đủ ĐK đẩy vào eligibleTitleData,
+  // item thiếu thời gian bị gom lỗi và loại; item thiếu danh_hieu/người cho qua
+  // để tầng sau hoặc upsert tự xử (không chặn ở đây).
   const eligibleTitleData: TitleDataItem[] = [];
   for (const item of titleData) {
     if (!item.danh_hieu || !item.personnel_id) {
@@ -383,6 +461,7 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
     const months = monthsByPersonnel.get(item.personnel_id) ?? emptyMonthsByGroup;
     const result = evaluateHCBVTQRank(item.danh_hieu, months, gioiTinh);
 
+    // Không xác định được hạng (danh hiệu lạ) thì cho qua, không tự ý loại.
     if (!result.rank) {
       eligibleTitleData.push(item);
       continue;
@@ -391,6 +470,7 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
     if (!result.eligible) {
       const totalYearsText = formatServiceDuration(result.totalMonths);
       const requiredYearsText = formatServiceDuration(result.requiredMonths);
+      // Nữ được giảm 1/3 thời gian yêu cầu → ghi rõ trong message cho minh bạch.
       const genderText = gioiTinh === GENDER.FEMALE ? ' (Nữ giảm 1/3 thời gian)' : '';
 
       errors.push(
@@ -406,6 +486,8 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
   // Defensive guard: even if checkDuplicateAwards already blocked existing HCBVTQ
   // owners, re-query and refuse downgrades/dupes here so the upsert below cannot
   // silently overwrite a higher rank (e.g. HANG_NHAT -> HANG_BA).
+  // Tầng 3: query lại HCBVTQ hiện có, chặn cấp lùi hạng/trùng hạng (vd Nhất -> Ba)
+  // mà UPSERT theo người sẽ âm thầm ghi đè hạng cao hơn nếu không chốt ở đây.
   const hcbvtqPersonnelIds = eligibleTitleData.map(it => it.personnel_id).filter(Boolean);
   if (hcbvtqPersonnelIds.length > 0) {
     const existingHCBVTQ = await contributionMedalRepository.findManyRaw({
@@ -425,10 +507,13 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
       }
       guardedTitleData.push(item);
     }
+    // Thay tại chỗ danh sách đủ ĐK bằng phần đã qua chốt nâng hạng.
     eligibleTitleData.length = 0;
     eligibleTitleData.push(...guardedTitleData);
   }
 
+  // Tầng 4: chặn cấp hạng thấp khi người đó đã đủ thời gian cho hạng cao nhất —
+  // ép phải đề nghị đúng hạng cao nhất xứng đáng, không hạ thấp danh hiệu.
   const highestRankFiltered: TitleDataItem[] = [];
   for (const item of eligibleTitleData) {
     if (!item.danh_hieu || !item.personnel_id) {
@@ -449,12 +534,16 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
   eligibleTitleData.length = 0;
   eligibleTitleData.push(...highestRankFiltered);
 
+  // Chỉ ném lỗi khi KHÔNG còn ai đủ ĐK: nếu vẫn còn người hợp lệ thì cấp cho họ,
+  // lỗi của người khác sẽ được báo qua errorDetails ở tầng gọi (cấp được phần nào).
   if (eligibleTitleData.length === 0 && errors.length > 0) {
     throwValidationErrors(errors, type, nam, adminId);
   }
 
+  // Cấp cả lô đã qua 4 tầng kiểm tra trong 1 transaction: hoặc hết, hoặc rollback.
   await prisma.$transaction(async prismaTx => {
     for (const item of eligibleTitleData) {
+      // Khoá UPSERT theo người: mỗi quân nhân chỉ giữ 1 bản HCBVTQ (nâng hạng = update).
       await contributionMedalRepository.upsertRaw(
         {
           where: { quan_nhan_id: item.personnel_id },
@@ -493,6 +582,8 @@ async function handleCongHien(ctx: BulkCreateContext): Promise<void> {
   });
 }
 
+// Bảng dispatch loại đề xuất -> handler: caller chỉ tra map rồi gọi, không if/else
+// dài theo loại. Thêm loại danh hiệu mới = viết handler + đăng ký 1 dòng ở đây.
 export const CREATE_HANDLERS: Partial<Record<ProposalType, CreateHandler>> = {
   [PROPOSAL_TYPES.CA_NHAN_HANG_NAM]: handleCaNhanHangNam,
   [PROPOSAL_TYPES.DON_VI_HANG_NAM]: handleDonViHangNam,

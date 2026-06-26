@@ -8,7 +8,7 @@ Mục tiêu: giúp người đọc mới (bạn cùng nhóm, thầy phản biệ
 
 Đọc theo thứ tự này, mỗi mục 5-10 phút là đủ:
 
-1. `README.md` (nếu có) hoặc `report/BAO_CAO.md` §4.1 — kiến trúc tổng thể
+1. `README.md` (nếu có) hoặc báo cáo LaTeX `Báo cáo ĐATN/DoAn.pdf` (Chương 4) — kiến trúc tổng thể
 2. `CLAUDE.md` (root) — convention + Quick Commands + Architecture
 3. `BE-QLKT/CLAUDE.md` — cấu trúc thư mục BE, anti-patterns
 4. `FE-QLKT/CLAUDE.md` — cấu trúc thư mục FE
@@ -28,7 +28,7 @@ src/app/<role>/<feature>/page.tsx         src/routes/<feature>.route.ts
        ↓ (gọi apiClient)                          ↓ (middleware chain)
 src/lib/api/<domain>.ts                   src/middlewares/{auth,validate,auditLog}.ts
        ↓ (axios)                                  ↓
-src/lib/axiosInstance.ts                  src/controllers/<feature>.controller.ts
+src/lib/http/axiosInstance.ts             src/controllers/<feature>.controller.ts
        ↓ HTTP                                     ↓
                                           src/services/<feature>.service.ts
                                                   ↓
@@ -42,7 +42,7 @@ src/lib/axiosInstance.ts                  src/controllers/<feature>.controller.t
 **Quy tắc vàng:**
 - Controller KHÔNG import Prisma trực tiếp — luôn qua repository hoặc service
 - Service chứa business logic; Repository chỉ wrap Prisma
-- FE luôn gọi qua `apiClient` từ `@/lib/api`, không fetch trực tiếp
+- FE luôn gọi qua `apiClient` từ `@/lib/api`, không fetch trực tiếp. `lib/api/index.ts` là barrel facade gom các module `lib/api/<domain>.ts` thành 1 object; tầng axios thật nằm ở `lib/http/axiosInstance.ts` (`lib/http/apiClient.ts` chỉ re-export lại barrel)
 
 ---
 
@@ -61,7 +61,16 @@ Tìm code theo role: mỗi role có thư mục riêng trong FE.
 | MANAGER | `FE-QLKT/src/app/manager/` | Tạo đề xuất, xem khen thưởng đơn vị mình |
 | USER | `FE-QLKT/src/app/user/` | Xem hồ sơ cá nhân, nhận thông báo |
 
-BE phân quyền qua factory `checkRole` (trong route file dùng các named guard `requireAdmin` / `requireManager` / `requireAdminOnly` / `requireSuperAdmin` / `requireAdminOrManager`):
+BE phân quyền bằng các named guard trong `BE-QLKT/src/middlewares/auth.ts`. Mỗi guard dựng từ **ma trận capability** (`requireCapability(CAPABILITIES.X)` → `checkRole([...roles])`), nên thêm role/đổi quyền chỉ sửa ma trận:
+
+| Guard | Capability | Role được phép |
+|---|---|---|
+| `requireSuperAdmin` | `SUPER_ADMIN_ONLY` | SUPER_ADMIN |
+| `requireAdmin` | `SYSTEM_MANAGEMENT` | SUPER_ADMIN, ADMIN |
+| `requireAdminOnly` | `ADMIN_BUSINESS` | ADMIN (⚠️ KHÔNG gồm SUPER_ADMIN) |
+| `requireManager` | `PERSONNEL_MANAGEMENT` | SUPER_ADMIN, ADMIN, MANAGER |
+| `requireAdminOrManager` | `PROPOSAL_BUSINESS` | (xét nghiệp vụ đề xuất) |
+
 ```ts
 router.post('/', verifyToken, requireAdmin, ...)
 ```
@@ -113,7 +122,7 @@ Dispatch: `proposal/strategies/index.ts` map `loai_de_xuat` → strategy. Không
 
 - **Config-driven**: `BE-QLKT/src/constants/chainAwards.constants.ts` chứa `PERSONAL_CHAIN_AWARDS` + `UNIT_CHAIN_AWARDS`
 - **Core logic**: `BE-QLKT/src/services/eligibility/chainEligibility.ts` (hàm `checkChainEligibility`)
-- **Context helper**: `BE-QLKT/src/services/profile/annual.ts` — `computeChainContext` tính chuỗi liên tục, cửa sổ trượt, etc
+- **Context helper**: `BE-QLKT/src/services/profile/annual.ts` — `calculateContinuousCSTDCS` (chuỗi CSTDCS liên tục) + `calculateContinuousNCKH` (chuỗi NCKH liên tục) + `countBKBQPInStreak` / `countCSTDTQInStreak` (đếm flag trong cửa sổ trượt); `computeEligibilityFlags` ráp lại thành `du_dieu_kien_{bkbqp,cstdtq,bkttcp}`. Bản API tương ứng là `checkAwardEligibility` (cùng file) — hai hàm này PHẢI khớp nhau
 - **Tests**: `BE-QLKT/tests/services/eligibility-{bkbqp,cstdtq,bkttcp}-personal.test.ts` (cá nhân) + `eligibility-{bkbqp,bkttcp}-unit.test.ts` (đơn vị — không có CSTDTQ)
 
 Quy tắc chu kỳ — đọc `CLAUDE.md` §Architecture mục "Chain cycle semantics" để hiểu BKBQP 2y, CSTDTQ 3y, BKTTCP 7y, lifetime block, cửa sổ trượt.
@@ -167,7 +176,7 @@ Biết pattern → đoán được tên file → không cần grep.
 - **`isLifetime: true`**: BKTTCP cá nhân chỉ nhận 1 lần — sau khi nhận thì BE trả `goi_y = "Phần mềm chưa hỗ trợ khen thưởng cao hơn..."`. Xem `CLAUDE.md` §Chain cycle semantics.
 - **Cửa sổ trượt 3y/7y**: CSTDTQ check BKBQP trong 3 năm cuối từ `year-1`. BKTTCP cá nhân check `strict ===`, unit BKTTCP check `>=`.
 - **Hierachy of awards**: HCCSVV/HCBVTQ phải có rank dưới trước rồi mới được rank trên (Ba → Nhì → Nhất).
-- **Test khi sửa eligibility**: bất kỳ thay đổi rule chuỗi nào → chạy `BE-QLKT/tests/services/eligibility-*.test.ts` (870+ ca).
+- **Test khi sửa eligibility**: bất kỳ thay đổi rule chuỗi nào → chạy `BE-QLKT/tests/services/eligibility-*.test.ts` (~100 ca; riêng 5 file chuỗi BKBQP/CSTDTQ/BKTTCP cá nhân + đơn vị là 84 ca). Toàn bộ test suite BE hiện ~1000 ca (`npx jest`).
 
 ---
 

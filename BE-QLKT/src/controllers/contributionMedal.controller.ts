@@ -1,7 +1,8 @@
 /*
- * CONTRIBUTION MEDAL CONTROLLER — HCBVTQ CRUD + Excel.
- * Upgrade-only rule. Gender-aware threshold.
- * Recalc profile/contribution.ts sau insert/update.
+ * Controller Huân chương Bảo vệ Tổ quốc (HCBVTQ) — CRUD + nhập/xuất Excel.
+ * Xét theo hệ số/bậc, chỉ cho nâng bậc (không hạ).
+ * Ngưỡng điều kiện phụ thuộc giới tính.
+ * Sau khi thêm/sửa sẽ tính lại hồ sơ qua profile/contribution.ts.
  */
 
 import { Request, Response } from 'express';
@@ -68,9 +69,11 @@ interface IdParams {
 }
 
 class ContributionMedalController {
+  /** Tải file Excel mẫu để nhập HCBVTQ (có thể lọc theo danh sách quân nhân). */
   getTemplate = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetTemplateQuery;
     const personnelIds = parsePersonnelIdsFromQuery(query);
+    // repeat_map: chuỗi JSON map số lần lặp danh hiệu để dựng đúng số dòng mẫu
     const repeatMap: Record<string, number> = {};
     if (query.repeat_map) {
       try {
@@ -95,6 +98,7 @@ class ContributionMedalController {
     return res.status(200).send(buffer);
   });
 
+  /** Xem trước dữ liệu từ file Excel trước khi nhập chính thức. */
   previewImport = catchAsync(async (req: Request, res: Response) => {
     const file = req.file;
     if (!file) return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
@@ -110,6 +114,7 @@ class ContributionMedalController {
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
+  /** Nhập chính thức dữ liệu HCBVTQ đã xem trước, ghi log và gửi thông báo. */
   confirmImport = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const body = req.body as ConfirmImportBody;
@@ -126,11 +131,13 @@ class ContributionMedalController {
       description: logMessages.importSuccess(AWARD_LABEL, result.imported ?? items.length),
       payload: { imported: result.imported ?? items.length },
     });
+    // Thông báo cho từng quân nhân vừa được nhập danh hiệu
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
     safeNotifyImport(user.id, AWARD_SLUGS.CONTRIBUTION_MEDALS, result.imported ?? items.length, personnelIds);
     return ResponseHelper.success(res, { data: result, message: 'Thao tác thành công' });
   });
 
+  /** Lấy danh sách HCBVTQ (có lọc, phân trang); MANAGER bị giới hạn theo đơn vị. */
   getAll = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const query = req.query as GetAllQuery;
@@ -144,6 +151,7 @@ class ContributionMedalController {
     if (danh_hieu) filters.danh_hieu = danh_hieu;
     if (ho_ten) filters.ho_ten = ho_ten;
 
+    // MANAGER chỉ thấy đơn vị mình; nếu là cơ quan đơn vị thì gồm cả đơn vị con
     const managerUnit = await getManagerUnitFilter(req);
     if (managerUnit === null && userRole === ROLES.MANAGER) {
       return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
@@ -163,6 +171,7 @@ class ContributionMedalController {
     });
   });
 
+  /** Xuất danh sách HCBVTQ ra Excel (cùng bộ lọc/giới hạn đơn vị như getAll). */
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const query = req.query as ExportToExcelQuery;
@@ -173,6 +182,7 @@ class ContributionMedalController {
     if (nam) filters.nam = nam;
     if (danh_hieu) filters.danh_hieu = danh_hieu;
 
+    // MANAGER chỉ xuất đơn vị mình; cơ quan đơn vị thì gồm cả đơn vị con
     const managerUnit = await getManagerUnitFilter(req);
     if (managerUnit === null && user.role === ROLES.MANAGER) {
       return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
@@ -192,6 +202,7 @@ class ContributionMedalController {
     return res.status(200).send(buffer);
   });
 
+  /** Lấy số liệu thống kê HCBVTQ. */
   getStatistics = catchAsync(async (req: Request, res: Response) => {
     const statistics = await contributionAwardService.getStatistics();
     return ResponseHelper.success(res, {
@@ -200,6 +211,7 @@ class ContributionMedalController {
     });
   });
 
+  /** Xóa một bản ghi HCBVTQ theo id. */
   deleteAward = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const { id } = params;

@@ -52,6 +52,58 @@ export interface UpdateOwnProfileData {
   cho_o_hien_nay?: string | null;
 }
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  PERSONNEL SERVICE — quân nhân (QuanNhan) — core nghiệp vụ
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  ENTITY trung tâm — TẤT CẢ khen thưởng đều ref tới QuanNhan.id qua FK.
+ *
+ *  CCCD = UNIQUE constraint (PII + business key):
+ *  - 1 CCCD chỉ tồn tại 1 QuanNhan (mỗi công dân chỉ 1 căn cước).
+ *  - Insert trùng CCCD → service trả message "CCCD đã tồn tại trong hệ thống".
+ *  - parseCCCD chuẩn hoá pad zero trước khi check duplicate (tránh "123"
+ *    và "000000000123" coi là 2 CCCD khác).
+ *
+ *  USERNAME = CCCD (default):
+ *  - Khi admin tạo quân nhân, account.username AUTO = cccd.
+ *  - Dễ nhớ + chống tạo trùng username (vì CCCD đã unique).
+ *  - User đầu tiên login với password mặc định → buộc đổi.
+ *
+ *  UNIT ID dual field:
+ *      QuanNhan có 2 field FK:
+ *        co_quan_don_vi_id     (CQDV — cơ quan/đơn vị mẹ)
+ *        don_vi_truc_thuoc_id  (DVTT — đơn vị trực thuộc)
+ *      Chỉ 1 trong 2 được set (mutually exclusive — quân nhân thuộc CQDV
+ *      hoặc DVTT, không cả hai). DVTT thuộc CQDV qua FK riêng.
+ *
+ *      Khi lấy "đơn vị của quân nhân" → DVTT ưu tiên hơn CQDV (DVTT là
+ *      con cụ thể hơn, CQDV là cha):
+ *        const donViId = qn.don_vi_truc_thuoc_id ?? qn.co_quan_don_vi_id;
+ *
+ *  SO_LUONG AUTO-MAINTAIN:
+ *      CoQuanDonVi.so_luong + DonViTrucThuoc.so_luong = số quân nhân
+ *      trong đơn vị (denormalized counter để query nhanh).
+ *      Mỗi khi:
+ *        - Tạo QuanNhan          → tăng so_luong của đơn vị tương ứng.
+ *        - Xoá QuanNhan          → giảm so_luong.
+ *        - Đổi đơn vị QuanNhan   → giảm đơn vị cũ + tăng đơn vị mới.
+ *      Implementation: trong transaction để đảm bảo atomic.
+ *      Pattern dùng `if/else` (KHÔNG 2 if riêng biệt) — xem CLAUDE.md
+ *      mục Unit count để tránh đếm dư.
+ *
+ *  MANAGER UNIT FILTER:
+ *  - getPersonnel với MANAGER role → filter chỉ trả quân nhân thuộc
+ *    đơn vị manager mình. Logic ở `helpers/controllerHelper.ts`.
+ *  - Manager CQDV thấy: chính mình + tất cả DVTT con + quân nhân DVTT.
+ *  - Manager DVTT thấy: chỉ DVTT mình + quân nhân DVTT.
+ *
+ *  CASCADE DELETE chú ý:
+ *  - Xoá QuanNhan → xoá tuần tự trong transaction các bảng liên quan
+ *    (TaiKhoan, DanhHieuHangNam, ...). RỦI RO: mất audit trail.
+ *  - Tốt hơn: soft delete (flag `is_deleted`) — chưa implement.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 class PersonnelService {
   parseCCCD(value) {
     return parseCCCD(value);
@@ -281,6 +333,7 @@ class PersonnelService {
       chuc_vu_id: position_id,
     };
 
+    // Gán đúng 1 trong 2 FK đơn vị (mutually exclusive), cái còn lại = null.
     if (isCoQuanDonVi) {
       personnelData.co_quan_don_vi_id = unit_id;
       personnelData.don_vi_truc_thuoc_id = null;
@@ -289,11 +342,20 @@ class PersonnelService {
       personnelData.don_vi_truc_thuoc_id = unit_id;
     }
 
-    // Hash password outside transaction to reduce lock duration.
+    // Hash password NGOÀI transaction để giảm thời gian giữ lock (bcrypt chậm ~100ms,
+    // không nên giữ row-lock trong lúc băm).
     const defaultPassword = DEFAULT_PASSWORD || 'Hvkhqs@123';
     const hashedPassword = await bcrypt.hash(defaultPassword, 10);
 
-    // Wrap all writes in one transaction for consistency.
+    // TRANSACTION: tạo quân nhân (form "Thêm quân nhân" — CCCD nhập ngay).
+    // Đây là luồng cccd-first (username = CCCD), khác account.service (account-first,
+    // cccd điền sau). 4 thao tác nguyên tử, throw bất kỳ → Prisma rollback hết.
+    // SQL minh hoạ:
+    //   INSERT INTO "QuanNhan"     (cccd, ho_ten, chuc_vu_id, ngay_nhap_ngu, ...) VALUES ($cccd, $cccd, ...);
+    //   SELECT he_so_chuc_vu FROM "ChucVu" WHERE id = $position;   -- hệ số cho dòng lịch sử
+    //   INSERT INTO "LichSuChucVu" (quan_nhan_id, chuc_vu_id, he_so_chuc_vu, ngay_bat_dau) VALUES (...);
+    //   INSERT INTO "TaiKhoan"     (username, password_hash, role, quan_nhan_id) VALUES ($cccd, ...);
+    //   UPDATE "CoQuanDonVi" | "DonViTrucThuoc" SET so_luong = so_luong + 1 WHERE id = $unit;
     const result = await prisma.$transaction(async prismaTx => {
       const newPersonnel = await quanNhanRepository.create(personnelData, prismaTx);
 
@@ -329,6 +391,7 @@ class PersonnelService {
         prismaTx
       );
 
+      // Tăng so_luong của đơn vị (+1) trong cùng transaction → counter luôn khớp số QN.
       await adjustUnitCount(prismaTx, unit_id, isCoQuanDonVi, 'increment');
 
       return {
@@ -393,6 +456,8 @@ class PersonnelService {
         await accountRepository.delete(personnel.TaiKhoan.id, prismaTx);
       }
 
+      // Xoá thủ công tuần tự MỌI bảng con tham chiếu QuanNhan TRƯỚC khi xoá chính
+      // QuanNhan (FK không set cascade) → tránh FK mồ côi / lỗi ràng buộc.
       await positionHistoryRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
       await scientificAchievementRepository.deleteMany({ quan_nhan_id: id }, prismaTx);
       await danhHieuHangNamRepository.deleteManyByPersonnelId(id, prismaTx);
@@ -408,6 +473,8 @@ class PersonnelService {
       await quanNhanRepository.delete(String(id), prismaTx);
 
       if (unitId) {
+        // Giảm so_luong đơn vị (-1); lỗi ở đây throw để rollback cả cascade delete
+        // (không để xoá QN xong mà counter đơn vị bị lệch).
         try {
           await adjustUnitCount(prismaTx, unitId, isCoQuanDonVi, 'decrement');
         } catch (error) {
@@ -450,6 +517,8 @@ class PersonnelService {
   async checkContributionEligibility(personnelIds: string[]) {
     const ineligiblePersonnel = [];
 
+    // HCBVTQ chỉ trao 1 lần/đời → loại quân nhân đã NHẬN hoặc ĐANG chờ duyệt.
+    // 2 query song song + IN (...) cho cả danh sách → tránh N+1 (không query/người).
     const [existingAwards, pendingProposals] = await Promise.all([
       contributionMedalRepository.findManyRaw({
         where: { quan_nhan_id: { in: personnelIds } },

@@ -17,6 +17,19 @@ import type { ChucVuWithUnit } from './constants';
 import { positionHistoryRepository } from '../../repositories/positionHistory.repository';
 import { formatPersonnelChanges, PersonnelFieldChange } from '../profileFieldDiff';
 
+/**
+ * Builder mô tả audit-log cho các thao tác quân nhân, lịch sử chức vụ và thành tích
+ * khoa học. Mỗi builder dựng chuỗi tiếng Việt từ action + dữ liệu phản hồi để ghi
+ * vào system log (gồm cả diff field khi cập nhật hồ sơ quân nhân).
+ */
+
+/**
+ * Map action → builder mô tả audit-log cho thao tác quân nhân.
+ * @param req - Request chứa body/query/params của thao tác
+ * @param res - Response của thao tác
+ * @param responseData - Dữ liệu service trả về (bản ghi sau xử lý)
+ * @returns Chuỗi mô tả tiếng Việt để ghi system log
+ */
 const personnel: Record<
   string,
   (req: Request, res: Response, responseData: unknown) => string | Promise<string>
@@ -25,8 +38,8 @@ const personnel: Record<
     const parsedData = parseResponseData(responseData);
     const result = asRecord(parsedData?.data) || parsedData;
 
-    // New personnel are created with a login username only (plus unit + position); the
-    // real profile (name, CCCD, ...) is filled in later via update — so log the username.
+    // Quân nhân mới chỉ tạo với tên đăng nhập (kèm đơn vị + chức vụ); hồ sơ thật
+    // (họ tên, CCCD, ...) điền sau qua update nên log theo tên đăng nhập.
     const username = (asRecord(result?.TaiKhoan)?.username as string) || FALLBACK.UNKNOWN;
 
     let tenChucVu = '';
@@ -67,6 +80,7 @@ const personnel: Record<
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       const personnelData = data?.data || data;
       const hoTen = personnelData?.ho_ten || req.body?.ho_ten || FALLBACK.NO_NAME;
+      // changes = danh sách field hồ sơ đã đổi (service tính sẵn) để ghi rõ trước/sau.
       const changes = (personnelData?.changes as PersonnelFieldChange[] | undefined) || [];
       const changeDetail = changes.length > 0 ? ` - Đổi: ${formatPersonnelChanges(changes)}` : '';
 
@@ -88,6 +102,7 @@ const personnel: Record<
     let hoTen = '';
 
     try {
+      // Lấy tên từ bản ghi service trả về (đã xóa) — không query lại DB sau khi xóa.
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       hoTen = data?.data?.ho_ten || '';
     } catch {}
@@ -105,6 +120,7 @@ const personnel: Record<
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       const result = data?.data || data;
+      // Thử nhiều tên field vì service import có thể trả khác key cho số liệu.
       successCount = result?.success || result?.successCount || result?.total || 0;
       failCount = result?.failed || result?.failCount || 0;
 
@@ -153,6 +169,13 @@ const personnel: Record<
   },
 };
 
+/**
+ * Map action → builder mô tả audit-log cho lịch sử chức vụ của quân nhân.
+ * @param req - Request chứa body/query/params của thao tác
+ * @param res - Response của thao tác
+ * @param responseData - Dữ liệu service trả về (bản ghi sau xử lý)
+ * @returns Chuỗi mô tả tiếng Việt để ghi system log
+ */
 const positionHistory: Record<
   string,
   (req: Request, res: Response, responseData: unknown) => Promise<string>
@@ -173,6 +196,7 @@ const positionHistory: Record<
     let ngayBatDau = (history?.ngay_bat_dau as string) || req.body?.ngay_bat_dau || '';
     let ngayKetThuc = (history?.ngay_ket_thuc as string) || req.body?.ngay_ket_thuc || '';
 
+    // Khi response thiếu tên quân nhân/chức vụ thì truy DB bổ sung để log đầy đủ.
     if ((!hoTen && personnelId) || (!tenChucVu && chucVuId)) {
       await withPrisma(async prisma => {
         if (!hoTen && personnelId) {
@@ -219,6 +243,7 @@ const positionHistory: Record<
     let tenChucVu = (chucVuU?.ten_chuc_vu as string) || '';
     let tenDonVi = getUnitNameFromChucVu(chucVuU);
     let ngayBatDau = (history?.ngay_bat_dau as string) || req.body?.ngay_bat_dau || '';
+    // Phân biệt "không gửi" với "set null" nên kiểm tra undefined thay vì falsy.
     let ngayKetThuc =
       history?.ngay_ket_thuc !== undefined
         ? history.ngay_ket_thuc
@@ -226,6 +251,7 @@ const positionHistory: Record<
           ? req.body.ngay_ket_thuc
           : undefined;
 
+    // Thiếu tên/chức vụ thì tra lại bản ghi gốc theo historyId để bổ sung vào log.
     if ((!hoTen || !tenChucVu) && historyId) {
       await withPrisma(async prisma => {
         const historyRecord = await positionHistoryRepository.findUniqueRaw(
@@ -277,6 +303,7 @@ const positionHistory: Record<
     return description;
   },
   DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
+    // Đọc bản ghi service trả về (đã xóa) — không query lại DB sau khi xóa.
     const parsedData = parseResponseData(responseData);
     const result = asRecord(parsedData?.data) || parsedData;
 
@@ -307,6 +334,13 @@ const positionHistory: Record<
   },
 };
 
+/**
+ * Map action → builder mô tả audit-log cho thành tích khoa học của quân nhân.
+ * @param req - Request chứa body/query/params của thao tác
+ * @param res - Response của thao tác
+ * @param responseData - Dữ liệu service trả về (bản ghi sau xử lý)
+ * @returns Chuỗi mô tả tiếng Việt để ghi system log
+ */
 const scientificAchievements: Record<
   string,
   (req: Request, res: Response, responseData: unknown) => Promise<string>
@@ -316,6 +350,7 @@ const scientificAchievements: Record<
     let loai = '';
     let moTa = '';
 
+    // Đọc bản ghi service trả về (đã xóa) — không query lại DB sau khi xóa.
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       const achievement = data?.data || data;

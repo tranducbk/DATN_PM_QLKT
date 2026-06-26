@@ -25,6 +25,25 @@ import {
   UNIT_ANNUAL_TEMPLATE_COLUMNS,
 } from '../../constants/awardExcel.constants';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  UNIT ANNUAL AWARD — EXCEL EXPORT (khen thưởng ĐƠN VỊ hằng năm)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Giống personal (annualReward/excel.ts) ở khung 2 path template/data, NHƯNG có
+ *  2 khác biệt đáng chú ý:
+ *
+ *   ① exportTemplate TỰ DỰNG template inline (set fill/dropdown/border tay) thay
+ *      vì gọi buildTemplate() như personal. Đây là pattern cũ trùng lặp — nếu
+ *      refactor sau này nên gộp về buildTemplate cho nhất quán. Hiện giữ nguyên
+ *      vì cột đơn vị (ma_don_vi/ten_don_vi) khác personnel.
+ *
+ *   ② exportToExcel + getStatistics có ROLE-SCOPING: MANAGER chỉ được xuất/thống
+ *      kê đơn vị MÌNH quản lý; ADMIN thấy tất cả. Đây là chốt bảo mật dữ liệu —
+ *      KHÔNG để manager xuất chéo đơn vị khác.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 export async function exportTemplate(
   unitIds: string[] = [],
   repeatMap: Record<string, number> = {}
@@ -32,9 +51,9 @@ export async function exportTemplate(
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.ANNUAL_UNIT);
 
-  const columns = [...UNIT_ANNUAL_TEMPLATE_COLUMNS];
+  const columns = [...UNIT_ANNUAL_TEMPLATE_COLUMNS]; // copy config cột (không mutate hằng số)
 
-  worksheet.columns = columns;
+  worksheet.columns = columns; // khai báo header + key + width cho sheet
 
   styleHeaderRow(worksheet);
   const headerRowObj = worksheet.getRow(1);
@@ -45,21 +64,27 @@ export async function exportTemplate(
     fgColor: { argb: EXCEL_HIGHLIGHT_FILL_COLOR },
   };
   for (let col = 1; col <= 4; col++) {
-    headerRowObj.getCell(col).fill = readonlyFill;
+    headerRowObj.getCell(col).fill = readonlyFill; // 4 cột đầu (STT/ID/mã/tên đơn vị) là cột khoá → tô màu
   }
 
+  // Dropdown danh hiệu đơn vị (DVQT/...) — formula cố định lấy từ hằng số.
   const danhHieuValidation = {
     type: 'list' as const,
     allowBlank: true,
     formulae: [UNIT_ANNUAL_DANH_HIEU_VALIDATION_FORMULA],
   };
 
+  // Lấy các số QĐ đơn vị hằng năm đã có → gợi ý cho dropdown cột số quyết định.
   const existingDecisions = await decisionFileRepository.findManyRaw({
     where: { loai_khen_thuong: PROPOSAL_TYPES.DON_VI_HANG_NAM },
     select: { so_quyet_dinh: true },
     orderBy: { nam: 'desc' },
   });
-  const decisionList = existingDecisions.map(d => d.so_quyet_dinh).filter(Boolean);
+  const decisionList = existingDecisions.map(d => d.so_quyet_dinh).filter(Boolean); // bỏ giá trị rỗng
+  // Dropdown số QĐ: chọn inline vs sheet ẩn theo độ dài list (giống logic
+  // createDecisionValidation bên helper, ở đây viết tay vì path tự dựng template).
+  // List ngắn → nhúng "a,b,c"; list dài vượt giới hạn ký tự Excel → đổ sang sheet
+  // ẩn _QuyetDinh rồi trỏ range.
   let soQdValidation = null;
   if (decisionList.length > 0) {
     const formulaStr = decisionList.join(',');
@@ -83,6 +108,8 @@ export async function exportTemplate(
   }
 
   if (unitIds && unitIds.length > 0) {
+    // Đơn vị nằm ở 2 bảng khác nhau (CQDV cấp trên, DVTT cấp dưới) → query cả 2
+    // theo id rồi gộp vào 1 Map để tra cứu thống nhất. unitType đánh dấu nguồn.
     const coQuanDonVis = await coQuanDonViRepository.findManyRaw({
       where: { id: { in: unitIds } },
     });
@@ -90,16 +117,16 @@ export async function exportTemplate(
       where: { id: { in: unitIds } },
     });
 
-    const unitMap = new Map();
+    const unitMap = new Map(); // id → đơn vị (gộp cả 2 loại để tra cứu 1 lần)
     coQuanDonVis.forEach(u => unitMap.set(u.id, { ...u, unitType: 'cqDv' }));
     donViTrucThuocs.forEach(u => unitMap.set(u.id, { ...u, unitType: 'dvtt' }));
 
     let stt = 1;
-    for (const uid of unitIds) {
+    for (const uid of unitIds) { // giữ đúng thứ tự đơn vị người dùng đã chọn
       const unit = unitMap.get(uid);
-      if (!unit) continue;
+      if (!unit) continue; // id không tra được đơn vị → bỏ qua
 
-      const rowCount = repeatMap[uid] || 1;
+      const rowCount = repeatMap[uid] || 1; // số dòng cần prefill cho đơn vị này
       for (let r = 0; r < rowCount; r++) {
         const dataRow = worksheet.addRow(
           sanitizeRowData({
@@ -115,13 +142,14 @@ export async function exportTemplate(
         );
 
         for (let col = 1; col <= 4; col++) {
-          dataRow.getCell(col).fill = readonlyFill;
+          dataRow.getCell(col).fill = readonlyFill; // tô khoá 4 cột đầu của dòng dữ liệu
         }
 
         stt++;
       }
     }
   } else {
+    // Không chọn đơn vị nào → ghi 1 dòng mẫu minh hoạ cách điền.
     worksheet.addRow(
       sanitizeRowData({
         stt: 1,
@@ -136,23 +164,23 @@ export async function exportTemplate(
     );
   }
 
-  const totalPrefillRows = unitIds.reduce((sum, uid) => sum + (repeatMap[uid] || 1), 0);
-  const maxRows = Math.max(totalPrefillRows + 1, MIN_TEMPLATE_ROWS);
+  const totalPrefillRows = unitIds.reduce((sum, uid) => sum + (repeatMap[uid] || 1), 0); // tổng dòng đã prefill
+  const maxRows = Math.max(totalPrefillRows + 1, MIN_TEMPLATE_ROWS); // vùng style: ít nhất MIN dòng để gõ tay
   for (let r = 2; r <= maxRows; r++) {
-    worksheet.getCell(`F${r}`).dataValidation = danhHieuValidation;
+    worksheet.getCell(`F${r}`).dataValidation = danhHieuValidation; // cột F = dropdown danh hiệu
     if (soQdValidation) {
-      worksheet.getCell(`G${r}`).dataValidation = soQdValidation;
+      worksheet.getCell(`G${r}`).dataValidation = soQdValidation; // cột G = dropdown số quyết định
     }
   }
 
-  const editableColumns = ['F', 'G'];
+  const editableColumns = ['F', 'G']; // 2 cột admin cần điền
   editableColumns.forEach(col => {
     worksheet.addConditionalFormatting({
-      ref: `${col}2:${col}${maxRows}`,
+      ref: `${col}2:${col}${maxRows}`, // áp cho cả cột, từ dòng 2 đến maxRows
       rules: [
         {
           type: 'expression',
-          formulae: [`LEN(TRIM(${col}2))>0`],
+          formulae: [`LEN(TRIM(${col}2))>0`], // ô có nội dung → tô nhạt báo đã điền
           style: {
             fill: {
               type: 'pattern',
@@ -179,9 +207,12 @@ export async function exportToExcel(
   const { nam, danh_hieu } = filters;
 
   const where: Record<string, any> = {};
-  if (nam) where.nam = nam;
-  if (danh_hieu) where.danh_hieu = danh_hieu;
+  if (nam) where.nam = nam; // lọc theo năm nếu client gửi
+  if (danh_hieu) where.danh_hieu = danh_hieu; // lọc theo danh hiệu nếu client gửi
 
+  // ROLE-SCOPING: MANAGER bị ép thêm điều kiện đơn vị của chính mình → dù FE gửi
+  // filter gì cũng KHÔNG xuất được đơn vị khác. ADMIN bỏ qua block này (thấy hết).
+  // Tra đơn vị của manager qua findUnitScope; ưu tiên CQDV (cấp cao hơn) trước DVTT.
   if (userRole === ROLES.MANAGER && userQuanNhanId) {
     const user = await quanNhanRepository.findUnitScope(userQuanNhanId);
 
@@ -192,13 +223,14 @@ export async function exportToExcel(
     }
   }
 
+  // Lấy danh hiệu kèm thông tin 2 loại đơn vị; giới hạn số dòng để file không quá lớn.
   const awards = (await danhHieuDonViHangNamRepository.findMany({
     where,
     include: {
       CoQuanDonVi: true,
       DonViTrucThuoc: true,
     },
-    orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }],
+    orderBy: [{ nam: 'desc' }, { createdAt: 'desc' }], // năm mới nhất lên đầu
     take: EXPORT_FETCH_LIMIT,
   })) as Prisma.DanhHieuDonViHangNamGetPayload<{
     include: { CoQuanDonVi: true; DonViTrucThuoc: true };
@@ -207,21 +239,21 @@ export async function exportToExcel(
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet(AWARD_EXCEL_SHEETS.ANNUAL_UNIT);
 
-  worksheet.columns = [...UNIT_ANNUAL_EXPORT_COLUMNS];
+  worksheet.columns = [...UNIT_ANNUAL_EXPORT_COLUMNS]; // cột cho file xuất (khác cột template)
 
   styleHeaderRow(worksheet);
 
   awards.forEach((award, index) => {
-    const donVi = award.CoQuanDonVi || award.DonViTrucThuoc;
+    const donVi = award.CoQuanDonVi || award.DonViTrucThuoc; // đơn vị nhận: ưu tiên CQDV, không có thì DVTT
     worksheet.addRow(
       sanitizeRowData({
         stt: index + 1,
         ma_don_vi: donVi?.ma_don_vi || '',
         ten_don_vi: donVi?.ten_don_vi || '',
         nam: award.nam,
-        danh_hieu: getDanhHieuName(award.danh_hieu),
+        danh_hieu: getDanhHieuName(award.danh_hieu), // mã danh hiệu → tên đầy đủ tiếng Việt
         so_quyet_dinh: award.so_quyet_dinh || '',
-        nhan_bkbqp: award.nhan_bkbqp ? 'Có' : '',
+        nhan_bkbqp: award.nhan_bkbqp ? 'Có' : '', // cờ boolean → "Có"/"" cho dễ đọc
         so_quyet_dinh_bkbqp: award.so_quyet_dinh_bkbqp || '',
         nhan_bkttcp: award.nhan_bkttcp ? 'Có' : '',
         so_quyet_dinh_bkttcp: award.so_quyet_dinh_bkttcp || '',
@@ -241,8 +273,9 @@ export async function getStatistics(
   const { nam } = filters;
 
   const where: Record<string, any> = {};
-  if (nam) where.nam = nam;
+  if (nam) where.nam = nam; // lọc theo năm nếu client gửi
 
+  // ROLE-SCOPING (giống exportToExcel): MANAGER chỉ thống kê đơn vị mình; ADMIN toàn bộ.
   if (userRole === ROLES.MANAGER && userQuanNhanId) {
     const user = await quanNhanRepository.findUnitScope(userQuanNhanId);
 
@@ -257,6 +290,9 @@ export async function getStatistics(
     where,
   });
 
+  // Đếm theo danh hiệu bằng reduce: gặp key lần đầu → khởi tạo {danh_hieu, count:0},
+  // sau đó count++. Vd [DVQT, DVQT, DVTT] → { DVQT:{count:2}, DVTT:{count:1} }.
+  // Gom trong app (không GROUP BY ở DB) vì số bản ghi nhỏ + cần cả 2 chiều thống kê.
   const byDanhHieu = awards.reduce((acc, award) => {
     const key = award.danh_hieu;
     if (!acc[key]) {
@@ -266,6 +302,7 @@ export async function getStatistics(
     return acc;
   }, {});
 
+  // Đếm tương tự nhưng nhóm theo NĂM.
   const byNam = awards.reduce((acc, award) => {
     const key = award.nam;
     if (!acc[key]) {
@@ -277,9 +314,9 @@ export async function getStatistics(
 
   return {
     total: awards.length,
-    byDanhHieu: Object.values(byDanhHieu),
+    byDanhHieu: Object.values(byDanhHieu), // map → mảng kết quả
     byNam: Object.values(byNam).sort(
-      (a, b) => (b as { nam: number }).nam - (a as { nam: number }).nam
+      (a, b) => (b as { nam: number }).nam - (a as { nam: number }).nam // sắp năm giảm dần
     ),
   };
 }

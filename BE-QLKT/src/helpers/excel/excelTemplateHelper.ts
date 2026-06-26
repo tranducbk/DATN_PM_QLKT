@@ -6,6 +6,31 @@ import {
 } from '../../constants/excel.constants';
 import { sanitizeRowData } from './excelHelper';
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  EXCEL TEMPLATE HELPER — dựng file .xlsx mẫu cho admin tải về rồi điền
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Mục tiêu: file mẫu PHẢI khó nhập sai. Nên template không chỉ có header —
+ *  mà còn prefill sẵn quân nhân + dropdown ràng buộc + tô màu phân vùng:
+ *
+ *   • DROPDOWN (data validation): cấp bậc / danh hiệu / số quyết định cho chọn
+ *     từ list — chặn gõ tay sai chính tả ngay tại Excel, trước khi upload.
+ *     Excel giới hạn độ dài list inline → list dài đẩy sang SHEET ẨN
+ *     (_CapBac, _QuyetDinh) rồi tham chiếu range (xem createDecisionValidation).
+ *
+ *   • PHÂN VÙNG MÀU: cột khoá (ID, tên, đơn vị) tô vàng + readonly-ngầm để admin
+ *     biết "đừng sửa"; cột cần điền để trắng; cột lỗi tô đỏ khi export-lại-có-lỗi.
+ *
+ *   • buildTemplate() là cửa CHÍNH: nhận TemplateConfig (cột + data + style) →
+ *     ráp workbook hoàn chỉnh. Helper KHÔNG query DB — caller (service) phải
+ *     fetch personnelList + decisionNumbers rồi truyền vào (đúng rule AP-3).
+ *
+ *  Mọi hàm style (styleHeaderRow, applyReadonlyFill, ...) đều MUTATE worksheet
+ *  tại chỗ và trả void — gọi tuần tự trong buildTemplate.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 export interface TemplateColumn {
   header: string;
   key: string;
@@ -55,12 +80,16 @@ interface DecisionValidationResult {
  * @returns Formula range string for data validation
  */
 function createCapBacHiddenSheet(workbook: ExcelJS.Workbook): string {
-  const items = CAP_BAC_OPTIONS_STRING.split(',');
+  // Ghi 17 cấp bậc xuống cột A của 1 sheet 'veryHidden' (ẩn cứng, user không
+  // unhide được từ menu Excel) rồi trả về địa chỉ range để dropdown tham chiếu.
+  // Dùng sheet ẩn thay vì nhúng list inline vì danh sách dài + tái dùng cho mọi
+  // dòng — nhúng inline 17 mục × N dòng sẽ phồng file vô ích.
+  const items = CAP_BAC_OPTIONS_STRING.split(','); // chuỗi "Thiếu uý,Trung uý,..." → mảng cấp bậc
   const sheet = workbook.addWorksheet('_CapBac', { state: 'veryHidden' });
   items.forEach((cb, idx) => {
-    sheet.getCell(`A${idx + 1}`).value = cb;
+    sheet.getCell(`A${idx + 1}`).value = cb; // mỗi cấp bậc 1 dòng ở cột A (A1, A2, ...)
   });
-  return `_CapBac!$A$1:$A$${items.length}`;
+  return `_CapBac!$A$1:$A$${items.length}`; // địa chỉ range tuyệt đối để dropdown tham chiếu
 }
 
 /**
@@ -78,6 +107,9 @@ function createDecisionValidation(
 
   const decisionListStr = decisionList.join(',');
 
+  // 2 cách khai báo dropdown, chọn theo ĐỘ DÀI list:
+  // (1) Inline `"a,b,c"`: gọn, không tạo sheet phụ — nhưng Excel giới hạn ~255
+  //     ký tự cho formula inline; vượt là file lỗi/mất validation.
   if (decisionListStr.length <= EXCEL_INLINE_VALIDATION_MAX_LENGTH) {
     return {
       type: 'list',
@@ -86,9 +118,11 @@ function createDecisionValidation(
     };
   }
 
+  // (2) List dài → đổ xuống sheet ẩn _QuyetDinh rồi trỏ range. Không vướng giới
+  //     hạn ký tự vì formula chỉ là 1 tham chiếu ô, không phải chuỗi dữ liệu.
   const refSheet = workbook.addWorksheet('_QuyetDinh', { state: 'veryHidden' });
   decisionList.forEach((sqd, idx) => {
-    refSheet.getCell(`A${idx + 1}`).value = sqd;
+    refSheet.getCell(`A${idx + 1}`).value = sqd; // đổ từng số QĐ xuống cột A của sheet ẩn
   });
 
   return {
@@ -113,6 +147,9 @@ const YELLOW_FILL: ExcelJS.FillPattern = {
 };
 
 /** Column keys that read better centered (index, dates, short codes); all others align left, never right. */
+// Quy ước căn chỉnh dựa trên KEY của cột, không dựa kiểu dữ liệu. Cột nội dung
+// ngắn/cố định (STT, ngày, năm, mã, số QĐ) căn giữa cho gọn; cột văn bản dài
+// (họ tên, chức vụ, ghi chú, mô tả) căn trái cho dễ đọc. Cố ý KHÔNG dùng phải.
 const CENTER_ALIGNED_KEYS = new Set([
   'stt',
   'ngay_sinh',
@@ -150,10 +187,10 @@ export function applyThinBordersToGrid(
   maxRows: number,
   columnCount: number
 ): void {
-  for (let rowNum = 1; rowNum <= maxRows; rowNum++) {
+  for (let rowNum = 1; rowNum <= maxRows; rowNum++) { // gồm cả dòng header (dòng 1)
     const row = worksheet.getRow(rowNum);
     for (let col = 1; col <= columnCount; col++) {
-      row.getCell(col).border = THIN_BORDER_ALL_SIDES;
+      row.getCell(col).border = THIN_BORDER_ALL_SIDES; // kẻ viền mảnh 4 cạnh cho từng ô
     }
   }
 }
@@ -184,14 +221,16 @@ export async function buildAwardExportBuffer<T>(
   columns: Partial<ExcelJS.Column>[],
   mapRow: (item: T, index: number) => Record<string, unknown>
 ): Promise<ExcelJS.Buffer> {
+  // Khung export chung: tạo workbook → khai báo cột → ghi từng record thành dòng
+  // → trả buffer .xlsx. Mỗi loại khen thưởng chỉ cần truyền cột + hàm mapRow riêng.
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet(sheetName);
-  worksheet.columns = [...columns];
+  worksheet.columns = [...columns]; // header + width cho sheet
   styleHeaderRow(worksheet);
   data.forEach((item, index) => {
-    worksheet.addRow(sanitizeRowData(mapRow(item, index)));
+    worksheet.addRow(sanitizeRowData(mapRow(item, index))); // record → ô; sanitize chống formula-injection
   });
-  return await workbook.xlsx.writeBuffer();
+  return await workbook.xlsx.writeBuffer(); // serialize workbook thành buffer để trả client tải về
 }
 
 /**
@@ -206,10 +245,10 @@ function applyReadonlyFill(
   columns: number[],
   maxRows: number
 ): void {
-  for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
+  for (let rowNum = 2; rowNum <= maxRows; rowNum++) { // từ dòng 2 — chừa header
     const row = worksheet.getRow(rowNum);
     columns.forEach(colIdx => {
-      row.getCell(colIdx).fill = YELLOW_FILL;
+      row.getCell(colIdx).fill = YELLOW_FILL; // tô vàng ô cột khoá (báo "đừng sửa")
     });
   }
 }
@@ -228,10 +267,10 @@ function applyColumnFill(
   maxRows: number,
   fill: ExcelJS.FillPattern
 ): void {
-  for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
+  for (let rowNum = 2; rowNum <= maxRows; rowNum++) { // từ dòng 2 — chừa header
     const row = worksheet.getRow(rowNum);
     columns.forEach(colIdx => {
-      row.getCell(colIdx).fill = fill;
+      row.getCell(colIdx).fill = fill; // tô màu tuỳ ý (vd đỏ cho cột báo lỗi)
     });
   }
 }
@@ -250,11 +289,11 @@ function applyConditionalFormatting(
 ): void {
   editableColumns.forEach(col => {
     worksheet.addConditionalFormatting({
-      ref: `${col}2:${col}${maxRows}`,
+      ref: `${col}2:${col}${maxRows}`, // áp cho cả cột, từ dòng 2 đến maxRows
       rules: [
         {
           type: 'expression',
-          formulae: [`LEN(TRIM(${col}2))>0`],
+          formulae: [`LEN(TRIM(${col}2))>0`], // ô có nội dung (bỏ space) → kích hoạt tô màu
           style: {
             fill: { type: 'pattern', pattern: 'solid', fgColor: { argb: YELLOW_ARGB } },
           },
@@ -281,12 +320,17 @@ function applyAlignment(
   const headerRow = worksheet.getRow(1);
   columns.forEach((col, idx) => {
     const colNumber = idx + 1;
+    // ExcelJS không có "căn chỉnh cả cột" — phải set thuộc tính .alignment cho
+    // TỪNG ô. Header (dòng 1) luôn căn giữa + wrapText (tên cột dài xuống dòng
+    // trong ô thay vì tràn). Dòng data lấy horizontal theo CENTER_ALIGNED_KEYS.
     const horizontal = CENTER_ALIGNED_KEYS.has(col.key) ? 'center' : 'left';
     headerRow.getCell(colNumber).alignment = {
       horizontal: 'center',
       vertical: 'middle',
       wrapText: true,
     };
+    // Lặp dọc theo cột (row 2..maxRows) gán cùng kiểu căn — vertical 'middle' để
+    // chữ nằm giữa ô khi dòng cao do wrapText ở cột khác.
     for (let rowNum = 2; rowNum <= maxRows; rowNum++) {
       worksheet.getRow(rowNum).getCell(colNumber).alignment = { horizontal, vertical: 'middle' };
     }
@@ -318,6 +362,7 @@ function prefillPersonnelRows(
     repeatMap?: Record<string, number>;
   }
 ): number {
+  // Vị trí cột mặc định (1-based) cho từng field; caller override được qua startCol.
   const mapping: PersonnelColumnMapping = {
     stt: 1,
     id: 2,
@@ -330,27 +375,35 @@ function prefillPersonnelRows(
     ...options?.startCol,
   };
 
+  // repeatMap[id] = số dòng dành cho 1 quân nhân. Vd khen thưởng nhiều năm cần
+  // 3 dòng cho cùng 1 người → prefill lặp 3 dòng giống nhau để admin chỉ điền
+  // phần năm/danh hiệu khác nhau. Không có trong map → mặc định 1 dòng.
   const repeatMap = options?.repeatMap ?? {};
   let stt = 0;
 
+  // Date → chuỗi "dd/mm/yyyy" để hiển thị; rỗng hoặc không hợp lệ → "" (ô để trống).
   const formatDate = (date: Date | string | null | undefined): string => {
     if (!date) return '';
-    const d = typeof date === 'string' ? new Date(date) : date;
-    if (isNaN(d.getTime())) return '';
+    const d = typeof date === 'string' ? new Date(date) : date; // chấp nhận cả Date lẫn chuỗi ISO
+    if (isNaN(d.getTime())) return ''; // chuỗi ngày không parse được
     return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
   };
 
   personnelList.forEach(person => {
-    const rowCount = repeatMap[person.id] || 1;
+    const rowCount = repeatMap[person.id] || 1; // số dòng cần prefill cho người này
     for (let r = 0; r < rowCount; r++) {
-      stt++;
+      stt++; // STT chạy liên tục qua mọi dòng của mọi người
       const rowValues: Record<string, any> = {};
       const cols = worksheet.columns as ExcelJS.Column[];
 
+      // addRow nhận object keyed theo `key` của cột (không theo index). Hàm set
+      // dịch "ghi vào cột số N" → "ghi vào rowValues[<key của cột N>]", nhờ vậy
+      // mapping cột (stt/id/hoTen...) đổi được mà không sửa từng dòng gán.
       const set = (colIdx: number, value: string | number) => {
         if (cols[colIdx - 1]) rowValues[cols[colIdx - 1].key as string] = value;
       };
 
+      // Điền sẵn các cột định danh (cột khoá); cột năm/danh hiệu để trống cho admin nhập.
       set(mapping.stt, stt);
       set(mapping.id, person.id);
       set(mapping.hoTen, person.ho_ten ?? '');
@@ -360,7 +413,7 @@ function prefillPersonnelRows(
       set(mapping.capBac, person.cap_bac ?? '');
       set(mapping.chucVu, person.ChucVu ? person.ChucVu.ten_chuc_vu : '');
 
-      worksheet.addRow(rowValues);
+      worksheet.addRow(rowValues); // ghi 1 dòng dữ liệu vào sheet
     }
   });
 
@@ -393,6 +446,8 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet(sheetName);
 
+  // Khai báo cột (header + key + width). Gán `key` ở đây là điều kiện để
+  // prefillPersonnelRows ghi dữ liệu theo tên cột về sau.
   worksheet.columns = columns.map(col => ({
     header: col.header,
     key: col.key,
@@ -401,6 +456,8 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
 
   styleHeaderRow(worksheet);
 
+  // Đổ dữ liệu: ưu tiên customRowFiller (loại đặc thù tự dựng dòng), không thì
+  // prefill quân nhân chuẩn. totalDataRows quyết định vùng cần style bên dưới.
   let totalDataRows = 0;
   if (customRowFiller) {
     totalDataRows = await customRowFiller(worksheet, workbook);
@@ -412,6 +469,8 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
   }
 
   // Prefilled templates stop exactly at the data; only blank templates pad to MIN_TEMPLATE_ROWS for manual entry.
+  // maxRows = mốc dưới của mọi vòng style/validation phía dưới. Có prefill thì
+  // dừng đúng data (+1 cho header); template trống thì kéo 50 dòng để gõ tay.
   const maxRows = totalDataRows > 0 ? totalDataRows + 1 : MIN_TEMPLATE_ROWS;
 
   if (readonlyColumns.length > 0) {
@@ -422,6 +481,9 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
     applyColumnFill(worksheet, redColumns, maxRows, RED_FILL);
   }
 
+  // Gắn dropdown phải set dataValidation cho TỪNG ô (ExcelJS không có API "cả
+  // cột"), nên các block dưới đều theo khuôn: tìm index cột theo key → nếu tồn
+  // tại thì loop row 2..maxRows gán validation. findIndex + 1 vì cột Excel 1-based.
   if (includeCapBac) {
     const capBacFormula = createCapBacHiddenSheet(workbook);
     const capBacColIndex = columns.findIndex(c => c.key === 'cap_bac') + 1;
@@ -436,6 +498,7 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
     }
   }
 
+  // Dropdown danh hiệu (chỉ khi loại này truyền sẵn danh sách danh hiệu).
   if (danhHieuOptions) {
     const danhHieuColIndex = columns.findIndex(c => c.key === 'danh_hieu') + 1;
     if (danhHieuColIndex > 0) {
@@ -449,6 +512,7 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
     }
   }
 
+  // Dropdown tuỳ biến: cột nào tự khai validationFormulae thì gắn theo cột đó.
   columns.forEach((col, idx) => {
     if (col.validationFormulae) {
       const colNumber = idx + 1;
@@ -462,6 +526,7 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
     }
   });
 
+  // Dropdown số quyết định (gợi ý từ các QĐ đã có trong hệ thống).
   if (includeDecision && decisionNumbers.length > 0) {
     const decisionValidation = createDecisionValidation(workbook, decisionNumbers);
     if (decisionValidation) {
@@ -474,6 +539,7 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
     }
   }
 
+  // Tô nhạt các cột cần điền khi admin đã nhập — báo hiệu trực quan vùng nhập liệu.
   if (editableColumnLetters.length > 0) {
     applyConditionalFormatting(worksheet, editableColumnLetters, maxRows);
   }
@@ -481,7 +547,9 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
   applyThinBordersToGrid(worksheet, maxRows, columns.length);
   applyAlignment(worksheet, columns, maxRows);
 
-  // Lock the header row so column names cannot be renamed; data cells stay editable.
+  // Khoá riêng dòng header (locked) còn ô data để mở (unlocked): admin không
+  // sửa/đổi tên cột được nên parseHeaderMap lúc import luôn khớp, nhưng vẫn điền
+  // dữ liệu thoải mái. ExcelJS chỉ thực thi locked khi sheet được .protect().
   const colCount = columns.length;
   for (let c = 1; c <= colCount; c++) {
     worksheet.getRow(1).getCell(c).protection = { locked: true };
@@ -491,6 +559,8 @@ export async function buildTemplate(config: TemplateConfig): Promise<ExcelJS.Wor
       worksheet.getRow(r).getCell(c).protection = { locked: false };
     }
   }
+  // Mật khẩu rỗng (chỉ chống sửa nhầm, không phải bảo mật) + vẫn cho chọn ô và
+  // chèn/xoá dòng để admin thêm bớt bản ghi; formatCells: false để khỏi đổi style.
   await worksheet.protect('', {
     selectLockedCells: true,
     selectUnlockedCells: true,

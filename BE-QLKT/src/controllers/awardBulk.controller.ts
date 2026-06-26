@@ -14,6 +14,10 @@ interface BulkAwardBody {
   ghi_chu?: string;
 }
 
+/**
+ * Xử lý chung cho thêm khen thưởng hàng loạt; cờ bypassEligibility
+ * cho phép bỏ qua kiểm tra điều kiện (dùng cho luồng ngoại lệ).
+ */
 const dispatchBulk = async (
   req: Request,
   res: Response,
@@ -23,6 +27,7 @@ const dispatchBulk = async (
   const body = req.body as BulkAwardBody;
   const { type, nam, thang, selected_personnel, selected_units, title_data, ghi_chu } = body;
 
+  // Danh hiệu đơn vị chọn đơn vị, còn lại chọn quân nhân
   if (type === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
     if (
       !selected_units ||
@@ -45,6 +50,7 @@ const dispatchBulk = async (
     return ResponseHelper.badRequest(res, 'Vui lòng nhập đầy đủ thông tin danh hiệu');
   }
 
+  // File đính kèm gửi qua multipart, lấy theo field attached_files
   const files = req.files as Record<string, Express.Multer.File[]> | undefined;
   const attachedFiles = files?.attached_files || [];
 
@@ -61,6 +67,7 @@ const dispatchBulk = async (
     bypassEligibility,
   });
 
+  // Lỗi toàn bộ (không bản ghi nào lưu được) thì trả lỗi kèm chi tiết
   if (result.data.errorCount > 0 && result.data.importedCount === 0) {
     return ResponseHelper.error(res, {
       message: result.message,
@@ -73,10 +80,12 @@ const dispatchBulk = async (
 };
 
 class AwardBulkController {
+  /** Thêm khen thưởng hàng loạt, có kiểm tra điều kiện. */
   bulkCreateAwards = catchAsync(async (req: Request, res: Response) => {
     return dispatchBulk(req, res, false);
   });
 
+  /** Thêm khen thưởng hàng loạt, bỏ qua kiểm tra điều kiện. */
   bulkCreateAwardsBypass = catchAsync(async (req: Request, res: Response) => {
     return dispatchBulk(req, res, true);
   });

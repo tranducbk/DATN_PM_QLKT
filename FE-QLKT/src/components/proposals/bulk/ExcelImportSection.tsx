@@ -41,32 +41,40 @@ export function ExcelImportSection({
   reviewPath = '/admin/awards/bulk/import-review',
   sessionStorageKey = 'importPreviewDataCNHN',
 }: ExcelImportSectionProps) {
-  const allowImport = useDevZoneFeature(awardType);
+  const allowImport = useDevZoneFeature(awardType); // cờ bật/tắt import theo awardType (cấu hình ở DevZone)
   const router = useRouter();
-  const [uploading, setUploading] = useState(false);
-  const [importSuccess, setImportSuccess] = useState(false);
-  const [importedCount, setImportedCount] = useState(0);
-  const [templateModalVisible, setTemplateModalVisible] = useState(false);
-  const [repeatMap, setRepeatMap] = useState<Record<string, number>>({});
+  const [uploading, setUploading] = useState(false); // đang gọi API import → khóa nút + hiện spinner
+  const [importSuccess, setImportSuccess] = useState(false); // import vừa xong có thành công không
+  const [importedCount, setImportedCount] = useState(0); // số bản ghi đã thêm (hiển thị trong Alert)
+  const [templateModalVisible, setTemplateModalVisible] = useState(false); // mở modal cấu hình số dòng file mẫu
+  const [repeatMap, setRepeatMap] = useState<Record<string, number>>({}); // personnel_id → số dòng lặp trong mẫu (mặc định 1)
   const { token } = theme.useToken();
 
+  // handleDownloadTemplate: gom params (đã chọn + repeat_map) → gọi API → tải file Blob về máy.
   const handleDownloadTemplate = async () => {
     setTemplateModalVisible(false);
     try {
+      // Gửi kèm danh sách quân nhân đã chọn để BE prefill sẵn vào file mẫu.
       const params: Record<string, string> = {};
       if (selectedPersonnelIds.length > 0) {
         params.personnel_ids = selectedPersonnelIds.join(',');
       }
+      // repeat_map chỉ gửi khi có người cần >1 dòng (vd nhập nhiều năm) — gửi dạng
+      // JSON string; BE parse lại để biết mỗi quân nhân chiếm bao nhiêu dòng.
       const hasCustomRepeat = Object.values(repeatMap).some(v => v > 1);
       if (hasCustomRepeat) {
         params.repeat_map = JSON.stringify(repeatMap);
       }
       const blob = await downloadTemplate(params);
 
+      // Chặn trường hợp lỗi server trả JSON (không phải file) lọt vào luồng tải.
       if (!(blob instanceof Blob)) {
         throw new Error('Response is not a valid file');
       }
 
+      // Tải file mẫu về máy bằng "thẻ <a> ảo" (cùng cơ chế như ExportModal):
+      // createObjectURL tạo URL tạm trỏ Blob → set thuộc tính download (tên file) →
+      // click ảo để trình duyệt tải → remove thẻ + revokeObjectURL giải phóng RAM.
       const url = window.URL.createObjectURL(new Blob([blob]));
       const link = document.createElement('a');
       link.href = url;
@@ -85,12 +93,17 @@ export function ExcelImportSection({
     }
   };
 
+  // handleUploadExcel: xử lý file admin chọn — rẽ 3 nhánh tùy props truyền vào:
+  //   (1) previewImport → xem trước rồi sang trang review; (2) onLocalProcess → xử lý cục bộ;
+  //   (3) importFile → gửi thẳng lên BE để ghi DB.
   const handleUploadExcel = async (file: File) => {
-    // Reset success state for new upload
+    // Reset trạng thái thành công trước mỗi lần upload mới.
     setImportSuccess(false);
     setImportedCount(0);
 
-    // Preview mode: upload to preview endpoint and navigate to review page
+    // Luồng PREVIEW: upload file → BE trả {valid, errors} → lưu vào sessionStorage
+    // rồi điều hướng sang trang review. Dùng sessionStorage (không phải state/query)
+    // vì dữ liệu preview lớn + cần sống qua lần chuyển route sang trang khác.
     if (previewImport) {
       try {
         setUploading(true);
@@ -100,6 +113,8 @@ export function ExcelImportSection({
         try {
           sessionStorage.setItem(sessionStorageKey, JSON.stringify(data));
         } catch (storageError) {
+          // sessionStorage có hạn mức (~5MB) → file quá nhiều dòng sẽ vượt → báo rõ
+          // cho admin giảm số dòng thay vì để lỗi khó hiểu.
           if (storageError instanceof DOMException && storageError.name === 'QuotaExceededError') {
             message.error('Dữ liệu xem trước quá lớn. Vui lòng giảm số lượng dòng trong file Excel.');
             return false;
@@ -118,6 +133,7 @@ export function ExcelImportSection({
       }
     }
 
+    // Nhánh (2): xử lý cục bộ — onLocalProcess tự gọi API và trả { imported, total, errors }.
     if (localProcessing && onLocalProcess) {
       try {
         setUploading(true);
@@ -125,7 +141,7 @@ export function ExcelImportSection({
 
         message.success(`Đã thêm thành công ${result.imported}/${result.total} ${entityLabel}`);
 
-        // Show at most 5 errors to avoid overwhelming the user
+        // Chỉ hiện tối đa 5 lỗi để tránh làm rối người dùng
         if (result.errors && result.errors.length > 0) {
           const displayErrors = result.errors.slice(0, 5);
           displayErrors.forEach((error: string) => {
@@ -153,6 +169,7 @@ export function ExcelImportSection({
         setUploading(false);
       }
     } else {
+      // Nhánh (3): import thẳng — importFile gọi BE ghi DB ngay, trả { imported, total, errors }.
       try {
         setUploading(true);
         if (!importFile) return false;
@@ -162,7 +179,7 @@ export function ExcelImportSection({
           const result = response.data;
           message.success(`Đã thêm thành công ${result.imported}/${result.total} ${entityLabel}`);
 
-          // Show at most 5 errors to avoid overwhelming the user
+          // Chỉ hiện tối đa 5 lỗi để tránh làm rối người dùng
           if (result.errors && result.errors.length > 0) {
             const displayErrors = result.errors.slice(0, 5);
             displayErrors.forEach((error: string) => {
@@ -210,6 +227,7 @@ export function ExcelImportSection({
       }}
     >
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+        {/* Header: icon + tiêu đề + hướng dẫn (đổi theo đã chọn quân nhân hay chưa) */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
           <CloudUploadOutlined style={{ fontSize: 24, color: token.colorPrimary }} />
           <div style={{ flex: 1 }}>
@@ -226,6 +244,7 @@ export function ExcelImportSection({
         </div>
 
         <Space size="middle">
+          {/* Nút tải file mẫu: reset repeatMap rồi mở modal; disable khi chưa chọn quân nhân */}
           <Button
             icon={<DownloadOutlined />}
             onClick={() => { setRepeatMap({}); setTemplateModalVisible(true); }}
@@ -238,9 +257,12 @@ export function ExcelImportSection({
               : ''}
           </Button>
 
+          {/* Upload: beforeUpload return false để Ant KHÔNG tự POST — ta tự gọi handleUploadExcel */}
           <Upload
             showUploadList={false}
             beforeUpload={file => {
+              // Gác cổng phía FE (mirror multer excelUpload ở BE): chặn sớm file
+              // >10MB / sai định dạng để khỏi gửi lên server vô ích.
               if (file.size > 10 * 1024 * 1024) {
                 message.error('File quá lớn. Tối đa 10MB.');
                 return false;
@@ -255,6 +277,7 @@ export function ExcelImportSection({
                 return false;
               }
 
+              // Tự upload qua handleUploadExcel; return false để Ant không auto-POST.
               handleUploadExcel(file);
               return false;
             }}
@@ -267,6 +290,7 @@ export function ExcelImportSection({
           </Upload>
         </Space>
 
+        {/* Alert báo thành công sau khi import xong */}
         {importSuccess && importedCount > 0 && (
           <Alert
             message={`Đã thêm thành công ${importedCount} ${entityLabel} từ file Excel`}
@@ -278,6 +302,7 @@ export function ExcelImportSection({
     </div>
     <Divider>Hoặc chọn thủ công</Divider>
 
+    {/* Modal nhập số dòng muốn lặp cho mỗi quân nhân trước khi tải file mẫu */}
     <Modal
       title="Tải file mẫu Excel"
       open={templateModalVisible}
@@ -290,6 +315,7 @@ export function ExcelImportSection({
     >
       <Space direction="vertical" size="middle" style={{ width: '100%' }}>
         <Text type="secondary">Nhập số dòng cho mỗi {entityLabel} trong file Excel. Mặc định là 1.</Text>
+        {/* Mỗi dòng: tên quân nhân + ô nhập số dòng lặp (1–20) → cập nhật repeatMap */}
         <List
           size="small"
           bordered

@@ -1,3 +1,34 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  SCIENTIFIC ACHIEVEMENT SERVICE — CRUD + Excel I/O cho NCKH
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  NCKH = Thành tích Nghiên cứu Khoa học hàng năm.
+ *  KHÁC khen thưởng khác: KHÔNG phải huân chương, mà là THÀNH TÍCH ghi
+ *  nhận hàng năm (đề tài, sáng kiến, công bố).
+ *
+ *  UNIQUE TUPLE: (quan_nhan_id, nam, mo_ta)
+ *  - 1 quân nhân nhiều thành tích/năm (vd: 2 đề tài cấp đơn vị).
+ *  - Nhưng 2 thành tích trùng mô tả + năm = trùng → reject.
+ *  - App-layer check + DB không có composite unique (nên thêm).
+ *
+ *  ROLE TRONG CHUỖI DANH HIỆU:
+ *  - NCKH là PREREQUISITE cho BKBQP/CSTDTQ/BKTTCP cá nhân.
+ *  - Eligibility yêu cầu "NCKH mỗi năm trong chuỗi CSTDCS".
+ *  - Recalc annual profile sau khi insert NCKH → cập nhật `nckh_lien_tuc`
+ *    + flag du_dieu_kien_* (xem profile/annual.ts).
+ *
+ *  EXCEL TEMPLATE format:
+ *  - CCCD | Năm | Loại đề tài | Mô tả | Cấp bậc | Chức vụ | Số QĐ
+ *  - `loai` = enum (DE_TAI_CAP_BO, SANG_KIEN_DON_VI, ...).
+ *  - `mo_ta` = free text (search dễ duplicate).
+ *
+ *  IMPORT TRIGGER PROFILE RECALC:
+ *  Sau bulk import, loop trigger safeRecalculateAnnualProfile để cập
+ *  nhật chuỗi danh hiệu của tất cả quân nhân bị ảnh hưởng.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { quanNhanRepository } from '../repositories/quanNhan.repository';
 import { scientificAchievementRepository } from '../repositories/scientificAchievement.repository';
 import ExcelJS from 'exceljs';
@@ -53,12 +84,14 @@ class ScientificAchievementService {
       throw new ValidationError('Personnel ID is required');
     }
 
+    // Xác nhận quân nhân tồn tại trước, tránh trả danh sách rỗng gây hiểu nhầm.
     const personnel = await quanNhanRepository.findIdById(personnelId);
 
     if (!personnel) {
       throw new NotFoundError('Quân nhân');
     }
 
+    // Toàn bộ thành tích NCKH của quân nhân này, năm mới nhất lên đầu.
     const achievements = await scientificAchievementRepository.findManyRaw({
       where: { quan_nhan_id: personnelId },
       orderBy: { nam: 'desc' },
@@ -70,12 +103,15 @@ class ScientificAchievementService {
   async createAchievement(data: CreateAchievementData) {
     const { personnel_id, nam, loai, mo_ta, cap_bac, chuc_vu, so_quyet_dinh, ghi_chu } = data;
 
+    // Quân nhân phải tồn tại mới gắn được thành tích.
     const personnel = await quanNhanRepository.findIdById(personnel_id);
 
     if (!personnel) {
       throw new NotFoundError('Quân nhân');
     }
 
+    // Chuẩn hóa loại nhập tay (đề tài/sáng kiến...) về mã chuẩn; sai → từ chối kèm
+    // danh sách loại hợp lệ.
     const loaiCode = resolveNckhCode(loai);
     if (!loaiCode) {
       throw new ValidationError(
@@ -83,6 +119,7 @@ class ScientificAchievementService {
       );
     }
 
+    // Tạo bản ghi thành tích; field tùy chọn để trống đưa về null cho nhất quán.
     const newAchievement = await scientificAchievementRepository.create({
       quan_nhan_id: personnel_id,
       nam,
@@ -94,6 +131,8 @@ class ScientificAchievementService {
       ghi_chu: ghi_chu || null,
     });
 
+    // NCKH là điều kiện cần của chuỗi BKBQP/CSTDTQ/BKTTCP → recalc lại hồ sơ hằng năm.
+    // Recalc lỗi không được chặn việc tạo thành tích → chỉ log, vẫn trả record.
     try {
       await profileService.recalculateAnnualProfile(personnel_id);
     } catch (e) {
@@ -108,6 +147,8 @@ class ScientificAchievementService {
   }
 
   async deleteAchievement(id: string, adminUsername = 'Admin') {
+    // Đọc kèm QuanNhan (tên + đơn vị) ngay bây giờ để còn dữ liệu dựng thông báo
+    // sau khi record đã bị xóa.
     const achievement = await scientificAchievementRepository.findUniqueRaw({
       where: { id },
       include: {
@@ -131,6 +172,7 @@ class ScientificAchievementService {
 
     await scientificAchievementRepository.delete(id);
 
+    // Xóa NCKH có thể làm đứt điều kiện chuỗi danh hiệu → tính lại hồ sơ; lỗi chỉ log.
     try {
       await profileService.recalculateAnnualProfile(personnelId);
     } catch (error) {
@@ -141,6 +183,7 @@ class ScientificAchievementService {
       });
     }
 
+    // Báo cho quân nhân/đơn vị biết thành tích bị xóa; lỗi gửi thông báo không chặn luồng.
     try {
       await notificationHelper.notifyOnAwardDeleted(
         achievement,
@@ -163,12 +206,16 @@ class ScientificAchievementService {
     };
   }
 
+  // NCKH là THÀNH TÍCH nghiên cứu (không phải khen thưởng) nên filter theo `loai`
+  // (DTKH/SKKH) thay vì `danh_hieu`. Khung export y hệt các loại khác: build where
+  // tăng dần → query → addRow + sanitizeRowData → return Workbook (controller lo HTTP).
   async exportToExcel(filters: ExportFilters = {}) {
     const { nam, loai, don_vi_id } = filters;
 
     const where: Record<string, unknown> = {};
     if (nam) where.nam = nam;
     if (loai) where.loai = loai;
+    // Lọc theo đơn vị: khớp quân nhân thuộc CQDV HOẶC DVTT trùng id (đơn vị cha/con).
     if (don_vi_id) {
       where.QuanNhan = {
         OR: [{ co_quan_don_vi_id: don_vi_id }, { don_vi_truc_thuoc_id: don_vi_id }],
@@ -199,6 +246,8 @@ class ScientificAchievementService {
 
     achievements.forEach((achievement, index) => {
       const quanNhan = achievement.QuanNhan;
+      // Tên đơn vị hiển thị ưu tiên DVTT (đơn vị cụ thể của quân nhân) rồi mới CQDV.
+      // cap_bac/chuc_vu ưu tiên giá trị lưu tại bản ghi thành tích, fallback hồ sơ.
       const donVi = quanNhan?.DonViTrucThuoc?.ten_don_vi ?? quanNhan?.CoQuanDonVi?.ten_don_vi ?? '';
 
       worksheet.addRow(
@@ -221,6 +270,9 @@ class ScientificAchievementService {
     return workbook;
   }
 
+  // Template NCKH dùng chung buildTemplate như personal. Không truyền danhHieuOptions
+  // (NCKH chọn loại qua cột riêng trong NCKH_TEMPLATE_COLUMNS, không phải dropdown
+  // danh hiệu), nhưng vẫn lấy decisionNumbers để gắn dropdown số QĐ.
   async generateTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const { personnelList, decisionNumbers } = await fetchTemplateData({
       personnelIds,
@@ -235,6 +287,12 @@ class ScientificAchievementService {
     });
   }
 
+  /*
+   * NCKH IMPORT 2 bước — preview (validate) + confirm (ghi DB) tách sang
+   * ./scientificAchievement/import. NCKH là THÀNH TÍCH (DTKH/SKKH), 1 quân nhân có
+   * NHIỀU thành tích/năm (khác khen thưởng 1 record/năm) → không chặn trùng theo
+   * (id, năm), chỉ validate loại + mô tả + số QĐ.
+   */
   async previewImport(buffer: Buffer) {
     return runPreviewImport(buffer);
   }
@@ -259,8 +317,10 @@ class ScientificAchievementService {
     const where: Record<string, unknown> = {};
     if (nam) where.nam = parseInt(nam);
     if (loai) where.loai = loai;
+    // quanNhanWhere do controller dựng sẵn theo phạm vi đơn vị người xem (lọc theo quyền).
     if (quanNhanWhere) where.QuanNhan = quanNhanWhere;
 
+    // Lấy đồng thời 1 trang dữ liệu + tổng số bản ghi (phục vụ phân trang).
     const [achievements, total] = await Promise.all([
       scientificAchievementRepository.findManyRaw({
         where,

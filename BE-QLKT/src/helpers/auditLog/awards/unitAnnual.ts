@@ -1,3 +1,5 @@
+// Builder mô tả audit log cho danh hiệu đơn vị hằng năm (BKBQP/BKTTCP đơn vị):
+// tạo câu mô tả người dùng đọc được cho từng hành động CRUD và tính toán lại.
 import { prisma } from '../../../models';
 import { Request, Response } from 'express';
 import { FALLBACK, getUnitNameFromUnitId } from '../constants';
@@ -5,7 +7,7 @@ import { getDanhHieuName, resolveDanhHieuFromRecord } from '../../../constants/d
 
 const UNIT_AWARD_LABEL = 'danh hiệu đơn vị hằng năm';
 
-/** Extract unit name from response data that includes CoQuanDonVi / DonViTrucThuoc */
+/** Lấy tên đơn vị từ response data có chứa CoQuanDonVi / DonViTrucThuoc. */
 const getUnitNameFromResponse = (responseData: unknown): string => {
   try {
     const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
@@ -14,11 +16,15 @@ const getUnitNameFromResponse = (responseData: unknown): string => {
     if (record?.DonViTrucThuoc?.ten_don_vi) return record.DonViTrucThuoc.ten_don_vi;
   } catch (error) {
     console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-    // best-effort — audit description must not throw
+    // Tốt nhất có thể — mô tả audit không được phép throw
   }
   return '';
 };
 
+/**
+ * Map hành động (CREATE/UPDATE/DELETE/RECALCULATE) sang hàm dựng câu mô tả audit.
+ * Mỗi hàm nhận req/res/responseData và trả về chuỗi mô tả tiếng Việt.
+ */
 export const unitAnnualAwards: Record<
   string,
   (req: Request, res: Response, responseData: unknown) => string | Promise<string>
@@ -60,8 +66,9 @@ export const unitAnnualAwards: Record<
   },
 
   DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
-    // The deleted award type comes from ?awardType (chain awards BKBQP/BKTTCP store
-    // danh_hieu = null, so reading record.danh_hieu alone loses them).
+    // Loại danh hiệu bị xóa lấy từ ?awardType (chuỗi BKBQP/BKTTCP lưu danh_hieu = null,
+    // nên chỉ đọc record.danh_hieu sẽ mất thông tin).
+    // Đọc từ responseData, không query lại sau khi đã xóa bản ghi.
     const awardType =
       (typeof req.query?.awardType === 'string' && req.query.awardType.trim()) || '';
     let tenDonVi = '';
@@ -103,7 +110,7 @@ export const unitAnnualAwards: Record<
       updatedCount = result?.updated || 0;
     } catch (error) {
       console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-      // best-effort — audit description must not throw
+      // Tốt nhất có thể — mô tả audit không được phép throw
     }
 
     let tenDonVi = '';

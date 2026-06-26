@@ -1,3 +1,28 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  TENURE MEDAL SERVICE — CRUD + Excel I/O cho HCCSVV (Huy chương CSVV)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  TRÁCH NHIỆM:
+ *  - CRUD record KhenThuongHCCSVV.
+ *  - Excel template export (mẫu) + import (preview + confirm).
+ *  - Trigger recalc profile/tenure.ts sau insert/update/delete.
+ *
+ *  RANK ORDER VALIDATION (xem helpers/awardValidation/tenureMedalRankOrder.ts):
+ *  - Hạng Nhì → phải đã có Hạng Ba với năm < year.
+ *  - Hạng Nhất → phải đã có Hạng Ba + Hạng Nhì.
+ *
+ *  EXCEL IMPORT FLOW — 2-STEP (preview + confirm):
+ *  ① previewImport: parse + validate → trả {valid, invalid, summary}.
+ *  ② confirmImport: user confirm → ghi DB trong transaction.
+ *  Lý do tách: user review lỗi trước khi commit + atomic confirm.
+ *
+ *  RECALC SAU IMPORT:
+ *  Bulk import → loop trigger safeRecalculateTenureProfile cho từng quân
+ *  nhân. Trade-off: chậm với 100+ row. NÊN tối ưu batch recalc.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { tenureMedalRepository } from '../repositories/tenureMedal.repository';
 import { buildMedalListWhere } from '../helpers/unitHelper';
 import profileService from './profile.service';
@@ -28,6 +53,9 @@ class TenureMedalService {
   /**
    * Export template Excel for HCCSVV import
    */
+  // HCCSVV (niên hạn) theo đúng khuôn export chung qua buildTemplate. Khác biệt:
+  // dropdown danh hiệu là 3 hạng Ba/Nhì/Nhất (HCCSVV_TEMPLATE_OPTIONS) và có 3
+  // cột admin điền ('J','K','L') thay vì 2.
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const { personnelList, decisionNumbers } = await fetchTemplateData({
       personnelIds,
@@ -49,6 +77,8 @@ class TenureMedalService {
    * @param buffer - Raw Excel file buffer
    * @returns Validation result with valid rows, errors, and total count
    */
+  // Import HCCSVV 2 bước (preview chỉ validate, confirm ghi DB trong transaction)
+  // tách sang ./tenureMedal/import; 2 hàm dưới chỉ là cửa cho controller gọi.
   async previewImport(buffer: Buffer) {
     return doPreviewImport(buffer);
   }
@@ -66,8 +96,10 @@ class TenureMedalService {
    * Get all HCCSVV with filters and pagination
    */
   async getAll(filters: Record<string, unknown> = {}, page: number = 1, limit: number = 50) {
+    // buildMedalListWhere dịch filter từ UI (năm, đơn vị, danh hiệu...) thành điều kiện Prisma.
     const where = await buildMedalListWhere(filters);
 
+    // 1 trang dữ liệu (kèm thông tin quân nhân + đơn vị) và tổng số bản ghi, chạy song song.
     const [data, total] = await Promise.all([
       tenureMedalRepository.findManyRaw({
         where,
@@ -104,6 +136,9 @@ class TenureMedalService {
   /**
    * Export HCCSVV to Excel
    */
+  // Tái dùng this.getAll (đã sẵn logic filter + join QuanNhan) thay vì viết lại
+  // where — limit 10000 để lấy trọn cho báo cáo. buildAwardExportBuffer trả thẳng
+  // BUFFER (khác annualReward trả Workbook để controller gói).
   async exportToExcel(filters: Record<string, unknown> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
     return buildAwardExportBuffer(
@@ -129,6 +164,7 @@ class TenureMedalService {
    * Get HCCSVV statistics
    */
   async getStatistics() {
+    // Thống kê cho dashboard: đếm theo hạng danh hiệu, theo năm, và tổng số.
     const byRank = await tenureMedalRepository.groupByDanhHieu();
     const byYear = await tenureMedalRepository.groupByYear();
 
@@ -145,6 +181,7 @@ class TenureMedalService {
    * Get user with unit info (helper method)
    */
   async getUserWithUnit(userId: string) {
+    // Lấy phạm vi đơn vị (CQDV/DVTT) của tài khoản để lọc dữ liệu theo quyền người dùng.
     return getAccountUnitScope(userId);
   }
 
@@ -154,6 +191,7 @@ class TenureMedalService {
    * @param adminUsername - Admin username performing the deletion
    */
   async deleteAward(id: string, adminUsername: string = 'Admin') {
+    // Đọc kèm QuanNhan (tên + đơn vị) để dựng thông báo; không tìm thấy → 404.
     const award = await tenureMedalRepository.findUniqueRaw({
       where: { id },
       include: {
@@ -172,6 +210,8 @@ class TenureMedalService {
       throw new NotFoundError('Bản ghi khen thưởng');
     }
 
+    // Gom các bước xóa dùng chung cho mọi loại huân chương (xóa record → recalc hồ sơ
+    // → gửi thông báo). Truyền deleteFn + recalcProfile riêng cho HCCSVV (niên hạn).
     return finalizeMedalAwardDeletion({
       id,
       award,

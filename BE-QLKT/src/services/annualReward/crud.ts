@@ -33,17 +33,26 @@ import type {
   StatisticsFilters,
 } from './types';
 
+/**
+ * Lấy toàn bộ danh hiệu hằng năm của một quân nhân, mới nhất lên đầu.
+ * @param personnelId - ID quân nhân cần tra cứu
+ * @returns Danh sách danh hiệu hằng năm sắp xếp theo năm giảm dần
+ * @throws ValidationError - Khi thiếu ID quân nhân
+ * @throws NotFoundError - Khi không tìm thấy quân nhân
+ */
 export async function getAnnualRewards(personnelId: string): Promise<DanhHieuHangNam[]> {
   if (!personnelId) {
     throw new ValidationError('Thiếu thông tin quân nhân cần tra cứu.');
   }
 
+  // Chặn sớm nếu quân nhân không tồn tại để báo lỗi rõ ràng thay vì trả mảng rỗng
   const personnel = await quanNhanRepository.findById(personnelId);
 
   if (!personnel) {
     throw new NotFoundError('Quân nhân');
   }
 
+  // Sắp xếp năm giảm dần: năm gần nhất hiển thị trước, hợp với cách FE liệt kê hồ sơ
   const rewards = await danhHieuHangNamRepository.findMany({
     where: { quan_nhan_id: personnelId },
     orderBy: {
@@ -54,6 +63,15 @@ export async function getAnnualRewards(personnelId: string): Promise<DanhHieuHan
   return rewards;
 }
 
+/**
+ * Tạo danh hiệu hằng năm cho quân nhân, tự merge nếu năm đó đã có bản ghi.
+ * Danh hiệu cơ bản (CSTDCS/CSTT...) lưu ở cột danh_hieu; bằng khen
+ * (BKBQP/CSTDTQ/BKTTCP) lưu dạng cờ nhan_* kèm số quyết định riêng.
+ * @param data - Dữ liệu danh hiệu cần tạo (cơ bản hoặc cờ bằng khen)
+ * @returns Bản ghi danh hiệu vừa tạo hoặc bản ghi đã được merge
+ * @throws NotFoundError - Khi không tìm thấy quân nhân
+ * @throws ValidationError - Khi danh hiệu không hợp lệ, trùng, hoặc thiếu số QĐ
+ */
 export async function createAnnualReward(data: CreateAnnualRewardData): Promise<DanhHieuHangNam> {
   const {
     personnel_id,
@@ -76,6 +94,8 @@ export async function createAnnualReward(data: CreateAnnualRewardData): Promise<
     throw new NotFoundError('Quân nhân');
   }
 
+  // Chỉ chấp nhận danh hiệu cơ bản ở cột danh_hieu; bằng khen đi qua cờ nhan_*.
+  // Để trống danh_hieu là hợp lệ (nghĩa là năm đó không đạt danh hiệu cơ bản).
   const validDanhHieu = DANH_HIEU_CA_NHAN_CO_BAN;
   if (danh_hieu && !validDanhHieu.has(danh_hieu)) {
     throw new ValidationError(
@@ -83,6 +103,8 @@ export async function createAnnualReward(data: CreateAnnualRewardData): Promise<
     );
   }
 
+  // Mỗi quân nhân chỉ có 1 bản ghi cho mỗi năm; nếu đã có thì merge thêm
+  // danh hiệu mới vào bản ghi cũ thay vì tạo bản ghi trùng năm.
   const existingReward = await danhHieuHangNamRepository.findFirst({
     where: { quan_nhan_id: personnel_id, nam },
   });
@@ -90,11 +112,12 @@ export async function createAnnualReward(data: CreateAnnualRewardData): Promise<
   if (existingReward) {
     const isCoBan = danh_hieu && DANH_HIEU_CA_NHAN_CO_BAN.has(danh_hieu);
 
-    // Block: existing has same base title, or adding base title when one already exists
+    // Chặn trùng danh hiệu cơ bản: 1 năm chỉ giữ được 1 danh hiệu cơ bản
     if (isCoBan && existingReward.danh_hieu) {
       throw new ValidationError(`Năm ${nam} đã có ${getDanhHieuName(existingReward.danh_hieu)}.`);
     }
-    // Block: adding same flag that already exists
+    // Chặn trùng cờ bằng khen: nếu bản ghi năm đó đã bật cờ tương ứng thì
+    // không cho thêm lại cùng loại bằng khen (BKBQP/CSTDTQ/BKTTCP).
     if (nhan_bkbqp && existingReward.nhan_bkbqp) {
       throw new ValidationError(
         `Năm ${nam} đã có ${getDanhHieuName(DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP)}.`
@@ -111,6 +134,8 @@ export async function createAnnualReward(data: CreateAnnualRewardData): Promise<
       );
     }
 
+    // Bằng khen bắt buộc có số quyết định; chỉ truyền danh_hieu/so_quyet_dinh cơ
+    // bản khi lần này thật sự thêm danh hiệu cơ bản, tránh bắt lỗi nhầm bản ghi cũ.
     const mergeDecisionErrors = validateDecisionNumbers(
       {
         danh_hieu: isCoBan ? danh_hieu : null,
@@ -128,12 +153,15 @@ export async function createAnnualReward(data: CreateAnnualRewardData): Promise<
       throw new ValidationError(mergeDecisionErrors.join('\n'));
     }
 
-    // Allow: merge into existing record
+    // Merge vào bản ghi sẵn có: chỉ ghi đè những trường thật sự được gửi lên,
+    // giữ nguyên các danh hiệu/cờ khác đã có của năm đó.
     const updateData: Record<string, unknown> = {};
     if (isCoBan) {
       updateData.danh_hieu = danh_hieu;
       if (data.so_quyet_dinh) updateData.so_quyet_dinh = data.so_quyet_dinh;
     }
+    // Mỗi lần gọi chỉ thêm 1 loại bằng khen nên dùng if/else loại trừ nhau; ghi_chu
+    // gắn theo đúng loại bằng khen đang thêm, chỉ rơi về ghi_chu chung khi không có cờ.
     if (nhan_bkbqp) {
       updateData.nhan_bkbqp = true;
       if (so_quyet_dinh_bkbqp) updateData.so_quyet_dinh_bkbqp = so_quyet_dinh_bkbqp;
@@ -156,10 +184,14 @@ export async function createAnnualReward(data: CreateAnnualRewardData): Promise<
       where: { id: existingReward.id },
       data: updateData,
     });
+    // Thay đổi danh hiệu ảnh hưởng tới chuỗi điều kiện khen thưởng nên phải
+    // tính lại hồ sơ ngay sau khi merge.
     await safeRecalculateAnnualProfile(personnel_id);
     return updated;
   }
 
+  // Nhánh tạo mới (năm chưa có bản ghi): validate số quyết định cho toàn bộ
+  // danh hiệu/cờ được gửi lên trước khi ghi DB.
   const createDecisionErrors = validateDecisionNumbers(
     {
       danh_hieu,
@@ -177,6 +209,8 @@ export async function createAnnualReward(data: CreateAnnualRewardData): Promise<
     throw new ValidationError(createDecisionErrors.join('\n'));
   }
 
+  // Chuẩn hóa về null/false cho trường rỗng để bản ghi đồng nhất, tránh lưu
+  // undefined gây sai lệch khi tính chuỗi điều kiện về sau.
   const newReward = await danhHieuHangNamRepository.createRaw({
     data: {
       quan_nhan_id: personnel_id,
@@ -200,6 +234,14 @@ export async function createAnnualReward(data: CreateAnnualRewardData): Promise<
   return newReward;
 }
 
+/**
+ * Cập nhật một bản ghi danh hiệu hằng năm theo ID, chỉ ghi đè trường được gửi.
+ * @param id - ID bản ghi danh hiệu hằng năm
+ * @param data - Trường cần cập nhật (trường không gửi sẽ giữ giá trị cũ)
+ * @returns Bản ghi danh hiệu sau khi cập nhật
+ * @throws NotFoundError - Khi không tìm thấy bản ghi
+ * @throws ValidationError - Khi danh hiệu cơ bản không hợp lệ
+ */
 export async function updateAnnualReward(
   id: string,
   data: UpdateAnnualRewardData
@@ -226,6 +268,8 @@ export async function updateAnnualReward(
     throw new NotFoundError('Danh hiệu hằng năm');
   }
 
+  // Chỉ kiểm tra hợp lệ khi có truyền danh_hieu; bỏ trống nghĩa là không đổi
+  // danh hiệu cơ bản nên không cần validate.
   if (danh_hieu) {
     const validDanhHieu = DANH_HIEU_CA_NHAN_CO_BAN;
     if (!validDanhHieu.has(danh_hieu)) {
@@ -235,6 +279,8 @@ export async function updateAnnualReward(
     }
   }
 
+  // Patch từng phần: cờ và số quyết định dùng so sánh !== undefined để cho phép
+  // gửi false/null xóa giá trị; nam/danh_hieu dùng || vì giá trị rỗng vô nghĩa.
   const updatedReward = await danhHieuHangNamRepository.updateRaw({
     where: { id },
     data: {
@@ -255,11 +301,22 @@ export async function updateAnnualReward(
     },
   });
 
+  // Đổi danh hiệu/cờ làm thay đổi chuỗi điều kiện nên recalc lại hồ sơ quân nhân
   await safeRecalculateAnnualProfile(reward.quan_nhan_id);
 
   return updatedReward;
 }
 
+/**
+ * Xóa danh hiệu hằng năm: xóa từng danh hiệu trong năm khi truyền awardType,
+ * hoặc xóa cả bản ghi năm khi không truyền. Có gửi thông báo cho người liên quan.
+ * @param id - ID bản ghi danh hiệu hằng năm
+ * @param adminUsername - Tên admin thực hiện thao tác (dùng cho thông báo)
+ * @param awardType - Loại danh hiệu cần xóa riêng; bỏ trống để xóa cả bản ghi
+ * @returns Thông điệp kết quả, ID quân nhân và bản ghi trước khi xóa
+ * @throws NotFoundError - Khi không tìm thấy bản ghi
+ * @throws ValidationError - Khi awardType không hợp lệ hoặc bản ghi không có loại đó
+ */
 export async function deleteAnnualReward(
   id: string,
   adminUsername: string = 'Admin',
@@ -269,6 +326,8 @@ export async function deleteAnnualReward(
   personnelId: string;
   reward: DanhHieuHangNam;
 }> {
+  // Kèm thông tin quân nhân + đơn vị ngay trong query để dùng cho thông báo,
+  // tránh phải query lại sau khi bản ghi có thể đã bị xóa.
   const reward = (await danhHieuHangNamRepository.findUnique({
     where: { id },
     include: {
@@ -310,6 +369,8 @@ export async function deleteAnnualReward(
       );
     }
 
+    // Xóa có chọn lọc theo loại: danh hiệu cơ bản clear cột danh_hieu/so_quyet_dinh/
+    // ghi_chu; mỗi bằng khen tắt cờ nhan_* và xóa số QĐ + ghi chú riêng của loại đó.
     const updateData: Prisma.DanhHieuHangNamUncheckedUpdateInput = {};
     const isBaseAward = DANH_HIEU_CA_NHAN_CO_BAN.has(awardType);
 
@@ -343,6 +404,8 @@ export async function deleteAnnualReward(
       updateData.ghi_chu_bkttcp = null;
     }
 
+    // Tính trạng thái còn lại sau khi gỡ loại vừa chọn: nếu không còn danh hiệu
+    // cơ bản lẫn bằng khen nào thì xóa hẳn bản ghi năm, ngược lại chỉ update cờ.
     const remainingDanhHieu = isBaseAward ? null : reward.danh_hieu;
     const remainingBkbqp =
       awardType === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP ? false : reward.nhan_bkbqp;
@@ -360,6 +423,8 @@ export async function deleteAnnualReward(
 
     await safeRecalculateAnnualProfile(personnelId);
 
+    // Thông báo là phụ trợ: lỗi gửi thông báo không được làm hỏng thao tác xóa,
+    // nên nuốt lỗi và ghi vào system log để vẫn truy vết được.
     try {
       await notificationHelper.notifyOnAwardDeleted(
         reward,
@@ -382,6 +447,7 @@ export async function deleteAnnualReward(
     };
   }
 
+  // Không truyền awardType: xóa toàn bộ bản ghi năm (mọi danh hiệu trong năm đó).
   await danhHieuHangNamRepository.delete(id);
 
   await safeRecalculateAnnualProfile(personnelId);
@@ -408,11 +474,21 @@ export async function deleteAnnualReward(
   };
 }
 
+/**
+ * Kiểm tra hàng loạt quân nhân xem trong năm đã có danh hiệu hoặc đề xuất chưa,
+ * phục vụ chặn trùng trước khi thêm đề xuất mới.
+ * @param personnelIds - Danh sách ID quân nhân cần kiểm tra
+ * @param nam - Năm xét danh hiệu
+ * @param danhHieu - Loại danh hiệu cần đối chiếu trong đề xuất
+ * @returns Kết quả từng quân nhân kèm thống kê tổng hợp
+ */
 export async function checkAnnualRewards(
   personnelIds: string[],
   nam: number,
   danhHieu: string
 ): Promise<{ results: CheckResult[]; summary: Record<string, number> }> {
+  // Gom 2 query độc lập chạy song song: danh hiệu đã trao + đề xuất đang chờ/đã
+  // duyệt trong năm. Chỉ lấy PENDING/APPROVED vì đề xuất bị từ chối không chặn trùng.
   const [existingRewards, proposals] = await Promise.all([
     danhHieuHangNamRepository.findMany({ where: { quan_nhan_id: { in: personnelIds }, nam } }),
     proposalRepository.findManyRaw({
@@ -424,6 +500,8 @@ export async function checkAnnualRewards(
       select: { id: true, nam: true, status: true, data_danh_hieu: true },
     }),
   ]);
+  // Index theo quân nhân để tra cứu O(1) trong vòng lặp, tránh N+1. Mỗi đề xuất
+  // có thể chứa nhiều quân nhân trong data_danh_hieu nên cùng 1 đề xuất gắn vào nhiều ID.
   const rewardByPersonnel = new Map(existingRewards.map(r => [r.quan_nhan_id, r] as const));
   const proposalsByPersonnel = new Map<string, typeof proposals>();
   for (const p of proposals) {
@@ -470,12 +548,14 @@ export async function checkAnnualRewards(
           ? (proposal.data_danh_hieu as Record<string, unknown>[])
           : [];
 
+        // Chỉ tính trùng khi đề xuất chứa đúng quân nhân và đúng loại danh hiệu đang xét
         const found = dataList.some(
           item => String(item.personnel_id) === personnelId && item.danh_hieu === danhHieu
         );
 
         if (found) {
-          // APPROVED proposal: only block if award actually exists in DB
+          // Đề xuất đã duyệt nhưng DB chưa có bản ghi (chưa import) thì không chặn,
+          // tránh khóa nhầm khi danh hiệu thực tế chưa được ghi nhận.
           if (proposal.status === PROPOSAL_STATUS.APPROVED && !result.has_reward) {
             continue;
           }
@@ -493,6 +573,8 @@ export async function checkAnnualRewards(
     results.push(result);
   }
 
+  // can_add = số quân nhân vừa chưa có danh hiệu vừa chưa có đề xuất trong năm,
+  // tức nhóm an toàn để thêm đề xuất mới mà không trùng.
   return {
     results,
     summary: {
@@ -504,6 +586,11 @@ export async function checkAnnualRewards(
   };
 }
 
+/**
+ * Thống kê danh hiệu hằng năm theo loại danh hiệu và theo năm, lọc tùy chọn.
+ * @param filters - Bộ lọc theo năm và/hoặc đơn vị
+ * @returns Tổng số, phân bổ theo danh hiệu và theo năm (mới nhất trước)
+ */
 export async function getStatistics(filters: StatisticsFilters = {}): Promise<{
   total: number;
   byDanhHieu: { danh_hieu: string | null; count: number }[];
@@ -514,6 +601,7 @@ export async function getStatistics(filters: StatisticsFilters = {}): Promise<{
   const where: Prisma.DanhHieuHangNamWhereInput = {};
   if (nam) where.nam = nam;
 
+  // Lấy kèm 2 FK đơn vị của quân nhân để lọc theo đơn vị ở bước sau (in-memory)
   const awards = (await danhHieuHangNamRepository.findMany({
     where,
     include: {
@@ -528,6 +616,8 @@ export async function getStatistics(filters: StatisticsFilters = {}): Promise<{
     include: { QuanNhan: { select: { co_quan_don_vi_id: true; don_vi_truc_thuoc_id: true } } };
   }>[];
 
+  // Khớp đơn vị ở cả CQDV lẫn DVTT để gộp luôn quân nhân ở đơn vị con khi lọc
+  // theo đơn vị cha; quân nhân lưu cả 2 FK nên cần kiểm tra cả hai.
   let filteredAwards = awards;
   if (don_vi_id) {
     filteredAwards = awards.filter(
@@ -537,6 +627,8 @@ export async function getStatistics(filters: StatisticsFilters = {}): Promise<{
     );
   }
 
+  // Gộp đếm theo danh hiệu; dùng khóa 'null' cho bản ghi không có danh hiệu cơ bản
+  // (năm không đạt) để vẫn thống kê được nhóm này mà không vỡ key của object.
   const byDanhHieu = filteredAwards.reduce(
     (acc, award) => {
       const key = award.danh_hieu;
@@ -561,6 +653,7 @@ export async function getStatistics(filters: StatisticsFilters = {}): Promise<{
     {} as Record<number, { nam: number; count: number }>
   );
 
+  // Sắp xếp byNam giảm dần để biểu đồ/danh sách hiển thị năm gần nhất trước
   return {
     total: filteredAwards.length,
     byDanhHieu: Object.values(byDanhHieu),
@@ -581,11 +674,15 @@ export async function getAnnualRewardsList(params: {
   quanNhanWhere?: Record<string, unknown> | null;
 }) {
   const { page, limit, nam, danh_hieu, quanNhanWhere } = params;
+  // quanNhanWhere do tầng trên dựng (vd: lọc theo đơn vị của MANAGER) nên ghép
+  // thẳng vào where qua quan hệ QuanNhan để áp scope phân quyền.
   const where: Record<string, unknown> = {};
   if (nam) where.nam = nam;
   if (danh_hieu) where.danh_hieu = danh_hieu;
   if (quanNhanWhere) where.QuanNhan = quanNhanWhere;
 
+  // Đếm tổng song song với lấy trang dữ liệu để trả pagination.total chuẩn;
+  // sắp xếp năm rồi createdAt giảm dần để bản ghi mới nhất lên đầu.
   const [awards, total] = await Promise.all([
     danhHieuHangNamRepository.findMany({
       where,

@@ -4,6 +4,11 @@ import * as excel from './unitAnnualAward/excel';
 import * as importHelpers from './unitAnnualAward/import';
 import type { UnitAnnualAwardValidItem } from './unitAnnualAward/types';
 
+/**
+ * Facade gom các module con trong ./unitAnnualAward (crud, eligibility, excel,
+ * import) thành một entry point duy nhất cho khen thưởng hằng năm cấp đơn vị.
+ * Mỗi method chỉ ủy thác sang module con tương ứng, không chứa logic nghiệp vụ.
+ */
 class UnitAnnualAwardService {
   checkUnitAwardEligibility(donViId, year, danhHieu) {
     return eligibility.checkUnitAwardEligibility(donViId, year, danhHieu);

@@ -1,3 +1,30 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  CONTRIBUTION MEDAL SERVICE — CRUD + Excel I/O cho HCBVTQ
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  HCBVTQ = Huân chương Bảo vệ Tổ quốc (3 hạng Nhất/Nhì/Ba).
+ *
+ *  KHÁC HCCSVV:
+ *  - HCCSVV: 3 record riêng (mỗi hạng 1 row).
+ *  - HCBVTQ: 1 record duy nhất per personnel, UPGRADE bằng UPDATE
+ *    (xem hcbvtqStrategy.ts).
+ *
+ *  RANK UPGRADE LOGIC (khi import từ Excel):
+ *  - Nếu quân nhân đã có HCBVTQ:
+ *      newRank > existingRank → UPDATE record cũ thành rank mới.
+ *      newRank ≤ existingRank → REJECT (vô nghĩa, không downgrade).
+ *
+ *  ELIGIBILITY CHECK trước khi insert:
+ *  - Query positionHistory → tính số tháng theo 3 nhóm hệ số (0.7/0.8/0.9-1.0).
+ *  - Compare với threshold theo giới tính (120 nam / 80 nữ).
+ *  - Hạng cao yêu cầu tháng nhóm cao (xem hcbvtqEligibility.ts).
+ *
+ *  EXCEL IMPORT: 2-step preview + confirm (giống tenure).
+ *  RECALC: trigger profile/contribution.ts sau mỗi insert.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import { buildMedalListWhere } from '../helpers/unitHelper';
 import { contributionMedalRepository } from '../repositories/contributionMedal.repository';
 import profileService from './profile.service';
@@ -33,6 +60,8 @@ class ContributionMedalService {
    * @param repeatMap - Map of personnel id to repeat count for pre-fill rows
    * @returns Excel workbook buffer
    */
+  // HCBVTQ (cống hiến) cùng khuôn template chung qua buildTemplate (giống HCCSVV):
+  // dropdown 3 hạng + 3 cột điền. Chỉ khác hằng số cột/option đặc thù loại này.
   async exportTemplate(personnelIds: string[] = [], repeatMap: Record<string, number> = {}) {
     const { personnelList, decisionNumbers } = await fetchTemplateData({
       personnelIds,
@@ -76,8 +105,10 @@ class ContributionMedalService {
    * @returns Awards data with pagination metadata
    */
   async getAll(filters: Record<string, unknown> = {}, page: number = 1, limit: number = 50) {
+    // buildMedalListWhere: ráp điều kiện lọc + phạm vi đơn vị (gồm cả ĐVTT con nếu cần)
     const where = await buildMedalListWhere(filters);
 
+    // Song song: lấy 1 trang dữ liệu + đếm tổng số bản ghi (phục vụ phân trang)
     const [data, total] = await Promise.all([
       contributionMedalRepository.findManyRaw({
         where,
@@ -117,6 +148,9 @@ class ContributionMedalService {
    * @param filters - Optional filters applied before export
    * @returns Excel workbook buffer
    */
+  // Export dữ liệu: tái dùng getAll như HCCSVV. Riêng HCBVTQ có cột "thời gian
+  // cống hiến" lưu dạng object {years, months} → durationToMonths quy về tổng tháng
+  // trước khi ghi cell (Excel không hiển thị object).
   async exportToExcel(filters: Record<string, unknown> = {}) {
     const { data } = await this.getAll(filters, 1, 10000);
     return buildAwardExportBuffer(
@@ -151,6 +185,7 @@ class ContributionMedalService {
    * @returns Total count plus breakdowns by rank and year
    */
   async getStatistics() {
+    // Thống kê cho dashboard: nhóm theo hạng (danh hiệu) và nhóm theo năm
     const byRank = await contributionMedalRepository.groupByDanhHieu();
     const byYear = await contributionMedalRepository.groupByYear();
 
@@ -189,6 +224,8 @@ class ContributionMedalService {
       throw new NotFoundError('Bản ghi khen thưởng');
     }
 
+    // Khác KNC/HC_QKQT: HCBVTQ ảnh hưởng điều kiện cống hiến → truyền recalcProfile
+    // để helper tính lại hồ sơ cống hiến của quân nhân sau khi xóa
     return finalizeMedalAwardDeletion({
       id,
       award,

@@ -1,6 +1,6 @@
 /*
- * TENURE MEDAL CONTROLLER — HCCSVV CRUD + Excel.
- * Rank order validation (Ba → Nhì → Nhất). Trigger profile/tenure.ts recalc.
+ * Controller Huy chương Chiến sĩ vẻ vang (HCCSVV) — CRUD + Excel.
+ * Xét theo niên hạn, 3 hạng Ba → Nhì → Nhất. Trigger recalc ở profile/tenure.ts.
  */
 
 import { Request, Response } from 'express';
@@ -53,10 +53,12 @@ interface IdParams {
 }
 
 class TenureMedalController {
+  /** Tải file Excel mẫu nhập HCCSVV cho danh sách quân nhân được chọn. */
   getTemplate = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetTemplateQuery;
     const personnelIds = parsePersonnelIdsFromQuery(query);
     const repeatMap: Record<string, number> = {};
+    // repeat_map gửi dưới dạng JSON string trên query — parse, lỗi thì bỏ qua
     if (query.repeat_map) {
       try {
         Object.assign(repeatMap, JSON.parse(query.repeat_map));
@@ -79,6 +81,7 @@ class TenureMedalController {
     return res.status(200).send(buffer);
   });
 
+  /** Xem trước dữ liệu HCCSVV từ file Excel upload trước khi xác nhận lưu. */
   previewImport = catchAsync(async (req: Request, res: Response) => {
     const file = req.file;
     if (!file) {
@@ -89,6 +92,7 @@ class TenureMedalController {
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 
+  /** Xác nhận lưu các bản ghi HCCSVV đã preview, ghi log và gửi thông báo. */
   confirmImport = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const body = req.body as ConfirmImportBody;
@@ -102,11 +106,13 @@ class TenureMedalController {
       description: logMessages.importSuccess(AWARD_LABEL, result.imported || items.length),
       payload: { imported: result.imported || items.length },
     });
+    // Thông báo cho từng quân nhân vừa được trao HCCSVV
     const personnelIds = items.map((i: { personnel_id: string }) => i.personnel_id);
     safeNotifyImport(user.id, AWARD_SLUGS.TENURE_MEDALS, result.imported || items.length, personnelIds);
     return ResponseHelper.success(res, { message: 'Thao tác thành công', data: result });
   });
 
+  /** Lấy danh sách HCCSVV có phân trang, lọc theo đơn vị/năm/hạng/họ tên. */
   getAll = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetAllQuery;
     const user = req.user!;
@@ -119,12 +125,14 @@ class TenureMedalController {
     if (danh_hieu) filters.danh_hieu = danh_hieu;
     if (ho_ten) filters.ho_ten = ho_ten;
 
+    // MANAGER chỉ thấy đơn vị mình quản lý; null nghĩa là chưa gán đơn vị
     const managerUnit = await getManagerUnitFilter(req);
     if (managerUnit === null && userRole === ROLES.MANAGER) {
       return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
     }
     if (managerUnit) {
       filters.don_vi_id = managerUnit.don_vi_id;
+      // Nếu là cơ quan đơn vị (cấp cha) thì gồm cả đơn vị con
       if (managerUnit.isCoQuanDonVi) filters.include_sub_units = true;
     }
     const result = await tenureMedalService.getAll(filters, page, limit);
@@ -137,6 +145,7 @@ class TenureMedalController {
     });
   });
 
+  /** Xuất danh sách HCCSVV ra file Excel theo bộ lọc và phạm vi đơn vị. */
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as ExportToExcelQuery;
     const user = req.user!;
@@ -146,12 +155,14 @@ class TenureMedalController {
     if (nam) filters.nam = nam;
     if (danh_hieu) filters.danh_hieu = danh_hieu;
 
+    // MANAGER chỉ xuất được dữ liệu trong phạm vi đơn vị mình quản lý
     const managerUnit = await getManagerUnitFilter(req);
     if (managerUnit === null && user.role === ROLES.MANAGER) {
       return ResponseHelper.forbidden(res, 'Không tìm thấy thông tin đơn vị');
     }
     if (managerUnit) {
       filters.don_vi_id = managerUnit.don_vi_id;
+      // Cơ quan đơn vị (cấp cha) thì xuất gồm cả đơn vị con
       if (managerUnit.isCoQuanDonVi) filters.include_sub_units = true;
     }
     const buffer = await tenureMedalService.exportToExcel(filters);
@@ -164,6 +175,7 @@ class TenureMedalController {
     return res.status(200).send(buffer);
   });
 
+  /** Lấy thống kê tổng hợp HCCSVV (theo hạng, năm, đơn vị). */
   getStatistics = catchAsync(async (req: Request, res: Response) => {
     const statistics = await tenureMedalService.getStatistics();
     return ResponseHelper.success(res, {
@@ -172,6 +184,7 @@ class TenureMedalController {
     });
   });
 
+  /** Xóa một bản ghi HCCSVV theo id, kèm tên admin thực hiện để ghi log. */
   deleteAward = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const { id } = params;

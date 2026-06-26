@@ -82,6 +82,26 @@ export async function getContributionProfile(personnelId: string) {
  * @param personnelId - Personnel ID
  * @returns Success message for admin flows
  */
+/*
+ * ╔══════════════════════════════════════════════════════════════════════╗
+ * ║  CONTRIBUTION PROFILE — recalc trạng thái 3 hạng HCBVTQ              ║
+ * ╠══════════════════════════════════════════════════════════════════════╣
+ * ║  KHÁC HCCSVV ở chỗ tính theo SỐ THÁNG NHÓM HỆ SỐ chức vụ thay vì    ║
+ * ║  số năm phục vụ thuần. aggregatePositionMonthsByGroup gom lịch sử   ║
+ * ║  chức vụ thành 3 nhóm hệ số: 0.7, 0.8, 0.9-1.0.                     ║
+ * ║                                                                       ║
+ * ║  NGƯỠNG theo giới tính: nữ = CONTRIBUTION_FEMALE_REQUIRED_MONTHS,   ║
+ * ║  còn lại = CONTRIBUTION_BASE_REQUIRED_MONTHS (120 tháng = 10 năm).  ║
+ * ║                                                                       ║
+ * ║  3 HẠNG xét bằng cumulativeMonthsForHcbvtqRank: cộng dồn nhóm hệ số ║
+ * ║  sàn của hạng đó VÀ các nhóm cao hơn (Hạng Ba từ 0.7, Hạng Nhì từ   ║
+ * ║  0.8, Hạng Nhất chỉ 0.9-1.0) rồi so với ngưỡng.                     ║
+ * ║                                                                       ║
+ * ║  HIERARCHY + ADMIN OVERRIDE: đã có row trong contributionMedal →    ║
+ * ║  DA_NHAN (giữ nguyên, không recalc đè); ngược lại đủ tháng →        ║
+ * ║  DU_DIEU_KIEN, chưa đủ → CHUA_DU.                                   ║
+ * ╚══════════════════════════════════════════════════════════════════════╝
+ */
 export async function recalculateContributionProfile(
   personnelId: string
 ): Promise<{ message: string }> {
@@ -103,11 +123,14 @@ export async function recalculateContributionProfile(
     throw new NotFoundError('Quân nhân');
   }
 
+  // Gom lịch sử chức vụ thành số tháng theo 3 nhóm hệ số (0.7 / 0.8 / 0.9-1.0).
   const monthsByGroup = aggregatePositionMonthsByGroup(selectedPersonnel.LichSuChucVu, new Date());
+  // Ngưỡng tháng: nữ được giảm còn 2/3 mức nam (ưu đãi giới).
   const requiredMonths =
     selectedPersonnel.gioi_tinh === GENDER.FEMALE
       ? CONTRIBUTION_FEMALE_REQUIRED_MONTHS
       : CONTRIBUTION_BASE_REQUIRED_MONTHS;
+  // Một hạng đủ ĐK khi tổng tháng cộng dồn (nhóm sàn của hạng + các nhóm cao hơn) >= ngưỡng.
   const isEligibleForRank = (rank: HcbvtqRankKey): boolean =>
     cumulativeMonthsForHcbvtqRank(monthsByGroup, rank) >= requiredMonths;
 
@@ -116,6 +139,8 @@ export async function recalculateContributionProfile(
   });
 
   // Award hierarchy: lower rank must be received (DA_NHAN) before a higher rank can be proposed.
+  // 3 nhánh mỗi hạng: đã có trong sổ khen thưởng → DA_NHAN (không xét lại);
+  // chưa có mà đủ tháng → DU_DIEU_KIEN; còn lại → CHUA_DU.
   const hcbvtqBa = personnelHCBVTQ.find(kt => kt.danh_hieu === DANH_HIEU_HCBVTQ.HANG_BA)
     ? { status: ELIGIBILITY_STATUS.DA_NHAN }
     : isEligibleForRank(HCBVTQ_RANK_KEYS.HANG_BA)
@@ -134,9 +159,9 @@ export async function recalculateContributionProfile(
       ? { status: ELIGIBILITY_STATUS.DU_DIEU_KIEN }
       : { status: ELIGIBILITY_STATUS.CHUA_DU };
 
-  const months0_7 = monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07];
-  const months0_8 = monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08];
-  const months0_9_1_0 = monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10];
+  const months0_7 = monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_07]; // số tháng giữ chức hệ số 0.7
+  const months0_8 = monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_08]; // hệ số 0.8
+  const months0_9_1_0 = monthsByGroup[CONTRIBUTION_COEFFICIENT_GROUPS.LEVEL_09_10]; // hệ số 0.9-1.0
 
   const contributionData = {
     hcbvtq_total_months: months0_7 + months0_8 + months0_9_1_0,

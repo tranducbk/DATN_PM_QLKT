@@ -1,3 +1,5 @@
+// Builder mô tả audit-log cho đề xuất khen thưởng (7 loại): từ action +
+// resource + responseData dựng chuỗi tiếng Việt ghi vào system log.
 import { Request, Response } from 'express';
 import { normalizeParam } from '../paginationHelper';
 import { FALLBACK } from './constants';
@@ -6,7 +8,7 @@ import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { ROLE_LABELS } from '../../constants/roles.constants';
 import { proposalRepository } from '../../repositories/proposal.repository';
 
-/** Loose shape for proposal data from JSON or Prisma */
+/** Dạng dữ liệu đề xuất rời rạc, đọc từ JSON hoặc Prisma. */
 interface ParsedProposal {
   loai_de_xuat?: string;
   type?: string;
@@ -23,6 +25,11 @@ interface ParsedProposal {
   [key: string]: unknown;
 }
 
+/**
+ * Lấy tên hiển thị của người đề xuất theo thứ tự ưu tiên.
+ * @param nguoiDeXuat - Thông tin người đề xuất (quân nhân / username / vai trò)
+ * @returns Họ tên, nhãn vai trò, username hoặc giá trị mặc định khi thiếu
+ */
 function resolveProposerDisplayName(nguoiDeXuat: ParsedProposal['NguoiDeXuat']): string {
   if (!nguoiDeXuat) return FALLBACK.UNKNOWN;
   return (
@@ -37,6 +44,7 @@ const proposals: Record<
   string,
   (req: Request, res: Response, responseData: unknown) => string | Promise<string>
 > = {
+  // Tạo (gửi) đề xuất khen thưởng mới: mô tả kèm số lượng + năm + đơn vị.
   CREATE: (req: Request, res: Response, responseData: unknown): string => {
     const proposalType = req.body?.loai_de_xuat || req.body?.type || '';
     const typeName = getLoaiDeXuatName(proposalType);
@@ -92,12 +100,13 @@ const proposals: Record<
 
     return description;
   },
+  // Phê duyệt đề xuất: mô tả kèm năm, người đề xuất và số lượng theo loại.
   APPROVE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     const proposalId = normalizeParam(req.params?.id) ?? FALLBACK.UNKNOWN;
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
-      // The approve response puts the summary object directly in `data` (not data.result),
-      // so total_danh_hieu / total_thanh_tich / total_nien_han live here.
+      // Response phê duyệt đặt object tổng hợp thẳng trong `data` (không phải data.result),
+      // nên total_danh_hieu / total_thanh_tich / total_nien_han nằm ở đây.
       const result = data?.data || data?.result || {};
 
       let proposal = data?.data?.proposal || data?.proposal;
@@ -141,6 +150,8 @@ const proposals: Record<
         let soLuong = 0;
         let donViText = '';
 
+        // Mỗi loại đề xuất đếm số lượng từ nguồn khác nhau (kết quả import
+        // hoặc data đã chỉnh trong req.body) và dùng đơn vị đếm riêng.
         if (loaiDeXuat === PROPOSAL_TYPES.CA_NHAN_HANG_NAM) {
           soLuong = result.total_danh_hieu || 0;
           donViText = soLuong > 0 ? `${soLuong} quân nhân` : '';
@@ -208,6 +219,7 @@ const proposals: Record<
     }
     return `Phê duyệt đề xuất: ${proposalId}`;
   },
+  // Từ chối đề xuất: mô tả kèm năm, người đề xuất, số lượng và lý do từ chối.
   REJECT: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     const proposalId = normalizeParam(req.params?.id);
     const reason = req.body?.ghi_chu || req.body?.ly_do_tu_choi || req.body?.ly_do || '';
@@ -218,8 +230,8 @@ const proposals: Record<
       proposal = data?.data?.proposal || data?.proposal || data?.data;
     } catch {}
 
-    // The reject response may carry a slim proposal object without loai_de_xuat/nam;
-    // fetch the full row so the description keeps the award type, year, and proposer.
+    // Response từ chối có thể chỉ mang object đề xuất rút gọn thiếu loai_de_xuat/nam;
+    // truy vấn lại bản ghi đầy đủ để giữ loại danh hiệu, năm và người đề xuất.
     if ((!proposal || !proposal.loai_de_xuat) && proposalId) {
       try {
         proposal = await proposalRepository.findUniqueRaw({
@@ -261,6 +273,7 @@ const proposals: Record<
         return [];
       };
 
+      // Mỗi loại đề xuất đọc số lượng từ cột data tương ứng và dùng đơn vị đếm riêng.
       if (loaiDeXuat === PROPOSAL_TYPES.DON_VI_HANG_NAM) {
         soLuong = parseJsonArray(proposal.data_danh_hieu).length;
         loaiSoLuong = 'đơn vị';
@@ -290,6 +303,8 @@ const proposals: Record<
 
     return `Từ chối đề xuất (không xác định được thông tin)${reason ? ` - Lý do: ${reason}` : ''}`;
   },
+  // Xóa đề xuất: đọc thông tin từ responseData (bản ghi service trả về trước
+  // khi xóa), không truy vấn lại DB vì lúc này bản ghi đã không còn.
   DELETE: async (req: Request, res: Response, responseData: unknown): Promise<string> => {
     let proposal: ParsedProposal | null = null;
     try {

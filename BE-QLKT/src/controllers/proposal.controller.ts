@@ -40,12 +40,12 @@ import type {
 const ALL_PROPOSAL_TYPES = Object.values(PROPOSAL_TYPES);
 
 /**
- * Builds the award filter map and applies MANAGER unit scoping. Sends a 403 and
- * returns null when the manager's unit cannot be resolved — callers `return` on null.
- * @param user - Authenticated user
- * @param query - Award filter query
- * @param res - Response (used only to emit the 403)
- * @returns Filter map, or null when forbidden
+ * Dựng map filter khen thưởng và giới hạn theo đơn vị nếu là Manager.
+ * Trả null (và đã gửi 403) khi không xác định được đơn vị của Manager — caller `return` khi null.
+ * @param user - Người dùng đã xác thực
+ * @param query - Tham số lọc khen thưởng
+ * @param res - Response (chỉ dùng để gửi 403)
+ * @returns Map filter, hoặc null khi không có quyền
  */
 async function resolveAwardFilters(
   user: { role: string; id: string },
@@ -64,6 +64,7 @@ async function resolveAwardFilters(
 }
 
 class ProposalController {
+  /** Nộp đề xuất khen thưởng mới (dispatch theo loại đề xuất qua strategy). */
   submitProposal = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const body = req.body as SubmitProposalBody;
@@ -76,6 +77,7 @@ class ProposalController {
         'Loại đề xuất không hợp lệ. Chỉ chấp nhận: ' + ALL_PROPOSAL_TYPES.join(', ')
       );
     }
+    // Khen thưởng đột xuất chỉ Admin quản lý — Manager không được đề xuất.
     if (userRole === ROLES.MANAGER && type === PROPOSAL_TYPES.DOT_XUAT) {
       return ResponseHelper.forbidden(
         res,
@@ -85,6 +87,7 @@ class ProposalController {
     if (!title_data) {
       return ResponseHelper.badRequest(res, 'Vui lòng gửi dữ liệu đề xuất');
     }
+    // title_data đến qua multipart nên có thể là chuỗi JSON cần parse.
     let titleDataParsed;
     try {
       titleDataParsed = typeof title_data === 'string' ? JSON.parse(title_data) : title_data;
@@ -93,6 +96,7 @@ class ProposalController {
     }
     const files = req.files as Record<string, Express.Multer.File[]> | undefined;
     const attachedFiles = files?.attached_files || [];
+    // Một số loại (HCCSVV/HCQKQT/KNC) bắt buộc có tháng đề xuất hợp lệ 1-12.
     const parsedMonthRaw = typeof thang === 'string' ? parseInt(thang, 10) : Number(thang);
     const parsedMonth = Number.isInteger(parsedMonthRaw) ? parsedMonthRaw : null;
     if (
@@ -114,6 +118,7 @@ class ProposalController {
       ghi_chu,
       parsedMonth
     );
+    // Báo cho Admin biết có đề xuất mới — gửi best-effort, lỗi không chặn response.
     void safeNotify(
       {
         userId: user.id,
@@ -126,6 +131,7 @@ class ProposalController {
     return ResponseHelper.created(res, { message: result.message, data: result.proposal });
   });
 
+  /** Lấy danh sách đề xuất (service tự lọc theo vai trò người gọi). */
   getProposals = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const query = req.query as GetProposalsQuery;
@@ -140,6 +146,7 @@ class ProposalController {
     });
   });
 
+  /** Lấy chi tiết một đề xuất theo ID. */
   getProposalById = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const params = req.params as ProposalIdParams;
@@ -154,6 +161,10 @@ class ProposalController {
     });
   });
 
+  /**
+   * Duyệt đề xuất: nhập số quyết định + file PDF rồi trao khen thưởng.
+   * Số quyết định chỉ được nhập tại bước duyệt này (không có lúc nộp).
+   */
   approveProposal = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const params = req.params as ProposalIdParams;
@@ -163,6 +174,7 @@ class ProposalController {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
     }
     const files = req.files as Record<string, Express.Multer.File[]> | undefined;
+    // parseApproveBody tách dữ liệu sửa, số quyết định, PDF từ payload multipart.
     let parsed: ParsedApproveBody;
     try {
       parsed = parseApproveBody(body, files);
@@ -179,6 +191,7 @@ class ProposalController {
       body.ghi_chu || null,
       parsed.adminAttachedFiles
     );
+    // Báo cho Manager đề xuất đã được duyệt.
     void safeNotify(
       {
         userId: user.id,
@@ -188,6 +201,7 @@ class ProposalController {
       },
       () => notificationHelper.notifyManagerOnProposalApproval(result.proposal, user)
     );
+    // Báo cho từng quân nhân vừa được trao khen thưởng trong đề xuất này.
     if (result.affectedPersonnelIds?.length > 0) {
       void safeNotify(
         {
@@ -210,22 +224,14 @@ class ProposalController {
     });
   });
 
+  /** Trả file PDF quyết định khen thưởng để xem inline trên trình duyệt. */
   getPdfFile = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as GetPdfFileParams;
-    // resolveIdParam gom kiểu param Express (string | string[]) về 1 chuỗi.
-    // decodeURIComponent khôi phục tên file tiếng Việt đã bị URL-encode
-    // (vd "Quy%E1%BA%BFt.pdf" → "Quyết.pdf") để khớp đúng file trên disk.
+    // Giải mã tên file tiếng Việt đã URL-encode để khớp đúng file trên disk.
     const filename = decodeURIComponent(resolveIdParam(params.filename || ''));
 
-    // ─── PATH TRAVERSAL GUARD ───────────────────────────────────────
-    // Tấn công kinh điển: filename = "../../../etc/passwd" → service
-    // sẽ join với storage path → leak system file. Block 3 ký tự nguy hiểm:
-    //   • ".." → parent dir
-    //   • "/"  → unix path separator
-    //   • "\\" → windows path separator (an toàn trên cả 2 nền tảng)
-    // QUAN TRỌNG: phải check SAU decodeURIComponent — kẻ tấn công có thể
-    // bypass guard nếu check trước bằng cách gửi URL-encoded "%2E%2E%2F"
-    // (giải mã = "../").
+    // Chặn path traversal — phải check SAU khi decode để tránh bypass
+    // bằng "%2E%2E%2F" (giải mã ra "../").
     if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
       return ResponseHelper.badRequest(res, 'Tên file không hợp lệ');
     }
@@ -234,12 +240,14 @@ class ProposalController {
     return res.sendFile(result.filePath);
   });
 
+  /** Từ chối đề xuất kèm lý do bắt buộc. */
   rejectProposal = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const params = req.params as ProposalIdParams;
     const body = req.body as RejectProposalBody;
     const id = resolveIdParam(params.id);
     const { ghi_chu, ly_do } = body;
+    // FE có thể gửi lý do qua ghi_chu hoặc ly_do — nhận cả hai.
     const rejectReason = ghi_chu || ly_do;
     if (!id) {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
@@ -248,6 +256,7 @@ class ProposalController {
       return ResponseHelper.badRequest(res, 'Vui lòng nhập lý do từ chối');
     }
     const result = await proposalService.rejectProposal(String(id), rejectReason, user.id);
+    // Báo cho Manager đề xuất bị từ chối kèm lý do.
     void safeNotify(
       {
         userId: user.id,
@@ -263,10 +272,12 @@ class ProposalController {
     });
   });
 
+  /** Lấy danh sách khen thưởng đã trao (Manager bị giới hạn theo đơn vị). */
   getAllAwards = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const query = req.query as AwardsFilterQuery;
     const { page, limit } = parsePagination(query);
+    // resolveAwardFilters trả null (đã gửi 403) khi không xác định được đơn vị Manager.
     const filters = await resolveAwardFilters(user, query, res);
     if (!filters) return;
     const result = await proposalService.getAllAwards(filters, page, limit);
@@ -276,6 +287,7 @@ class ProposalController {
     });
   });
 
+  /** Xuất danh sách khen thưởng ra file Excel (cùng filter theo vai trò). */
   exportAllAwardsExcel = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const query = req.query as AwardsFilterQuery;
@@ -285,6 +297,7 @@ class ProposalController {
     sendExcelResponse(res, buffer, 'danh_sach_khen_thuong');
   });
 
+  /** Xóa một đề xuất. */
   deleteProposal = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const params = req.params as ProposalIdParams;
@@ -293,6 +306,7 @@ class ProposalController {
       return ResponseHelper.badRequest(res, 'ID đề xuất không hợp lệ');
     }
     const result = await proposalService.deleteProposal(id, user.id, user.role);
+    // Báo cho người đề xuất biết đề xuất đã bị xóa.
     void safeNotify(
       {
         userId: user.id,
@@ -313,6 +327,7 @@ class ProposalController {
     return ResponseHelper.success(res, { message: result.message, data: result.proposal });
   });
 
+  /** Lấy số liệu thống kê khen thưởng. */
   getAwardsStatistics = catchAsync(async (req: Request, res: Response) => {
     return ResponseHelper.success(res, {
       message: 'Lấy thống kê khen thưởng thành công',
@@ -320,6 +335,7 @@ class ProposalController {
     });
   });
 
+  /** Kiểm tra một quân nhân đã nhận danh hiệu này trong năm chưa. */
   checkDuplicateAward = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as CheckDuplicateAwardQuery;
     const { personnel_id, nam, danh_hieu, proposal_type } = query;
@@ -329,6 +345,7 @@ class ProposalController {
         'Thiếu thông tin: quân nhân, năm, danh hiệu và loại đề xuất'
       );
     }
+    // nam từ query có thể là chuỗi/mảng — chuẩn hóa về số trước khi truy vấn.
     const namNumber = parseYearQuery(nam);
     if (namNumber === null) {
       return ResponseHelper.badRequest(res, 'Năm không hợp lệ');
@@ -343,6 +360,7 @@ class ProposalController {
     });
   });
 
+  /** Kiểm tra một đơn vị đã nhận danh hiệu này trong năm chưa. */
   checkDuplicateUnitAward = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as CheckDuplicateUnitAwardQuery;
     const { don_vi_id, nam, danh_hieu, proposal_type } = query;
@@ -366,6 +384,7 @@ class ProposalController {
     });
   });
 
+  /** Kiểm tra trùng danh hiệu hàng loạt cho nhiều quân nhân. */
   checkDuplicateBatch = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as CheckDuplicatePersonnelBatchBody;
     const { items } = body;
@@ -377,6 +396,7 @@ class ProposalController {
     });
   });
 
+  /** Kiểm tra trùng danh hiệu hàng loạt cho nhiều đơn vị. */
   checkDuplicateUnitBatch = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as CheckDuplicateUnitBatchBody;
     const { items } = body;

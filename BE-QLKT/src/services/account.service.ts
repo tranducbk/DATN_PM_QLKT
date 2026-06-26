@@ -49,6 +49,60 @@ const ACCOUNT_QUAN_NHAN_INCLUDE = {
   },
 } as const;
 
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  ACCOUNT SERVICE — quản lý tài khoản (ATTT critical)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Nghiệp vụ phụ trợ đã tách file riêng: gán đơn vị/chức vụ →
+ *  account/unitAssignment.ts, format response → account/helpers.ts, type →
+ *  account/types.ts. File này giữ orchestration + các điểm ATTT.
+ *
+ *  ATTT POINTS QUAN TRỌNG:
+ *
+ *  ① BCRYPT HASH với cost factor = 10:
+ *     - bcrypt.hash(password, 10) → 2^10 = 1024 iteration.
+ *     - Trade-off: 10 đủ chậm (≈100ms) để chống brute force, đủ nhanh
+ *       để không block server khi nhiều user login đồng thời.
+ *     - 2026 best practice là 12+ → có thể tăng khi server mạnh hơn.
+ *     - LƯU Ý: bcrypt tự sinh salt → mỗi hash khác nhau dù cùng password
+ *       → ngăn rainbow table attack.
+ *
+ *  ② STORE password_hash (KHÔNG password plain):
+ *     - DB schema field tên `password_hash` để rõ ý đồ (không bao giờ
+ *       chứa plain text).
+ *     - Compare qua bcrypt.compare (constant-time) → KHÔNG dùng `===`
+ *       (vulnerable to timing attack).
+ *
+ *  ③ password_hash EXCLUDED khỏi mọi response:
+ *     - getAccounts / getAccountById / formatAccount đều không trả
+ *       password_hash. Chỉ login flow mới đọc field này để compare.
+ *
+ *  ④ DEFAULT_PASSWORD khi admin tạo tài khoản mới:
+ *     - Không truyền password → dùng DEFAULT_PASSWORD (configs).
+ *     - User nên đổi sau khi đăng nhập lần đầu.
+ *
+ *  ⑤ validatePassword RULE:
+ *     - Tối thiểu 8 ký tự + bắt buộc có chữ hoa, chữ thường và chữ số.
+ *
+ *  ⑥ ROLE HIERARCHY:
+ *     - getAccounts: excludeSuperAdmin=true → ADMIN không thấy SUPER_ADMIN
+ *       trong list (chống enumerate role cao hơn).
+ *     - getAccountById: caller không phải SUPER_ADMIN → cấm xem tài khoản
+ *       SUPER_ADMIN (mirror list exclusion).
+ *     - deleteAccount: canManageRole chỉ cho xóa tài khoản cấp thấp hơn.
+ *
+ *  ⑦ INVALIDATE SESSION khi đổi VAI TRÒ:
+ *     - updateAccount đổi role → set refreshToken = null + emit 'force_logout'
+ *       → buộc đăng nhập lại để nhận token mang role mới (tránh dùng quyền cũ).
+ *
+ *  QUAN HỆ với QuanNhan:
+ *  - 1 TaiKhoan = 1 QuanNhan (1-1, nullable nếu là tài khoản admin
+ *    không phải quân nhân).
+ *  - quan_nhan_id = NULL → tài khoản hệ thống (SUPER_ADMIN, ADMIN).
+ *  - quan_nhan_id != NULL → tài khoản quân nhân (MANAGER, USER).
+ * ════════════════════════════════════════════════════════════════════════════
+ */
 class AccountService {
   async getAccounts(
     page: number | string = 1,
@@ -61,6 +115,7 @@ class AccountService {
     const limitNum = Number(limit);
     const skip = (pageNum - 1) * limitNum;
 
+    // Lọc theo vai trò; chấp nhận nhiều role cách nhau bởi dấu phẩy (vd "ADMIN,MANAGER")
     let roleFilter: Prisma.TaiKhoanWhereInput = {};
     if (role) {
       const roles = String(role)
@@ -69,14 +124,17 @@ class AccountService {
       roleFilter = roles.length > 1 ? { role: { in: roles } } : { role: roles[0] };
     }
 
+    // Ẩn tài khoản SUPER_ADMIN khỏi danh sách khi người gọi không đủ cấp (phân quyền)
     const excludeFilter: Prisma.TaiKhoanWhereInput = excludeSuperAdmin
       ? { role: { not: ROLES.SUPER_ADMIN } }
       : {};
 
+    // Gộp 3 điều kiện bằng AND: (ô tìm kiếm) + (lọc role) + (ẩn SUPER_ADMIN)
     const whereClause: Prisma.TaiKhoanWhereInput = {
       AND: [
         search
           ? {
+              // Tìm theo username HOẶC họ tên quân nhân, không phân biệt hoa/thường
               OR: [
                 { username: { contains: String(search), mode: 'insensitive' } },
                 { QuanNhan: { ho_ten: { contains: String(search), mode: 'insensitive' } } },
@@ -88,6 +146,7 @@ class AccountService {
       ],
     };
 
+    // Chạy song song: lấy 1 trang dữ liệu + đếm tổng số bản ghi (phục vụ phân trang)
     const [accounts, total] = await Promise.all([
       accountRepository.findManyRaw({
         skip,
@@ -101,8 +160,10 @@ class AccountService {
       accountRepository.count(whereClause),
     ]);
 
+    // Rút gọn mỗi bản ghi về các field cần cho danh sách (KHÔNG kèm password_hash)
     const formattedAccounts: FormattedAccount[] = accounts.map(account => {
       const quanNhan = account.QuanNhan;
+      // Ưu tiên đơn vị trực thuộc; không có thì lấy cơ quan đơn vị (đơn vị cha)
       const donVi = quanNhan?.DonViTrucThuoc || quanNhan?.CoQuanDonVi;
       return {
         id: account.id,
@@ -129,6 +190,7 @@ class AccountService {
   }
 
   async getAccountById(id: string, callerRole?: string): Promise<Record<string, unknown>> {
+    // Lấy tài khoản kèm hồ sơ quân nhân, đơn vị (CQDV + ĐVTT) và chức vụ
     const account = await accountRepository.findUniqueRaw({
       where: { id },
       include: ACCOUNT_QUAN_NHAN_INCLUDE,
@@ -143,6 +205,7 @@ class AccountService {
       throw new ForbiddenError('Không có quyền xem tài khoản này');
     }
 
+    // Chỉ trả về các field cho phép (whitelist) — tuyệt đối không lộ password_hash
     return {
       id: account.id,
       username: account.username,
@@ -210,6 +273,7 @@ class AccountService {
       chuc_vu_id,
     } = data;
 
+    // Chặn trùng username (chỉ cần biết có tồn tại hay không nên select mỗi id)
     const existingAccount = await accountRepository.findUniqueRaw({
       where: { username },
       select: { id: true },
@@ -223,6 +287,8 @@ class AccountService {
     let personnelDataForCreate: Prisma.QuanNhanCreateInput | null = null;
     let heSoChucVu = 0;
 
+    // Gắn tài khoản vào quân nhân có sẵn: kiểm tra song song quân nhân tồn tại
+    // và chưa bị gắn tài khoản khác (mỗi quân nhân chỉ được 1 tài khoản)
     if (personnel_id) {
       const [personnel, existingPersonnelAccount] = await Promise.all([
         quanNhanRepository.findIdById(personnel_id),
@@ -240,6 +306,8 @@ class AccountService {
       }
     }
 
+    // Tài khoản MANAGER/USER nhưng chưa gắn quân nhân → tự dựng hồ sơ quân nhân mới
+    // (helper validate đơn vị + chức vụ); trả null nếu là tài khoản admin
     const unitData = await resolvePersonnelDataForCreate({
       role,
       username,
@@ -253,6 +321,7 @@ class AccountService {
       heSoChucVu = unitData.heSoChucVu;
     }
 
+    // Không nhập password → dùng mật khẩu mặc định; chỉ validate khi admin tự nhập
     const finalPassword = password || DEFAULT_PASSWORD;
     if (!finalPassword) {
       throw new ValidationError('Mật khẩu mặc định chưa được cấu hình (DEFAULT_PASSWORD)');
@@ -261,10 +330,24 @@ class AccountService {
       this.validatePassword(password);
     }
 
+    // Băm mật khẩu trước khi lưu (xem điểm ① trong header)
     const hashedPassword = await bcrypt.hash(finalPassword, 10);
 
+    // ─── TRANSACTION: tạo tài khoản + (nếu MANAGER/USER chưa gắn quân nhân) tự sinh hồ sơ ───
+    // Một bộ thao tác phải đi cùng nhau, gói trong 1 transaction để không lệch
+    // dữ liệu (vd có TaiKhoan nhưng thiếu QuanNhan, hoặc so_luong đếm sai khi 1
+    // bước fail). Bất kỳ throw nào → Prisma ROLLBACK toàn bộ.
+    // SQL minh hoạ (nhánh có personnelDataForCreate):
+    //   INSERT INTO "QuanNhan"     (cccd, ho_ten, chuc_vu_id, ...) VALUES (NULL, $username, ...);
+    //     -- cccd=NULL: tạo trước, CCCD điền sau khi cập nhật hồ sơ
+    //   INSERT INTO "LichSuChucVu" (quan_nhan_id, chuc_vu_id, he_so_chuc_vu, ngay_bat_dau)
+    //     VALUES ($qnId, $chucVu, $heSo, NOW());          -- mốc giữ chức hiện tại
+    //   UPDATE "DonViTrucThuoc" SET so_luong = so_luong + 1 WHERE id = $dvtt;
+    //     -- hoặc "CoQuanDonVi" nếu không có ĐVTT (ưu tiên ĐVTT, tránh đếm 2 lần)
+    //   INSERT INTO "TaiKhoan"     (quan_nhan_id, username, password_hash, role) VALUES (...);
     const newAccount = await prisma.$transaction(async prismaTx => {
       if (personnelDataForCreate) {
+        // Tạo hồ sơ quân nhân tối thiểu (CCCD/ngày sinh điền sau khi cập nhật hồ sơ)
         const newPersonnel = await quanNhanRepository.create(
           {
             cccd: null,
@@ -279,6 +362,7 @@ class AccountService {
         );
         finalPersonnelId = newPersonnel.id;
 
+        // Mở mốc giữ chức vụ hiện tại (ngay_ket_thuc = null) để tính thâm niên về sau
         await positionHistoryRepository.create(
           {
             quan_nhan_id: newPersonnel.id,
@@ -299,6 +383,7 @@ class AccountService {
         }
       }
 
+      // Tạo tài khoản, gắn với quân nhân vừa tạo (hoặc null nếu là tài khoản admin)
       return accountRepository.createRaw(
         {
           data: {
@@ -319,6 +404,7 @@ class AccountService {
   async updateAccount(id: string, data: UpdateAccountData): Promise<FormattedAccount> {
     const { role, password, co_quan_don_vi_id, don_vi_truc_thuoc_id, chuc_vu_id } = data;
 
+    // Lấy role + đơn vị/chức vụ hiện tại để so sánh với dữ liệu cập nhật
     const account = await accountRepository.findUniqueRaw({
       where: { id },
       select: {
@@ -340,8 +426,10 @@ class AccountService {
       throw new NotFoundError('Tài khoản');
     }
 
+    // effectiveRole = role sau cập nhật (giữ role cũ nếu lần này không đổi)
     const effectiveRole = role ?? account.role;
     const roleChanging = !!role && role !== account.role;
+    // Có gửi kèm thông tin đơn vị/chức vụ mới hay không
     const unitFieldsProvided =
       co_quan_don_vi_id !== undefined ||
       don_vi_truc_thuoc_id !== undefined ||
@@ -380,6 +468,7 @@ class AccountService {
     } | null = null;
 
     if (reassignUnit) {
+      // Validate + chuẩn hóa đơn vị/chức vụ mới (MANAGER bỏ ĐVTT, USER cần đủ cả 2)
       resolvedUnit = await resolveUnitReassignment({
         effectiveRole,
         co_quan_don_vi_id,
@@ -388,11 +477,13 @@ class AccountService {
       });
     }
 
+    // Chỉ cập nhật field nào được gửi lên (partial update)
     const updateData: Prisma.TaiKhoanUncheckedUpdateInput = {};
     if (role) {
       updateData.role = role;
     }
     if (password) {
+      // Đổi mật khẩu → validate rồi băm lại trước khi lưu
       this.validatePassword(password);
       updateData.password_hash = await bcrypt.hash(password, 10);
     }
@@ -403,11 +494,13 @@ class AccountService {
       updateData.prevRefreshToken = null;
     }
 
+    // Cùng 1 transaction: cập nhật quân nhân + xoay lịch sử chức vụ + đếm lại đơn vị + cập nhật tài khoản
     const updatedAccount = await prisma.$transaction(async tx => {
       if (resolvedUnit && account.QuanNhan) {
         const qn = account.QuanNhan;
         const positionChanged = qn.chuc_vu_id !== resolvedUnit.chuc_vu_id;
 
+        // Cập nhật đơn vị + chức vụ mới cho quân nhân
         await quanNhanRepository.update(
           qn.id,
           {
@@ -424,9 +517,11 @@ class AccountService {
         }
 
         // Unit move: keep so_luong counters correct (decrement old, increment new).
+        // Đơn vị "chính" = ĐVTT nếu có, ngược lại là CQDV (ưu tiên ĐVTT, tránh đếm trùng)
         const oldPrimaryUnitId = qn.don_vi_truc_thuoc_id || qn.co_quan_don_vi_id;
         const newPrimaryUnitId =
           resolvedUnit.don_vi_truc_thuoc_id || resolvedUnit.co_quan_don_vi_id;
+        // Chỉ điều chỉnh so_luong khi thực sự chuyển sang đơn vị khác
         if (oldPrimaryUnitId !== newPrimaryUnitId) {
           if (oldPrimaryUnitId) {
             await adjustUnitCount(tx, oldPrimaryUnitId, !qn.don_vi_truc_thuoc_id, 'decrement');
@@ -447,6 +542,8 @@ class AccountService {
       );
     });
 
+    // Đổi đơn vị/chức vụ ảnh hưởng điều kiện khen thưởng → tính lại hồ sơ hằng năm.
+    // Lỗi recalc chỉ ghi log, không chặn việc cập nhật tài khoản (best-effort)
     if (resolvedUnit && account.quan_nhan_id) {
       try {
         await profileService.recalculateAnnualProfile(account.quan_nhan_id);
@@ -459,6 +556,9 @@ class AccountService {
       }
     }
 
+    // Đổi vai trò → quyền hạn thay đổi, nhưng JWT cũ vẫn còn hiệu lực tới khi hết
+    // hạn. Đẩy 'force_logout' qua socket buộc session cũ đăng nhập lại để nhận
+    // token mang role mới (tránh dùng quyền cũ sau khi đã bị đổi).
     if (roleChanging) {
       emitToUser(id, 'force_logout', {
         message: 'Vai trò tài khoản của bạn vừa được thay đổi. Vui lòng đăng nhập lại.',
@@ -508,6 +608,7 @@ class AccountService {
     username?: string;
     ho_ten?: string | null;
   }> {
+    // Lấy tài khoản kèm hồ sơ quân nhân (cần để dọn dữ liệu liên quan khi xóa)
     const account = await accountRepository.findUniqueRaw({
       where: { id },
       include: {
@@ -519,10 +620,12 @@ class AccountService {
       throw new NotFoundError('Tài khoản');
     }
 
+    // Phân quyền: chỉ xóa được tài khoản có cấp thấp hơn người thực hiện
     if (!canManageRole(actorRole, account.role)) {
       throw new ForbiddenError('Bạn chỉ có thể xóa tài khoản có cấp thấp hơn mình.');
     }
 
+    // Tài khoản admin (không gắn quân nhân) → xóa thẳng, không có dữ liệu phụ thuộc
     if (!account.QuanNhan) {
       await accountRepository.delete(id);
       return { message: 'Xóa tài khoản thành công', username: account.username, ho_ten: null };
@@ -533,9 +636,11 @@ class AccountService {
     const personnelId = account.QuanNhan.id;
     // DVTT takes priority — CQDV may be the parent unit
     const unitId = account.QuanNhan.don_vi_truc_thuoc_id || account.QuanNhan.co_quan_don_vi_id;
+    // Đơn vị chính là CQDV chỉ khi không có ĐVTT → quyết định bảng nào sẽ giảm so_luong
     const isCoQuanDonVi =
       !account.QuanNhan.don_vi_truc_thuoc_id && !!account.QuanNhan.co_quan_don_vi_id;
 
+    // Tìm mọi đề xuất có chứa quân nhân này trong cột JSON data_danh_hieu HOẶC data_nien_han
     const proposals = await proposalRepository.findManyRaw({
       where: {
         OR: [
@@ -555,6 +660,7 @@ class AccountService {
       },
     });
 
+    // Đề xuất đang chờ duyệt → chặn xóa để không mất đề xuất, trừ khi ép xóa (forceDelete)
     const pendingProposals = proposals.filter(p => p.status === PROPOSAL_STATUS.PENDING);
 
     if (pendingProposals.length > 0 && !forceDelete) {
@@ -565,6 +671,7 @@ class AccountService {
     }
 
     await prisma.$transaction(async prismaTx => {
+      // Gỡ quân nhân khỏi từng đề xuất: lọc bỏ các dòng mang personnel_id của quân nhân này
       for (const proposal of proposals) {
         let updated = false;
 
@@ -593,6 +700,7 @@ class AccountService {
           const dataNienHan = proposal.data_nien_han as unknown[] | null;
           const dataThanhTich = proposal.data_thanh_tich as unknown[] | null;
 
+          // Sau khi gỡ, nếu đề xuất không còn dòng nào → xóa hẳn; còn dòng → lưu lại bản đã lọc
           const isEmpty =
             (!dataDanhHieu || dataDanhHieu.length === 0) &&
             (!dataNienHan || dataNienHan.length === 0) &&
@@ -614,10 +722,12 @@ class AccountService {
         }
       }
 
+      // Xóa tài khoản và hồ sơ quân nhân
       await accountRepository.delete(id, prismaTx);
 
       await quanNhanRepository.delete(personnelId, prismaTx);
 
+      // Giảm số lượng (so_luong) của đơn vị chính: CQDV hay ĐVTT tùy isCoQuanDonVi
       if (unitId) {
         try {
           if (isCoQuanDonVi) {

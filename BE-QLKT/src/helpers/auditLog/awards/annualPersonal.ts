@@ -5,6 +5,16 @@ import { getDanhHieuName, resolveDanhHieuFromRecord } from '../../../constants/d
 import { routeParamId, DanhHieuHangNamWithHoTen } from './shared';
 import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
 
+// Sinh mô tả audit log cho danh hiệu cá nhân hằng năm theo từng hành động.
+
+/**
+ * Map hành động (CREATE/UPDATE/DELETE/BULK/IMPORT) sang hàm tạo mô tả audit log
+ * cho danh hiệu cá nhân hằng năm.
+ * @param req - Request chứa body/params của thao tác
+ * @param res - Response của thao tác
+ * @param responseData - Dữ liệu trả về để trích tên quân nhân, danh hiệu, năm
+ * @returns Chuỗi mô tả tiếng Việt ghi vào nhật ký hệ thống
+ */
 export const annualRewards: Record<
   string,
   (req: Request, res: Response, responseData: unknown) => string | Promise<string>
@@ -26,10 +36,11 @@ export const annualRewards: Record<
         hoTen = personnel?.ho_ten || '';
       } catch (error) {
         console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-        // best-effort — audit description must not throw
+        // Best-effort — mô tả audit log không được phép throw
       }
     }
 
+    // Ưu tiên tên quân nhân từ dữ liệu trả về nếu có
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       const reward = data?.data || data;
@@ -38,7 +49,7 @@ export const annualRewards: Record<
       }
     } catch (error) {
       console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-      // best-effort — audit description must not throw
+      // Best-effort — mô tả audit log không được phép throw
     }
 
     const xepLoai = req.body?.xep_loai || '';
@@ -65,6 +76,7 @@ export const annualRewards: Record<
       if (reward?.QuanNhan?.ho_ten) {
         hoTen = reward.QuanNhan.ho_ten;
       } else if (rewardId) {
+        // Dữ liệu trả về thiếu tên thì tra ngược theo id bản ghi
         const rewardRecord = (await danhHieuHangNamRepository.findUnique({
           where: { id: rewardId },
           include: { QuanNhan: { select: { ho_ten: true } } },
@@ -73,7 +85,7 @@ export const annualRewards: Record<
       }
     } catch (error) {
       console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-      // best-effort — audit description must not throw
+      // Best-effort — mô tả audit log không được phép throw
     }
 
     const xepLoai = req.body?.xep_loai || '';
@@ -91,6 +103,7 @@ export const annualRewards: Record<
     let danhHieu = '';
     let nam = '';
 
+    // Lấy thông tin từ dữ liệu trả về, không truy vấn lại vì bản ghi đã bị xóa
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       const reward = data?.data || data;
@@ -103,7 +116,7 @@ export const annualRewards: Record<
       }
     } catch (error) {
       console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-      // best-effort — audit description must not throw
+      // Best-effort — mô tả audit log không được phép throw
     }
 
     const danhHieuName = getDanhHieuName(danhHieu);
@@ -124,6 +137,7 @@ export const annualRewards: Record<
     let skippedCount = 0;
     let errorCount = 0;
 
+    // Đếm số quân nhân được chọn để thêm đồng loạt
     try {
       const personnelIds =
         typeof req.body?.personnel_ids === 'string'
@@ -132,9 +146,10 @@ export const annualRewards: Record<
       personnelCount = Array.isArray(personnelIds) ? personnelIds.length : 0;
     } catch (error) {
       console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-      // best-effort — audit description must not throw
+      // Best-effort — mô tả audit log không được phép throw
     }
 
+    // Đếm kết quả thực tế từ dữ liệu trả về
     try {
       const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
       const result = data?.data || data;
@@ -143,7 +158,7 @@ export const annualRewards: Record<
       errorCount = result?.errors || 0;
     } catch (error) {
       console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-      // best-effort — audit description must not throw
+      // Best-effort — mô tả audit log không được phép throw
     }
 
     const danhHieuName = getDanhHieuName(danhHieu);
@@ -193,7 +208,7 @@ export const annualRewards: Record<
       }
     } catch (error) {
       console.error('Audit log helper fallback triggered (helpers/auditLog/awards.ts):', error);
-      // best-effort — audit description must not throw
+      // Best-effort — mô tả audit log không được phép throw
     }
 
     return `Nhập dữ liệu danh hiệu hằng năm từ file: ${fileName}`;

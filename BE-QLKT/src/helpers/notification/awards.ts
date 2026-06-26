@@ -1,3 +1,35 @@
+/*
+ * ════════════════════════════════════════════════════════════════════════════
+ *  NOTIFICATION BUILDER — KHEN THƯỞNG (awards)
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ *  Đây là tầng builder: với mỗi sự kiện liên quan KHEN THƯỞNG, file này
+ *  (1) tìm DANH SÁCH NGƯỜI NHẬN phù hợp, (2) dựng NỘI DUNG thông báo tiếng
+ *  Việt, rồi (3) gọi repository lưu DB + emitNotificationToUser đẩy socket
+ *  real-time ('new_notification'). Phần lưu + emit dùng lại đúng pattern của
+ *  helpers.ts (createMany một lần cho cả lô, rồi emit lần lượt).
+ *
+ *  CÁC SỰ KIỆN ĐƯỢC PHỤC VỤ TRONG FILE NÀY:
+ *  - notifyOnAwardDeleted       : xóa 1 khen thưởng của quân nhân
+ *  - notifyUsersOnAwardApproved : duyệt đề xuất → ghi nhận khen thưởng
+ *  - notifyAdminsOnBulkBypass   : SUPER_ADMIN sửa dữ liệu cũ (bỏ qua ĐK)
+ *  - notifyOnImport             : nhập dữ liệu khen thưởng bằng Excel
+ *  - safeNotifyImport           : bọc fire-and-forget quanh notifyOnImport
+ *  (notifyOnBulkAwardAdded, notifyOnUnitAwardDeleted nằm ở file riêng
+ *   awardsBulkAdded.ts, re-export ở cuối file)
+ *
+ *  AI NHẬN THÔNG BÁO — nguyên tắc chung:
+ *  - Quân nhân được/bị tác động (qua account gắn quan_nhan_id).
+ *  - MANAGER quản lý đơn vị của quân nhân đó.
+ *  - Phạm vi đơn vị ưu tiên CQDV (co_quan_don_vi_id) trước DVTT
+ *    (don_vi_truc_thuoc_id), vì MANAGER quản ở cấp CQDV.
+ *
+ *  Mọi hàm trả về SỐ thông báo đã tạo; hầu hết bọc try/catch trả 0 khi lỗi vì
+ *  thông báo là tác vụ phụ (caller gọi fire-and-forget) — không được làm hỏng
+ *  thao tác nghiệp vụ chính.
+ * ════════════════════════════════════════════════════════════════════════════
+ */
+
 import {
   NOTIFICATION_TYPES,
   RESOURCE_TYPES,
@@ -59,6 +91,8 @@ interface NotificationInput {
   [key: string]: unknown;
 }
 
+// Báo khi 1 khen thưởng của quân nhân bị Admin xóa.
+// Hai nhóm người nhận: (1) MANAGER quản lý đơn vị quân nhân, (2) chính quân nhân.
 async function notifyOnAwardDeleted(
   award: AwardInfo,
   personnel: PersonnelInfo,
@@ -66,15 +100,21 @@ async function notifyOnAwardDeleted(
   adminUsername: string
 ): Promise<number> {
   try {
+    // Gom mọi thông báo vào mảng này để lưu DB + emit socket một lần ở cuối hàm.
     const notifications: NotificationInput[] = [];
+    // Đổi username thô → tên hiển thị (ho_ten) cho câu thông báo dễ đọc.
     const adminDisplayName = await getDisplayName(adminUsername);
 
+    // awardType là mã loại đề xuất → đổi sang nhãn tiếng Việt của khen thưởng.
     const awardTypeName = getAwardLabelByProposalType(awardType);
 
+    // Năm khen thưởng (rỗng nếu thiếu) — chỉ chèn "năm X" vào câu khi có giá trị.
     const nam = award.nam || '';
 
+    // Xác định đơn vị của quân nhân: CQDV trước, DVTT sau (CQDV là cấp cha).
     const donViId = personnel.co_quan_don_vi_id || personnel.don_vi_truc_thuoc_id;
     if (donViId) {
+      // Bắt cả MANAGER ở cấp CQDV lẫn DVTT khớp donViId — để không sót ai quản lý.
       const managers = await accountRepository.findManyRaw({
         where: {
           role: ROLES.MANAGER,
@@ -104,6 +144,8 @@ async function notifyOnAwardDeleted(
       });
     }
 
+    // Người nhận thứ hai: chính quân nhân (nếu có tài khoản) — báo bằng giọng
+    // "của bạn", dẫn về trang hồ sơ cá nhân thay vì trang quản lý.
     const personnelAccount = await accountRepository.findFirstRaw({
       where: {
         quan_nhan_id: personnel.id,
@@ -130,6 +172,7 @@ async function notifyOnAwardDeleted(
     }
 
     if (notifications.length > 0) {
+      // Ghi cả lô vào DB rồi đẩy socket real-time ('new_notification') cho từng người.
       await notificationRepository.createMany(notifications);
       notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
     }
@@ -141,12 +184,17 @@ async function notifyOnAwardDeleted(
   }
 }
 
+// Báo cho từng quân nhân khi đề xuất khen thưởng của họ được Admin duyệt.
+// Một đề xuất có thể chứa nhiều quân nhân + nhiều LOẠI dữ liệu khen thưởng
+// (danh hiệu hằng năm, thành tích NCKH, niên hạn, cống hiến); hàm gom đúng
+// phần của mỗi người để dựng câu liệt kê "đã nhận: A, B, C".
 async function notifyUsersOnAwardApproved(
   personnelIds: string[],
   proposal: ProposalAwardData,
   approverUsername: string
 ): Promise<number> {
   try {
+    // Đề xuất không gắn quân nhân nào → không có ai để báo.
     if (!personnelIds || personnelIds.length === 0) {
       return 0;
     }
@@ -154,6 +202,7 @@ async function notifyUsersOnAwardApproved(
     const notifications: NotificationInput[] = [];
     const approverDisplayName = await getDisplayName(approverUsername);
 
+    // Batch query toàn bộ account theo danh sách quan_nhan_id (tránh N+1).
     const accounts = await accountRepository.findManyRaw({
       where: {
         quan_nhan_id: {
@@ -167,15 +216,20 @@ async function notifyUsersOnAwardApproved(
       },
     });
 
+    // 4 cột JSON trên đề xuất, mỗi cột là 1 loại khen thưởng. Cột nào không
+    // dùng cho loại đề xuất này sẽ là null → toArray() trả mảng rỗng an toàn.
     const toArray = (v: unknown): Record<string, unknown>[] => (Array.isArray(v) ? v : []);
-    const danhHieuData = toArray(proposal.data_danh_hieu);
-    const thanhTichData = toArray(proposal.data_thanh_tich);
-    const nienHanData = toArray(proposal.data_nien_han);
-    const congHienData = toArray(proposal.data_cong_hien);
+    const danhHieuData = toArray(proposal.data_danh_hieu); // danh hiệu hằng năm
+    const thanhTichData = toArray(proposal.data_thanh_tich); // thành tích NCKH
+    const nienHanData = toArray(proposal.data_nien_han); // niên hạn (HCCSVV)
+    const congHienData = toArray(proposal.data_cong_hien); // cống hiến (HCBVTQ)
 
     for (const account of accounts) {
+      // Gom các khen thưởng thuộc riêng quân nhân này từ cả 4 loại dữ liệu.
+      // DANH_HIEU_MAP đổi mã danh hiệu (vd 'BKBQP') sang tên hiển thị tiếng Việt.
       const userAwards: string[] = [];
 
+      // Lọc danh hiệu hằng năm của riêng quân nhân này → đẩy "tên (năm X)" vào userAwards.
       const userDanhHieu = danhHieuData.filter(
         (item: Record<string, unknown>) => item.personnel_id === account.quan_nhan_id
       );
@@ -186,6 +240,7 @@ async function notifyUsersOnAwardApproved(
         }
       });
 
+      // Tương tự cho niên hạn (HCCSVV) của quân nhân này.
       const userNienHan = nienHanData.filter(
         (item: Record<string, unknown>) => item.personnel_id === account.quan_nhan_id
       );
@@ -196,6 +251,7 @@ async function notifyUsersOnAwardApproved(
         }
       });
 
+      // Tương tự cho cống hiến (HCBVTQ) của quân nhân này.
       const userCongHien = congHienData.filter(
         (item: Record<string, unknown>) => item.personnel_id === account.quan_nhan_id
       );
@@ -206,6 +262,8 @@ async function notifyUsersOnAwardApproved(
         }
       });
 
+      // Thành tích NCKH định danh loại qua field `loai` (khác 3 loại trên
+      // dùng `danh_hieu`) — cấu trúc dữ liệu mỗi loại đề xuất khác nhau.
       const userThanhTich = thanhTichData.filter(
         (item: Record<string, unknown>) => item.personnel_id === account.quan_nhan_id
       );
@@ -216,6 +274,8 @@ async function notifyUsersOnAwardApproved(
         }
       });
 
+      // Liệt kê tên khen thưởng nếu gom được; nếu không khớp loại nào thì gửi
+      // câu chung chung để vẫn báo cho quân nhân biết họ được ghi nhận.
       let message = '';
       if (userAwards.length > 0) {
         message = `Khen thưởng của bạn đã được ${approverDisplayName} thêm vào hệ thống: ${userAwards.join(
@@ -233,6 +293,8 @@ async function notifyUsersOnAwardApproved(
         message: message,
         resource: RESOURCE_TYPES.PROPOSALS,
         tai_nguyen_id: proposal.id,
+        // Quân nhân có quyền MANAGER vẫn được báo, nhưng dẫn về trang quản lý
+        // hồ sơ; quân nhân thường dẫn về dashboard cá nhân.
         link:
           account.role === ROLES.MANAGER
             ? `/manager/personnel/${account.quan_nhan_id}`
@@ -241,6 +303,7 @@ async function notifyUsersOnAwardApproved(
     }
 
     if (notifications.length > 0) {
+      // Ghi cả lô vào DB rồi đẩy socket real-time ('new_notification') cho từng người.
       await notificationRepository.createMany(notifications);
       notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
     }
@@ -273,6 +336,7 @@ async function notifyAdminsOnBulkBypass(
   saUsername: string
 ): Promise<number> {
   try {
+    // Báo cho TẤT CẢ ADMIN — minh bạch việc SUPER_ADMIN can thiệp dữ liệu cũ (bỏ qua ĐK).
     const admins = await accountRepository.findManyRaw({
       where: { role: ROLES.ADMIN },
       select: { id: true, role: true },
@@ -281,7 +345,9 @@ async function notifyAdminsOnBulkBypass(
 
     const saDisplayName = await getDisplayName(saUsername);
     const awardTypeName = getAwardLabelByProposalType(awardType);
+    // Tổng số đối tượng bị tác động (quân nhân + đơn vị).
     const targetCount = personnelIds.length + unitIds.length;
+    // Đề xuất đơn vị đếm theo số đơn vị; còn lại đếm theo số quân nhân.
     const targetText =
       awardType === PROPOSAL_TYPES.DON_VI_HANG_NAM
         ? `${unitIds.length} đơn vị`
@@ -302,7 +368,9 @@ async function notifyAdminsOnBulkBypass(
       link: `/admin/awards?nam=${nam}`,
     }));
 
+    // Đã dựng message nhưng không tác động đối tượng nào → bỏ, khỏi ghi DB.
     if (targetCount === 0) return 0;
+    // Ghi cả lô vào DB rồi đẩy socket real-time cho từng ADMIN.
     await notificationRepository.createMany(notifications);
     notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
     return notifications.length;
@@ -328,9 +396,12 @@ async function notifyOnImport(
   unitIds: string[] = []
 ): Promise<number> {
   try {
+    // Báo cáo nhập dữ liệu là tùy chọn — admin có thể tắt qua feature flag
+    // để tránh spam thông báo khi import số lượng lớn.
     const enabled = await isFeatureEnabled('allow_notify_import');
     if (!enabled) return 0;
 
+    // Lấy username của admin chạy import để hiển thị trong câu thông báo.
     const admin = await accountRepository.findUniqueRaw({
       where: { id: adminId },
       select: { username: true },
@@ -338,14 +409,18 @@ async function notifyOnImport(
     if (!admin) return 0;
 
     const adminDisplayName = await getDisplayName(admin.username);
+    // Suy ra nhãn khen thưởng từ slug: ưu tiên tên theo loại đề xuất, không có
+    // thì lấy tên tiếng Việt của resource, cuối cùng mới dùng slug thô.
     const meta = AWARD_RESOURCE[awardResource as keyof typeof AWARD_RESOURCE];
     const proposalType = meta?.proposalType ?? null;
     const awardLabel = proposalType ? LOAI_DE_XUAT_MAP[proposalType] : (meta?.vi ?? awardResource);
 
-    // Collect affected unit IDs
+    // Gom mọi đơn vị bị ảnh hưởng: cả CQDV lẫn DVTT của mỗi quân nhân (Set để
+    // khử trùng) — sẽ dùng để tìm đúng MANAGER cần báo.
     const affectedUnitIds = new Set<string>();
 
     if (personnelIds.length > 0) {
+      // Khen thưởng cá nhân: tra CQDV + DVTT của từng quân nhân được nhập.
       const personnel = await quanNhanRepository.findManyRaw({
         where: { id: { in: personnelIds } },
         select: { co_quan_don_vi_id: true, don_vi_truc_thuoc_id: true },
@@ -356,12 +431,15 @@ async function notifyOnImport(
       }
     }
 
+    // Khen thưởng đơn vị: thêm thẳng id đơn vị vào tập bị ảnh hưởng.
     for (const uid of unitIds) {
       affectedUnitIds.add(uid);
     }
 
+    // Không xác định được đơn vị nào → không có MANAGER để báo.
     if (affectedUnitIds.size === 0) return 0;
 
+    // Tìm MANAGER quản các đơn vị bị ảnh hưởng (khớp CQDV hoặc DVTT).
     const managers = await accountRepository.findManyRaw({
       where: {
         role: ROLES.MANAGER,
@@ -386,7 +464,8 @@ async function notifyOnImport(
       link: string | null;
     }[] = [];
 
-    // Notify managers
+    // Một MANAGER có thể khớp nhiều đơn vị trong affectedUnitIds → dedupe theo
+    // id để mỗi người chỉ nhận 1 thông báo import.
     if (managers.length > 0) {
       const uniqueManagers = [...new Map(managers.map(m => [m.id, m])).values()];
       for (const manager of uniqueManagers) {
@@ -403,7 +482,8 @@ async function notifyOnImport(
       }
     }
 
-    // Notify personnel accounts for individual awards only.
+    // Chỉ báo cho chính quân nhân với khen thưởng cá nhân; khen thưởng đơn vị
+    // (unitIds) không gắn với cá nhân nào nên bỏ qua nhánh này.
     if (personnelIds.length > 0) {
       const personnelAccounts = await accountRepository.findManyRaw({
         where: { quan_nhan_id: { in: personnelIds } },
@@ -424,8 +504,10 @@ async function notifyOnImport(
       }
     }
 
+    // Không dựng được thông báo nào (không MANAGER, không account cá nhân) → thoát.
     if (notifications.length === 0) return 0;
 
+    // Ghi cả lô vào DB rồi đẩy socket real-time cho từng người.
     await notificationRepository.createMany(notifications);
     notifications.forEach(n => emitNotificationToUser(n.nguoi_nhan_id, n));
 
@@ -452,6 +534,7 @@ function safeNotifyImport(
   personnelIds: string[] = [],
   unitIds: string[] = []
 ): void {
+  // void = không await, chạy nền: gửi thông báo không được chặn/làm hỏng response import.
   void notifyOnImport(adminId, awardResource, importedCount, personnelIds, unitIds);
 }
 
@@ -463,4 +546,6 @@ export {
   safeNotifyImport,
 };
 
+// Builder thêm/xóa khen thưởng đơn vị hàng loạt tách riêng (logic dài), re-export
+// tại đây để caller chỉ cần import từ một module 'awards'.
 export { notifyOnBulkAwardAdded, notifyOnUnitAwardDeleted } from './awardsBulkAdded';

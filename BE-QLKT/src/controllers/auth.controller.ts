@@ -22,6 +22,7 @@ interface ChangePasswordBody {
 }
 
 class AuthController {
+  /** Đăng nhập: trả access token trong body, đặt refresh token vào cookie HttpOnly. */
   login = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as LoginBody;
     const { username, password } = body;
@@ -31,11 +32,14 @@ class AuthController {
     }
 
     const { refreshToken, ...rest } = await authService.login(username, password);
+    // Lưu refresh token vào cookie HttpOnly, không trả về body cho client
     res.cookie(REFRESH_COOKIE_NAME, refreshToken, getRefreshCookieOptions());
     return ResponseHelper.success(res, { data: rest, message: 'Đăng nhập thành công' });
   });
 
+  /** Làm mới access token dựa trên refresh token đọc từ cookie. */
   refresh = catchAsync(async (req: Request, res: Response) => {
+    // Refresh token chỉ nằm trong cookie HttpOnly, không gửi qua header
     const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME];
 
     if (!refreshToken) {
@@ -44,20 +48,24 @@ class AuthController {
 
     const { refreshToken: newRefreshToken, ...rest } =
       await authService.refreshAccessToken(refreshToken);
+    // Xoay refresh token: ghi đè cookie bằng token mới sau mỗi lần làm mới
     res.cookie(REFRESH_COOKIE_NAME, newRefreshToken, getRefreshCookieOptions());
     return ResponseHelper.success(res, { data: rest, message: 'Làm mới token thành công' });
   });
 
+  /** Đăng xuất: thu hồi refresh token và xóa cookie. */
   logout = catchAsync(async (req: Request, res: Response) => {
     const refreshToken = req.cookies?.[REFRESH_COOKIE_NAME];
 
     if (refreshToken) {
       await authService.logout(refreshToken);
     }
+    // Xóa cookie refresh token kể cả khi token không còn hợp lệ
     res.clearCookie(REFRESH_COOKIE_NAME, getRefreshClearOptions());
     return ResponseHelper.success(res, { message: 'Đăng xuất thành công' });
   });
 
+  /** Đổi mật khẩu của tài khoản đang đăng nhập. */
   changePassword = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
     const body = req.body as ChangePasswordBody;
