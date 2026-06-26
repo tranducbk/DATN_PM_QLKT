@@ -8,7 +8,7 @@ Phần cuối tổng hợp các yêu cầu phi chức năng về hiệu năng, b
 \section{Khảo sát hiện trạng}
 \label{section:2.1}
 
-Trước khi triển khai phần mềm chuyên dụng, công tác thi đua khen thưởng tại HVKHQS phụ thuộc vào ba nguồn dữ liệu: hồ sơ giấy lưu tại Phòng Chính trị, các tệp chia sẻ qua mạng nội bộ và sổ theo dõi cùng tệp lưu riêng của từng đơn vị.
+Trước khi triển khai phần mềm chuyên dụng, công tác thi đua khen thưởng tại HVKHQS phụ thuộc vào ba nguồn dữ liệu: hồ sơ giấy lưu tại Phòng Chính trị, các tệp chia sẻ qua mạng nội bộ và sổ theo dõi cùng các tệp lưu riêng của từng đơn vị.
 Qua trao đổi với cán bộ phụ trách, các đặc điểm chính như sau.
 
 Cấp đề xuất là chỉ huy các đơn vị.
@@ -25,7 +25,7 @@ Từ kết quả khảo sát, rút ra bốn nhóm vấn đề chính:
 
 \begin{enumerate}
     \item Việc tra cứu lịch sử khen thưởng cá nhân còn mất nhiều thời gian do cán bộ phải mở và đối chiếu nhiều tài liệu và các tệp khác nhau.
-    \item Đối chiếu chuỗi danh hiệu hằng năm dễ sai sót vì mỗi danh hiệu chỉ được xét trên một khoảng thời gian gần nhất chứ không phải toàn bộ quá trình. Khoảng xét lại trượt dần theo năm, có danh hiệu nhận lặp lại sau mỗi chu kỳ còn BKTTCP cá nhân chỉ nhận một lần, nên khi tính tay rất dễ nhầm.
+    \item Đối chiếu chuỗi danh hiệu hằng năm dễ sai sót vì mỗi danh hiệu chỉ được xét trên một khoảng thời gian gần nhất chứ không phải toàn bộ quá trình. Khoảng xét lại lùi dần theo năm, có danh hiệu nhận lặp lại sau mỗi chu kỳ còn BKTTCP cá nhân chỉ nhận một lần, nên khi tính tay rất dễ nhầm.
     \item Chưa có cơ chế phát hiện trùng lặp khi nhiều cán bộ cùng đề nghị một quân nhân, hoặc khi đề nghị một danh hiệu mà quân nhân đã được nhận.
     \item Quy trình thủ công chưa có cơ chế lưu vết chỉnh sửa, gây khó truy vết khi phát hiện sai sót.
 \end{enumerate}
@@ -108,8 +108,8 @@ Hệ thống hỗ trợ bảy loại đề xuất riêng biệt, mỗi loại c�
 \begin{enumerate}
     \item \textbf{Cá nhân hằng năm}: danh hiệu thi đua hằng năm của cá nhân và các mức khen thưởng cao hơn xét theo chuỗi nhiều năm.
     \item \textbf{Đơn vị hằng năm}: danh hiệu thi đua hằng năm của đơn vị và các mức khen thưởng cao hơn xét theo chuỗi nhiều năm.
-    \item \textbf{HCCSVV}: Huy chương Chiến sĩ vẻ vang theo các mốc 10 / 15 / 20 năm phục vụ tích luỹ tới năm xét.
-    \item \textbf{HCBVTQ}: Huân chương Bảo vệ Tổ quốc xét theo thời gian giữ chức vụ thuộc các nhóm hệ số khác nhau, tối thiểu 10 năm với nam và nữ được giảm 1/3 khoảng thời gian.
+    \item \textbf{HCCSVV}: Huy chương Chiến sĩ vẻ vang xét theo niên hạn phục vụ tích luỹ tới năm xét, chia ba hạng tăng dần là hạng Ba, hạng Nhì và hạng Nhất ứng với 10, 15 và 20 năm. Các hạng xét tuần tự, phải có hạng dưới trước khi đề nghị hạng trên.
+    \item \textbf{HCBVTQ}: Huân chương Bảo vệ Tổ quốc xét theo thời gian giữ chức vụ thuộc các nhóm hệ số, cũng chia ba hạng tăng dần. Hạng Ba ứng với nhóm hệ số 0{,}7, hạng Nhì với 0{,}8 và hạng Nhất với 0{,}9 đến 1{,}0. Thời gian giữ chức tối thiểu là 10 năm với nam, nữ được giảm một phần ba, và các hạng cũng xét tuần tự từ thấp lên cao.
     \item \textbf{Kỷ niệm chương}: hiện có Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN, trao một lần theo giới tính (nam 25 năm phục vụ, nữ 20 năm).
     \item \textbf{Quân kỳ quyết thắng}: Huy chương Quân kỳ quyết thắng cho cán bộ phục vụ đủ 25 năm.
     \item \textbf{Thành tích khoa học}: Khen thưởng đề tài khoa học hoặc sáng kiến khoa học.
