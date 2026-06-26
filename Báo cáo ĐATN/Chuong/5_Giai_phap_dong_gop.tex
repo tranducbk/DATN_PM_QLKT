@@ -42,7 +42,7 @@ Bảng~\ref{tab:chain-config} liệt kê cấu hình của năm cấp danh hiệ
 \subsection{Kết quả}
 Việc tự động hoá giúp xét điều kiện cho mỗi quân nhân ngay khi dữ liệu thay đổi, thay cho việc rà soát thủ công nhiều bước như trước.
 Khi kiểm chứng trên các hồ sơ mẫu mô phỏng nhiều kịch bản chuỗi danh hiệu khác nhau, hệ thống xác định đúng các trường hợp đủ điều kiện cũng như các trường hợp lỡ đợt cần đề nghị ở chu kỳ kế tiếp.
-Đáng chú ý, những tình huống dễ gây nhầm lẫn khi tính tay, chẳng hạn một danh hiệu của chu kỳ trước đã nằm ngoài khoảng thời gian xét hiện tại, đều được hệ thống xử lý chính xác.
+Đáng chú ý, những tình huống dễ gây nhầm lẫn khi tính thủ công, chẳng hạn một danh hiệu của chu kỳ trước đã nằm ngoài khoảng thời gian xét hiện tại, đều được hệ thống xử lý chính xác.
 
 \section{Số hoá quy trình đề xuất, phê duyệt và lưu vết thao tác}
 \label{section:5.2}
@@ -111,7 +111,7 @@ Mỗi loại nghiệp vụ có một Strategy nhập riêng theo cùng một int
 \subsection{Kết quả}
 Quy trình nhập hai bước cho phép đưa khối dữ liệu lịch sử lớn của Học viện vào hệ thống theo lô thay vì nhập tay từng bản ghi.
 Cơ chế xem trước phát hiện sớm các dòng sai trước khi ghi, còn cơ chế transaction đảm bảo nếu có lỗi ở bất kỳ dòng nào thì toàn bộ lần nhập được hoàn tác và không bản ghi nào lọt vào cơ sở dữ liệu ở trạng thái dở dang.
-Tệp mẫu nhập liệu cung cấp sẵn danh sách chọn các danh hiệu chuẩn ngay trong ô và giữ cố định các cột tiêu đề, nên cán bộ chỉ chọn giá trị hợp lệ thay vì gõ tay. Nhờ đó dữ liệu thống nhất và hợp lệ ngay khi cán bộ điền tệp mẫu, hạn chế sai sót trước khi nhập.
+Tệp mẫu nhập liệu cung cấp sẵn danh sách chọn các danh hiệu chuẩn ngay trong ô và giữ cố định các cột tiêu đề, nên cán bộ chỉ chọn giá trị hợp lệ thay vì nhập tay. Nhờ đó dữ liệu thống nhất và hợp lệ ngay khi cán bộ điền tệp mẫu, hạn chế sai sót trước khi nhập.
 
 \section{Phân quyền theo cơ cấu tổ chức, nhật ký đầy đủ và sao lưu định kỳ}
 \label{section:5.5}

@@ -183,7 +183,7 @@ Bên trong vùng nội dung, mỗi nhóm trang theo một kiểu bố trí riên
 \subsection{Thiết kế lớp}
 \label{subsection:4.2.3}
 
-Phần này trình bày biểu đồ lớp cho module đề xuất khen thưởng (Hình~\ref{fig:lop-dexuat}), một module nghiệp vụ phức tạp và tiêu biểu của hệ thống. Hệ thống có bảy loại khen thưởng, mỗi loại có cách dựng dữ liệu, xét điều kiện và ghi nhận riêng; nếu dồn tất cả vào một luồng rồi rẽ nhánh theo loại, phần mã đề xuất và phê duyệt sẽ dài và khó bảo trì. Vì vậy module áp dụng mẫu thiết kế Strategy: mỗi loại được tách thành một lớp Strategy độc lập, tất cả cùng cài đặt một interface chung \texttt{ProposalStrategy} quy định hai việc cốt lõi là kiểm tra rồi dựng dữ liệu khi gửi và ghi dữ liệu trong một transaction khi phê duyệt.
+Phần này trình bày biểu đồ lớp cho module đề xuất khen thưởng (Hình~\ref{fig:lop-dexuat}), một module nghiệp vụ phức tạp và tiêu biểu của hệ thống. Hệ thống có bảy loại khen thưởng, mỗi loại có cách dựng dữ liệu, xét điều kiện và ghi nhận riêng; nếu gộp tất cả vào một luồng rồi rẽ nhánh theo loại, phần mã đề xuất và phê duyệt sẽ dài và khó bảo trì. Vì vậy module áp dụng mẫu thiết kế Strategy: mỗi loại được tách thành một lớp Strategy độc lập, tất cả cùng cài đặt một interface chung \texttt{ProposalStrategy} quy định hai việc cốt lõi là kiểm tra rồi dựng dữ liệu khi gửi và ghi dữ liệu trong một transaction khi phê duyệt.
 
 Lớp \texttt{ProposalService} điều phối toàn bộ: tra một registry để chọn đúng Strategy theo loại đề xuất, giao cho Strategy đó dựng hoặc ghi dữ liệu, còn việc đọc ghi cơ sở dữ liệu uỷ cho Repository. Registry cũng xử lý hai trường hợp đặc biệt: khen thưởng đột xuất không đi theo luồng đề xuất nên không gắn Strategy nào, còn Huy chương Quân kỳ quyết thắng và Kỷ niệm chương đều chỉ trao một danh hiệu nên dùng chung một thành phần ghi danh hiệu.
 
@@ -951,7 +951,7 @@ Người dùng trong mạng nội bộ truy cập giao diện do tiến trình f
 
 Tác vụ sao lưu chạy bên trong tiến trình backend nhờ \texttt{node-cron}; lịch chạy và trạng thái được cấu hình ngay trong DevZone.
 Theo lịch mặc định lúc 02:00 hằng ngày, tiến trình sao lưu đọc dữ liệu từ 22 bảng, gồm toàn bộ dữ liệu nghiệp vụ cùng thiết lập và nhật ký hệ thống, riêng bảng thông báo không được sao lưu. Sau đó dữ liệu được kết xuất thành các câu lệnh chèn SQL và ghi ra một tệp \texttt{.sql} trong thư mục sao lưu.
-Các bản cũ quá số ngày lưu trữ đã cấu hình (mặc định 15 ngày) được tự động dọn.
+Các bản cũ quá số ngày lưu trữ đã cấu hình (mặc định 15 ngày) được tự động xoá.
 Về giám sát, PM2 cung cấp lệnh xem log thời gian thực và gom toàn bộ log vào một thư mục riêng, có thể tích hợp với hệ thống giám sát tập trung của Học viện trong tương lai.
 
 Chương này đã trình bày kiến trúc phân tầng, thiết kế gói, thiết kế lớp, thiết kế cơ sở dữ liệu, thiết kế giao diện, kết quả xây dựng, kết quả kiểm thử hộp đen các chức năng nghiệp vụ và phương án triển khai của hệ thống.

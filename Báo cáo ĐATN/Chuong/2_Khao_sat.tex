@@ -24,7 +24,7 @@ Từ kết quả khảo sát, rút ra bốn nhóm vấn đề chính:
 
 \begin{enumerate}
     \item Việc tra cứu lịch sử khen thưởng cá nhân còn mất nhiều thời gian do cán bộ phải mở và đối chiếu nhiều tài liệu và các tệp khác nhau.
-    \item Đối chiếu chuỗi danh hiệu hằng năm dễ sai sót vì mỗi danh hiệu chỉ được xét trên một khoảng thời gian gần nhất chứ không phải toàn bộ quá trình. Khoảng xét lại lùi dần theo năm, có danh hiệu nhận lặp lại sau mỗi chu kỳ còn BKTTCP cá nhân chỉ nhận một lần, nên khi tính tay rất dễ nhầm.
+    \item Đối chiếu chuỗi danh hiệu hằng năm dễ sai sót vì mỗi danh hiệu chỉ được xét trên một khoảng thời gian gần nhất chứ không phải toàn bộ quá trình. Khoảng xét lại lùi dần theo năm, có danh hiệu nhận lặp lại sau mỗi chu kỳ còn BKTTCP cá nhân chỉ nhận một lần, nên khi tính thủ công rất dễ nhầm lẫn.
     \item Chưa có cơ chế phát hiện trùng lặp khi nhiều cán bộ cùng đề nghị một quân nhân, hoặc khi đề nghị một danh hiệu mà quân nhân đã được nhận.
     \item Quy trình thủ công chưa có cơ chế lưu vết chỉnh sửa, gây khó truy vết khi phát hiện sai sót.
 \end{enumerate}
@@ -144,7 +144,7 @@ Use case chính của nhóm chức năng này là \textbf{Xem gợi ý khen thư
 Hệ thống tính từ dữ liệu lịch sử rồi sinh ra hai loại thông tin cho mỗi quân nhân.
 Thứ nhất là danh sách danh hiệu đủ điều kiện đề nghị trong năm hiện tại kèm lý do.
 Thứ hai là các chỉ số theo khoảng thời gian xét, gồm số BKBQP trong khoảng 3 năm hoặc 7 năm gần nhất, số CSTĐTQ trong khoảng 7 năm gần nhất và độ dài chuỗi CSTĐCS liên tục đang đếm.
-Cán bộ Phòng Chính trị tham chiếu các gợi ý này để chốt danh sách đề xuất.
+Cán bộ Phòng Chính trị tham chiếu các gợi ý này để xác định danh sách đề xuất.
 
 Đi kèm chức năng này là cơ chế tính lại điều kiện tự động: mỗi khi một bản ghi danh hiệu hằng năm thay đổi, hệ thống tính lại điều kiện cho riêng quân nhân bị ảnh hưởng; việc tính lại cho toàn bộ quân nhân được chạy tự động theo lịch định kỳ, và Cán bộ Phòng Chính trị cũng có thể kích hoạt thủ công khi cần. Cơ chế này giữ cho hồ sơ điều kiện hằng năm luôn nhất quán với dữ liệu danh hiệu đã ghi nhận.
 
@@ -634,7 +634,7 @@ Sau khi cán bộ xác nhận, hệ thống kiểm tra dữ liệu đầu vào, 
  & 6. & Người dùng & Đọc mô tả chi tiết của từng bản ghi hiển thị trực tiếp trong bảng \\ \hline
 \multirow{3}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
- & 4a. & Hệ thống & Cán bộ Phòng Chính trị hoặc Chỉ huy đơn vị cố xem nhật ký sao lưu, hệ thống tự lọc bỏ \\ \cline{2-4}
+ & 4a. & Hệ thống & Cán bộ Phòng Chính trị hoặc Chỉ huy đơn vị truy cập nhật ký sao lưu, hệ thống tự lọc bỏ \\ \cline{2-4}
  & 4b. & Hệ thống & Chỉ huy đơn vị chỉ thấy nhật ký do tài khoản trong phạm vi đơn vị họ thực hiện \\ \hline
 \textbf{Hậu điều kiện} & \multicolumn{3}{m{10.4cm}|}{Người dùng nắm được lịch sử hành động trong hệ thống, phục vụ kiểm tra và truy vết.} \\ \hline
 \end{tabular}

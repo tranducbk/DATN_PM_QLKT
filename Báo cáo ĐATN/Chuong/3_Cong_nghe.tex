@@ -3,21 +3,21 @@
 
 Chương trước đã xác định các yêu cầu chức năng và phi chức năng của hệ thống. Để đáp ứng những yêu cầu đó, chương này giới thiệu các công nghệ nền tảng của PM QLKT, nêu rõ vai trò và lý do lựa chọn của từng thành phần. Nội dung lần lượt đi qua các công nghệ cho giao diện, máy chủ, cơ sở dữ liệu, xác thực, giao tiếp thời gian thực và xử lý tệp Excel. Bảng tổng hợp đầy đủ thư viện và công cụ được trình bày ở Mục~\ref{subsection:4.3.1}.
 
-\section{Next.js: khung phát triển giao diện người dùng}
+\section{Next.js: framework phát triển giao diện người dùng}
 \label{section:3.1}
 
-Frontend của PM QLKT được xây dựng bằng Next.js \cite{nextjs}, một khung phát triển ứng dụng web dựng trên nền thư viện React \cite{react}. Next.js kế thừa mô hình thành phần của React, cho phép chia giao diện thành các khối nhỏ có thể tái sử dụng, đồng thời bổ sung sẵn nhiều cơ chế mà một dự án React thuần thường phải tự lắp ghép, như định tuyến, chia tách mã nguồn và tối ưu tải trang.
+Frontend của PM QLKT được xây dựng bằng Next.js \cite{nextjs}, một framework phát triển ứng dụng web dựng trên nền thư viện React \cite{react}. Next.js kế thừa mô hình thành phần của React, cho phép chia giao diện thành các khối nhỏ có thể tái sử dụng, đồng thời bổ sung sẵn nhiều cơ chế mà một dự án React thuần thường phải tự thiết lập, như định tuyến, chia tách mã nguồn và tối ưu tải trang.
 
-Phần mềm sử dụng cơ chế App Router của Next.js: cấu trúc cây thư mục được ánh xạ trực tiếp thành các tuyến URL, mỗi tuyến tự động được tách thành một gói mã riêng và chỉ tải về trình duyệt khi người dùng truy cập. Đặc điểm này phù hợp với cách PM QLKT phân vùng giao diện theo bốn vai trò người dùng: mỗi vai trò nằm dưới một nhánh thư mục riêng, có bố cục và lớp kiểm tra phân quyền riêng, nhờ đó trình duyệt chỉ tải phần mã thuộc phạm vi của vai trò đang đăng nhập, giúp giao diện gọn nhẹ và an toàn hơn.
+Phần mềm sử dụng cơ chế App Router của Next.js: cấu trúc cây thư mục được ánh xạ trực tiếp thành các route URL, mỗi route tự động được tách thành một gói mã riêng và chỉ tải về trình duyệt khi người dùng truy cập. Đặc điểm này phù hợp với cách PM QLKT phân vùng giao diện theo bốn vai trò người dùng: mỗi vai trò nằm dưới một nhánh thư mục riêng, có bố cục và lớp kiểm tra phân quyền riêng, nhờ đó trình duyệt chỉ tải phần mã thuộc phạm vi của vai trò đang đăng nhập, giúp giao diện gọn nhẹ và an toàn hơn.
 
 Next.js được lựa chọn nhằm tận dụng toàn bộ hệ sinh thái React sẵn có cùng cơ chế định tuyến và tối ưu dựng sẵn, qua đó rút ngắn thời gian phát triển mà vẫn giữ được khả năng mở rộng khi số lượng màn hình của phần mềm tăng lên.
 
 \section{TypeScript và Express: nền tảng phía máy chủ}
 \label{section:3.2}
 
-Backend chạy trên nền Node.js \cite{nodejs}, môi trường thực thi JavaScript phía máy chủ, và dùng Express \cite{express} làm khung phát triển ứng dụng web. Express là một khung tối giản, không áp đặt cấu trúc thư mục cố định, nhờ đó cho phép tự tổ chức mã nguồn theo kiến trúc phân tầng phù hợp với bài toán.
+Backend chạy trên nền Node.js \cite{nodejs}, môi trường thực thi JavaScript phía máy chủ, và dùng Express \cite{express} làm framework phát triển ứng dụng web. Express là một framework tối giản, không quy định sẵn cấu trúc thư mục cố định, nhờ đó cho phép tự tổ chức mã nguồn theo kiến trúc phân tầng phù hợp với bài toán.
 
-Điểm cốt lõi của Express là mô hình chuỗi middleware: mỗi yêu cầu HTTP đi qua một dãy hàm trung gian được sắp đặt theo thứ tự, lần lượt đảm nhiệm các việc như xác thực phiên đăng nhập, kiểm tra dữ liệu đầu vào và ghi nhật ký, trước khi đến phần xử lý nghiệp vụ cuối cùng. Cách tổ chức này cho phép tách mỗi mối quan tâm thành một lớp riêng và tái sử dụng giữa nhiều tuyến khác nhau; chi tiết kiến trúc phân tầng của PM QLKT được trình bày ở Chương~\ref{chapter:Experiment}.
+Điểm cốt lõi của Express là mô hình chuỗi middleware: mỗi yêu cầu HTTP đi qua một dãy hàm trung gian được sắp đặt theo thứ tự, lần lượt đảm nhiệm các việc như xác thực phiên đăng nhập, kiểm tra dữ liệu đầu vào và ghi nhật ký, trước khi đến phần xử lý nghiệp vụ cuối cùng. Cách tổ chức này cho phép tách mỗi nhiệm vụ xử lý thành một lớp riêng và tái sử dụng giữa nhiều route khác nhau; chi tiết kiến trúc phân tầng của PM QLKT được trình bày ở Chương~\ref{chapter:Experiment}.
 
 Toàn bộ backend được viết bằng TypeScript \cite{typescript} thay cho JavaScript thuần. TypeScript bổ sung hệ thống kiểu tĩnh, giúp phát hiện nhiều lỗi ngay khi biên dịch thay vì lúc chạy, đồng thời sử dụng được các kiểu dữ liệu do Prisma sinh tự động từ schema, nhờ đó mã nguồn luôn nhất quán với cấu trúc cơ sở dữ liệu. Express được chọn nhờ tính linh hoạt và hệ sinh thái thư viện bổ trợ phong phú: trong PM QLKT, Helmet thiết lập các header bảo mật cho phản hồi, express-rate-limit giới hạn tần suất truy cập nhằm hạn chế lạm dụng, còn Multer tiếp nhận tệp do người dùng tải lên.
 
@@ -42,28 +42,28 @@ Tailwind CSS \cite{tailwind} đảm nhiệm phần còn lại là bố cục t�
 
 Một số thao tác trong PM QLKT cần phản hồi tới người dùng ngay khi trạng thái thay đổi, thay vì chờ người dùng tự tải lại trang. Để hỗ trợ điều này, hệ thống dùng Socket.IO \cite{socketio}, một thư viện cung cấp kênh liên lạc hai chiều theo thời gian thực giữa máy chủ và trình duyệt. Thư viện này tự động thích ứng với điều kiện mạng, duy trì được kết nối ngay cả khi hạ tầng mạng hạn chế.
 
-Trong phần mềm, Socket.IO đảm nhiệm việc đẩy thông báo thời gian thực tới đúng người liên quan ngay khi có sự kiện, không bắt người dùng phải tải lại trang. Khi một đề xuất được gửi lên, Cán bộ Phòng Chính trị nhận được thông báo để xét duyệt; khi đề xuất được phê duyệt hoặc bị từ chối, Chỉ huy đơn vị đề xuất nhận được kết quả; và khi một quân nhân được trao khen thưởng, dù qua phê duyệt hay qua nhập từ tệp Excel, thì chính quân nhân đó cũng được thông báo. Mỗi thông báo chỉ gửi tới đúng người nhận, và kênh thời gian thực dùng chung cơ chế xác thực với các API REST nên chỉ người dùng hợp lệ mới nhận được dữ liệu.
+Trong phần mềm, Socket.IO đảm nhiệm việc đẩy thông báo thời gian thực tới đúng người liên quan ngay khi có sự kiện, người dùng không phải tải lại trang. Khi một đề xuất được gửi lên, Cán bộ Phòng Chính trị nhận được thông báo để xét duyệt; khi đề xuất được phê duyệt hoặc bị từ chối, Chỉ huy đơn vị đề xuất nhận được kết quả; và khi một quân nhân được trao khen thưởng, dù qua phê duyệt hay qua nhập từ tệp Excel, thì chính quân nhân đó cũng được thông báo. Mỗi thông báo chỉ gửi tới đúng người nhận, và kênh thời gian thực dùng chung cơ chế xác thực với các API REST nên chỉ người dùng hợp lệ mới nhận được dữ liệu.
 
 \section{JSON Web Token và bcrypt cho xác thực}
 \label{section:3.6}
 
-Việc xác thực giữa frontend và API được thực hiện bằng JWT (JSON Web Token) \cite{jwt}, một chuẩn mã thông báo cho phép máy chủ xác minh danh tính người dùng ở mỗi yêu cầu mà không phải tra cứu lại phiên trong cơ sở dữ liệu. Sau khi đăng nhập thành công, mỗi phiên được cấp hai mã: Access Token có thời hạn ngắn, gửi kèm theo mỗi yêu cầu để chứng minh danh tính; và Refresh Token có thời hạn dài hơn, chỉ dùng để xin cấp lại Access Token khi mã này hết hạn.
+Việc xác thực giữa frontend và API được thực hiện bằng JWT (JSON Web Token), một chuẩn token cho phép máy chủ xác minh danh tính người dùng ở mỗi yêu cầu mà không phải tra cứu lại phiên trong cơ sở dữ liệu. Sau khi đăng nhập thành công, mỗi phiên được cấp hai mã: Access Token có thời hạn ngắn, gửi kèm theo mỗi yêu cầu để chứng minh danh tính; và Refresh Token có thời hạn dài hơn, chỉ dùng để xin cấp lại Access Token khi mã này hết hạn.
 
 Để giảm rủi ro bị đánh cắp mã, phần mềm áp dụng thêm một số biện pháp. Refresh Token được lưu trong cookie HttpOnly nên mã JavaScript phía trình duyệt không đọc được, và được làm mới luân phiên sau mỗi lần sử dụng; song song đó, backend lưu một bản sao để có thể chủ động thu hồi mã từ phía máy chủ khi cần. Riêng mật khẩu người dùng được băm bằng bcrypt trước khi lưu vào cơ sở dữ liệu, nên ngay cả khi dữ liệu bị lộ thì mật khẩu gốc cũng không thể khôi phục trực tiếp.
 
 \section{Zod: kiểm tra hợp lệ dữ liệu hai phía}
 \label{section:3.7}
 
-Dữ liệu người dùng nhập cần được kiểm tra tính hợp lệ ở cả hai phía: phía frontend để phản hồi nhanh cho người dùng, và phía backend để bảo đảm an toàn trước khi ghi vào cơ sở dữ liệu. PM QLKT dùng chung một thư viện kiểm tra hợp lệ là Zod \cite{zod} cho cả hai phía. Mỗi ràng buộc, chẳng hạn quy tắc số căn cước phải đủ 12 chữ số hay trường bắt buộc không được để trống, chỉ cần khai báo một lần dưới dạng một lược đồ rồi tái sử dụng ở cả frontend lẫn backend.
+Dữ liệu người dùng nhập cần được kiểm tra tính hợp lệ ở cả hai phía: phía frontend để phản hồi nhanh cho người dùng, và phía backend để bảo đảm an toàn trước khi ghi vào cơ sở dữ liệu. PM QLKT dùng chung một thư viện kiểm tra hợp lệ là Zod \cite{zod} cho cả hai phía. Mỗi ràng buộc, chẳng hạn quy tắc số căn cước phải đủ 12 chữ số hay trường bắt buộc không được để trống, chỉ cần khai báo một lần dưới dạng một schema rồi tái sử dụng ở cả frontend lẫn backend.
 
-Cách dùng chung này tránh được tình trạng quy tắc kiểm tra bị lặp lại và lệch nhau giữa hai phía mỗi khi yêu cầu nghiệp vụ thay đổi. Dù vậy, backend vẫn luôn kiểm tra lại dữ liệu một lần nữa trước khi ghi và không tin tưởng dữ liệu gửi lên từ frontend, vì dữ liệu từ trình duyệt hoàn toàn có thể bị can thiệp.
+Cách dùng chung này tránh được tình trạng quy tắc kiểm tra bị lặp lại và lệch nhau giữa hai phía mỗi khi yêu cầu nghiệp vụ thay đổi. Dù vậy, backend vẫn luôn kiểm tra lại dữ liệu một lần nữa trước khi ghi và không mặc nhiên tin cậy dữ liệu gửi lên từ frontend, vì dữ liệu từ trình duyệt hoàn toàn có thể bị can thiệp.
 
 \section{ExcelJS: công cụ nhập và xuất Excel}
 \label{section:3.8}
 
-Nghiệp vụ khen thưởng thường làm việc với danh sách quân nhân và đề xuất theo lô, nên phần mềm cần nhập và xuất dữ liệu qua tệp Excel vốn quen thuộc với người dùng. Chức năng này dùng ExcelJS \cite{exceljs}, một thư viện cho phép đọc, ghi và định dạng tệp Excel ngay phía máy chủ mà không phụ thuộc vào phần mềm bảng tính cài trên máy người dùng.
+Nghiệp vụ khen thưởng thường làm việc với danh sách quân nhân và đề xuất theo lô, nên phần mềm cần nhập và xuất dữ liệu qua tệp Excel vốn quen thuộc với người dùng. Chức năng này dùng ExcelJS, một thư viện cho phép đọc, ghi và định dạng tệp Excel ngay phía máy chủ mà không phụ thuộc vào phần mềm bảng tính cài trên máy người dùng.
 
-ExcelJS cho phép gắn ràng buộc dữ liệu ngay trong tệp, chẳng hạn tạo danh sách thả xuống trong tệp mẫu để người dùng chọn đúng giá trị thay vì gõ tay, qua đó hạn chế sai sót khi nhập liệu. Trong PM QLKT, ExcelJS được dùng để sinh tệp mẫu riêng cho từng loại khen thưởng, và để đọc lại tệp do người dùng tải lên nhằm hiển thị bản xem trước; người dùng kiểm tra bản xem trước này rồi mới xác nhận ghi chính thức vào cơ sở dữ liệu, tránh ghi nhầm dữ liệu sai.
+ExcelJS cho phép gắn ràng buộc dữ liệu ngay trong tệp, chẳng hạn tạo danh sách thả xuống trong tệp mẫu để người dùng chọn đúng giá trị thay vì nhập tay, qua đó hạn chế sai sót khi nhập liệu. Trong PM QLKT, ExcelJS được dùng để sinh tệp mẫu riêng cho từng loại khen thưởng, và để đọc lại tệp do người dùng tải lên nhằm hiển thị bản xem trước; người dùng kiểm tra bản xem trước này rồi mới xác nhận ghi chính thức vào cơ sở dữ liệu, tránh ghi nhầm dữ liệu sai.
 
 Chương này đã trình bày các công nghệ nền tảng của phần mềm cùng lý do lựa chọn trong ngữ cảnh quản lý khen thưởng. Trên nền tảng đó, chương tiếp theo trình bày thiết kế kiến trúc, thiết kế cơ sở dữ liệu cùng kết quả xây dựng, kiểm thử và triển khai sản phẩm.
 
