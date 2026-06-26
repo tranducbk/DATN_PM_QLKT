@@ -18,7 +18,7 @@
 \endhead
 \hline
 \endfoot
-\textbf{ACID}     & Atomicity, Consistency, Isolation, Durability là bốn tính chất bảo đảm của một giao dịch cơ sở dữ liệu \\ \hline
+\textbf{ACID}     & Atomicity, Consistency, Isolation, Durability là bốn tính chất bảo đảm một nhóm thao tác trên cơ sở dữ liệu được thực hiện trọn vẹn và giữ dữ liệu nhất quán \\ \hline
 \textbf{API}      & Application Programming Interface là giao diện lập trình ứng dụng \\ \hline
 \textbf{BKBQP}  & Bằng khen của Bộ trưởng Bộ Quốc phòng \\ \hline
 \textbf{BKTTCP}   & Bằng khen của Thủ tướng Chính phủ \\ \hline
@@ -37,7 +37,6 @@
 \textbf{JWT}      & JSON Web Token là thẻ xác thực dạng chuỗi có chữ ký, dùng để xác minh người dùng giữa máy khách và máy chủ \\ \hline
 \textbf{KNC}      & Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN \\ \hline
 \textbf{LTS}      & Long-Term Support là phiên bản phần mềm được hỗ trợ dài hạn \\ \hline
-\textbf{MVC}      & Model--View--Controller là mẫu kiến trúc phân tách dữ liệu, giao diện và điều khiển \\ \hline
 \textbf{NCKH}     & Nghiên cứu khoa học \\ \hline
 \textbf{ORM}      & Object-Relational Mapping là ánh xạ đối tượng và quan hệ \\ \hline
 \textbf{PK}       & Primary Key là khoá chính \\ \hline
@@ -61,12 +60,14 @@
 \endhead
 \hline
 \endfoot
+\textbf{Interface}             & Tập các phương thức mà mọi lớp cài đặt nó đều phải cung cấp; quy định những việc cần làm chứ không quy định cách làm, giúp nhiều lớp khác nhau tuân theo cùng một khuôn chung. \\ \hline
 \textbf{Strategy}              & Mẫu thiết kế hành vi cho phép định nghĩa một họ thuật toán có thể thay thế lẫn nhau, mỗi loại nghiệp vụ cài đặt một biến thể riêng. \\ \hline
 \textbf{Registry}              & Bảng đăng ký trung tâm ánh xạ định danh sang đối tượng xử lý tương ứng (vd: ánh xạ loại đề xuất sang Strategy xử lý). \\ \hline
 \textbf{Repository}            & Lớp trừu tượng đứng giữa tầng nghiệp vụ và cơ sở dữ liệu, đóng gói các thao tác đọc/ghi để tầng nghiệp vụ không phụ thuộc trực tiếp vào ORM. \\ \hline
 \textbf{Middleware}            & Hàm trung gian trong chuỗi xử lý yêu cầu HTTP của Express, có thể xác thực, kiểm tra dữ liệu, ghi nhật ký hoặc chuyển tiếp sang hàm tiếp theo. \\ \hline
 \textbf{Migration}             & Tệp SQL được sinh tự động khi thay đổi schema cơ sở dữ liệu, dùng để đồng bộ giữa các môi trường và truy vết lịch sử thay đổi schema. \\ \hline
 \textbf{Audit log}             & Nhật ký hệ thống ghi lại mọi thao tác làm thay đổi dữ liệu nghiệp vụ kèm thông tin người thực hiện, thời điểm và dữ liệu trước, sau khi thay đổi. \\ \hline
+\textbf{Transaction}           & Một chuỗi thao tác đọc/ghi trên cơ sở dữ liệu được thực hiện trọn vẹn như một khối: hoặc tất cả cùng thành công, hoặc cùng được hoàn tác, bảo đảm dữ liệu luôn nhất quán. \\ \hline
 \end{longtable}
 \endgroup
 

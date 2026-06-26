@@ -256,6 +256,12 @@ class PositionHistoryService {
       );
     }
 
+    if (isCurrentPosition && ngay_ket_thuc) {
+      throw new ValidationError(
+        'Không thể đặt ngày kết thúc cho chức vụ hiện tại. Chức vụ hiện tại được kết thúc khi thay đổi ở mục "Cập nhật thông tin cá nhân".'
+      );
+    }
+
     let heSoChucVu = he_so_chuc_vu !== undefined ? he_so_chuc_vu : history.he_so_chuc_vu;
     if (chuc_vu_id && he_so_chuc_vu === undefined && !isCurrentPosition) {
       const position = await positionRepository.findUniqueRaw({

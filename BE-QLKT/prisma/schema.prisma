@@ -550,7 +550,7 @@ model DanhHieuDonViHangNam {
   nhan_bkttcp          Boolean   @default(false)
   so_quyet_dinh_bkttcp String?   @db.VarChar(100)
   ghi_chu_bkttcp       String?   @db.Text
-  nguoi_tao_id         String    @db.VarChar(30)
+  nguoi_tao_id         String?   @db.VarChar(30)
   nguoi_duyet_id       String?   @db.VarChar(30)
   ngay_duyet           DateTime? @db.Timestamp(0)
   ghi_chu              String?   @db.Text
@@ -563,7 +563,7 @@ model DanhHieuDonViHangNam {
   FileQuyetDinhMain   FileQuyetDinh?  @relation("DanhHieuDonViHangNam_so_quyet_dinh", fields: [so_quyet_dinh], references: [so_quyet_dinh], onUpdate: Cascade, onDelete: Restrict)
   FileQuyetDinhBkbqp  FileQuyetDinh?  @relation("DanhHieuDonViHangNam_so_quyet_dinh_bkbqp", fields: [so_quyet_dinh_bkbqp], references: [so_quyet_dinh], onUpdate: Cascade, onDelete: Restrict)
   FileQuyetDinhBkttcp FileQuyetDinh?  @relation("DanhHieuDonViHangNam_so_quyet_dinh_bkttcp", fields: [so_quyet_dinh_bkttcp], references: [so_quyet_dinh], onUpdate: Cascade, onDelete: Restrict)
-  NguoiTao            TaiKhoan        @relation("DonViNguoiTao", fields: [nguoi_tao_id], references: [id], onDelete: Cascade)
+  NguoiTao            TaiKhoan?       @relation("DonViNguoiTao", fields: [nguoi_tao_id], references: [id], onDelete: SetNull)
   NguoiDuyet          TaiKhoan?       @relation("DonViNguoiDuyet", fields: [nguoi_duyet_id], references: [id], onDelete: SetNull)
 
   @@unique([co_quan_don_vi_id, nam], name: "unique_co_quan_don_vi_nam_dh")

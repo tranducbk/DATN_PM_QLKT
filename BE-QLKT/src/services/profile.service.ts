@@ -17,6 +17,7 @@ import {
   getContributionProfile,
   recalculateContributionProfile,
 } from './profile/contribution';
+import { recalculateFullProfile, recalculateAllFullProfiles } from './profile/fullRecalc';
 
 class ProfileService {
   /**
@@ -91,6 +92,24 @@ class ProfileService {
    */
   recalculateAll(): Promise<RecalculateResult> {
     return recalculateAll();
+  }
+
+  /**
+   * Recalculates all three profile types (annual, tenure, contribution) for one personnel.
+   * @param personnelId - Personnel ID
+   * @returns The personnel's name for the caller's success message
+   * @throws NotFoundError - When the personnel does not exist
+   */
+  recalculateFullProfile(personnelId: string): Promise<{ ho_ten: string | null }> {
+    return recalculateFullProfile(personnelId);
+  }
+
+  /**
+   * Batch job: recalculates all three profile types for every personnel (best-effort per row).
+   * @returns Aggregate counts and per-personnel error list
+   */
+  recalculateAllFullProfiles(): Promise<RecalculateResult> {
+    return recalculateAllFullProfiles();
   }
 
   /**

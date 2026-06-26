@@ -202,7 +202,7 @@ describe('Sao lưu: tạo bản sao lưu và tự động dọn dẹp file cũ',
       'khenThuongHCCSVV', 'khenThuongDotXuat', 'huanChuongQuanKyQuyetThang',
       'kyNiemChuongVSNXDQDNDVN', 'hoSoNienHan', 'hoSoCongHien', 'hoSoHangNam',
       'bangDeXuat', 'danhHieuDonViHangNam', 'hoSoDonViHangNam', 'fileQuyetDinh',
-      'systemSetting',
+      'systemSetting', 'systemLog',
     ] as const;
     for (const m of models) {
       (prismaMock[m] as { findMany: jest.Mock }).findMany.mockResolvedValue([]);

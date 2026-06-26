@@ -493,8 +493,7 @@ export function PositionHistoryView({ role }: PositionHistoryViewProps) {
               >
                 <Text type="warning">
                   <InfoCircleOutlined style={{ marginRight: 8 }} />
-                  Đây là chức vụ hiện tại. Bạn chỉ có thể sửa thời gian (ngày bắt đầu, ngày kết
-                  thúc). Để thay đổi chức vụ đảm nhận, vui lòng sử dụng mục &quot;Cập nhật thông
+                  Đây là chức vụ hiện tại. Bạn chỉ có thể sửa ngày bắt đầu. Để thay đổi chức vụ đảm nhận hoặc kết thúc giai đoạn này, vui lòng sử dụng mục &quot;Cập nhật thông
                   tin cá nhân&quot;.
                 </Text>
               </div>
@@ -611,6 +610,7 @@ export function PositionHistoryView({ role }: PositionHistoryViewProps) {
                 style={{ width: '100%' }}
                 size="large"
                 allowClear
+                disabled={isCurrentPosition}
                 placeholder="Chọn ngày kết thúc (có thể để trống)"
               />
             </Form.Item>

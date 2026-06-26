@@ -22,6 +22,7 @@ import { contributionProfileRepository } from '../repositories/contributionProfi
 import { annualProfileRepository } from '../repositories/annualProfile.repository';
 import { unitAnnualProfileRepository } from '../repositories/unitAnnualProfile.repository';
 import { systemSettingRepository } from '../repositories/systemSetting.repository';
+import { systemLogRepository } from '../repositories/systemLog.repository';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
@@ -79,6 +80,7 @@ const TABLES = {
   HoSoDonViHangNam: 'HoSoDonViHangNam',
   FileQuyetDinh: 'FileQuyetDinh',
   SystemSetting: 'SystemSetting',
+  SystemLog: 'SystemLog',
 } as const;
 
 // PostgreSQL preserves identifier case only when quoted
@@ -106,6 +108,7 @@ const TRUNCATE_ORDER = [
   TABLES.DonViTrucThuoc,
   TABLES.CoQuanDonVi,
   TABLES.SystemSetting,
+  TABLES.SystemLog,
 ].map(quoteTable);
 
 const validFilename = (filename: string): boolean => FILENAME_PATTERN.test(filename);
@@ -172,6 +175,7 @@ class BackupService {
       hoSoDonViHangNam,
       fileQuyetDinh,
       systemSettings,
+      systemLog,
     ] = await Promise.all([
       coQuanDonViRepository.findManyRaw({}),
       donViTrucThuocRepository.findManyRaw({}),
@@ -204,6 +208,7 @@ class BackupService {
       unitAnnualProfileRepository.findManyRaw({}),
       decisionFileRepository.findManyRaw({}),
       systemSettingRepository.findManyRaw({}),
+      systemLogRepository.findManyRaw({}),
     ]);
 
     const allSets = [
@@ -228,6 +233,7 @@ class BackupService {
       hoSoDonViHangNam,
       fileQuyetDinh,
       systemSettings,
+      systemLog,
     ];
     const totalRecords = allSets.reduce((sum, arr) => sum + arr.length, 0);
 
@@ -272,6 +278,7 @@ class BackupService {
       buildInsertBlock(TABLES.HoSoDonViHangNam, hoSoDonViHangNam as Record<string, unknown>[]),
       buildInsertBlock(TABLES.FileQuyetDinh, fileQuyetDinh as Record<string, unknown>[]),
       buildInsertBlock(TABLES.SystemSetting, systemSettings as Record<string, unknown>[]),
+      buildInsertBlock(TABLES.SystemLog, systemLog as Record<string, unknown>[]),
       `COMMIT;`,
     ];
 

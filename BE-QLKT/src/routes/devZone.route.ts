@@ -2,6 +2,8 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { timingSafeEqual } from 'crypto';
 import unitService from '../services/unit.service';
 import backupService from '../services/backup.service';
+import profileService from '../services/profile.service';
+import { NotFoundError } from '../middlewares/errorHandler';
 import cron from 'node-cron';
 import { AWARD_TYPES, SYSTEM_FEATURES } from '../constants/devZone.constants';
 import {
@@ -232,6 +234,62 @@ router.post('/recalculate-unit-count', verifyDevPassword, async (req: Request, r
   } catch (error: unknown) {
     const errMessage = error instanceof Error ? error.message : String(error);
     res.status(500).json({ success: false, message: errMessage });
+  }
+});
+
+/**
+ * @route   POST /api/dev-zone/recalculate-profile
+ * @desc    Recalculate all three profile types for one personnel (with personnel_id) or every personnel (without)
+ * @access  Private - DevZone password required
+ */
+router.post('/recalculate-profile', verifyDevPassword, async (req: Request, res: Response) => {
+  const body = req.body as { personnel_id?: string };
+  const personnelId = typeof body.personnel_id === 'string' ? body.personnel_id.trim() : '';
+
+  try {
+    if (personnelId) {
+      const { ho_ten } = await profileService.recalculateFullProfile(personnelId);
+
+      await writeSystemLog({
+        userId: SYSTEM_ACTOR,
+        userRole: SYSTEM_ACTOR,
+        action: AUDIT_ACTIONS.RECALCULATE,
+        resource: RESOURCE_SLUGS.PROFILES,
+        resourceId: personnelId,
+        description: `Tính toán lại hồ sơ ${ho_ten || 'một quân nhân'} (kích hoạt thủ công)`,
+      });
+
+      return res.json({
+        success: true,
+        message: `Đã tính toán lại hồ sơ cho ${ho_ten || 'quân nhân'}`,
+        data: { personnel_id: personnelId },
+      });
+    }
+
+    const result = await profileService.recalculateAllFullProfiles();
+
+    await writeSystemLog({
+      userId: SYSTEM_ACTOR,
+      userRole: SYSTEM_ACTOR,
+      action: AUDIT_ACTIONS.RECALCULATE,
+      resource: RESOURCE_SLUGS.PROFILES,
+      description: `Tính toán lại toàn bộ hồ sơ quân nhân: ${result.success} thành công, ${result.errors.length} lỗi (kích hoạt thủ công)`,
+      payload: { success: result.success, errors: result.errors.length },
+    });
+
+    return res.json({
+      success: true,
+      message: `Đã tính toán lại hồ sơ cho ${result.success} quân nhân${result.errors.length ? `, ${result.errors.length} lỗi` : ''}`,
+      data: { success: result.success, errors: result.errors.length },
+    });
+  } catch (error: unknown) {
+    if (error instanceof NotFoundError) {
+      return res
+        .status(404)
+        .json({ success: false, message: 'Không tìm thấy quân nhân với ID đã nhập' });
+    }
+    const errMessage = error instanceof Error ? error.message : String(error);
+    return res.status(500).json({ success: false, message: errMessage });
   }
 });
 

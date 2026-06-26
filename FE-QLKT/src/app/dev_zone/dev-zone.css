@@ -204,12 +204,6 @@
   min-width: 0;
 }
 
-.dz-feature-icon {
-  color: var(--dz-text-3);
-  font-size: 15px;
-  flex-shrink: 0;
-}
-
 .dz-feature-label {
   font-size: 0.875rem;
   font-weight: 500;
@@ -248,7 +242,7 @@
   color: #1a1206 !important;
   background: var(--dz-amber) !important;
   border: none !important;
-  box-shadow: 0 8px 18px -10px rgba(245, 158, 11, 0.8) !important;
+  box-shadow: none !important;
 }
 
 .dz-trigger-btn:hover {
@@ -271,7 +265,8 @@
 .dz-card .ant-select-selector,
 .dz-card .ant-input,
 .dz-card .ant-input-affix-wrapper,
-.dz-card .ant-input-number {
+.dz-card .ant-input-number,
+.dz-card .ant-picker {
   background: var(--dz-surface-2) !important;
   border: 1px solid var(--dz-border) !important;
   border-radius: 10px !important;
@@ -281,8 +276,37 @@
 .dz-card .ant-select-selector:hover,
 .dz-card .ant-input:hover,
 .dz-card .ant-input-affix-wrapper:hover,
-.dz-card .ant-input-number:hover {
+.dz-card .ant-input-number:hover,
+.dz-card .ant-picker:hover {
   border-color: var(--dz-border-hover) !important;
+}
+
+/* Visual backup-schedule builder (custom preset) */
+.dz-backup-builder {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  background: var(--dz-surface-2);
+  border: 1px solid var(--dz-border);
+  border-radius: 10px;
+}
+
+.dz-backup-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.dz-backup-row-label {
+  flex: 0 0 72px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--dz-text-3);
+}
+
+.dz-backup-row-control {
+  flex: 1;
 }
 
 /* Utility row */

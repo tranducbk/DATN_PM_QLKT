@@ -181,7 +181,7 @@ Table DanhHieuDonViHangNam {
   nhan_bkttcp boolean [not null, default: false]
   so_quyet_dinh_bkttcp varchar(100)
   ghi_chu_bkttcp text
-  nguoi_tao_id varchar(30) [not null]
+  nguoi_tao_id varchar(30) [note: 'nullable — SetNull khi xóa tài khoản']
   nguoi_duyet_id varchar(30)
   ngay_duyet timestamp
   ghi_chu text
@@ -470,7 +470,7 @@ Ref: KhenThuongDotXuat.don_vi_truc_thuoc_id > DonViTrucThuoc.id [delete: cascade
 // Khen thưởng đơn vị
 Ref: DanhHieuDonViHangNam.co_quan_don_vi_id > CoQuanDonVi.id [delete: cascade]
 Ref: DanhHieuDonViHangNam.don_vi_truc_thuoc_id > DonViTrucThuoc.id [delete: cascade]
-Ref: DanhHieuDonViHangNam.nguoi_tao_id > TaiKhoan.id [delete: cascade]
+Ref: DanhHieuDonViHangNam.nguoi_tao_id > TaiKhoan.id [delete: set null]
 Ref: DanhHieuDonViHangNam.nguoi_duyet_id > TaiKhoan.id [delete: set null]
 
 // Hồ sơ điều kiện

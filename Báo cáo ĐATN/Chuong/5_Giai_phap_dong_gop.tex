@@ -9,45 +9,40 @@ Các kết quả được kiểm chứng bằng nhiều kịch bản dữ liệu
 \label{section:5.1}
 
 \subsection{Bài toán}
-Để xét điều kiện đề nghị Bằng khen của Bộ trưởng Bộ Quốc phòng cho một quân nhân, cán bộ Phòng Chính trị phải mở tệp Word lịch sử danh hiệu của quân nhân, tìm các dòng có CSTĐCS trong hai năm gần nhất.
-Với CSTĐTQ, công việc khó hơn vì phải đếm số BKBQP rơi vào khoảng ba năm cuối.
+Để xét điều kiện đề nghị Bằng khen của Bộ trưởng Bộ Quốc phòng cho một quân nhân, cán bộ Phòng Chính trị phải tra cứu lịch sử danh hiệu của quân nhân, rà soát xem hai năm gần nhất có liên tục đạt CSTĐCS hay không.
+Với CSTĐTQ, công việc khó hơn vì phải đếm số BKBQP nằm trong khoảng ba năm cuối.
 Đây là con số dễ tính nhầm khi quân nhân từng nhận BKBQP qua nhiều chu kỳ.
 Với BKTTCP, cán bộ phải đếm đúng ba BKBQP và đúng hai CSTĐTQ trong khoảng bảy năm cuối.
-Ngoài ra, ở cả ba cấp BKBQP, CSTĐTQ và BKTTCP còn phải xác nhận mỗi năm trong khoảng thời gian xét tương ứng đều có thành tích NCKH.
+Ngoài ra, ở cả ba cấp, mỗi năm trong khoảng thời gian xét tương ứng đều phải có thành tích nghiên cứu khoa học.
 Với một quân nhân có lịch sử lâu năm, việc xét điều kiện theo cách thủ công kéo dài và dễ bỏ sót, nhất là khi phải đối chiếu chéo nhiều tệp khác nhau.
 
 \subsection{Giải pháp}
-Thay vì viết cứng từng quy tắc trong mã, đồ án mô tả mỗi cấp danh hiệu thành một dòng cấu hình gồm năm tham số: mã danh hiệu, số năm của chu kỳ, danh sách danh hiệu tiền điều kiện kèm số lượng yêu cầu, có bắt buộc NCKH hay không, và có phải danh hiệu chỉ nhận một lần duy nhất hay không.
-Toàn bộ cấu hình của cá nhân và đơn vị được gom thành hai danh sách riêng.
-Khi cần xét một cấp, một hàm thuần đọc cấu hình cùng ngữ cảnh chuỗi của quân nhân rồi kết luận đủ hay chưa đủ điều kiện kèm lý do bằng tiếng Việt.
-Hàm này không truy vấn cơ sở dữ liệu nên có thể kiểm thử độc lập với mọi tổ hợp đầu vào.
-Nhờ tách bạch như vậy, toàn bộ logic xét chuỗi gọn gàng và được kiểm chứng với nhiều kịch bản: chu kỳ vừa đủ, chu kỳ thừa, lỡ một hoặc nhiều chu kỳ, trường hợp một BKBQP rơi ra ngoài khoảng ba năm khi xét CSTĐTQ ở chu kỳ mới, và việc chặn nhận lại danh hiệu một lần duy nhất sau khi đã có BKTTCP.
+Cả năm cấp danh hiệu trong chuỗi đều theo cùng một dạng quy tắc, chỉ khác nhau ở một vài tham số: độ dài chu kỳ, các danh hiệu tiền điều kiện và số lượng tương ứng, có yêu cầu thành tích nghiên cứu khoa học hay không, và danh hiệu có thuộc loại chỉ trao một lần hay không. Tận dụng điểm chung này, mỗi cấp được mô tả gọn thành một dòng cấu hình theo các tham số trên, còn việc xét điều kiện do một quy trình chung đảm nhiệm cho mọi cấp thay vì cài đặt tách rời cho từng danh hiệu.
 
-Bảng~\ref{tab:chain-config} tóm tắt cấu hình của năm cấp danh hiệu cho cá nhân và đơn vị.
-Chỉ với năm tham số, mỗi dòng cấu hình mô tả trọn vẹn quy tắc xét của một cấp; việc bổ sung một danh hiệu mới do đó chỉ là thêm một dòng cấu hình mà không phải sửa lại logic xét điều kiện.
+Bảng~\ref{tab:chain-config} liệt kê cấu hình của năm cấp danh hiệu cho cá nhân và đơn vị. Cách mô tả này tách quy tắc nghiệp vụ khỏi phần xử lý và gom toàn bộ quy tắc về một nơi duy nhất. Nhờ đó, khi cần bổ sung một danh hiệu mới, chỉ phải thêm một dòng cấu hình mà không phải sửa lại logic xét điều kiện, đồng thời các quy tắc cũng dễ rà soát và kiểm chứng hơn.
 
 \begin{table}[H]
 \centering
+\footnotesize
+\renewcommand{\arraystretch}{1.3}
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{|>{\centering\arraybackslash}m{1.7cm}|>{\centering\arraybackslash}m{2.0cm}|>{\centering\arraybackslash}m{1.4cm}|>{\centering\arraybackslash}m{4.0cm}|>{\centering\arraybackslash}m{1.5cm}|>{\centering\arraybackslash}m{1.6cm}|}
+\hline
+\textbf{Đối tượng} & \textbf{Danh hiệu} & \textbf{Chu kỳ (năm)} & \textbf{Danh hiệu tiền điều kiện} & \textbf{Yêu cầu NCKH} & \textbf{Một lần duy nhất} \\ \hline
+\multirow{3}{*}{Cá nhân} & BKBQP & 2 & (không) & Có & Không \\ \cline{2-6}
+ & CSTĐTQ & 3 & 1 BKBQP & Có & Không \\ \cline{2-6}
+ & BKTTCP & 7 & 3 BKBQP và 2 CSTĐTQ & Có & Có \\ \hline
+\multirow{2}{*}{Đơn vị} & BKBQP & 2 & (không) & Không & Không \\ \cline{2-6}
+ & BKTTCP & 7 & 3 BKBQP & Không & Không \\ \hline
+\end{tabular}
 \caption{Cấu hình chuỗi danh hiệu cho cá nhân và đơn vị}
 \label{tab:chain-config}
-\renewcommand{\arraystretch}{1.25}
-\begin{tabular}{|R{2.6cm}|>{\centering\arraybackslash}p{1.6cm}|R{3.4cm}|>{\centering\arraybackslash}p{1.5cm}|>{\centering\arraybackslash}p{1.6cm}|}
-\hline
-\textbf{Danh hiệu} & \textbf{Chu kỳ (năm)} & \textbf{Danh hiệu tiền điều kiện} & \textbf{Yêu cầu NCKH} & \textbf{Một lần duy nhất} \\ \hline
-\multicolumn{5}{|l|}{\textit{Khen thưởng cá nhân}} \\ \hline
-BKBQP & 2 & (không) & Có & Không \\ \hline
-CSTĐTQ & 3 & 1 BKBQP & Có & Không \\ \hline
-BKTTCP & 7 & 3 BKBQP và 2 CSTĐTQ & Có & Có \\ \hline
-\multicolumn{5}{|l|}{\textit{Khen thưởng đơn vị}} \\ \hline
-BKBQP & 2 & (không) & Không & Không \\ \hline
-BKTTCP & 7 & 3 BKBQP & Không & Không \\ \hline
-\end{tabular}
 \end{table}
 
 \subsection{Kết quả}
-Việc tự động hoá giúp việc xét điều kiện cho mỗi quân nhân diễn ra tức thời, thay cho việc rà soát thủ công nhiều bước như trước.
+Việc tự động hoá giúp xét điều kiện cho mỗi quân nhân ngay khi dữ liệu thay đổi, thay cho việc rà soát thủ công nhiều bước như trước.
 Khi kiểm chứng trên các hồ sơ mẫu mô phỏng nhiều kịch bản chuỗi danh hiệu khác nhau, hệ thống xác định đúng các trường hợp đủ điều kiện cũng như các trường hợp lỡ đợt cần đề nghị ở chu kỳ kế tiếp.
-Đáng chú ý, những tình huống dễ gây nhầm lẫn khi tính tay, chẳng hạn một danh hiệu của chu kỳ trước đã rơi ngoài khoảng thời gian xét hiện tại, đều được hệ thống xử lý chính xác.
+Đáng chú ý, những tình huống dễ gây nhầm lẫn khi tính tay, chẳng hạn một danh hiệu của chu kỳ trước đã nằm ngoài khoảng thời gian xét hiện tại, đều được hệ thống xử lý chính xác.
 
 \section{Số hoá quy trình đề xuất, phê duyệt và lưu vết thao tác}
 \label{section:5.2}
@@ -56,26 +51,25 @@ Khi kiểm chứng trên các hồ sơ mẫu mô phỏng nhiều kịch bản ch
 Quy trình truyền thống đều dựa trên giấy và đi qua các bước sau:
 \begin{enumerate}
 \item Cán bộ đơn vị lập danh sách đề nghị bằng văn bản.
-\item Cán bộ đơn vị trình Phòng Chính trị tệp Word kèm bản giấy ký xác nhận.
+\item Cán bộ đơn vị trình Phòng Chính trị tài liệu kèm bản giấy ký xác nhận.
 \item Phòng Chính trị tổng hợp, đối chiếu và đưa ra họp xét ở cấp Học viện.
 \item Học viện trình cấp có thẩm quyền ký quyết định; kết quả được chuyển về Phòng Chính trị để thông báo tới các đơn vị.
 \end{enumerate}
 Toàn bộ phải in, ký, chuyển công văn và đối chiếu thủ công qua nhiều cấp, nên một đợt xét có thể kéo dài nhiều tháng kể từ khi đơn vị lập danh sách đến khi có quyết định chính thức.
-Quan trọng hơn, các chỉnh sửa giữa chừng như điều chỉnh hạng huy chương hay bỏ một quân nhân khỏi danh sách chỉ để lại dấu vết viết tay trên bản nháp giấy.
-Hệ quả là không thể xác định ai đã thực hiện thay đổi và vì sao.
+Quan trọng hơn, những điều chỉnh giữa chừng như đổi danh hiệu đề nghị hay rút một quân nhân khỏi danh sách thường không được ghi nhận một cách có hệ thống, nên về sau khó lần lại một thay đổi là do ai thực hiện và vì lý do gì.
 
 \subsection{Giải pháp}
-Mỗi đề xuất được mô hình hoá thành một bản ghi trong bảng \texttt{BangDeXuat} và đi qua ba trạng thái: chờ duyệt, đã duyệt và bị từ chối.
-Dù có bảy loại khác nhau, tất cả đều tuân theo một giao diện chiến lược chung quy định những bước chuẩn: dựng dữ liệu khi gửi, kiểm tra khi phê duyệt, ghi dữ liệu trong giao dịch và sinh thông điệp kết quả.
-Khi phê duyệt, hệ thống kiểm tra trước điều kiện và số quyết định, rồi mở một giao dịch để ghi danh hiệu vào bảng nghiệp vụ, lưu số quyết định và cập nhật trạng thái đề xuất.
-Chỉ sau khi giao dịch hoàn tất, hệ thống mới tính lại hồ sơ điều kiện của các quân nhân liên quan.
+Mỗi đề xuất được lưu thành một bản ghi trong cơ sở dữ liệu, đi qua ba trạng thái: chờ duyệt, đã duyệt và bị từ chối.
+Dù có bảy loại đề xuất khác nhau, tất cả đều cài đặt một interface chung quy định các bước chuẩn: chuẩn bị dữ liệu khi gửi, kiểm tra khi phê duyệt, ghi dữ liệu trong transaction và sinh thông điệp kết quả.
+Khi phê duyệt, hệ thống kiểm tra trước điều kiện và số quyết định, rồi mở một transaction để ghi danh hiệu vào bảng nghiệp vụ, lưu số quyết định và cập nhật trạng thái đề xuất.
+Chỉ sau khi transaction hoàn tất, hệ thống mới tính lại hồ sơ điều kiện của các quân nhân liên quan.
 Cuối cùng, hệ thống lưu một bản ghi nhật ký kèm trạng thái trước và sau khi thay đổi.
-Toàn bộ thao tác làm thay đổi dữ liệu đều được ghi vào nhật ký hệ thống theo một tập 18 loại hành động đã chuẩn hoá, gồm các thao tác nghiệp vụ tiêu biểu như tạo, sửa, xoá, nhập, xuất, phê duyệt, từ chối, đề xuất, tính lại, sao lưu và ghi hàng loạt, cùng các sự kiện hệ thống như đổi mật khẩu, đặt lại mật khẩu và vượt giới hạn tốc độ.
+Toàn bộ thao tác làm thay đổi dữ liệu đều được ghi vào nhật ký hệ thống theo một tập 18 loại hành động đã chuẩn hoá, gồm các thao tác nghiệp vụ tiêu biểu như tạo, sửa, xoá, nhập, xuất, phê duyệt, từ chối, đề xuất, tính lại, sao lưu và ghi hàng loạt, cùng các sự kiện hệ thống như đổi mật khẩu, đặt lại mật khẩu và vượt giới hạn tần suất truy cập.
 
 \subsection{Kết quả}
 Quy trình đề xuất và phê duyệt số hoá giúp rút ngắn thời gian luân chuyển hồ sơ trong nội bộ Học viện, thay cho việc in ấn, ký và chuyển công văn giấy tờ thủ công.
 Mọi thao tác phê duyệt đều được ghi nhật ký đầy đủ kèm trạng thái trước và sau khi thay đổi, cho phép truy vết toàn bộ lịch sử của một đề xuất.
-Khi một đề xuất bị từ chối rồi được đề nghị lại, chuỗi thao tác từ chối, tạo mới và phê duyệt được liên kết với nhau qua mã đề xuất gốc, kèm thông tin về người thực hiện, thời điểm và lý do.
+Khi một đề xuất bị từ chối rồi được đề nghị lại, mỗi lần xử lý đều để lại dấu vết riêng trong nhật ký kèm người thực hiện, thời điểm và lý do từ chối, nên toàn bộ quá trình đều có thể tra cứu lại.
 Khả năng truy vết toàn bộ này vượt quá những gì phương thức giấy tờ truyền thống có thể cung cấp.
 
 \section{Tính lại tổng thể và gợi ý đề nghị chủ động}
@@ -90,7 +84,7 @@ Theo nhận định định tính từ quá trình khảo sát thực trạng �
 Hệ thống cung cấp hai cơ chế hỗ trợ chủ động.
 Thứ nhất, mỗi khi dữ liệu nguồn của một quân nhân thay đổi (thêm, sửa hoặc xoá danh hiệu hằng năm, lịch sử chức vụ hay thành tích khoa học), hệ thống tự động tính lại hồ sơ điều kiện của quân nhân đó, giữ cho hồ sơ này luôn khớp với dữ liệu gốc.
 Thứ hai, hồ sơ điều kiện của toàn bộ quân nhân được tính lại tự động theo lịch định kỳ hằng tháng, nên danh sách đủ điều kiện luôn sẵn sàng trước mỗi đợt xét mà không cần thao tác thủ công; khi cần, cán bộ Phòng Chính trị vẫn có thể kích hoạt tính lại ngay.
-Sau khi tính lại, trang chi tiết quân nhân hiển thị gợi ý đề nghị bằng tiếng Việt sinh tự động cùng số năm Chiến sĩ thi đua cơ sở liên tục đã tích luỹ; chỉ huy đơn vị chỉ cần mở danh sách đơn vị họ rồi lọc theo trạng thái đủ điều kiện là có ngay danh sách cần đề nghị.
+Sau khi tính lại, trang chi tiết quân nhân hiển thị gợi ý đề nghị được sinh tự động, kèm số năm Chiến sĩ thi đua cơ sở liên tục đã tích luỹ; chỉ huy đơn vị chỉ cần mở danh sách đơn vị họ rồi lọc theo trạng thái đủ điều kiện là có ngay danh sách cần đề nghị.
 
 \subsection{Kết quả}
 Cơ chế tính lại tự động và gợi ý chủ động giúp phát hiện những quân nhân đủ điều kiện nhưng dễ bị bỏ sót trong rà soát thủ công.
@@ -99,43 +93,42 @@ Trên dữ liệu thử nghiệm mô phỏng, hệ thống tự động đánh d
 Chức năng cảnh báo mốc thời gian phục vụ xét HCCSVV (10, 15 và 20 năm) cũng tự động đánh dấu những quân nhân sắp đến mốc, giảm nhu cầu rà soát thủ công theo ngày nhập ngũ.
 Lệnh tính lại toàn bộ có thể được cán bộ Phòng Chính trị kích hoạt trực tiếp khi cần, hoặc chạy tự động theo lịch định kỳ đã được cấu hình.
 
-\section{Nhập liệu Excel hàng loạt có giao dịch và kiểm tra trước}
+\section{Nhập liệu Excel hàng loạt có transaction và kiểm tra trước}
 \label{section:5.4}
 
 \subsection{Bài toán}
-Khi đưa hệ thống mới vào một công tác đã có nhiều năm tích luỹ, bài toán nan giải là di trú khối dữ liệu lịch sử từ các tệp Word và bản giấy rời rạc sang cơ sở dữ liệu chuẩn hoá.
-Nhập tay từng bản ghi không khả thi với khối lượng dữ liệu lịch sử tích luỹ qua nhiều năm.
-Việc sử dụng script SQL trực tiếp tiềm ẩn nhiều rủi ro về tính toàn vẹn dữ liệu vì các tệp Word không thống nhất định dạng: có tệp dùng tên đầy đủ ``Bằng khen của Bộ trưởng Bộ Quốc phòng'', có tệp dùng viết tắt ``BKBQP'', có tệp lẫn tiếng Anh; một số ô số căn cước bị nhập sai hoặc lệch định dạng.
+Khi đưa hệ thống mới vào một công tác đã có nhiều năm tích luỹ, bài toán nan giải là di trú khối dữ liệu lịch sử từ các tài liệu và bản giấy rời rạc sang cơ sở dữ liệu chuẩn hoá.
+Nhập tay từng bản ghi không khả thi với khối lượng tích luỹ qua nhiều năm.
+Việc sử dụng script SQL trực tiếp tiềm ẩn nhiều rủi ro về tính toàn vẹn dữ liệu vì các tài liệu không thống nhất định dạng: có tài liệu dùng tên đầy đủ ``Bằng khen của Bộ trưởng Bộ Quốc phòng'', có tài liệu dùng viết tắt ``BKBQP'', có tài liệu lẫn tiếng Anh; một số ô số căn cước bị nhập sai hoặc lệch định dạng.
 
 \subsection{Giải pháp}
 Đồ án xây dựng quy trình nhập Excel hai bước.
 Bước xem trước đọc toàn bộ tệp rồi đối chiếu với schema Zod và các quy tắc nghiệp vụ (số căn cước phải tồn tại, năm hợp lệ, danh hiệu nằm trong danh mục cho phép sau khi chuẩn hoá viết tắt), sau đó trả về hai danh sách: dòng hợp lệ và dòng lỗi kèm chỉ số dòng và mô tả.
 Cán bộ rà soát, tải tệp xuống sửa rồi tải lại; bước này chưa ghi bất cứ thay đổi nào xuống cơ sở dữ liệu.
-Bước xác nhận mở một giao dịch duy nhất và ghi tuần tự các dòng hợp lệ; nếu bất kỳ dòng nào lỗi (chẳng hạn xuất hiện một bản ghi trùng cùng quân nhân và năm do dữ liệu mới phát sinh trong khoảng giữa hai bước), toàn bộ giao dịch được hoàn tác và cơ sở dữ liệu trở về nguyên trạng.
-Mỗi loại nghiệp vụ có một chiến lược nhập riêng theo cùng một giao diện chung, nhờ đó các luồng nhập luôn nhất quán với nhau.
+Bước xác nhận mở một transaction duy nhất và ghi tuần tự các dòng hợp lệ; nếu bất kỳ dòng nào lỗi (chẳng hạn xuất hiện một bản ghi trùng cùng quân nhân và năm do dữ liệu mới phát sinh trong khoảng giữa hai bước), toàn bộ transaction được hoàn tác và cơ sở dữ liệu trở về nguyên trạng.
+Mỗi loại nghiệp vụ có một Strategy nhập riêng theo cùng một interface chung, nhờ đó các luồng nhập luôn nhất quán với nhau.
 
 \subsection{Kết quả}
-Quy trình nhập hai bước cho phép di chuyển khối dữ liệu lịch sử lớn của Học viện trong thời gian ngắn thay vì nhiều tháng nhập tay.
-Cơ chế xem trước phát hiện sớm các dòng sai trước khi ghi, còn cơ chế giao dịch đảm bảo nếu có lỗi ở bất kỳ dòng nào thì toàn bộ lần nhập được hoàn tác và không bản ghi nào lọt vào cơ sở dữ liệu ở trạng thái dở dang.
+Quy trình nhập hai bước cho phép đưa khối dữ liệu lịch sử lớn của Học viện vào hệ thống theo lô thay vì nhập tay từng bản ghi.
+Cơ chế xem trước phát hiện sớm các dòng sai trước khi ghi, còn cơ chế transaction đảm bảo nếu có lỗi ở bất kỳ dòng nào thì toàn bộ lần nhập được hoàn tác và không bản ghi nào lọt vào cơ sở dữ liệu ở trạng thái dở dang.
 Tệp mẫu nhập liệu cung cấp sẵn danh sách chọn các danh hiệu chuẩn ngay trong ô và giữ cố định các cột tiêu đề, nên cán bộ chỉ chọn giá trị hợp lệ thay vì gõ tay. Nhờ đó dữ liệu thống nhất và hợp lệ ngay khi cán bộ điền tệp mẫu, hạn chế sai sót trước khi nhập.
 
 \section{Phân quyền theo cơ cấu tổ chức, nhật ký đầy đủ và sao lưu định kỳ}
 \label{section:5.5}
 
 \subsection{Bài toán}
-Trên các tệp Word chia sẻ qua thư mục mạng, kiểm soát truy cập chỉ đạt đến mức cấp thư mục: hoặc có toàn quyền truy cập, hoặc không có quyền truy cập dữ liệu.
+Trên các tài liệu chia sẻ qua thư mục mạng, kiểm soát truy cập chỉ đạt đến mức cấp thư mục: hoặc được toàn quyền, hoặc hoàn toàn không có quyền.
 Với một Học viện gồm nhiều cơ quan, đơn vị có cấp bậc nhạy cảm khác nhau, sự thiếu phân quyền chi tiết tạo rủi ro: cán bộ một đơn vị có thể vô tình hoặc cố ý xem dữ liệu của đơn vị khác; hoặc tệ hơn, có thể chỉnh sửa dữ liệu mà không để lại dấu vết.
 Sao lưu dữ liệu cũng phụ thuộc vào kỷ luật cá nhân, không có cơ chế tự động đảm bảo có bản sao lưu hằng ngày sẵn sàng để khôi phục.
 
 \subsection{Giải pháp}
-Các cơ chế kỹ thuật chung (phân quyền theo vai trò, việc ẩn nhật ký sao lưu khỏi các vai trò thấp, tác vụ sao lưu định kỳ và nhật ký hệ thống) đã được trình bày tại Mục~\ref{subsection:2.4.2}.
-Mục này tập trung vào những lựa chọn thiết kế mang tính đóng góp riêng của đồ án.
+Các cơ chế cơ bản về phân quyền, nhật ký và sao lưu đã được trình bày ở Mục~\ref{subsection:2.4.2}; phần này chỉ tập trung vào những lựa chọn thiết kế mang tính đóng góp riêng của đồ án.
 
 Thứ nhất, cơ chế phân quyền theo vai trò được tách thành các lớp kiểm tra quyền độc lập, áp dụng nhất quán cho từng nhóm thao tác.
 Đáng chú ý, có một lớp dành riêng để loại Quản trị viên ra khỏi các luồng nghiệp vụ: vai trò này nắm toàn quyền về hạ tầng nhưng không được phê duyệt khen thưởng, nhờ vậy ranh giới giữa quản trị hạ tầng và xử lý nghiệp vụ luôn rõ ràng.
 Thứ hai, phạm vi dữ liệu của Chỉ huy đơn vị được tự động thu hẹp về đúng cây đơn vị họ quản lý ngay tại tầng truy vấn, thay vì phải kiểm tra thủ công ở từng route.
 Thứ ba, một route đặc biệt cho phép Quản trị viên sửa dữ liệu khen thưởng cũ mà bỏ qua kiểm tra điều kiện, phục vụ di trú dữ liệu lịch sử và rà soát về sau.
-Mỗi lần dùng route này đều được ghi nhật ký bằng một mã hành động riêng và phát thông báo thời gian thực tới toàn bộ cán bộ Phòng Chính trị.
+Mỗi lần dùng route này đều được ghi nhật ký bằng một mã hành động riêng và gửi thông báo thời gian thực tới toàn bộ cán bộ Phòng Chính trị.
 Nhờ đó, thao tác bỏ qua kiểm tra luôn được công khai và giám sát.
 
 \subsection{Kết quả}
@@ -144,10 +137,10 @@ Toàn bộ thao tác làm thay đổi dữ liệu đều được ghi nhật ký
 Cơ chế ẩn nhật ký sao lưu cũng được kiểm chứng: Quản trị viên xem được đầy đủ, còn Cán bộ Phòng Chính trị nhận danh sách rỗng khi lọc theo loại nhật ký này.
 
 Về sao lưu, lịch định kỳ chạy ổn định trong suốt quá trình thử nghiệm, tự động sinh các tệp \texttt{.sql} và dọn các bản cũ vượt số ngày lưu trữ đã cấu hình.
-Việc khôi phục từ bản sao lưu hoàn tất nhanh chóng, có thể đáp ứng yêu cầu khôi phục trong phạm vi thử nghiệm.
+Việc khôi phục từ bản sao lưu thực hiện được trong phạm vi thử nghiệm.
 
 Chương này đã phân tích năm đóng góp nổi bật của đồ án theo cấu trúc thực trạng, giải pháp và kết quả.
-Năm đóng góp đó gồm: cơ chế xét điều kiện chuỗi danh hiệu thống nhất cho cá nhân và đơn vị; quy trình đề xuất, phê duyệt và lưu vết thao tác đã được số hoá; cơ chế tính lại tổng thể kèm gợi ý đề nghị chủ động; quy trình nhập Excel hàng loạt có giao dịch và kiểm tra trước; và mô hình phân quyền theo cơ cấu tổ chức kết hợp nhật ký đầy đủ và sao lưu định kỳ.
+Năm đóng góp đó gồm: cơ chế xét điều kiện chuỗi danh hiệu thống nhất cho cá nhân và đơn vị; quy trình đề xuất, phê duyệt và lưu vết thao tác đã được số hoá; cơ chế tính lại tổng thể kèm gợi ý đề nghị chủ động; quy trình nhập Excel hàng loạt có transaction và kiểm tra trước; và mô hình phân quyền theo cơ cấu tổ chức kết hợp nhật ký đầy đủ và sao lưu định kỳ.
 Những đóng góp này được tổng kết cùng các hướng phát triển tiếp theo ở Chương~\ref{chapter:conclusion}.
 
 \end{document}
