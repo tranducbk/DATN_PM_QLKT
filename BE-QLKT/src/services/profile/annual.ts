@@ -117,13 +117,11 @@ export function calculateContinuousNCKH(thanhTichList: ThanhTichKhoaHoc[], year:
 }
 
 /**
- * Counts BKBQP awards on the 2-year cadence ending at `year - 1`.
+ * Counts BKBQP within the continuous CSTDCS streak window [year-cstdcsStreak, year-1].
  * @param danhHieuList - Annual title rows (any order)
- * @param year - Evaluation anchor year
- * @returns Number of BKBQP steps in the active chain
- */
-/**
- * Counts total BKBQP received within the continuous CSTDCS streak.
+ * @param year - Evaluation anchor year (window ends at year-1)
+ * @param cstdcsStreak - Continuous CSTDCS streak length (sets the window width)
+ * @returns Number of BKBQP in the window
  */
 export function countBKBQPInStreak(
   danhHieuList: DanhHieuHangNam[],
@@ -137,13 +135,11 @@ export function countBKBQPInStreak(
 }
 
 /**
- * Counts CSTDTQ awards on the 3-year cadence ending at `year - 1`.
+ * Counts CSTDTQ within the continuous CSTDCS streak window [year-cstdcsStreak, year-1].
  * @param danhHieuList - Annual title rows (any order)
- * @param year - Evaluation anchor year
- * @returns Number of CSTDTQ steps in the active chain
- */
-/**
- * Counts total CSTDTQ received within the continuous CSTDCS streak.
+ * @param year - Evaluation anchor year (window ends at year-1)
+ * @param cstdcsStreak - Continuous CSTDCS streak length (sets the window width)
+ * @returns Number of CSTDTQ in the window
  */
 export function countCSTDTQInStreak(
   danhHieuList: DanhHieuHangNam[],

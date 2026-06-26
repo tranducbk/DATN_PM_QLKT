@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { systemLogRepository } from '../repositories/systemLog.repository';
 import { MAX_LOG_DESCRIPTION_LENGTH } from '../helpers/systemLogHelper';
+import { getClientIp } from '../helpers/clientIp';
 
 import type { AuditLogOptions } from '../types/api';
 
@@ -105,7 +106,7 @@ const auditLog = (options: AuditLogOptions = { action: '', resource: '' }) => {
                 tai_nguyen_id: resourceId ?? undefined,
                 description: description.substring(0, MAX_LOG_DESCRIPTION_LENGTH),
                 payload: payload ? JSON.stringify(payload) : undefined,
-                ip_address: req.ip || req.socket.remoteAddress,
+                ip_address: getClientIp(req),
                 user_agent: req.get('User-Agent'),
               });
             })

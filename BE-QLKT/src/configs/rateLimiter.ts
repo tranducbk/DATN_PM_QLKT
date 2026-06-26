@@ -2,6 +2,7 @@ import rateLimit from 'express-rate-limit';
 import type { Request, Response } from 'express';
 import { writeSystemLog } from '../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
+import { getClientIp } from '../helpers/clientIp';
 
 interface RateLimitMessage {
   success: boolean;
@@ -40,7 +41,7 @@ const makeRateLimitHandler =
         userRole: req.user?.role,
         action: AUDIT_ACTIONS.RATE_LIMIT,
         resource: resourceFromReq(req),
-        description: `Quá giới hạn yêu cầu: ${req.method} ${req.originalUrl} từ IP ${req.ip ?? 'không rõ'}`,
+        description: `Quá giới hạn yêu cầu: ${req.method} ${req.originalUrl} từ IP ${getClientIp(req)}`,
       });
     }
     res.status(429).json(message);

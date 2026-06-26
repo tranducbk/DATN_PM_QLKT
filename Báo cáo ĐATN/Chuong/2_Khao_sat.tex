@@ -18,8 +18,7 @@ Cấp ký quyết định tùy theo thẩm quyền của từng danh hiệu: Gi�
 Quân nhân nhận thông tin khen thưởng chủ yếu theo một chiều qua văn bản hoặc bảng tin đơn vị, chưa có kênh tra cứu chủ động.
 
 Mỗi quân nhân thường có nhiều quyết định khen thưởng từ các loại danh hiệu khác nhau: chuỗi danh hiệu hằng năm tích luỹ toàn thời gian phục vụ, Huy chương Chiến sĩ vẻ vang (HCCSVV) ở các mốc 10, 15, 20 năm, Huân chương Bảo vệ Tổ quốc (HCBVTQ), Kỷ niệm chương, Huy chương Quân kỳ quyết thắng và khen thưởng đột xuất.
-Cán bộ phục vụ trên 25 năm có thể tích luỹ nhiều quyết định khen thưởng.
-Ở quy mô vài nghìn cán bộ, học viên và sĩ quan, mỗi người lại tích lũy nhiều bản ghi khen thưởng qua các năm, nên tổng dữ liệu lịch sử là một khối lượng lớn.
+Ở quy mô vài nghìn cán bộ, học viên và sĩ quan, mỗi người tích luỹ nhiều bản ghi khen thưởng qua các năm, nên tổng dữ liệu lịch sử là một khối lượng lớn.
 
 Từ kết quả khảo sát, rút ra bốn nhóm vấn đề chính:
 
@@ -132,7 +131,7 @@ Toàn bộ use case của nhóm chức năng quản lý khen thưởng được 
 \label{subsection:2.2.5}
 
 Đây là nhóm chức năng có nhiều quy tắc xét điều kiện đan xen.
-Quy tắc danh hiệu hằng năm đi kèm điều kiện tính theo khoảng năm gần nhất tính lùi, lại có một danh hiệu chỉ được nhận đúng một lần trong toàn bộ thời gian phục vụ.
+Quy tắc danh hiệu hằng năm xét điều kiện theo khoảng năm gần nhất lùi dần, và có một danh hiệu chỉ được nhận một lần trong toàn bộ thời gian phục vụ.
 Các danh hiệu cao hơn của cá nhân xét trên chuỗi CSTĐCS liên tục gồm ba cấp BKBQP, CSTĐTQ và BKTTCP với các điều kiện sau:
 
 \begin{itemize}
@@ -170,7 +169,7 @@ Chức năng nhập Excel hàng loạt cung cấp tệp mẫu chuẩn để cán
 Quy trình gồm bốn use case con, thể hiện ở Hình~\ref{fig:uc-excel}:
 
 \begin{itemize}
-    \item \textbf{Tải tệp mẫu}: hệ thống sinh tệp Excel có cấu trúc cột chuẩn theo từng loại khen thưởng (danh hiệu hằng năm, khen thưởng đơn vị hằng năm, HCCSVV, HCBVTQ, ...) cùng các ràng buộc kiểm tra dữ liệu cho phép chọn từ danh sách thả xuống ngay trong tệp.
+    \item \textbf{Tải tệp mẫu}: hệ thống sinh tệp Excel có cấu trúc cột chuẩn theo từng loại khen thưởng (danh hiệu hằng năm, khen thưởng đơn vị hằng năm, HCCSVV, HCBVTQ, ...) cùng ràng buộc dữ liệu cho phép chọn giá trị từ danh sách có sẵn ngay trong tệp.
     \item \textbf{Xem trước}: sau khi cán bộ điền dữ liệu và tải tệp lên, hệ thống đọc nội dung từng dòng, đối chiếu với quy tắc kiểm tra dữ liệu và các quy tắc nghiệp vụ, sau đó hiển thị kết quả gồm các dòng hợp lệ và các dòng có lỗi kèm chỉ số dòng và mô tả lỗi. Bước này không ghi vào cơ sở dữ liệu.
     \item \textbf{Xác nhận}: cán bộ kiểm tra danh sách hợp lệ rồi xác nhận. Hệ thống ghi tuần tự từng dòng; nếu xảy ra lỗi tại bất kỳ dòng nào, toàn bộ thao tác được hủy bỏ và cơ sở dữ liệu giữ nguyên trạng thái trước khi nhập.
     \item \textbf{Xuất danh sách}: cho phép xuất kết quả khen thưởng theo nhiều tiêu chí (theo năm, theo đơn vị, theo loại danh hiệu) ra tệp Excel.

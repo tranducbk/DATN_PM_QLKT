@@ -36,8 +36,10 @@ export function createApp() {
   };
 
   app.use(cors(corsOptions));
-  // Trust proxy for production deployment (Render.com, Heroku, etc.)
-  app.set('trust proxy', 1);
+  // No reverse proxy: take the client IP straight from the socket and ignore
+  // X-Forwarded-For (which a direct client could spoof). Set to the number of
+  // proxy hops (e.g. 1) only when a reverse proxy / load balancer is added.
+  app.set('trust proxy', false);
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(express.json({ limit: '10mb' }));
   app.use(cookieParser());
