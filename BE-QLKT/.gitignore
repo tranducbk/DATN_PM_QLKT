@@ -23,6 +23,9 @@ yarn-error.log*
 uploads/
 storage/
 
+# Orphan files moved here by the cleanup scan (safe to purge)
+trash/
+
 # Backups (keep folder via .gitkeep, ignore actual backup files)
 backups/*.sql
 

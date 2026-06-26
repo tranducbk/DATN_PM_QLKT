@@ -16,7 +16,13 @@ import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { logMessages } from '../constants/logMessages.constants';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import decisionService from './decision.service';
-import { sanitizeFilename } from './proposal/helpers';
+import { buildTimestampedName, decodeOriginalName } from '../helpers/file/fileNaming';
+import { STORAGE_PROPOSALS_DIR, PROPOSALS_REL, ensureDir } from '../configs/storagePaths';
+import {
+  deleteStoredFiles,
+  attachmentRelativePath,
+  persistDecisionFile,
+} from '../helpers/file/fileStorage';
 import {
   notifyOnAdhocAwardCreated,
   notifyOnAdhocAwardUpdated,
@@ -157,36 +163,6 @@ class AdhocAwardService {
     }
   }
 
-  private async persistDecisionFile(file: UploadedFile): Promise<string> {
-    const uploadsDir = path.join(__dirname, '..', '..', 'uploads', 'decisions');
-    await fs.mkdir(uploadsDir, { recursive: true });
-
-    let decodedName = file.originalname;
-    try {
-      decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-    } catch (error) {
-      console.error('Failed to decode decision file name during adhoc-award create:', error);
-    }
-
-    const sanitized = sanitizeFilename(decodedName);
-    const ext = path.extname(sanitized);
-    const baseName = path.basename(sanitized, ext);
-    let filename = sanitized;
-    let counter = 1;
-    while (
-      await fs
-        .access(path.join(uploadsDir, filename))
-        .then(() => true)
-        .catch(() => false)
-    ) {
-      filename = `${baseName}(${counter})${ext}`;
-      counter++;
-    }
-
-    await fs.writeFile(path.join(uploadsDir, filename), file.buffer);
-    return `uploads/decisions/${filename}`;
-  }
-
   // FK so_quyet_dinh references FileQuyetDinh — a new decision number must have a row first
   private async ensureDecisionRecord({
     decisionNumber,
@@ -208,7 +184,7 @@ class AdhocAwardService {
       throw new ValidationError('Quyết định mới cần đầy đủ năm, ngày ký và người ký quyết định');
     }
 
-    const filePath = decisionFile?.buffer ? await this.persistDecisionFile(decisionFile) : null;
+    const filePath = decisionFile?.buffer ? await persistDecisionFile(decisionFile) : null;
 
     await decisionService.createDecision({
       so_quyet_dinh: soQuyetDinh,
@@ -270,44 +246,45 @@ class AdhocAwardService {
       }
     }
 
-    const proposalsDir = path.join(__dirname, '..', '..', 'storage', 'proposals');
-    await fs.mkdir(proposalsDir, { recursive: true });
-
     const uploadedAttachedFiles: AttachedFileInfo[] = [];
 
     if (attachedFiles && attachedFiles.length > 0) {
-      uploadedAttachedFiles.push(
-        ...(await this.persistAdhocAttachments(attachedFiles, 'adhoc-award create'))
-      );
+      uploadedAttachedFiles.push(...(await this.persistAdhocAttachments(attachedFiles)));
     }
 
-    await this.ensureDecisionRecord({
-      decisionNumber,
-      decisionYear,
-      signDate,
-      signer,
-      decisionFile,
-    });
+    let adhocAward: KhenThuongDotXuat;
+    try {
+      await this.ensureDecisionRecord({
+        decisionNumber,
+        decisionYear,
+        signDate,
+        signer,
+        decisionFile,
+      });
 
-    const adhocAward = await adhocAwardRepository.create({
-      loai: 'KHEN_THUONG_DOT_XUAT',
-      doi_tuong: type,
-      ...(type === ADHOC_TYPE.CA_NHAN && personnelId && { quan_nhan_id: personnelId }),
-      ...(type === ADHOC_TYPE.TAP_THE &&
-        unitType === UNIT_TYPE.CO_QUAN_DON_VI && { co_quan_don_vi_id: unitId }),
-      ...(type === ADHOC_TYPE.TAP_THE &&
-        unitType === UNIT_TYPE.DON_VI_TRUC_THUOC && { don_vi_truc_thuoc_id: unitId }),
-      hinh_thuc_khen_thuong: awardForm,
-      nam: year,
-      cap_bac: rank || null,
-      chuc_vu: position || null,
-      ghi_chu: note || null,
-      so_quyet_dinh: decisionNumber || null,
-      files_dinh_kem:
-        uploadedAttachedFiles.length > 0
-          ? (JSON.parse(JSON.stringify(uploadedAttachedFiles)) as Prisma.InputJsonValue)
-          : null,
-    } as Prisma.KhenThuongDotXuatUncheckedCreateInput);
+      adhocAward = await adhocAwardRepository.create({
+        loai: 'KHEN_THUONG_DOT_XUAT',
+        doi_tuong: type,
+        ...(type === ADHOC_TYPE.CA_NHAN && personnelId && { quan_nhan_id: personnelId }),
+        ...(type === ADHOC_TYPE.TAP_THE &&
+          unitType === UNIT_TYPE.CO_QUAN_DON_VI && { co_quan_don_vi_id: unitId }),
+        ...(type === ADHOC_TYPE.TAP_THE &&
+          unitType === UNIT_TYPE.DON_VI_TRUC_THUOC && { don_vi_truc_thuoc_id: unitId }),
+        hinh_thuc_khen_thuong: awardForm,
+        nam: year,
+        cap_bac: rank || null,
+        chuc_vu: position || null,
+        ghi_chu: note || null,
+        so_quyet_dinh: decisionNumber || null,
+        files_dinh_kem:
+          uploadedAttachedFiles.length > 0
+            ? (JSON.parse(JSON.stringify(uploadedAttachedFiles)) as Prisma.InputJsonValue)
+            : null,
+      } as Prisma.KhenThuongDotXuatUncheckedCreateInput);
+    } catch (e) {
+      await deleteStoredFiles(uploadedAttachedFiles.map(attachmentRelativePath));
+      throw e;
+    }
 
     // Reload with relations — notifyOnAdhocAwardCreated reads QuanNhan/CoQuanDonVi/
     // DonViTrucThuoc, which the bare create() result does not include.
@@ -335,28 +312,18 @@ class AdhocAwardService {
   }
 
   private async persistAdhocAttachments(
-    attachedFiles: UploadedFile[],
-    context: string
+    attachedFiles: UploadedFile[]
   ): Promise<AttachedFileInfo[]> {
-    const dir = path.join(__dirname, '..', '..', 'storage', 'proposals');
-    await fs.mkdir(dir, { recursive: true });
+    ensureDir(STORAGE_PROPOSALS_DIR);
     const saved: AttachedFileInfo[] = [];
     for (const file of attachedFiles) {
-      const timestamp = Date.now();
-      let decodedName = file.originalname;
-      try {
-        decodedName = Buffer.from(file.originalname, 'latin1').toString('utf8');
-      } catch (error) {
-        console.error(`Failed to decode uploaded attachment name during ${context}:`, error);
-        decodedName = file.originalname;
-      }
-      const sanitizedName = decodedName.replace(/[<>:"/\\|?*]/g, '_');
-      const uniqueName = `${timestamp}_${sanitizedName}`;
-      await fs.writeFile(path.join(dir, uniqueName), file.buffer);
+      const originalName = decodeOriginalName(file.originalname);
+      const uniqueName = buildTimestampedName(file.originalname);
+      await fs.writeFile(path.join(STORAGE_PROPOSALS_DIR, uniqueName), file.buffer);
       saved.push({
         filename: uniqueName,
-        originalName: decodedName,
-        path: `storage/proposals/${uniqueName}`,
+        originalName,
+        path: `${PROPOSALS_REL}/${uniqueName}`,
         size: file.size,
         mimeType: file.mimetype,
         uploadedAt: new Date().toISOString(),
@@ -512,7 +479,8 @@ class AdhocAwardService {
       throw new NotFoundError('Khen thưởng đột xuất');
     }
 
-    let existingAttachedFiles: AttachedFileInfo[] = parseAttachedFiles(existing.files_dinh_kem);
+    const existingAttachedFiles: AttachedFileInfo[] = parseAttachedFiles(existing.files_dinh_kem);
+    const removedPaths: Array<string | null> = [];
 
     if (removeAttachedFileIndexes && removeAttachedFileIndexes.length > 0) {
       const filesToRemove = [...removeAttachedFileIndexes]
@@ -520,21 +488,15 @@ class AdhocAwardService {
         .filter(index => index >= 0 && index < existingAttachedFiles.length);
 
       for (const index of filesToRemove) {
-        const fileToRemove = existingAttachedFiles[index];
-        try {
-          const fullPath = path.join(__dirname, '..', '..', fileToRemove.path);
-          await fs.unlink(fullPath);
-        } catch (error) {
-          console.error('Failed to delete removed attachment during adhoc-award update:', error);
-        }
+        removedPaths.push(attachmentRelativePath(existingAttachedFiles[index]));
         existingAttachedFiles.splice(index, 1);
       }
     }
 
+    const newlyPersisted: AttachedFileInfo[] = [];
     if (attachedFiles && attachedFiles.length > 0) {
-      existingAttachedFiles.push(
-        ...(await this.persistAdhocAttachments(attachedFiles, 'adhoc-award update'))
-      );
+      newlyPersisted.push(...(await this.persistAdhocAttachments(attachedFiles)));
+      existingAttachedFiles.push(...newlyPersisted);
     }
 
     const updateData: Record<string, unknown> = {};
@@ -548,25 +510,32 @@ class AdhocAwardService {
 
     updateData.files_dinh_kem = existingAttachedFiles.length > 0 ? existingAttachedFiles : null;
 
-    const updated = await adhocAwardRepository.updateRaw({
-      where: { id },
-      data: updateData as Prisma.KhenThuongDotXuatUpdateInput,
-      include: {
-        QuanNhan: {
-          include: {
-            CoQuanDonVi: true,
-            DonViTrucThuoc: true,
-            ChucVu: true,
+    const updated = await adhocAwardRepository
+      .updateRaw({
+        where: { id },
+        data: updateData as Prisma.KhenThuongDotXuatUpdateInput,
+        include: {
+          QuanNhan: {
+            include: {
+              CoQuanDonVi: true,
+              DonViTrucThuoc: true,
+              ChucVu: true,
+            },
+          },
+          CoQuanDonVi: true,
+          DonViTrucThuoc: {
+            include: {
+              CoQuanDonVi: true,
+            },
           },
         },
-        CoQuanDonVi: true,
-        DonViTrucThuoc: {
-          include: {
-            CoQuanDonVi: true,
-          },
-        },
-      },
-    });
+      })
+      .catch(async e => {
+        await deleteStoredFiles(newlyPersisted.map(attachmentRelativePath));
+        throw e;
+      });
+
+    await deleteStoredFiles(removedPaths);
 
     try {
       await notifyOnAdhocAwardUpdated(updated, admin.username);
@@ -620,21 +589,9 @@ class AdhocAwardService {
     const attachedFilesRaw = adhocAward.files_dinh_kem as unknown as AttachedFileInfo[] | null;
     const attachedFilesList = attachedFilesRaw || [];
 
-    for (const file of attachedFilesList) {
-      try {
-        const fullPath = path.join(__dirname, '..', '..', file.path);
-        await fs.unlink(fullPath);
-      } catch (error) {
-        console.error('Failed to delete attachment file during adhoc-award delete:', error);
-        void writeSystemLog({
-          action: AUDIT_ACTIONS.ERROR,
-          resource: AWARD_SLUGS.ADHOC_AWARDS,
-          description: `Lỗi xóa file đính kèm ${AWARD_LABEL}: ${error}`,
-        });
-      }
-    }
-
     await adhocAwardRepository.delete(id);
+
+    await deleteStoredFiles(attachedFilesList.map(attachmentRelativePath));
 
     try {
       await notifyOnAdhocAwardDeleted(awardInfo, admin?.username || 'Admin');

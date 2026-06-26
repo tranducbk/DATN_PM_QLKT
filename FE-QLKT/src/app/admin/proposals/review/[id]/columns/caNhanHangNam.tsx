@@ -1,5 +1,5 @@
-import { Button, DatePicker, Tooltip, Typography } from 'antd';
-import { HistoryOutlined } from '@ant-design/icons';
+import { Button, DatePicker, Popconfirm, Tooltip, Typography } from 'antd';
+import { CloseOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import {
@@ -20,6 +20,7 @@ interface CaNhanHangNamColumnsDeps {
   totalTimeByGroup: (personnelId: string, group: ContributionCoefficientGroup) => string;
   updateNienHan: (index: number, fields: Partial<DanhHieuItem>) => void;
   handleOpenDecisionFile: (soQuyetDinh: string) => void;
+  handleClearDecision: (index: number) => void;
   handleViewPersonnelHistory: (record: DanhHieuItem) => void;
 }
 
@@ -38,6 +39,7 @@ export function buildCaNhanHangNamColumns(
     totalTimeByGroup,
     updateNienHan,
     handleOpenDecisionFile,
+    handleClearDecision,
     handleViewPersonnelHistory,
   } = deps;
 
@@ -274,7 +276,7 @@ export function buildCaNhanHangNamColumns(
           );
         }
         return (
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
             <a
               onClick={e => {
                 e.preventDefault();
@@ -285,6 +287,24 @@ export function buildCaNhanHangNamColumns(
             >
               {soQuyetDinh}
             </a>
+            {proposal?.status === PROPOSAL_STATUS.PENDING && (
+              <span onClick={e => e.stopPropagation()}>
+                <Popconfirm
+                  title="Gỡ số quyết định?"
+                  okText="Gỡ"
+                  cancelText="Hủy"
+                  onConfirm={() => handleClearDecision(index)}
+                >
+                  <Button
+                    type="text"
+                    danger
+                    size="small"
+                    icon={<CloseOutlined />}
+                    title="Gỡ số quyết định"
+                  />
+                </Popconfirm>
+              </span>
+            )}
           </div>
         );
       },

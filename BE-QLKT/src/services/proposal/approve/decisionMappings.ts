@@ -12,7 +12,8 @@ import {
 import { RESOURCE_SLUGS } from '../../../constants/resourceSlugs.constants';
 import { writeSystemLog } from '../../../helpers/systemLogHelper';
 import { AUDIT_ACTIONS } from '../../../constants/auditActions.constants';
-import { sanitizeFilename } from '../helpers';
+import { resolveDedupName } from '../../../helpers/file/fileNaming';
+import { UPLOADS_DECISIONS_DIR, DECISIONS_REL, ensureDir } from '../../../configs/storagePaths';
 import type { ProposalDanhHieuItem, ProposalThanhTichItem } from '../../../types/proposal';
 import type {
   DecisionInfo,
@@ -30,37 +31,8 @@ export async function persistDecisionPdfs(
   decisions: DecisionInputMap,
   pdfFiles: Record<string, UploadedDecisionFile | undefined>
 ): Promise<Record<string, string | undefined>> {
-  const uploadsDir = path.join(__dirname, '..', '..', '..', '..', 'uploads', 'decisions');
-  await fs.mkdir(uploadsDir, { recursive: true });
+  ensureDir(UPLOADS_DECISIONS_DIR);
   const pdfPaths: Record<string, string | undefined> = {};
-
-  const getUniqueFilename = async (originalName: string | Buffer | undefined) => {
-    let processedName: string = (originalName as string) || 'file';
-    try {
-      if (Buffer.isBuffer(processedName)) {
-        processedName = (processedName as Buffer).toString('utf8');
-      } else if (typeof processedName === 'string') {
-        processedName = Buffer.from(processedName, 'latin1').toString('utf8');
-      }
-    } catch {
-      processedName = 'file';
-    }
-    const sanitized = sanitizeFilename(processedName);
-    const ext = path.extname(sanitized);
-    const baseName = path.basename(sanitized, ext);
-    let filename = sanitized;
-    let counter = 1;
-    while (
-      await fs
-        .access(path.join(uploadsDir, filename))
-        .then(() => true)
-        .catch(() => false)
-    ) {
-      filename = `${baseName}(${counter})${ext}`;
-      counter++;
-    }
-    return filename;
-  };
 
   const getFilePathFromDB = async (soQuyetDinh: string | null | undefined) => {
     if (!soQuyetDinh) return null;
@@ -92,10 +64,10 @@ export async function persistDecisionPdfs(
       if (existingFilePath) {
         pdfPaths[key] = existingFilePath;
       } else {
-        const filename = await getUniqueFilename(file.originalname);
-        const filepath = path.join(uploadsDir, filename);
+        const filename = await resolveDedupName(UPLOADS_DECISIONS_DIR, file.originalname);
+        const filepath = path.join(UPLOADS_DECISIONS_DIR, filename);
         await fs.writeFile(filepath, file.buffer);
-        pdfPaths[key] = `uploads/decisions/${filename}`;
+        pdfPaths[key] = `${DECISIONS_REL}/${filename}`;
       }
     }
   }

@@ -21,7 +21,6 @@ import { getApiErrorMessage } from '@/lib/http/apiError';
 import { CheckCircleOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { apiClient } from '@/lib/http/apiClient';
-import { capitalizeWords } from '@/lib/utils';
 import dayjs from 'dayjs';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 
@@ -330,7 +329,6 @@ export function ApproveModal({ visible, proposal, onClose, onSuccess }: ApproveM
             label="Người ký"
             name="nguoi_ky"
             rules={[{ required: true, message: 'Vui lòng nhập người ký!' }]}
-            getValueFromEvent={e => capitalizeWords(e.target.value)}
           >
             <Input size="large" placeholder="Ví dụ: Thiếu tướng Nguyễn Văn A - Giám đốc Học viện" />
           </Form.Item>

@@ -209,6 +209,7 @@ export default function AdminDecisionsPage() {
       dataIndex: 'ghi_chu',
       key: 'ghi_chu',
       width: 240,
+      onHeaderCell: () => ({ style: { textAlign: 'center' as const } }),
       render: (text: string | null) => {
         if (!text) return <Text type="secondary">-</Text>;
         return <Text style={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{text}</Text>;

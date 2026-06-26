@@ -14,6 +14,7 @@ import {
   Alert,
   Select,
   Tag,
+  Popconfirm,
 } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { UploadFile } from 'antd/es/upload/interface';
@@ -23,6 +24,7 @@ import {
   UploadOutlined,
   FilePdfOutlined,
   FileTextOutlined,
+  CloseOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
@@ -301,6 +303,16 @@ export default function BulkRewardDetailsPage() {
     setEditingPersonnelId(null);
   };
 
+  const handleClearDecision = (personnelId: string) => {
+    setPersonnelData(prev =>
+      prev.map(item =>
+        item.personnel_id === personnelId ? { ...item, so_quyet_dinh: '' } : item
+      )
+    );
+    setSelectedRowKeys(prev => prev.filter(key => key !== personnelId));
+    message.success('Đã gỡ số quyết định khỏi quân nhân');
+  };
+
   const columns: ColumnsType<PersonnelRewardData> = [
     {
       title: 'STT',
@@ -440,7 +452,7 @@ export default function BulkRewardDetailsPage() {
         }
 
         return (
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
             <a
               onClick={async e => {
                 e.preventDefault();
@@ -471,6 +483,24 @@ export default function BulkRewardDetailsPage() {
             >
               {soQuyetDinh}
             </a>
+            {record.isEligible && (
+              <span onClick={e => e.stopPropagation()}>
+                <Popconfirm
+                  title="Gỡ số quyết định khỏi quân nhân này?"
+                  okText="Gỡ"
+                  cancelText="Hủy"
+                  onConfirm={() => handleClearDecision(record.personnel_id)}
+                >
+                  <Button
+                    type="text"
+                    danger
+                    size="small"
+                    icon={<CloseOutlined />}
+                    title="Gỡ số quyết định khỏi quân nhân này"
+                  />
+                </Popconfirm>
+              </span>
+            )}
           </div>
         );
       },

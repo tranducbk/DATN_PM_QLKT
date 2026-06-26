@@ -4,6 +4,7 @@ import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { buildSignedFileUrl } from '../helpers/file/signedFileUrl';
+import { persistDecisionFile, deleteStoredFile } from '../helpers/file/fileStorage';
 
 interface GetAllDecisionsQuery {
   nam?: number;
@@ -120,17 +121,22 @@ class DecisionController {
     }
 
     const ngayKyDate = typeof ngay_ky === 'string' ? new Date(ngay_ky) : ngay_ky;
-    const file_path = file ? `uploads/decisions/${file.filename}` : null;
-    const decision = await decisionService.createDecision({
-      so_quyet_dinh,
-      nam,
-      ngay_ky: ngayKyDate,
-      nguoi_ky,
-      file_path,
-      loai_khen_thuong,
-      ghi_chu,
-    });
-    return ResponseHelper.created(res, { data: decision, message: 'Tạo quyết định thành công' });
+    const file_path = file?.buffer ? await persistDecisionFile(file) : null;
+    try {
+      const decision = await decisionService.createDecision({
+        so_quyet_dinh,
+        nam,
+        ngay_ky: ngayKyDate,
+        nguoi_ky,
+        file_path,
+        loai_khen_thuong,
+        ghi_chu,
+      });
+      return ResponseHelper.created(res, { data: decision, message: 'Tạo quyết định thành công' });
+    } catch (e) {
+      if (file_path) await deleteStoredFile(file_path);
+      throw e;
+    }
   });
 
   updateDecision = catchAsync(async (req: Request, res: Response) => {
@@ -142,7 +148,11 @@ class DecisionController {
 
     const { so_quyet_dinh, nam, ngay_ky, nguoi_ky, loai_khen_thuong, ghi_chu } = body;
     let file_path = body.file_path;
-    if (file) file_path = `uploads/decisions/${file.filename}`;
+    let newlyPersisted: string | null = null;
+    if (file?.buffer) {
+      newlyPersisted = await persistDecisionFile(file);
+      file_path = newlyPersisted;
+    }
 
     if (
       !so_quyet_dinh &&
@@ -156,19 +166,24 @@ class DecisionController {
       return ResponseHelper.badRequest(res, 'Vui lòng cung cấp thông tin cần cập nhật');
     }
 
-    const decision = await decisionService.updateDecision(id, {
-      so_quyet_dinh,
-      nam,
-      ngay_ky: ngay_ky ? new Date(ngay_ky) : undefined,
-      nguoi_ky,
-      file_path,
-      loai_khen_thuong,
-      ghi_chu,
-    });
-    return ResponseHelper.success(res, {
-      data: decision,
-      message: 'Cập nhật quyết định thành công',
-    });
+    try {
+      const decision = await decisionService.updateDecision(id, {
+        so_quyet_dinh,
+        nam,
+        ngay_ky: ngay_ky ? new Date(ngay_ky) : undefined,
+        nguoi_ky,
+        file_path,
+        loai_khen_thuong,
+        ghi_chu,
+      });
+      return ResponseHelper.success(res, {
+        data: decision,
+        message: 'Cập nhật quyết định thành công',
+      });
+    } catch (e) {
+      if (newlyPersisted) await deleteStoredFile(newlyPersisted);
+      throw e;
+    }
   });
 
   deleteDecision = catchAsync(async (req: Request, res: Response) => {

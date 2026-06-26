@@ -10,6 +10,7 @@ import { commemorativeMedalRepository } from '../../repositories/commemorativeMe
 import { contributionMedalRepository } from '../../repositories/contributionMedal.repository';
 import { accountRepository } from '../../repositories/account.repository';
 import { proposalRepository } from '../../repositories/proposal.repository';
+import { deleteStoredFiles, attachmentRelativePath } from '../../helpers/file/fileStorage';
 import type { Prisma } from '../../generated/prisma';
 import { ROLES } from '../../constants/roles.constants';
 import {
@@ -595,6 +596,10 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
  * @param userRole - Caller's role
  * @returns Deleted proposal record
  */
+function asAttachmentList(value: unknown): Array<{ path?: string; filename?: string }> {
+  return Array.isArray(value) ? (value as Array<{ path?: string; filename?: string }>) : [];
+}
+
 async function deleteProposal(proposalId: string, userId: string, userRole: string) {
   const proposal = await proposalRepository.findUniqueRaw({
     where: { id: proposalId },
@@ -626,8 +631,6 @@ async function deleteProposal(proposalId: string, userId: string, userRole: stri
     }
   }
 
-  // PDFs are in files_attached — no separate deletion needed
-
   // Atomic delete guarded by status=PENDING to prevent race condition
   const deleteResult = await proposalRepository.deleteMany({
     id: proposalId,
@@ -639,6 +642,13 @@ async function deleteProposal(proposalId: string, userId: string, userRole: stri
       'Đề xuất đã bị thay đổi bởi người khác (có thể đã được phê duyệt hoặc từ chối). Vui lòng tải lại trang.'
     );
   }
+
+  await deleteStoredFiles(
+    [
+      ...asAttachmentList(proposal.files_attached),
+      ...asAttachmentList(proposal.files_attached_admin),
+    ].map(attachmentRelativePath)
+  );
 
   return {
     message: 'Đã xóa đề xuất thành công',

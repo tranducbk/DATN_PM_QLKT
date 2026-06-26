@@ -27,6 +27,7 @@ import {
   CloseCircleOutlined,
   ToolOutlined,
   DatabaseOutlined,
+  BulbOutlined,
 } from '@ant-design/icons';
 import Image from 'next/image';
 import { isAxiosError } from 'axios';
@@ -42,6 +43,7 @@ import {
   SYSTEM_FEATURE_OPTIONS,
 } from '@/constants/devZone.constants';
 import { formatDateTime } from '@/lib/utils';
+import { useTheme } from '@/components/ThemeProvider';
 import type { DevStatus, BackupStatus } from './types';
 import type { BackupScheduleParts } from './helpers';
 import {
@@ -85,6 +87,7 @@ function FeatureRow({
 }
 
 export default function DevZonePage() {
+  const { isDark, toggle } = useTheme();
   const [authenticated, setAuthenticated] = useState(false);
   const [password, setPassword] = useState('');
   const [authLoading, setAuthLoading] = useState(false);
@@ -373,10 +376,19 @@ export default function DevZonePage() {
     }
   };
 
+  const themeToggle = (
+    <div className="dz-theme-toggle">
+      <Button className="dz-refresh-btn" size="small" icon={<BulbOutlined />} onClick={toggle}>
+        {isDark ? 'Sáng' : 'Tối'}
+      </Button>
+    </div>
+  );
+
   // Login screen
   if (!authenticated) {
     return (
       <div className="dz-page">
+        {themeToggle}
         <div className="dz-auth">
           <div className="dz-auth-card">
             <div className="dz-auth-logo">
@@ -427,19 +439,24 @@ export default function DevZonePage() {
   return (
     <ConfigProvider
       theme={{
-        algorithm: theme.darkAlgorithm,
+        algorithm: isDark ? theme.darkAlgorithm : theme.defaultAlgorithm,
         token: {
           colorPrimary: '#3b82f6',
-          colorBgContainer: '#1a2540',
-          colorBgElevated: '#16213c',
-          colorBorder: '#26334d',
-          colorBorderSecondary: '#26334d',
-          colorText: '#e2e8f0',
           borderRadius: 10,
+          ...(isDark
+            ? {
+                colorBgContainer: '#1a2540',
+                colorBgElevated: '#16213c',
+                colorBorder: '#26334d',
+                colorBorderSecondary: '#26334d',
+                colorText: '#e2e8f0',
+              }
+            : {}),
         },
       }}
     >
       <div className="dz-page">
+        {themeToggle}
         <div className="dz-dashboard">
           {/* Header */}
           <div className="dz-header">
@@ -684,7 +701,7 @@ export default function DevZonePage() {
               <div className="dz-card-title">
                 <DatabaseOutlined />
                 <span>Sao lưu dữ liệu</span>
-                <div style={{ marginLeft: 'auto', fontSize: 12, color: '#94a3b8' }}>
+                <div style={{ marginLeft: 'auto', fontSize: 12, color: 'var(--dz-text-3)' }}>
                   {backupStatus ? `${backupStatus.totalFiles} file` : ''}
                 </div>
               </div>

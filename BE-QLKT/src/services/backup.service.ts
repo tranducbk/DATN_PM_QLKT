@@ -1,5 +1,6 @@
 import fs from 'fs';
 import path from 'path';
+import { BACKUP_DIR } from '../configs/storagePaths';
 import {
   danhHieuHangNamRepository,
   danhHieuDonViHangNamRepository,
@@ -54,7 +55,6 @@ interface CleanupResult {
   files: string[];
 }
 
-const BACKUP_DIR = path.join(process.cwd(), 'backups');
 const FILENAME_PATTERN = /^backup_\d{8}_\d{6}_(manual|scheduled)\.sql$/;
 const DEFAULT_RETENTION_DAYS = 15;
 

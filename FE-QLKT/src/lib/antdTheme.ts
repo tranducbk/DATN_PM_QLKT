@@ -14,6 +14,7 @@ const PALETTE = {
     borderSecondary: '#374151',
     placeholder: '#9ca3af',
     hover: '#374151',
+    tooltipBg: '#1f2937',
   },
   light: {
     container: '#ffffff',
@@ -25,6 +26,7 @@ const PALETTE = {
     borderSecondary: '#e5e7eb',
     placeholder: '#6b7280',
     hover: '#f3f4f6',
+    tooltipBg: 'rgba(0, 0, 0, 0.85)',
   },
 } as const;
 
@@ -103,7 +105,7 @@ export function getRootAntdThemeConfig(isDark: boolean): ThemeConfig {
         colorBgElevated: c.elevated,
       },
       Tooltip: {
-        colorBgSpotlight: isDark ? c.elevated : undefined,
+        colorBgSpotlight: c.tooltipBg,
       },
     },
   };

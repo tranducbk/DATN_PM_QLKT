@@ -1,18 +1,23 @@
-import { Typography } from 'antd';
+import { Button, Popconfirm, Typography } from 'antd';
+import { CloseOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { EditableCell } from '@/components/shared/EditableCell';
+import { PROPOSAL_STATUS } from '@/constants/proposal.constants';
 import { formatUnitInfo } from '../helpers';
 import type { ThanhTichItem } from '../types';
 
 const { Text } = Typography;
 
 interface ThanhTichColumnsDeps {
+  proposalStatus: string;
   updateThanhTich: (index: number, field: keyof ThanhTichItem, value: unknown) => void;
   handleOpenDecisionFile: (soQuyetDinh: string) => void;
+  handleClearThanhTichDecision: (index: number) => void;
 }
 
 export function buildThanhTichColumns(deps: ThanhTichColumnsDeps): ColumnsType<ThanhTichItem> {
-  const { updateThanhTich, handleOpenDecisionFile } = deps;
+  const { proposalStatus, updateThanhTich, handleOpenDecisionFile, handleClearThanhTichDecision } =
+    deps;
 
   return [
     {
@@ -134,7 +139,7 @@ export function buildThanhTichColumns(deps: ThanhTichColumnsDeps): ColumnsType<T
       key: 'so_quyet_dinh',
       width: 180,
       align: 'center' as const,
-      render: (_: unknown, record: ThanhTichItem) => {
+      render: (_: unknown, record: ThanhTichItem, index: number) => {
         const soQuyetDinh = record.so_quyet_dinh;
         if (!soQuyetDinh || (typeof soQuyetDinh === 'string' && soQuyetDinh.trim() === '')) {
           return (
@@ -147,7 +152,7 @@ export function buildThanhTichColumns(deps: ThanhTichColumnsDeps): ColumnsType<T
         }
 
         return (
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
             <a
               onClick={e => {
                 e.preventDefault();
@@ -158,6 +163,24 @@ export function buildThanhTichColumns(deps: ThanhTichColumnsDeps): ColumnsType<T
             >
               {soQuyetDinh}
             </a>
+            {proposalStatus === PROPOSAL_STATUS.PENDING && (
+              <span onClick={e => e.stopPropagation()}>
+                <Popconfirm
+                  title="Gỡ số quyết định?"
+                  okText="Gỡ"
+                  cancelText="Hủy"
+                  onConfirm={() => handleClearThanhTichDecision(index)}
+                >
+                  <Button
+                    type="text"
+                    danger
+                    size="small"
+                    icon={<CloseOutlined />}
+                    title="Gỡ số quyết định"
+                  />
+                </Popconfirm>
+              </span>
+            )}
           </div>
         );
       },
