@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { BACKUP_DIR } from '../configs/storagePaths';
+import { prisma } from '../models';
 import {
   danhHieuHangNamRepository,
   danhHieuDonViHangNamRepository,
@@ -176,7 +177,7 @@ class BackupService {
       fileQuyetDinh,
       systemSettings,
       systemLog,
-    ] = await Promise.all([
+    ] = await prisma.$transaction([
       coQuanDonViRepository.findManyRaw({}),
       donViTrucThuocRepository.findManyRaw({}),
       positionRepository.findManyRaw({}),
@@ -209,7 +210,7 @@ class BackupService {
       decisionFileRepository.findManyRaw({}),
       systemSettingRepository.findManyRaw({}),
       systemLogRepository.findManyRaw({}),
-    ]);
+    ], { isolationLevel: 'RepeatableRead' });
 
     const allSets = [
       coQuanDonVi,
