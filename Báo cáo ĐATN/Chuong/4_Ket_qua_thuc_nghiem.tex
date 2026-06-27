@@ -1,7 +1,7 @@
 \documentclass[../DoAn.tex]{subfiles}
 \begin{document}
 
-Trên cơ sở các công nghệ đã chọn ở chương trước, chương này trình bày quá trình từ thiết kế kiến trúc, xây dựng sản phẩm cho đến triển khai và kiểm thử.
+Trên cơ sở các công nghệ đã chọn ở chương trước, chương này trình bày quá trình từ thiết kế kiến trúc, xây dựng hệ thống cho đến triển khai và kiểm thử.
 Phần đầu đề cập đến lựa chọn kiến trúc và thiết kế chi tiết các gói thành phần; phần giữa tập trung vào kết quả xây dựng với các thành phần kỹ thuật trọng yếu; phần cuối trình bày kết quả kiểm thử hộp đen và hướng dẫn triển khai hệ thống.
 
 \section{Thiết kế kiến trúc}
@@ -10,13 +10,13 @@ Phần đầu đề cập đến lựa chọn kiến trúc và thiết kế chi 
 \subsection{Lựa chọn kiến trúc phần mềm}
 \label{subsection:4.1.1}
 
-Hệ thống áp dụng kiến trúc phân tầng (Layered Architecture) \cite{layeredref} gồm bốn tầng từ trên xuống: tầng trình bày (Presentation), tầng nghiệp vụ (Business), tầng truy cập dữ liệu (Persistence) và tầng dữ liệu (Database).
-Trong cài đặt cụ thể, tầng trình bày được tổ chức nội bộ thành Route, Middleware, Validation và Controller; tầng nghiệp vụ là các Service; tầng truy cập dữ liệu là các Repository; tầng dữ liệu là PostgreSQL.
-Mỗi tầng chỉ tương tác với tầng liền kề, không truy cập vượt tầng: một yêu cầu đi từ tầng trình bày xuống dần tới tầng dữ liệu, còn kết quả trả ngược lên theo đúng đường đó (Hình~\ref{fig:kientruc-phantang}).
-Backend là API thuần, không có tầng View; phần giao diện do frontend Next.js đảm nhiệm như một tầng client tách biệt.
+Hệ thống áp dụng kiến trúc phân tầng (Layered Architecture) \cite{layeredref}, tổ chức mã nguồn thành bốn tầng xếp chồng từ trên xuống: tầng trình bày (Presentation) tiếp nhận yêu cầu, tầng nghiệp vụ (Business) xử lý các quy tắc, tầng truy cập dữ liệu (Persistence) lo việc đọc ghi dữ liệu, và tầng dữ liệu (Database) lưu trữ.
+Ở phía backend, tầng trình bày được tổ chức nội bộ thành Route, Middleware, Validation và Controller; tầng nghiệp vụ là các Service; tầng truy cập dữ liệu là các Repository; còn tầng dữ liệu là cơ sở dữ liệu PostgreSQL.
+Các tầng chỉ trao đổi với tầng liền kề chứ không gọi vượt tầng: một yêu cầu đi lần lượt từ tầng trình bày xuống tới tầng dữ liệu, rồi kết quả trả ngược lại theo đúng đường đó (Hình~\ref{fig:kientruc-phantang}). Cách sắp xếp này giúp mỗi tầng chỉ tập trung vào đúng phần việc của mình.
+Backend đóng vai trò API thuần nên không có tầng View; toàn bộ giao diện do frontend Next.js đảm nhiệm, hoạt động như một tầng client tách biệt.
 
-Tầng nghiệp vụ (Service) và tầng truy cập dữ liệu (Repository) được giữ tách bạch: Service chỉ chứa logic nghiệp vụ và thao tác dữ liệu thông qua các phương thức của Repository, còn Repository là nơi duy nhất làm việc trực tiếp với ORM.
-Ranh giới này giữ cho logic nghiệp vụ độc lập với chi tiết truy cập dữ liệu: khi cần điều chỉnh cách truy vấn hoặc đổi sang ORM khác, chỉ phải sửa ở tầng Repository, còn Service giữ nguyên.
+Hai tầng Service và Repository được tách biệt rõ ràng. Service chỉ chứa logic nghiệp vụ và mỗi khi cần dữ liệu thì gọi qua các phương thức của Repository; còn Repository là nơi duy nhất làm việc trực tiếp với ORM, tức thư viện chuyển đổi giữa dữ liệu trong mã nguồn và các bảng trong cơ sở dữ liệu.
+Ranh giới này giúp logic nghiệp vụ không phụ thuộc vào chi tiết truy cập dữ liệu: khi cần đổi cách truy vấn hay thay sang ORM khác, ta chỉ phải sửa ở tầng Repository, còn Service giữ nguyên.
 
 \begin{figure}[H]
     \centering
@@ -28,7 +28,7 @@ Ranh giới này giữ cho logic nghiệp vụ độc lập với chi tiết tru
 \subsection{Tổng quan hệ thống}
 \label{subsection:4.1.2}
 
-Sản phẩm được tổ chức thành ba thành phần độc lập triển khai:
+Hệ thống được tổ chức thành ba thành phần độc lập triển khai:
 
 \begin{itemize}
     \item \textbf{Frontend (FE-QLKT)}: ứng dụng Next.js chạy bằng Node.js. Cung cấp giao diện cho cả bốn vai trò người dùng. Kết nối tới backend qua REST API (HTTP) và Socket.IO (WebSocket).
@@ -41,16 +41,16 @@ Ba thành phần cùng đặt trên một máy chủ Windows Server của Học 
 \subsection{Thiết kế tổng quan các gói}
 \label{subsection:4.1.3}
 
-Mã nguồn của hai module được chia thành các gói, mỗi gói đảm nhận một trách nhiệm rõ ràng. Phần này lần lượt trình bày cấu trúc gói phía frontend và phía backend.
+Mã nguồn của cả hai module được chia thành nhiều gói, mỗi gói đảm nhận một trách nhiệm rõ ràng. Phần này lần lượt giới thiệu cấu trúc gói ở phía frontend và phía backend.
 
 \subsubsection{Gói phía frontend}
 
 Mã nguồn frontend nằm trong thư mục \texttt{src/} của module \texttt{FE-QLKT}.
 Toàn bộ điều hướng tập trung ở gói \texttt{app/} theo cơ chế App Router của Next.js, chia thành bốn nhánh ứng với bốn vai trò người dùng.
-Các thành phần giao diện dùng lại được gom trong gói \texttt{components/}, tách theo miền nghiệp vụ như xác thực, đề xuất, quân nhân hay nhật ký hệ thống.
-Trạng thái đăng nhập dùng chung cho toàn ứng dụng đặt ở gói \texttt{contexts/}, còn các hook tự viết cho việc gọi API, kiểm tra phân quyền và kết nối thời gian thực nằm ở gói \texttt{hooks/}.
-Gói \texttt{lib/} tập hợp các module phụ trợ: lớp gọi REST tới backend chia theo miền nghiệp vụ, các hàm hiển thị chuỗi danh hiệu và các schema xác thực biểu mẫu.
-Cuối cùng, hai gói \texttt{constants/} và \texttt{configs/} lần lượt giữ các hằng số dùng chung như vai trò, trạng thái, danh hiệu và cấu hình môi trường.
+Các thành phần giao diện dùng lại nhiều nơi được gom trong gói \texttt{components/}, tách theo miền nghiệp vụ như xác thực, đề xuất, quân nhân hay nhật ký hệ thống.
+Trạng thái đăng nhập dùng chung cho cả ứng dụng được đặt ở gói \texttt{contexts/}; còn các hook tự viết để gọi API, kiểm tra phân quyền và kết nối thời gian thực thì nằm ở gói \texttt{hooks/}.
+Gói \texttt{lib/} tập hợp các tiện ích phụ trợ: lớp gọi REST tới backend chia theo miền nghiệp vụ, các hàm hiển thị tên danh hiệu và các schema kiểm tra biểu mẫu.
+Cuối cùng, gói \texttt{constants/} giữ các hằng số dùng chung như vai trò, trạng thái hay danh hiệu, còn gói \texttt{configs/} giữ cấu hình môi trường.
 Cấu trúc gói phía frontend được thể hiện ở Hình~\ref{fig:goi-frontend}.
 
 \begin{figure}[H]
@@ -62,12 +62,12 @@ Cấu trúc gói phía frontend được thể hiện ở Hình~\ref{fig:goi-fro
 
 \subsubsection{Gói phía backend}
 
-Mã nguồn backend nằm trong thư mục \texttt{src/} của module \texttt{BE-QLKT}, tổ chức đúng theo các tầng đã trình bày ở mục~\ref{subsection:4.1.1}.
-Gói \texttt{routes/} khai báo các điểm cuối REST API, mỗi miền nghiệp vụ một tệp; gói \texttt{middlewares/} gom các bước dùng chung trước khi vào xử lý như xác thực, phân quyền, ghi nhật ký và kiểm tra dữ liệu đầu vào; gói \texttt{controllers/} được giữ mỏng, chỉ điều hướng yêu cầu từ tầng định tuyến xuống tầng nghiệp vụ.
-Gói \texttt{services/} chứa phần lớn logic nghiệp vụ. Bên trong, những mảng phức tạp được tách tiếp thành thư mục con: registry các Strategy cho bảy loại đề xuất, module xét điều kiện chuỗi dùng chung cho cả cá nhân lẫn đơn vị, và các module xử lý chuỗi danh hiệu riêng cho hai nhóm. Những service lớn được tổ chức theo mẫu facade, với một tệp điều phối mỏng và mỗi nhiệm vụ con như nhập Excel hay khai báo kiểu dữ liệu đặt trong một tệp riêng.
-Gói \texttt{repositories/} đóng gói toàn bộ truy cập Prisma, gồm 21 tệp ứng với từng mảng dữ liệu nghiệp vụ, nhờ đó tầng nghiệp vụ không phụ thuộc trực tiếp vào ORM.
-Gói \texttt{helpers/} chứa các tiện ích phụ trợ theo nhóm như nhật ký, thông báo, Excel và xét điều kiện khen thưởng; gói \texttt{validations/} giữ các schema kiểm tra dữ liệu cho từng route.
-Riêng tệp khai báo schema ở thư mục gốc của module định nghĩa toàn bộ 23 bảng dữ liệu.
+Mã nguồn backend nằm trong thư mục \texttt{src/} của module \texttt{BE-QLKT}, được tổ chức đúng theo các tầng đã trình bày ở mục~\ref{subsection:4.1.1}.
+Gói \texttt{routes/} khai báo các điểm cuối REST API, mỗi miền nghiệp vụ một tệp. Gói \texttt{middlewares/} gom những bước dùng chung chạy trước khi xử lý chính, gồm xác thực, phân quyền, ghi nhật ký và kiểm tra dữ liệu đầu vào. Gói \texttt{controllers/} được giữ mỏng, chỉ nhận yêu cầu rồi chuyển xuống tầng nghiệp vụ.
+Gói \texttt{services/} chứa phần lớn logic nghiệp vụ. Những mảng phức tạp được tách tiếp thành các thư mục con: một registry tập hợp các Strategy cho bảy loại đề xuất, một module xét điều kiện chuỗi danh hiệu dùng chung cho cả cá nhân lẫn đơn vị, và các module xử lý riêng cho từng nhóm danh hiệu. Với những service lớn, mã nguồn được chia theo mẫu facade: một tệp điều phối mỏng đứng ngoài, còn mỗi nhiệm vụ con như nhập Excel hay khai báo kiểu dữ liệu nằm trong một tệp riêng, giúp tệp chính luôn gọn và dễ theo dõi.
+Gói \texttt{repositories/} gom toàn bộ thao tác truy cập dữ liệu qua Prisma thành 21 tệp, mỗi tệp phụ trách một mảng dữ liệu; nhờ đó tầng nghiệp vụ không phải làm việc trực tiếp với ORM.
+Gói \texttt{helpers/} chứa các tiện ích dùng chung, nhóm theo chức năng như nhật ký, thông báo, Excel hay xét điều kiện khen thưởng. Gói \texttt{validations/} giữ các schema kiểm tra dữ liệu đầu vào cho từng route.
+Ngoài ra, tệp khai báo schema ở thư mục gốc của module định nghĩa toàn bộ 23 bảng dữ liệu.
 Cấu trúc gói phía backend được thể hiện ở Hình~\ref{fig:goi-backend}.
 
 \begin{figure}[H]
@@ -80,7 +80,7 @@ Cấu trúc gói phía backend được thể hiện ở Hình~\ref{fig:goi-back
 \subsection{Thiết kế chi tiết module khen thưởng cá nhân hằng năm}
 \label{subsection:4.1.4}
 
-Để minh hoạ cách các tầng phối hợp trong một module nghiệp vụ cụ thể, phần này phân tích module chuỗi danh hiệu hằng năm cá nhân, nơi tập trung nhiều quy tắc nghiệp vụ đan xen.
+Để thấy rõ cách các tầng phối hợp trong một module cụ thể, phần này đi sâu vào module chuỗi danh hiệu hằng năm của cá nhân, nơi tập trung nhiều quy tắc nghiệp vụ đan xen nhất.
 Biểu đồ chi tiết các gói thành phần và quan hệ phụ thuộc của module được trình bày ở Hình~\ref{fig:goi-chi-tiet-hangnam}.
 
 \begin{figure}[H]
@@ -90,17 +90,15 @@ Biểu đồ chi tiết các gói thành phần và quan hệ phụ thuộc củ
     \label{fig:goi-chi-tiet-hangnam}
 \end{figure}
 
-Biểu đồ chia module thành các gói tương ứng với từng tầng kiến trúc, các mũi tên thể hiện quan hệ phụ thuộc giữa chúng. Một yêu cầu xem hồ sơ đi từ Route, qua bước xác thực token ở tầng middleware, tới Controller rồi xuống Service; riêng quyền xem hồ sơ của chính mình được kiểm ở tầng nghiệp vụ nên Route không phải kiểm tra vai trò.
+Mỗi gói trong biểu đồ ứng với một tầng kiến trúc, còn các mũi tên thể hiện quan hệ phụ thuộc. Một yêu cầu đi từ Route, qua Middleware, tới Controller rồi xuống Service. Tại Middleware, mọi yêu cầu đều được xác thực token; riêng việc kiểm tra vai trò chỉ áp dụng cho các thao tác quản trị như tính lại hồ sơ. Thao tác xem hồ sơ chỉ cần token, còn quy định mỗi người chỉ được xem hồ sơ của chính mình thì do tầng nghiệp vụ đảm nhiệm.
 
-Trong tầng nghiệp vụ, Service nạp dữ liệu danh hiệu hằng năm qua Repository, dựng ngữ cảnh chuỗi rồi lần lượt xét từng cấp danh hiệu và ghi kết quả vào bảng hồ sơ điều kiện \texttt{HoSoHangNam}. Điểm đáng chú ý trong biểu đồ là toàn bộ quy tắc chuỗi danh hiệu không nằm trong Service mà được tách sang gói \texttt{eligibility/}, gồm các hàm thuần chỉ tính toán trên dữ liệu đầu vào và đọc cấu hình chuỗi danh hiệu từ gói hằng số \texttt{constants/}. Ở dưới cùng, Repository là nơi duy nhất làm việc trực tiếp với Prisma, che giấu chi tiết truy cập dữ liệu khỏi tầng nghiệp vụ và đọc ghi trên các thực thể quân nhân cùng thành tích, danh hiệu hằng năm và hồ sơ điều kiện.
-
-Việc tách phần quy tắc, vốn là các hàm thuần, khỏi Service điều phối nghiệp vụ là điểm thiết kế cốt lõi: phần quy tắc kiểm chứng được với mọi kịch bản mà không cần cơ sở dữ liệu, còn Service chỉ đảm nhiệm việc nạp dữ liệu, gọi quy tắc và ghi kết quả, nên ranh giới trách nhiệm giữa hai phần rõ ràng và dễ bảo trì.
+Trong tầng nghiệp vụ, Service nạp dữ liệu qua Repository, lần lượt xét từng cấp danh hiệu rồi ghi kết quả vào bảng hồ sơ điều kiện \texttt{HoSoHangNam}. Điểm thiết kế cốt lõi là toàn bộ quy tắc chuỗi danh hiệu được tách khỏi Service sang gói \texttt{eligibility/}, viết dưới dạng các hàm thuần, tức chỉ tính toán trên dữ liệu được truyền vào và đọc cấu hình từ gói hằng số mà không tự truy cập cơ sở dữ liệu. Nhờ vậy, các quy tắc có thể kiểm thử với mọi kịch bản mà không cần cơ sở dữ liệu, còn Service chỉ việc nạp dữ liệu, gọi quy tắc và ghi kết quả. Ranh giới trách nhiệm giữa hai phần vì thế rõ ràng và dễ bảo trì.
 
 \subsection{Thiết kế chi tiết module khen thưởng đơn vị hằng năm}
 \label{subsection:goi-chi-tiet-donvi}
 
-Module khen thưởng đơn vị hằng năm có cấu trúc tầng tương tự module khen thưởng cá nhân, được trình bày ở Hình~\ref{fig:goi-chi-tiet-donvi}.
-Điểm khác biệt nằm ở phân quyền và dữ liệu nghiệp vụ, không nằm ở kiến trúc.
+Module khen thưởng đơn vị hằng năm có cấu trúc phân tầng tương tự module cá nhân, được trình bày ở Hình~\ref{fig:goi-chi-tiet-donvi}.
+Khác biệt chỉ nằm ở phân quyền và dữ liệu nghiệp vụ, chứ không nằm ở kiến trúc.
 
 \begin{figure}[H]
     \centering
@@ -109,10 +107,13 @@ Module khen thưởng đơn vị hằng năm có cấu trúc tầng tương tự
     \label{fig:goi-chi-tiet-donvi}
 \end{figure}
 
-Phần này tập trung vào ba điểm khác biệt mà biểu đồ cho thấy.
-Thứ nhất, về phân quyền, tầng middleware có thêm một bước kiểm tra vai trò: chỉ Cán bộ Phòng Chính trị và Chỉ huy đơn vị được thao tác trên khen thưởng đơn vị nên Route chặn quyền ngay từ đầu, khác với module cá nhân đặt việc kiểm tra quyền ở tầng nghiệp vụ vì người dùng được xem hồ sơ của chính mình.
-Thứ hai, về dữ liệu, Service đếm số năm Đơn vị Quyết thắng liên tục thay cho Chiến sĩ thi đua cơ sở, ghi kết quả vào bảng \texttt{HoSoDonViHangNam} và không có nhánh xét thành tích nghiên cứu khoa học, nên gói thực thể cũng gọn hơn module cá nhân.
-Thứ ba, về quy tắc, cả hai module gọi chung cùng một hàm xét chuỗi thuần và chỉ khác bộ cấu hình; nhờ đó quy tắc được mô tả ở một nơi duy nhất, hai luồng không thể lệch nhau, và việc bổ sung danh hiệu mới chỉ cần thêm cấu hình.
+Biểu đồ làm rõ hai khác biệt này, cùng một điểm chung đáng chú ý.
+
+Về phân quyền, mọi thao tác trên khen thưởng đơn vị đều phải kiểm tra vai trò ngay tại tầng Middleware: chỉ Cán bộ Phòng Chính trị và Chỉ huy đơn vị được phép truy cập, nên Route chặn quyền ngay từ đầu. Ngược lại, module cá nhân cho phép xem hồ sơ chỉ với token, còn ràng buộc mỗi người chỉ được xem hồ sơ của mình thì đặt ở tầng nghiệp vụ.
+
+Về dữ liệu, Service đếm số năm đạt Đơn vị Quyết thắng liên tục thay cho Chiến sĩ thi đua cơ sở, ghi vào bảng \texttt{HoSoDonViHangNam} và lược bỏ nhánh nghiên cứu khoa học. Đổi lại, mỗi danh hiệu và hồ sơ điều kiện có thể gắn với một trong hai cấp đơn vị là cơ quan đơn vị hoặc đơn vị trực thuộc.
+
+Điểm chung là cả hai module dùng chung một hàm xét chuỗi danh hiệu, chỉ khác nhau ở bộ cấu hình. Nhờ vậy, quy tắc nghiệp vụ nằm ở một nơi duy nhất, hai luồng không thể lệch nhau, và khi cần thêm danh hiệu mới thì chỉ cần bổ sung cấu hình.
 
 \section{Thiết kế chi tiết}
 \label{section:4.2}
@@ -120,9 +121,9 @@ Thứ ba, về quy tắc, cả hai module gọi chung cùng một hàm xét chu�
 \subsection{Thiết kế giao diện}
 \label{subsection:4.2.1}
 
-Trước khi lập trình, các trang trọng tâm được phác thảo bằng wireframe để thống nhất bố cục và cách tổ chức thông tin, chưa bàn tới màu sắc hay chi tiết hình thức. Tinh thần xuyên suốt là giữ giao diện nhất quán giữa các trang: ngoài màn hình đăng nhập đứng riêng (Hình~\ref{fig:wf-login}), các trang còn lại đều dùng chung một khung với thanh điều hướng cố định bên trái và vùng nội dung bên phải, nhờ đó người dùng chỉ cần làm quen với cách bố trí một lần.
+Trước khi lập trình, các trang trọng tâm được phác thảo bằng wireframe để thống nhất bố cục và cách tổ chức thông tin, trước khi đi vào màu sắc và chi tiết giao diện. Định hướng xuyên suốt là giữ giao diện nhất quán: trừ màn hình đăng nhập đứng riêng (Hình~\ref{fig:wf-login}), mọi trang đều dùng chung một khung gồm thanh điều hướng cố định bên trái và vùng nội dung bên phải, nhờ đó người dùng chỉ cần làm quen với cách bố trí một lần.
 
-Bên trong vùng nội dung, mỗi nhóm trang theo một kiểu bố trí riêng. Trang chủ xếp một hàng thẻ số liệu rồi đến khu biểu đồ (Hình~\ref{fig:wf-dashboard}). Các trang danh sách như quân nhân, đề xuất, khen thưởng và nhật ký hệ thống đều đặt khu lọc phía trên, bảng dữ liệu phía dưới (Hình~\ref{fig:wf-personnel-list} đến Hình~\ref{fig:wf-system-logs}). Trang chi tiết quân nhân chia thông tin thành các tab (Hình~\ref{fig:wf-personnel-detail}), còn biểu mẫu tạo đề xuất đi qua nhiều bước nối tiếp (Hình~\ref{fig:wf-proposal-create}).
+Trong vùng nội dung, mỗi nhóm trang có một kiểu bố trí riêng phù hợp với mục đích. Trang chủ xếp một hàng thẻ số liệu ở trên và khu biểu đồ bên dưới (Hình~\ref{fig:wf-dashboard}). Các trang danh sách như quân nhân, đề xuất, khen thưởng và nhật ký hệ thống đều đặt khu lọc ở trên, bảng dữ liệu ở dưới (Hình~\ref{fig:wf-personnel-list} đến Hình~\ref{fig:wf-system-logs}). Trang chi tiết quân nhân chia thông tin theo tab (Hình~\ref{fig:wf-personnel-detail}), còn biểu mẫu tạo đề xuất dẫn người dùng qua nhiều bước nối tiếp (Hình~\ref{fig:wf-proposal-create}).
 
 \begin{figure}[H]
     \centering
@@ -338,11 +339,11 @@ Khi cập nhật chuyển đơn vị, cần dùng transaction để cập nhật
 \texttt{nam} & Int & Năm đề xuất \\ \hline
 \texttt{thang} & Int & Tháng đề xuất (chỉ một số loại) \\ \hline
 \texttt{status} & VarChar(20) & Trạng thái: chờ duyệt, đã duyệt, từ chối \\ \hline
-\dbid{data_danh_hieu} & JSON & Dữ liệu chi tiết danh hiệu hằng năm \\ \hline
-\dbid{data_thanh_tich} & JSON & Dữ liệu thành tích nghiên cứu khoa học \\ \hline
-\dbid{data_nien_han} & JSON & Dữ liệu xét HCCSVV, Huy chương Quân kỳ quyết thắng và Kỷ niệm chương \\ \hline
-\dbid{data_cong_hien} & JSON & Dữ liệu xét Huân chương Bảo vệ Tổ quốc \\ \hline
-\dbid{files_attached} & JSON & Danh sách tệp đính kèm \\ \hline
+\dbid{data_danh_hieu} & JSONB & Dữ liệu chi tiết danh hiệu hằng năm \\ \hline
+\dbid{data_thanh_tich} & JSONB & Dữ liệu thành tích nghiên cứu khoa học \\ \hline
+\dbid{data_nien_han} & JSONB & Dữ liệu xét HCCSVV, Huy chương Quân kỳ quyết thắng và Kỷ niệm chương \\ \hline
+\dbid{data_cong_hien} & JSONB & Dữ liệu xét Huân chương Bảo vệ Tổ quốc \\ \hline
+\dbid{files_attached} & JSONB & Danh sách tệp đính kèm \\ \hline
 \dbid{rejection_reason} & Text & Lý do từ chối (nếu bị bác) \\ \hline
 \dbid{nguoi_duyet_id} & VarChar(30) & Tài khoản người phê duyệt \\ \hline
 \dbid{ngay_duyet} & Timestamp & Thời điểm phê duyệt \\ \hline
@@ -414,7 +415,7 @@ Hàm tính lại số tháng tự động cập nhật trường \texttt{so\_tha
 \texttt{resource} & VarChar(50) & Loại tài nguyên bị tác động \\ \hline
 \dbid{tai_nguyen_id} & VarChar(30) & Mã tài nguyên bị tác động \\ \hline
 \texttt{description} & VarChar(500) & Mô tả hành động \\ \hline
-\texttt{payload} & JSON & Dữ liệu trước và sau khi thay đổi \\ \hline
+\texttt{payload} & JSONB & Dữ liệu trước và sau khi thay đổi \\ \hline
 \dbid{ip_address} & VarChar(45) & Địa chỉ IP người thực hiện \\ \hline
 \dbid{user_agent} & Text & Trình duyệt người thực hiện \\ \hline
 \texttt{createdAt} & Timestamp & Thời điểm ghi nhật ký \\ \hline
@@ -452,7 +453,7 @@ Hàm tính lại số tháng tự động cập nhật trường \texttt{so\_tha
 \subsection{Thư viện và công cụ sử dụng}
 \label{subsection:4.3.1}
 
-Sản phẩm dùng các thư viện mã nguồn mở liệt kê tại Bảng \ref{tab:thuvien}, phân theo ba nhóm: tầng giao diện, tầng máy chủ và các tiện ích vận hành.
+Phần mềm dùng các thư viện mã nguồn mở liệt kê tại Bảng \ref{tab:thuvien}, phân theo ba nhóm: tầng giao diện, tầng máy chủ và các tiện ích vận hành.
 
 \begin{table}[H]
 \centering
@@ -460,12 +461,12 @@ Sản phẩm dùng các thư viện mã nguồn mở liệt kê tại Bảng \re
 \begin{tabular}{|p{5.3cm}|p{2.8cm}|p{4.6cm}|}
 \hline
 \textbf{Mục đích} & \textbf{Công cụ} & \textbf{Địa chỉ URL} \\ \hline
-Khung phát triển giao diện người dùng & Next.js & \url{https://nextjs.org} \\ \hline
+Framework phát triển giao diện người dùng & Next.js & \url{https://nextjs.org} \\ \hline
 Thư viện giao diện nền tảng & React & \url{https://react.dev} \\ \hline
 Thư viện thành phần UI & Ant Design & \url{https://ant.design} \\ \hline
-Khung CSS utility & Tailwind CSS & \url{https://tailwindcss.com} \\ \hline
+Framework CSS utility & Tailwind CSS & \url{https://tailwindcss.com} \\ \hline
 Môi trường chạy phía máy chủ & Node.js & \url{https://nodejs.org} \\ \hline
-Khung phát triển phía máy chủ & Express & \url{https://expressjs.com} \\ \hline
+Framework phát triển phía máy chủ & Express & \url{https://expressjs.com} \\ \hline
 Ngôn ngữ kiểu tĩnh & TypeScript & \url{https://www.typescriptlang.org} \\ \hline
 Hệ quản trị cơ sở dữ liệu & PostgreSQL & \url{https://www.postgresql.org} \\ \hline
 ORM truy cập dữ liệu & Prisma & \url{https://www.prisma.io} \\ \hline
@@ -507,7 +508,7 @@ Sau quá trình xây dựng, hệ thống đã hoàn thiện các chức năng c
 \subsection{Minh hoạ các chức năng chính}
 \label{subsection:4.3.3}
 
-Phần này trình bày các ảnh chụp màn hình tiêu biểu của sản phẩm, nhóm theo bốn vai trò người dùng (Quản trị viên, Cán bộ Phòng Chính trị, Chỉ huy đơn vị, Người dùng) cùng nhóm màn hình chung.
+Phần này trình bày các ảnh chụp màn hình tiêu biểu của hệ thống, nhóm theo bốn vai trò người dùng (Quản trị viên, Cán bộ Phòng Chính trị, Chỉ huy đơn vị, Người dùng) cùng nhóm màn hình chung.
 Mỗi vai trò có trang chủ riêng với bộ thẻ thống kê và biểu đồ phù hợp phạm vi dữ liệu của vai trò đó.
 
 \subsubsection{Màn hình chung và xác thực}
@@ -758,7 +759,7 @@ Người dùng chỉ xem hồ sơ của chính mình; gồm trang chủ cá nhâ
 \label{section:4.4}
 
 Hệ thống được kiểm thử hộp đen thủ công các chức năng nghiệp vụ qua giao diện (Mục~\ref{subsection:4.4.1}).
-Ngoài ra, sản phẩm còn được kiểm thử tương thích trên nhiều dòng máy và trình duyệt (Mục~\ref{subsection:4.4.3}).
+Ngoài ra, hệ thống còn được kiểm thử tương thích trên nhiều dòng máy và trình duyệt (Mục~\ref{subsection:4.4.3}).
 
 \subsection{Kiểm thử hộp đen các chức năng nghiệp vụ}
 \label{subsection:4.4.1}
@@ -934,15 +935,17 @@ cd BE-QLKT && npm run dev
 cd FE-QLKT && npm run dev
 \end{lstlisting}
 
-Hoàn tất, mở trình duyệt tới \url{http://localhost:3000} và đăng nhập bằng tài khoản Quản trị viên vừa tạo để bắt đầu khai báo đơn vị, chức vụ và các tài khoản còn lại.
+Hoàn tất, mở trình duyệt tới \url{http://localhost:3000} và đăng nhập bằng tài khoản Quản trị viên vừa tạo (tên đăng nhập \texttt{superadmin}, mật khẩu là giá trị \texttt{DEFAULT\_PASSWORD} trong tệp \texttt{.env}) để bắt đầu khai báo đơn vị, chức vụ và các tài khoản còn lại.
 
-\subsection{Vận hành sản phẩm với PM2}
+\subsection{Vận hành hệ thống với PM2}
 \label{subsection:4.5.3}
 
-Trên máy chủ vận hành, sản phẩm được chạy bằng PM2, một công cụ quản lý tiến trình hỗ trợ tự khởi động lại khi tiến trình bị dừng đột ngột, ghi nhật ký kèm dấu thời gian và theo dõi tài nguyên hệ thống.
+Trên máy chủ vận hành, hệ thống được chạy bằng PM2, một công cụ quản lý tiến trình hỗ trợ tự khởi động lại khi tiến trình bị dừng đột ngột, ghi nhật ký kèm dấu thời gian và theo dõi tài nguyên hệ thống.
 Tệp \texttt{ecosystem.config.js} ở thư mục gốc của dự án khai báo hai tiến trình ứng dụng: \texttt{be-qlkt} chạy bản đã build (\texttt{dist/index.js}) trong thư mục \texttt{BE-QLKT} ở cổng 4000 và \texttt{fe-qlkt} chạy \texttt{next start} trong thư mục \texttt{FE-QLKT} ở cổng 3000.
 
+Trước khi chạy, build cả hai phần ra mã vận hành bằng lệnh \texttt{npm run build} ở thư mục gốc (lần lượt build backend và frontend).
 Khởi chạy bằng lệnh \texttt{pm2 start ecosystem.config.js}, sau đó dùng \texttt{pm2 save} để ghi nhớ danh sách tiến trình đang chạy.
+Trong quá trình vận hành có thể xem trạng thái tiến trình bằng \texttt{pm2 status} và khởi động lại sau khi cập nhật mã bằng \texttt{pm2 restart ecosystem.config.js}.
 Để PM2 tự khởi động cùng máy chủ Windows, cài gói \texttt{pm2-windows-startup} và chạy \texttt{pm2-startup install}, đăng ký PM2 như một tác vụ khởi động của Windows.
 Người dùng trong mạng nội bộ truy cập giao diện do tiến trình frontend phục vụ ở cổng 3000; trình duyệt gọi trực tiếp tới backend ở cổng 4000 qua REST API và Socket.IO.
 
@@ -952,7 +955,7 @@ Người dùng trong mạng nội bộ truy cập giao diện do tiến trình f
 Tác vụ sao lưu chạy bên trong tiến trình backend nhờ \texttt{node-cron}; lịch chạy và trạng thái được cấu hình ngay trong DevZone.
 Theo lịch mặc định lúc 02:00 hằng ngày, tiến trình sao lưu đọc dữ liệu từ 22 bảng, gồm toàn bộ dữ liệu nghiệp vụ cùng thiết lập và nhật ký hệ thống, riêng bảng thông báo không được sao lưu. Sau đó dữ liệu được kết xuất thành các câu lệnh chèn SQL và ghi ra một tệp \texttt{.sql} trong thư mục sao lưu.
 Các bản cũ quá số ngày lưu trữ đã cấu hình (mặc định 15 ngày) được tự động xoá.
-Về giám sát, PM2 cung cấp lệnh xem log thời gian thực và gom toàn bộ log vào một thư mục riêng, có thể tích hợp với hệ thống giám sát tập trung của Học viện trong tương lai.
+Về giám sát, có thể xem log thời gian thực bằng lệnh \texttt{pm2 logs}; PM2 gom toàn bộ log vào một thư mục riêng, có thể tích hợp với hệ thống giám sát tập trung của Học viện trong tương lai.
 
 Chương này đã trình bày kiến trúc phân tầng, thiết kế gói, thiết kế lớp, thiết kế cơ sở dữ liệu, thiết kế giao diện, kết quả xây dựng, kết quả kiểm thử hộp đen các chức năng nghiệp vụ và phương án triển khai của hệ thống.
 Các kết quả này cho thấy phần mềm đã đáp ứng đầy đủ những yêu cầu chức năng và phi chức năng đặt ra ở Chương~\ref{chapter:Related_works}.
