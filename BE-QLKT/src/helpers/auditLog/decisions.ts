@@ -1,4 +1,4 @@
-// Xay mo ta nhat ky kiem toan cho quyet dinh khen thuong (FileQuyetDinh, PDF).
+// Dựng mô tả nhật ký kiểm toán cho quyết định khen thưởng (FileQuyetDinh, PDF).
 import { Request, Response } from 'express';
 import { FALLBACK, parseResponseData, formatDate, asRecord } from './constants';
 import { LOAI_DE_XUAT_MAP } from '../../constants/danhHieu.constants';
@@ -16,7 +16,7 @@ interface CascadeSummaryShape {
 
 const formatCascadeSummary = (cascade: CascadeSummaryShape): string => {
   const proposalsUpdated = cascade.proposalsUpdated ?? 0;
-  // Bang khen thuong tu cap nhat qua ON UPDATE CASCADE; chi payload JSON cua de xuat moi can doi tay.
+  // Bảng khen thưởng tự cập nhật qua ON UPDATE CASCADE; chỉ payload JSON của đề xuất mới cần đổi tay.
   if (proposalsUpdated === 0) {
     return '\n- Cascade: Bảng khen thưởng tự cập nhật qua FK; không có đề xuất chờ duyệt nào tham chiếu số cũ';
   }
@@ -24,11 +24,11 @@ const formatCascadeSummary = (cascade: CascadeSummaryShape): string => {
 };
 
 /**
- * Map action (CREATE/UPDATE/DELETE) -> ham dung mo ta nhat ky cho quyet dinh khen thuong.
- * @param req - Request chua so quyet dinh, loai khen thuong, nam, ngay ky trong body
- * @param res - Response (chua dung den, giu cho dung chu ky builder)
- * @param responseData - Du lieu tra ve cua controller, dung lay thong tin quyet dinh
- * @returns Chuoi mo ta hanh dong de luu vao nhat ky kiem toan
+ * Map action (CREATE/UPDATE/DELETE) -> hàm dựng mô tả nhật ký cho quyết định khen thưởng.
+ * @param req - Request chứa số quyết định, loại khen thưởng, năm, ngày ký trong body
+ * @param res - Response (chưa dùng đến, giữ cho đúng chữ ký builder)
+ * @param responseData - Dữ liệu trả về của controller, dùng lấy thông tin quyết định
+ * @returns Chuỗi mô tả hành động để lưu vào nhật ký kiểm toán
  */
 const decisions: Record<string, (req: Request, res: Response, responseData: unknown) => string> = {
   CREATE: (req: Request, res: Response, responseData: unknown): string => {
@@ -63,7 +63,7 @@ const decisions: Record<string, (req: Request, res: Response, responseData: unkn
     return description;
   },
   DELETE: (req: Request, res: Response, responseData: unknown): string => {
-    // Doc tu responseData (controller tra ban ghi vua xoa) vi ban ghi da bi xoa, khong query lai duoc.
+    // Đọc từ responseData (controller trả bản ghi vừa xóa) vì bản ghi đã bị xóa, không query lại được.
     const parsed = parseResponseData(responseData);
     const decision = asRecord(parsed?.data) || parsed;
 

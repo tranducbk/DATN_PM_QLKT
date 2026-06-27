@@ -1,14 +1,14 @@
-// Helper dung chung cho cac builder log khen thuong: chuan hoa tham so route,
-// xac dinh chu the (quan nhan/don vi) va sinh mo ta log xoa cho moi loai danh hieu.
+// Helper dùng chung cho các builder log khen thưởng: chuẩn hoá tham số route,
+// xác định chủ thể (quân nhân/đơn vị) và sinh mô tả log xóa cho mọi loại danh hiệu.
 import type { Prisma } from '../../../generated/prisma';
 import { Request, Response } from 'express';
 import { getDanhHieuName } from '../../../constants/danhHieu.constants';
 import { AWARD_LABELS } from '../../../constants/awardLabels.constants';
 
 /**
- * Chuan hoa gia tri ID tu route/query (Express co the tra string hoac string[]).
- * @param v - Gia tri ID tho tu req.params hoac req.query
- * @returns Chuoi ID hoac null neu khong co
+ * Chuẩn hoá giá trị ID từ route/query (Express có thể trả string hoặc string[]).
+ * @param v - Giá trị ID thô từ req.params hoặc req.query
+ * @returns Chuỗi ID hoặc null nếu không có
  */
 export function routeParamId(v: string | string[] | undefined | null): string | null {
   if (v == null) return null;
@@ -37,9 +37,9 @@ type AwardSubjectRels =
   | undefined;
 
 /**
- * Xac dinh ten quan nhan hoac ten don vi ma ban ghi khen thuong tro toi.
- * @param award - Ban ghi khen thuong kem quan he QuanNhan/CoQuanDonVi/DonViTrucThuoc
- * @returns Object gom hoTen va tenDonVi (mot trong hai co gia tri, con lai rong)
+ * Xác định tên quân nhân hoặc tên đơn vị mà bản ghi khen thưởng trỏ tới.
+ * @param award - Bản ghi khen thưởng kèm quan hệ QuanNhan/CoQuanDonVi/DonViTrucThuoc
+ * @returns Object gồm hoTen và tenDonVi (một trong hai có giá trị, còn lại rỗng)
  */
 export function resolveAwardSubject(award: AwardSubjectRels): { hoTen: string; tenDonVi: string } {
   if (award?.QuanNhan?.ho_ten) return { hoTen: award.QuanNhan.ho_ten, tenDonVi: '' };
@@ -61,9 +61,9 @@ type AwardModelRecord = {
 };
 
 /**
- * Tao map cac builder mo ta log theo tung action cho mot loai khen thuong.
- * @param resource - Slug loai khen thuong (vd: 'tenure-medals') de tra label
- * @returns Map action -> ham sinh mo ta log (hien chi co DELETE)
+ * Tạo map các builder mô tả log theo từng action cho một loại khen thưởng.
+ * @param resource - Slug loại khen thưởng (vd: 'tenure-medals') để tra label
+ * @returns Map action -> hàm sinh mô tả log (hiện chỉ có DELETE)
  */
 export function buildAwardTypeHelpers(
   resource: string
@@ -73,7 +73,7 @@ export function buildAwardTypeHelpers(
 > {
   const typeName = AWARD_LABELS[resource as keyof typeof AWARD_LABELS] || resource;
 
-  // Dung ten hang danh hieu cu the; neu khong co danh hieu thi dung label loai khen thuong.
+  // Dùng tên hạng danh hiệu cụ thể; nếu không có danh hiệu thì dùng label loại khen thưởng.
   const getAwardLabel = (danhHieu?: string) => {
     if (!danhHieu) return typeName;
     return getDanhHieuName(danhHieu);
@@ -86,7 +86,7 @@ export function buildAwardTypeHelpers(
       let danhHieu = '';
 
       try {
-        // Doc thong tin tu responseData (ban ghi vua xoa) thay vi query lai DB da bi xoa.
+        // Đọc thông tin từ responseData (bản ghi vừa xóa) thay vì query lại DB đã bị xóa.
         const data = typeof responseData === 'string' ? JSON.parse(responseData) : responseData;
         const record = (data as { data?: AwardModelRecord } | null)?.data;
         if (record) {
