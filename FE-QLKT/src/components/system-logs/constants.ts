@@ -16,6 +16,11 @@ export const ACTION_LABELS: Record<string, string> = {
   BULK_CREATE: 'Thêm đồng loạt',
   RECALCULATE: 'Tính toán lại',
   BACKUP: 'Sao lưu',
+  RATE_LIMIT: 'Quá nhiều yêu cầu',
+  ERROR: 'Lỗi hệ thống',
+  PROPOSE: 'Đề xuất',
+  BULK_BYPASS: 'Thêm dữ liệu cũ',
+  BACKUP_FAILED: 'Sao lưu thất bại',
 };
 
 export { ROLE_LABELS } from '@/constants/roles.constants';
