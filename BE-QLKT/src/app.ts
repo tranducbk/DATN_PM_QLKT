@@ -18,21 +18,22 @@ export function createApp() {
   const app = express();
 
   const corsOptions: cors.CorsOptions = {
-    origin: allowCorsOrigin,
-    credentials: true,
-    optionsSuccessStatus: 200,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    origin: allowCorsOrigin, // hàm whitelist: domain nào được gọi API (xem configs/cors.ts)
+    credentials: true, // cho gửi kèm cookie/header xác thực — bắt buộc vì có đăng nhập
+    optionsSuccessStatus: 200, // mã trả cho preflight OPTIONS (trình duyệt cũ không nuốt 204)
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'], // method được phép xuyên domain
+    // Header FE được phép gửi lên; không có trong list → trình duyệt chặn.
     allowedHeaders: [
       'Content-Type',
       'Authorization',
       'token',
       'x-access-token',
       'Cookie',
-      'x-dev-password',
+      'x-dev-password', // mật khẩu DevZone, gửi qua header riêng
     ],
-    exposedHeaders: ['Set-Cookie'],
-    preflightContinue: false,
-    maxAge: 86400,
+    exposedHeaders: ['Set-Cookie'], // header response mà JS phía FE được phép đọc
+    preflightContinue: false, // lib cors tự trả lời preflight, không đẩy xuống handler sau
+    maxAge: 86400, // trình duyệt cache kết quả preflight 24h, đỡ hỏi lại mỗi request
   };
 
   app.use(cors(corsOptions));
