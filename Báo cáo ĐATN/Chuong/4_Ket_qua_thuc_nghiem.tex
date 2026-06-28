@@ -92,13 +92,13 @@ Biểu đồ chi tiết các gói thành phần và quan hệ phụ thuộc củ
 
 Mỗi gói trong biểu đồ ứng với một tầng kiến trúc, còn các mũi tên thể hiện quan hệ phụ thuộc. Một yêu cầu đi từ Route, qua Middleware, tới Controller rồi xuống Service. Tại Middleware, mọi yêu cầu đều được xác thực token; riêng việc kiểm tra vai trò chỉ áp dụng cho các thao tác quản trị như tính lại hồ sơ. Thao tác xem hồ sơ chỉ cần token, còn quy định mỗi người chỉ được xem hồ sơ của chính mình thì do tầng nghiệp vụ đảm nhiệm.
 
-Trong tầng nghiệp vụ, Service nạp dữ liệu qua Repository, lần lượt xét từng cấp danh hiệu rồi ghi kết quả vào bảng hồ sơ điều kiện \texttt{HoSoHangNam}. Điểm thiết kế cốt lõi là toàn bộ quy tắc chuỗi danh hiệu được tách khỏi Service sang gói \texttt{eligibility/}, viết dưới dạng các hàm thuần, tức chỉ tính toán trên dữ liệu được truyền vào và đọc cấu hình từ gói hằng số mà không tự truy cập cơ sở dữ liệu. Nhờ vậy, các quy tắc có thể kiểm thử với mọi kịch bản mà không cần cơ sở dữ liệu, còn Service chỉ việc nạp dữ liệu, gọi quy tắc và ghi kết quả. Ranh giới trách nhiệm giữa hai phần vì thế rõ ràng và dễ bảo trì.
+Trong tầng nghiệp vụ, Service nạp dữ liệu qua Repository, lần lượt xét từng cấp danh hiệu rồi ghi kết quả vào bảng hồ sơ điều kiện \texttt{HoSoHangNam}. Điểm thiết kế cốt lõi là toàn bộ quy tắc chuỗi danh hiệu được tách sang gói \texttt{eligibility/} riêng, viết dưới dạng hàm thuần: chỉ tính toán trên dữ liệu truyền vào mà không tự truy cập cơ sở dữ liệu. Nhờ vậy, các quy tắc có thể kiểm thử với mọi kịch bản mà không cần cơ sở dữ liệu, còn Service chỉ việc nạp dữ liệu, gọi quy tắc và ghi kết quả. Ranh giới trách nhiệm giữa hai phần vì thế rõ ràng và dễ bảo trì.
 
 \subsection{Thiết kế chi tiết module khen thưởng đơn vị hằng năm}
 \label{subsection:goi-chi-tiet-donvi}
 
 Module khen thưởng đơn vị hằng năm có cấu trúc phân tầng tương tự module cá nhân, được trình bày ở Hình~\ref{fig:goi-chi-tiet-donvi}.
-Khác biệt chỉ nằm ở phân quyền và dữ liệu nghiệp vụ, chứ không nằm ở kiến trúc.
+Khác biệt chỉ nằm ở phân quyền và dữ liệu nghiệp vụ, không phải ở kiến trúc.
 
 \begin{figure}[H]
     \centering
@@ -111,7 +111,7 @@ Biểu đồ làm rõ hai khác biệt này, cùng một điểm chung đáng ch
 
 Về phân quyền, mọi thao tác trên khen thưởng đơn vị đều phải kiểm tra vai trò ngay tại tầng Middleware: chỉ Cán bộ Phòng Chính trị và Chỉ huy đơn vị được phép truy cập, nên Route chặn quyền ngay từ đầu. Ngược lại, module cá nhân cho phép xem hồ sơ chỉ với token, còn ràng buộc mỗi người chỉ được xem hồ sơ của mình thì đặt ở tầng nghiệp vụ.
 
-Về dữ liệu, Service đếm số năm đạt Đơn vị Quyết thắng liên tục thay cho Chiến sĩ thi đua cơ sở, ghi vào bảng \texttt{HoSoDonViHangNam} và lược bỏ nhánh nghiên cứu khoa học. Đổi lại, mỗi danh hiệu và hồ sơ điều kiện có thể gắn với một trong hai cấp đơn vị là cơ quan đơn vị hoặc đơn vị trực thuộc.
+Về dữ liệu, Service đếm số năm đạt Đơn vị Quyết thắng liên tục thay cho Chiến sĩ thi đua cơ sở, ghi vào bảng \texttt{HoSoDonViHangNam} và không có nhánh nghiên cứu khoa học. Đổi lại, mỗi danh hiệu và hồ sơ điều kiện có thể gắn với một trong hai cấp đơn vị là cơ quan đơn vị hoặc đơn vị trực thuộc.
 
 Điểm chung là cả hai module dùng chung một hàm xét chuỗi danh hiệu, chỉ khác nhau ở bộ cấu hình. Nhờ vậy, quy tắc nghiệp vụ nằm ở một nơi duy nhất, hai luồng không thể lệch nhau, và khi cần thêm danh hiệu mới thì chỉ cần bổ sung cấu hình.
 
@@ -121,74 +121,74 @@ Về dữ liệu, Service đếm số năm đạt Đơn vị Quyết thắng li�
 \subsection{Thiết kế giao diện}
 \label{subsection:4.2.1}
 
-Trước khi lập trình, các trang trọng tâm được phác thảo bằng wireframe để thống nhất bố cục và cách tổ chức thông tin, trước khi đi vào màu sắc và chi tiết giao diện. Định hướng xuyên suốt là giữ giao diện nhất quán: trừ màn hình đăng nhập đứng riêng (Hình~\ref{fig:wf-login}), mọi trang đều dùng chung một khung gồm thanh điều hướng cố định bên trái và vùng nội dung bên phải, nhờ đó người dùng chỉ cần làm quen với cách bố trí một lần.
+Trước khi lập trình, các trang trọng tâm được phác thảo bằng nguyên mẫu giao diện để thống nhất bố cục và cách tổ chức thông tin, trước khi đi vào màu sắc và chi tiết giao diện. Định hướng xuyên suốt là giữ giao diện nhất quán: trừ màn hình đăng nhập đứng riêng (Hình~\ref{fig:wf-login}), mọi trang đều dùng chung một khung gồm thanh điều hướng cố định bên trái và vùng nội dung bên phải, nhờ đó người dùng chỉ cần làm quen với cách bố trí một lần.
 
 Trong vùng nội dung, mỗi nhóm trang có một kiểu bố trí riêng phù hợp với mục đích. Trang chủ xếp một hàng thẻ số liệu ở trên và khu biểu đồ bên dưới (Hình~\ref{fig:wf-dashboard}). Các trang danh sách như quân nhân, đề xuất, khen thưởng và nhật ký hệ thống đều đặt khu lọc ở trên, bảng dữ liệu ở dưới (Hình~\ref{fig:wf-personnel-list} đến Hình~\ref{fig:wf-system-logs}). Trang chi tiết quân nhân chia thông tin theo tab (Hình~\ref{fig:wf-personnel-detail}), còn biểu mẫu tạo đề xuất dẫn người dùng qua nhiều bước nối tiếp (Hình~\ref{fig:wf-proposal-create}).
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\textwidth]{wireframe/wireframe-login}
-    \caption{Wireframe màn hình đăng nhập}
+    \caption{Nguyên mẫu giao diện màn hình đăng nhập}
     \label{fig:wf-login}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{wireframe/wireframe-dashboard}
-    \caption{Wireframe trang chủ}
+    \caption{Nguyên mẫu giao diện trang chủ}
     \label{fig:wf-dashboard}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{wireframe/wireframe-personnel-list}
-    \caption{Wireframe trang danh sách quân nhân}
+    \caption{Nguyên mẫu giao diện trang danh sách quân nhân}
     \label{fig:wf-personnel-list}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{wireframe/wireframe-proposal-list}
-    \caption{Wireframe trang danh sách đề xuất khen thưởng}
+    \caption{Nguyên mẫu giao diện trang danh sách đề xuất khen thưởng}
     \label{fig:wf-proposal-list}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{wireframe/wireframe-awards}
-    \caption{Wireframe trang danh sách khen thưởng}
+    \caption{Nguyên mẫu giao diện trang danh sách khen thưởng}
     \label{fig:wf-awards}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{wireframe/wireframe-system-logs}
-    \caption{Wireframe trang nhật ký hệ thống}
+    \caption{Nguyên mẫu giao diện trang nhật ký hệ thống}
     \label{fig:wf-system-logs}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{wireframe/wireframe-personnel-detail}
-    \caption{Wireframe trang chi tiết quân nhân}
+    \caption{Nguyên mẫu giao diện trang chi tiết quân nhân}
     \label{fig:wf-personnel-detail}
 \end{figure}
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.85\textwidth]{wireframe/wireframe-proposal-create}
-    \caption{Wireframe biểu mẫu tạo đề xuất}
+    \caption{Nguyên mẫu giao diện biểu mẫu tạo đề xuất}
     \label{fig:wf-proposal-create}
 \end{figure}
 
 \subsection{Thiết kế lớp}
 \label{subsection:4.2.3}
 
-Phần này trình bày biểu đồ lớp cho module đề xuất khen thưởng (Hình~\ref{fig:lop-dexuat}), một module nghiệp vụ phức tạp và tiêu biểu của hệ thống. Hệ thống có bảy loại khen thưởng, mỗi loại có cách dựng dữ liệu, xét điều kiện và ghi nhận riêng; nếu gộp tất cả vào một luồng rồi rẽ nhánh theo loại, phần mã đề xuất và phê duyệt sẽ dài và khó bảo trì. Vì vậy module áp dụng mẫu thiết kế Strategy: mỗi loại được tách thành một lớp Strategy độc lập, tất cả cùng cài đặt một interface chung \texttt{ProposalStrategy} quy định hai việc cốt lõi là kiểm tra rồi dựng dữ liệu khi gửi và ghi dữ liệu trong một transaction khi phê duyệt.
+Phần này trình bày biểu đồ lớp cho module đề xuất khen thưởng (Hình~\ref{fig:lop-dexuat}), một module nghiệp vụ phức tạp và tiêu biểu của hệ thống. Hệ thống có bảy loại khen thưởng, mỗi loại có cách dựng dữ liệu, xét điều kiện và ghi nhận riêng; nếu gộp tất cả vào một luồng rồi rẽ nhánh theo loại, phần xử lý đề xuất và phê duyệt sẽ dài và khó bảo trì. Vì vậy module áp dụng mẫu thiết kế Strategy: mỗi loại được tách thành một lớp Strategy độc lập, tất cả cùng cài đặt một interface chung \texttt{ProposalStrategy} quy định hai việc cốt lõi là kiểm tra rồi dựng dữ liệu khi gửi và ghi dữ liệu trong một transaction khi phê duyệt.
 
 Lớp \texttt{ProposalService} điều phối toàn bộ: tra một registry để chọn đúng Strategy theo loại đề xuất, giao cho Strategy đó dựng hoặc ghi dữ liệu, còn việc đọc ghi cơ sở dữ liệu uỷ cho Repository. Registry cũng xử lý hai trường hợp đặc biệt: khen thưởng đột xuất không đi theo luồng đề xuất nên không gắn Strategy nào, còn Huy chương Quân kỳ quyết thắng và Kỷ niệm chương đều chỉ trao một danh hiệu nên dùng chung một thành phần ghi danh hiệu.
 
-Nhờ tách bạch phần khung chung với phần riêng của từng loại, việc bổ sung một loại khen thưởng mới chỉ cần viết thêm một lớp Strategy rồi khai báo vào registry, không phải sửa luồng xử lý chung.
+Nhờ tách biệt phần khung chung với phần riêng của từng loại, việc bổ sung một loại khen thưởng mới chỉ cần viết thêm một lớp Strategy rồi khai báo vào registry, không phải sửa luồng xử lý chung.
 
 \begin{figure}[H]
     \centering
@@ -245,7 +245,7 @@ Riêng quá trình giữ chức vụ được lưu thành lịch sử để tín
 \end{figure}
 
 \textbf{Nhóm dữ liệu đề xuất khen thưởng} (Hình~\ref{fig:erd-dexuat}) xoay quanh bảng đề xuất; mỗi đề xuất trỏ tới đơn vị nộp, người đề xuất và người duyệt.
-Chi tiết riêng của từng loại đề xuất được lưu trong các cột JSON ngay trong bảng này, nhờ đó không phải sinh thêm nhiều bảng trung gian cho bảy loại danh hiệu.
+Chi tiết riêng của từng loại đề xuất được lưu trong các cột JSON ngay trong bảng này, nhờ đó không cần thêm nhiều bảng trung gian cho bảy loại danh hiệu.
 
 \begin{figure}[H]
     \centering
@@ -324,7 +324,7 @@ Sáu bảng dưới đây được chọn để mô tả chi tiết vì giữ va
 \end{table}
 
 Ràng buộc nghiệp vụ: mỗi quân nhân luôn gắn với một cơ quan đơn vị qua \texttt{co\_quan\_don\_vi\_id}; nếu thuộc một đơn vị trực thuộc thì có thêm \texttt{don\_vi\_truc\_thuoc\_id}, khi đó cả hai trường cùng có giá trị.
-Khi cập nhật chuyển đơn vị, cần dùng transaction để cập nhật cả bộ đếm \texttt{so\_luong} của hai đơn vị liên quan.
+Khi cập nhật chuyển đơn vị, cần dùng một transaction để cập nhật cả bộ đếm \texttt{so\_luong} của hai đơn vị liên quan.
 
 \begin{table}[H]
 \centering

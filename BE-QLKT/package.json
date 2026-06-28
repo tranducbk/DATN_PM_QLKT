@@ -4,9 +4,6 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
-    "test:coverage": "jest --coverage",
-    "test:integration": "jest --config jest.integration.config.ts",
     "build": "tsc && rm -rf dist/generated && cp -r src/generated dist/generated",
     "typecheck": "tsc --noEmit",
     "start": "node dist/index.js",
@@ -16,16 +13,7 @@
     "init-super-admin": "tsx src/scripts/initSuperAdmin.ts",
     "setup": "prisma db push && npm run init-super-admin",
     "format": "prettier --write \"src/**/*.ts\"",
-    "format:check": "prettier --check \"src/**/*.ts\"",
-    "seed:reset": "prisma db execute --file scripts/demo/00-reset-all.sql --schema prisma/schema.prisma",
-    "seed:ui": "prisma db execute --file scripts/demo/01-seed-data.sql --schema prisma/schema.prisma",
-    "seed:eligibility": "prisma db execute --file scripts/demo/02-seed-eligibility.sql --schema prisma/schema.prisma",
-    "seed:fresh": "npm run seed:reset && npm run seed:ui",
-    "seed:demo-passwords": "tsx scripts/demo/02-set-passwords.ts",
-    "seed:base": "tsx scripts/demo/seed-base.ts",
-    "seed:decisions": "tsx scripts/demo/seed-decisions.ts",
-    "seed:all": "npm run seed:base && npm run seed:decisions",
-    "audit:seed": "tsx scripts/demo/audit-seed.ts"
+    "format:check": "prettier --check \"src/**/*.ts\""
   },
   "license": "ISC",
   "dependencies": {
@@ -60,20 +48,15 @@
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/jest": "^30.0.0",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.1.0",
     "@types/node": "^25.5.0",
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^7.0.11",
     "@types/uuid": "^10.0.0",
-    "@types/supertest": "^6.0.2",
-    "jest": "^30.3.0",
     "nodemon": "^3.0.3",
-    "supertest": "^7.0.0",
     "prettier": "^3.8.1",
     "prisma-erd-generator": "^2.1.0",
-    "ts-jest": "^29.4.9",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

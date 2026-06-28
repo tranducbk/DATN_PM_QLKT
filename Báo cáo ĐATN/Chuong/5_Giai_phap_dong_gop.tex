@@ -60,7 +60,7 @@ Quan trọng hơn, những điều chỉnh giữa chừng như đổi danh hiệ
 
 \subsection{Giải pháp}
 Mỗi đề xuất được lưu thành một bản ghi trong cơ sở dữ liệu, đi qua ba trạng thái: chờ duyệt, đã duyệt và bị từ chối.
-Dù có bảy loại đề xuất khác nhau, tất cả đều cài đặt một interface chung quy định các bước chuẩn: chuẩn bị dữ liệu khi gửi, kiểm tra khi phê duyệt, ghi dữ liệu trong transaction và sinh thông điệp kết quả.
+Dù có bảy loại đề xuất khác nhau, tất cả đều cài đặt một interface chung quy định các bước chuẩn: chuẩn bị dữ liệu khi gửi, kiểm tra khi phê duyệt, ghi dữ liệu trong một transaction và sinh thông điệp kết quả.
 Khi phê duyệt, hệ thống kiểm tra trước điều kiện và số quyết định, rồi mở một transaction để ghi danh hiệu vào bảng nghiệp vụ, lưu số quyết định và cập nhật trạng thái đề xuất.
 Chỉ sau khi transaction hoàn tất, hệ thống mới tính lại hồ sơ điều kiện của các quân nhân liên quan.
 Cuối cùng, hệ thống lưu một bản ghi nhật ký kèm trạng thái trước và sau khi thay đổi.

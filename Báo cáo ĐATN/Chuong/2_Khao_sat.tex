@@ -338,7 +338,7 @@ Sau khi cán bộ xác nhận, hệ thống kiểm tra dữ liệu đầu vào, 
  & 2a. & Chỉ huy đơn vị & Nhập giai đoạn trùng thời gian với giai đoạn hiện tại: hệ thống báo lỗi; giai đoạn hiện tại không đặt được ngày kết thúc (chỉ Phòng Chính trị đổi chức vụ hiện tại) \\ \cline{2-4}
  & 4a. & Hệ thống & Ngày kết thúc trước ngày bắt đầu hoặc thiếu trường bắt buộc: báo lỗi và yêu cầu nhập lại \\ \cline{2-4}
  & 5a. & Hệ thống & Giai đoạn nhập vào trùng thời gian với một giai đoạn chức vụ đã có: hệ thống chặn và yêu cầu nhập lại \\ \hline
-\textbf{Hậu điều kiện} & \multicolumn{3}{m{10.4cm}|}{Bảng lịch sử chức vụ được cập nhật; mỗi giai đoạn lưu hệ số và số tháng đảm nhiệm — đầu vào để xét HCBVTQ.} \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{m{10.4cm}|}{Bảng lịch sử chức vụ được cập nhật; mỗi giai đoạn lưu hệ số và số tháng đảm nhiệm là điều kiện để xét HCBVTQ.} \\ \hline
 \end{tabular}
 \caption{Đặc tả use case quản lý lịch sử chức vụ quân nhân}
 \label{tab:uc02}
@@ -431,7 +431,7 @@ Sau khi cán bộ xác nhận, hệ thống kiểm tra dữ liệu đầu vào, 
  & 3a. & Cán bộ Phòng Chính trị & Phát hiện danh hiệu đề xuất chưa phù hợp, chuyển sang luồng từ chối kèm lý do (5a); Chỉ huy đơn vị điều chỉnh và đề xuất lại \\ \cline{2-4}
  & 4a. & Hệ thống & Thiếu số quyết định, hệ thống chặn và yêu cầu nhập đủ \\ \cline{2-4}
  & 5a. & Cán bộ Phòng Chính trị & Từ chối thay vì phê duyệt: trạng thái chuyển ``Từ chối'' kèm lý do \\ \cline{2-4}
- & 5b. & Hệ thống & Gặp lỗi hệ thống khi ghi: huỷ toàn bộ giao dịch, giữ nguyên dữ liệu \\ \hline
+ & 5b. & Hệ thống & Gặp lỗi hệ thống khi ghi: huỷ toàn bộ transaction, giữ nguyên dữ liệu \\ \hline
 \textbf{Hậu điều kiện} & \multicolumn{3}{m{10.4cm}|}{Trạng thái đề xuất là ``Đã duyệt'' hoặc ``Từ chối''; nếu được duyệt, các bản ghi khen thưởng đã có trong cơ sở dữ liệu, hồ sơ điều kiện được tính lại, thông báo đã gửi, nhật ký đầy đủ.} \\ \hline
 \end{tabular}
 \caption{Đặc tả use case phê duyệt đề xuất}
