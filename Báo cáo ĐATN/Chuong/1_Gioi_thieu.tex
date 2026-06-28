@@ -20,7 +20,7 @@ Bên cạnh khen thưởng cá nhân và đơn vị hằng năm, Học viện c�
 
 Dữ liệu của các nhóm này lại nằm rải rác trong nhiều tệp khác nhau, nên khó kiểm tra và khó giữ được sự nhất quán.
 
-Thứ ba, các tệp dùng chung không có cơ chế lưu vết thao tác.
+Thứ ba, các tệp dùng chung không có cơ chế ghi lại lịch sử thay đổi.
 Khi một bản ghi bị sửa hay xoá, hệ thống không lưu lại ai thực hiện, vào thời điểm nào và vì lý do gì, khiến việc truy vết, rà soát về sau gặp nhiều khó khăn.
 Việc tiếp cận dữ liệu phụ thuộc vào người hay đơn vị đang giữ tệp, không có cơ chế phân quyền theo cơ cấu tổ chức thực tế của Học viện gồm cấp Phòng, cấp Khoa và từng quân nhân.
 
@@ -56,7 +56,7 @@ Hệ thống xác thực bằng cặp JSON Web Token có cơ chế làm mới lu
 Các sự kiện phê duyệt, từ chối, xoá đề xuất và nhập khen thưởng qua Excel được thông báo theo thời gian thực qua Socket.IO.
 
 Đóng góp chính của đồ án nằm ở việc tự động hoá nghiệp vụ xét khen thưởng, vốn có nhiều điều kiện phụ thuộc theo thời gian và dễ phát sinh sai lệch khi xử lý thủ công.
-Nổi bật là cơ chế xét điều kiện chuỗi danh hiệu thống nhất cho cả cá nhân và đơn vị. Bên cạnh đó, bảy nhóm khen thưởng vốn rời rạc được hợp nhất vào một quy trình chung từ đề xuất, thêm số quyết định đến phê duyệt. Cuối cùng, nhật ký hệ thống ghi vết mọi thao tác làm thay đổi dữ liệu.
+Nổi bật là cơ chế xét điều kiện chuỗi danh hiệu thống nhất cho cả cá nhân và đơn vị. Bên cạnh đó, bảy nhóm khen thưởng vốn rời rạc được hợp nhất vào một quy trình chung từ đề xuất, thêm số quyết định đến phê duyệt. Cuối cùng, nhật ký hệ thống ghi lịch sử mọi thao tác làm thay đổi dữ liệu.
 Các đóng góp này được phân tích chi tiết trong Chương~\ref{chapter:SolutionAndContribution}.
 
 \section{Bố cục đồ án}
