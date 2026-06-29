@@ -43,7 +43,7 @@ export async function runCronJob(): Promise<CronResult> {
   try {
     const [personnelResult, unitRecalculated, unitCountUpdated] = await Promise.all([
       profileService.recalculateAll(),
-      unitAnnualAwardService.recalculate({ don_vi_id: undefined, nam: undefined }),
+      unitAnnualAwardService.recalculate({ don_vi_id: undefined, nam: new Date().getFullYear() }),
       unitService.recalculatePersonnelCount(),
     ]);
     const totalSuccess = (personnelResult.success || 0) + unitRecalculated;
