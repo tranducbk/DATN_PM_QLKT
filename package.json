@@ -20,11 +20,7 @@
     "logs": "pm2 logs",
     "status": "pm2 list",
     "deploy": "npm run build && npm run restart",
-    "typecheck": "cd BE-QLKT && npm run typecheck && cd ../FE-QLKT && npm run typecheck",
-    "test": "cd BE-QLKT && npx jest",
-    "doc:build": "cd \"Báo cáo ĐATN\" && latexmk",
-    "doc:watch": "cd \"Báo cáo ĐATN\" && latexmk -pvc",
-    "doc:clean": "bash \"Báo cáo ĐATN/clean.sh\""
+    "typecheck": "cd BE-QLKT && npm run typecheck && cd ../FE-QLKT && npm run typecheck"
   },
   "devDependencies": {
     "pm2": "^5.4.0"
