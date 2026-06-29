@@ -98,7 +98,7 @@ export default function DevZonePage() {
   const [triggerLoading, setTriggerLoading] = useState(false);
 
   const [cronPreset, setCronPreset] = useState('');
-  const [customCron, setCustomCron] = useState('');
+  const [cronCustomParts, setCronCustomParts] = useState<BackupScheduleParts>(DEFAULT_BACKUP_PARTS);
   const [recalcLoading, setRecalcLoading] = useState(false);
   const [recalcPersonnelId, setRecalcPersonnelId] = useState('');
   const [recalcProfileLoading, setRecalcProfileLoading] = useState(false);
@@ -147,7 +147,7 @@ export default function DevZonePage() {
           setCronPreset(schedule);
         } else {
           setCronPreset('custom');
-          setCustomCron(schedule);
+          setCronCustomParts(parseBackupCron(schedule));
         }
       }
     } catch (err: unknown) {
@@ -423,11 +423,12 @@ export default function DevZonePage() {
     );
   }
 
+  const cronCustomCron = buildBackupCron(cronCustomParts);
   const showSaveBtn =
     status &&
     cronPreset &&
     ((cronPreset !== 'custom' && cronPreset !== status.cron.schedule) ||
-      (cronPreset === 'custom' && customCron && customCron !== status.cron.schedule));
+      (cronPreset === 'custom' && cronCustomCron !== status.cron.schedule));
 
   const backupCustomCron = buildBackupCron(backupCustom);
   const showBackupSaveBtn =
@@ -507,17 +508,64 @@ export default function DevZonePage() {
                     onChange={v => {
                       setCronPreset(v);
                       if (v === 'custom') {
-                        setCustomCron(status?.cron.schedule || '');
+                        setCronCustomParts(parseBackupCron(status?.cron.schedule || ''));
                       }
                     }}
                     options={CRON_PRESETS.map(p => ({ value: p.value, label: p.label }))}
                   />
                   {cronPreset === 'custom' && (
-                    <Input
-                      placeholder="Cron expression (ví dụ: */5 * * * *)"
-                      value={customCron}
-                      onChange={e => setCustomCron(e.target.value)}
-                    />
+                    <div className="dz-backup-builder">
+                      <div className="dz-backup-row">
+                        <span className="dz-backup-row-label">Tần suất</span>
+                        <Select
+                          className="dz-backup-row-control"
+                          value={cronCustomParts.frequency}
+                          onChange={v =>
+                            setCronCustomParts(prev => ({
+                              ...prev,
+                              frequency: v as BackupScheduleParts['frequency'],
+                            }))
+                          }
+                          options={BACKUP_FREQUENCY_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
+                        />
+                      </div>
+                      {cronCustomParts.frequency === 'weekly' && (
+                        <div className="dz-backup-row">
+                          <span className="dz-backup-row-label">Vào thứ</span>
+                          <Select
+                            className="dz-backup-row-control"
+                            value={cronCustomParts.dayOfWeek}
+                            onChange={v => setCronCustomParts(prev => ({ ...prev, dayOfWeek: v }))}
+                            options={BACKUP_WEEKDAY_OPTIONS.map(o => ({ value: o.value, label: o.label }))}
+                          />
+                        </div>
+                      )}
+                      {cronCustomParts.frequency === 'monthly' && (
+                        <div className="dz-backup-row">
+                          <span className="dz-backup-row-label">Vào ngày</span>
+                          <InputNumber
+                            className="dz-backup-row-control"
+                            min={1}
+                            max={28}
+                            value={cronCustomParts.dayOfMonth}
+                            onChange={v => setCronCustomParts(prev => ({ ...prev, dayOfMonth: v ?? 1 }))}
+                          />
+                        </div>
+                      )}
+                      <div className="dz-backup-row">
+                        <span className="dz-backup-row-label">Vào lúc</span>
+                        <TimePicker
+                          className="dz-backup-row-control"
+                          format="HH:mm"
+                          allowClear={false}
+                          needConfirm={false}
+                          value={dayjs().hour(cronCustomParts.hour).minute(cronCustomParts.minute)}
+                          onChange={d =>
+                            d && setCronCustomParts(prev => ({ ...prev, hour: d.hour(), minute: d.minute() }))
+                          }
+                        />
+                      </div>
+                    </div>
                   )}
                   {showSaveBtn && (
                     <Space style={{ width: '100%' }} styles={{ item: { flex: 1 } }}>
@@ -530,7 +578,7 @@ export default function DevZonePage() {
                             setCronPreset(saved);
                           } else {
                             setCronPreset('custom');
-                            setCustomCron(saved);
+                            setCronCustomParts(parseBackupCron(saved));
                           }
                         }}
                       >
@@ -541,7 +589,7 @@ export default function DevZonePage() {
                         block
                         className="dz-save-btn"
                         onClick={() => {
-                          const schedule = cronPreset === 'custom' ? customCron : cronPreset;
+                          const schedule = cronPreset === 'custom' ? cronCustomCron : cronPreset;
                           handleUpdateCron(undefined, schedule);
                         }}
                       >
