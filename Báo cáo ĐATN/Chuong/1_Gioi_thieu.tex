@@ -11,14 +11,14 @@ Cách làm đó bộc lộ những hạn chế chính, được khảo sát và 
 
 Thứ nhất, các danh hiệu cá nhân hằng năm xếp thành nhiều cấp nối tiếp nhau, trong đó danh hiệu cấp trên lấy danh hiệu cấp dưới làm điều kiện.
 Ở dưới cùng và được xét hằng năm là Chiến sĩ thi đua cơ sở (CSTĐCS).
-Để đạt các danh hiệu cao hơn như Bằng khen của Bộ trưởng Bộ Quốc phòng (BKBQP), Chiến sĩ thi đua toàn quân (CSTĐTQ) hay Bằng khen của Thủ tướng Chính phủ (BKTTCP), quân nhân vừa phải giữ CSTĐCS liên tục đủ số năm quy định, vừa phải tích lũy đủ số lần các danh hiệu ở cấp dưới và có thành tích nghiên cứu khoa học hằng năm.
+Để đạt các danh hiệu cao hơn như Bằng khen của Bộ trưởng Bộ Quốc phòng (BKBQP), Chiến sĩ thi đua toàn quân (CSTĐTQ) hay Bằng khen của Thủ tướng Chính phủ (BKTTCP), quân nhân vừa phải giữ CSTĐCS liên tục đủ số năm quy định, vừa phải tích luỹ đủ số lần các danh hiệu ở cấp dưới và có thành tích nghiên cứu khoa học hằng năm.
 Việc xét càng phức tạp khi chỉ những danh hiệu đạt được trong ít năm gần nhất mới được tính, còn các danh hiệu cũ hơn không còn giá trị trong lần xét hiện tại.
 Vì vậy, để xác định một quân nhân đã đủ điều kiện hay chưa, cán bộ phải tra cứu và đối chiếu kỹ lịch sử khen thưởng của từng người, tốn nhiều thời gian và tiềm ẩn nguy cơ bỏ sót.
 
 Thứ hai, công tác khen thưởng ở Học viện gồm bảy nhóm nghiệp vụ, mỗi nhóm có tiêu chuẩn xét riêng.
 Bên cạnh khen thưởng cá nhân và đơn vị hằng năm, Học viện còn xét nhiều danh hiệu theo thời gian phục vụ hoặc công tác như Huy chương Chiến sĩ vẻ vang (HCCSVV), Huân chương Bảo vệ Tổ quốc (HCBVTQ), Kỷ niệm chương (KNC) và Huy chương Quân kỳ quyết thắng (HCQKQT), mỗi loại có tiêu chuẩn xét riêng. Ngoài ra, thành tích nghiên cứu khoa học (NCKH) được quản lý thành một nhóm riêng và là điều kiện bắt buộc khi xét các danh hiệu cấp cao trong khen thưởng cá nhân hằng năm. Dữ liệu của các nhóm này lại nằm rải rác trong nhiều tệp khác nhau, nên khó kiểm tra và khó giữ được sự nhất quán.
 
-Thứ ba, các tệp dùng chung không có cơ chế lưu vết thao tác.
+Thứ ba, các tệp dùng chung không có cơ chế ghi lại lịch sử thay đổi.
 Khi một bản ghi bị sửa hay xoá, hệ thống không lưu lại ai thực hiện, vào thời điểm nào và vì lý do gì, khiến việc truy vết, rà soát về sau gặp nhiều khó khăn.
 Việc tiếp cận dữ liệu phụ thuộc vào người hay đơn vị đang giữ tệp, không có cơ chế phân quyền theo cơ cấu tổ chức thực tế của Học viện gồm cấp Phòng, cấp Khoa và từng quân nhân.
 
@@ -27,7 +27,7 @@ Những hạn chế trên cho thấy cách quản lý thủ công hiện nay kh�
 \section{Mục tiêu và phạm vi đề tài}
 \label{section:1.2}
 
-Trên thị trường có các phần mềm quản lý nhân sự nói chung, nhưng chưa có sản phẩm phù hợp với đặc thù nghiệp vụ khen thưởng theo chuỗi điều kiện nhiều năm và cơ cấu tổ chức của Học viện.
+Trên thị trường có các phần mềm quản lý nhân sự nói chung, nhưng chưa có giải pháp phù hợp với đặc thù nghiệp vụ khen thưởng theo chuỗi điều kiện nhiều năm và cơ cấu tổ chức của Học viện.
 Để khắc phục những hạn chế nêu trên, mục tiêu chính của đồ án là xây dựng một hệ thống web hỗ trợ Phòng Chính trị Học viện Khoa học Quân sự thực hiện các nhóm nhiệm vụ sau:
 
 \begin{enumerate}
@@ -54,7 +54,7 @@ Hệ thống xác thực bằng cặp JSON Web Token có cơ chế làm mới lu
 Các sự kiện phê duyệt, từ chối, xoá đề xuất và nhập khen thưởng qua Excel được thông báo theo thời gian thực qua Socket.IO.
 
 Đóng góp chính của đồ án nằm ở việc tự động hoá nghiệp vụ xét khen thưởng, vốn có nhiều điều kiện phụ thuộc theo thời gian và dễ phát sinh sai lệch khi xử lý thủ công.
-Nổi bật là cơ chế xét điều kiện chuỗi danh hiệu thống nhất cho cả cá nhân và đơn vị. Bên cạnh đó, bảy nhóm khen thưởng vốn rời rạc được hợp nhất vào một quy trình chung từ đề xuất, thêm số quyết định đến phê duyệt. Cuối cùng, nhật ký hệ thống ghi vết mọi thao tác làm thay đổi dữ liệu.
+Nổi bật là cơ chế xét điều kiện chuỗi danh hiệu thống nhất cho cả cá nhân và đơn vị. Bên cạnh đó, bảy nhóm khen thưởng vốn rời rạc được hợp nhất vào một quy trình chung từ đề xuất, thêm số quyết định đến phê duyệt. Cuối cùng, nhật ký hệ thống ghi lịch sử mọi thao tác làm thay đổi dữ liệu.
 Các đóng góp này được phân tích chi tiết trong Chương~\ref{chapter:SolutionAndContribution}.
 
 \section{Bố cục đồ án}

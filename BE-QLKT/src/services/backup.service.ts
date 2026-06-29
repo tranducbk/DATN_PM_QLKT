@@ -1,5 +1,7 @@
 import fs from 'fs';
 import path from 'path';
+import { BACKUP_DIR } from '../configs/storagePaths';
+import { prisma } from '../models';
 import {
   danhHieuHangNamRepository,
   danhHieuDonViHangNamRepository,
@@ -54,7 +56,6 @@ interface CleanupResult {
   files: string[];
 }
 
-const BACKUP_DIR = path.join(process.cwd(), 'backups');
 const FILENAME_PATTERN = /^backup_\d{8}_\d{6}_(manual|scheduled)\.sql$/;
 const DEFAULT_RETENTION_DAYS = 15;
 
@@ -212,7 +213,7 @@ class BackupService {
       fileQuyetDinh,
       systemSettings,
       systemLog,
-    ] = await Promise.all([
+    ] = await prisma.$transaction([
       coQuanDonViRepository.findManyRaw({}),
       donViTrucThuocRepository.findManyRaw({}),
       positionRepository.findManyRaw({}),
@@ -245,7 +246,7 @@ class BackupService {
       decisionFileRepository.findManyRaw({}),
       systemSettingRepository.findManyRaw({}),
       systemLogRepository.findManyRaw({}),
-    ]);
+    ], { isolationLevel: 'RepeatableRead' });
 
     const allSets = [
       coQuanDonVi,

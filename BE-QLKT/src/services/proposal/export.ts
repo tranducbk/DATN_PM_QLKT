@@ -1,6 +1,7 @@
 import { promises as fs } from 'fs';
 import path from 'path';
 import { NotFoundError } from '../../middlewares/errorHandler';
+import { STORAGE_PROPOSALS_DIR, UPLOADS_DECISIONS_DIR } from '../../configs/storagePaths';
 
 /*
  * ════════════════════════════════════════════════════════════════════════════
@@ -47,8 +48,7 @@ import { NotFoundError } from '../../middlewares/errorHandler';
  * @returns {Promise<Object>} Absolute file path info
  */
 async function getPdfFile(filename) {
-  const storagePath = path.join(__dirname, '..', '..', '..', 'storage', 'proposals');
-  const primaryFilePath = path.join(storagePath, filename);
+  const primaryFilePath = path.join(STORAGE_PROPOSALS_DIR, filename);
   try {
     await fs.access(primaryFilePath);
     return {
@@ -59,8 +59,7 @@ async function getPdfFile(filename) {
     console.error('Failed to access proposal file at primary location:', error);
   }
 
-  const decisionsPath = path.join(__dirname, '..', '..', '..', 'uploads', 'decisions');
-  const fallbackFilePath = path.join(decisionsPath, filename);
+  const fallbackFilePath = path.join(UPLOADS_DECISIONS_DIR, filename);
   try {
     await fs.access(fallbackFilePath);
     return {

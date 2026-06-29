@@ -1,5 +1,5 @@
-import { Button, Tag, Typography } from 'antd';
-import { HistoryOutlined } from '@ant-design/icons';
+import { Button, Popconfirm, Tag, Typography } from 'antd';
+import { CloseOutlined, HistoryOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import { EditableCell } from '@/components/shared/EditableCell';
 import { getDanhHieuName } from '@/constants/danhHieu.constants';
@@ -12,11 +12,18 @@ interface DonViHangNamColumnsDeps {
   proposalStatus: string;
   updateDanhHieu: (index: number, field: keyof DanhHieuItem, value: unknown) => void;
   handleOpenDecisionFile: (soQuyetDinh: string) => void;
+  handleClearDecision: (index: number) => void;
   handleViewUnitHistory: (record: DanhHieuItem) => void;
 }
 
 export function buildDonViHangNamColumns(deps: DonViHangNamColumnsDeps): ColumnsType<DanhHieuItem> {
-  const { proposalStatus, updateDanhHieu, handleOpenDecisionFile, handleViewUnitHistory } = deps;
+  const {
+    proposalStatus,
+    updateDanhHieu,
+    handleOpenDecisionFile,
+    handleClearDecision,
+    handleViewUnitHistory,
+  } = deps;
 
   return [
     {
@@ -106,7 +113,7 @@ export function buildDonViHangNamColumns(deps: DonViHangNamColumnsDeps): Columns
       key: 'so_quyet_dinh',
       width: 180,
       align: 'center' as const,
-      render: (_: unknown, record: DanhHieuItem) => {
+      render: (_: unknown, record: DanhHieuItem, index: number) => {
         const soQuyetDinh =
           record.so_quyet_dinh || record.so_quyet_dinh_bkbqp || record.so_quyet_dinh_cstdtq;
 
@@ -121,7 +128,7 @@ export function buildDonViHangNamColumns(deps: DonViHangNamColumnsDeps): Columns
         }
 
         return (
-          <div style={{ textAlign: 'center' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}>
             <a
               onClick={e => {
                 e.preventDefault();
@@ -132,6 +139,24 @@ export function buildDonViHangNamColumns(deps: DonViHangNamColumnsDeps): Columns
             >
               {soQuyetDinh}
             </a>
+            {proposalStatus === PROPOSAL_STATUS.PENDING && (
+              <span onClick={e => e.stopPropagation()}>
+                <Popconfirm
+                  title="Gỡ số quyết định?"
+                  okText="Gỡ"
+                  cancelText="Hủy"
+                  onConfirm={() => handleClearDecision(index)}
+                >
+                  <Button
+                    type="text"
+                    danger
+                    size="small"
+                    icon={<CloseOutlined />}
+                    title="Gỡ số quyết định"
+                  />
+                </Popconfirm>
+              </span>
+            )}
           </div>
         );
       },

@@ -22,6 +22,7 @@ import {
 } from '../services/recalcCron.service';
 import { getSetting, setSetting, getSettings } from '../helpers/settingsHelper';
 import { writeSystemLog } from '../helpers/systemLogHelper';
+import { describeCron } from '../helpers/cronDescribe';
 import { AUDIT_ACTIONS } from '../constants/auditActions.constants';
 import { RESOURCE_SLUGS } from '../constants/resourceSlugs.constants';
 import { SYSTEM_ACTOR } from '../constants/roles.constants';
@@ -205,7 +206,7 @@ router.put('/cron/schedule', verifyDevPassword, async (req: Request, res: Respon
     userRole: SYSTEM_ACTOR,
     action: AUDIT_ACTIONS.UPDATE,
     resource: RESOURCE_SLUGS.DEV_ZONE,
-    description: `Cập nhật tác vụ định kỳ: ${cronEnabled ? 'bật' : 'tắt'}, lịch ${cronSchedule}`,
+    description: `Cập nhật tác vụ định kỳ: ${cronEnabled ? 'bật' : 'tắt'}, lịch ${describeCron(cronSchedule)}`,
     payload: { enabled: cronEnabled, schedule: cronSchedule },
   });
 
@@ -416,7 +417,7 @@ router.put('/backup/schedule', verifyDevPassword, async (req: Request, res: Resp
     userRole: SYSTEM_ACTOR,
     action: AUDIT_ACTIONS.UPDATE,
     resource: RESOURCE_SLUGS.BACKUP,
-    description: `Cập nhật lịch backup tự động: ${currentEnabled ? 'bật' : 'tắt'}, lịch ${currentSchedule}, giữ ${currentRetention} ngày`,
+    description: `Cập nhật lịch backup tự động: ${currentEnabled ? 'bật' : 'tắt'}, lịch ${describeCron(currentSchedule)}, giữ ${currentRetention} ngày`,
     payload: {
       enabled: currentEnabled,
       schedule: currentSchedule,

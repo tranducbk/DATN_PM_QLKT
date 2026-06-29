@@ -20,7 +20,7 @@ import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
 import { apiClient } from '@/lib/http/apiClient';
 import { LOAI_KHEN_THUONG_OPTIONS } from '@/constants/danhHieu.constants';
-import { formatDate, capitalizeWords } from '@/lib/utils';
+import { formatDate } from '@/lib/utils';
 
 interface Decision {
   id?: string;
@@ -160,9 +160,12 @@ export function DecisionModal({
     { value: string; label: string }[]
   >([]);
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
+  const [removeExistingFile, setRemoveExistingFile] = useState(false);
 
   useEffect(() => {
     if (!visible) return;
+
+    setRemoveExistingFile(false);
 
     if (initialDecision) {
       form.setFieldsValue({
@@ -253,6 +256,7 @@ export function DecisionModal({
     form.resetFields();
     if (loaiKhenThuong) form.setFieldsValue({ loai_khen_thuong: loaiKhenThuong });
     setFileList([]);
+    setRemoveExistingFile(false);
     setAutocompleteOptions([]);
   };
 
@@ -272,6 +276,8 @@ export function DecisionModal({
       if (values.ghi_chu) formData.append('ghi_chu', values.ghi_chu);
       if (fileList.length > 0 && fileList[0].originFileObj) {
         formData.append('file', fileList[0].originFileObj);
+      } else if (removeExistingFile) {
+        formData.append('file_path', '');
       }
 
       let decisionMutationResponse;
@@ -433,7 +439,6 @@ export function DecisionModal({
           name="nguoi_ky"
           label="Người ký quyết định"
           rules={[{ required: true, message: 'Vui lòng nhập người ký' }]}
-          getValueFromEvent={e => capitalizeWords(e.target.value)}
           style={{ marginBottom: 0 }}
         >
           <Input
@@ -465,9 +470,12 @@ export function DecisionModal({
         <Form.Item label="File quyết định" style={{ marginBottom: 0 }}>
           <FileSection
             fileList={fileList}
-            selectedFilePath={existingFilePath}
+            selectedFilePath={removeExistingFile ? null : existingFilePath}
             disabled={!!selectedDecision}
-            onRemove={() => setFileList([])}
+            onRemove={() => {
+              setFileList([]);
+              setRemoveExistingFile(true);
+            }}
             onChange={setFileList}
           />
         </Form.Item>

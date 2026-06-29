@@ -1,15 +1,10 @@
-/*
- * DECISION CONTROLLER — quản lý số quyết định.
- * Method: getAll (paginated), autocomplete (search prefix), create + upload PDF,
- * update, delete, rename (cascade FK update), getFile (serve PDF).
- */
-
 import { Request, Response } from 'express';
 import decisionService from '../services/decision.service';
 import { parsePagination, normalizeParam } from '../helpers/paginationHelper';
 import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { buildSignedFileUrl } from '../helpers/file/signedFileUrl';
+import { persistDecisionFile, deleteStoredFile } from '../helpers/file/fileStorage';
 
 interface GetAllDecisionsQuery {
   nam?: number;
@@ -56,13 +51,11 @@ interface GetFilePathsBody {
 }
 
 class DecisionController {
-  /** Lấy danh sách quyết định (có phân trang), lọc theo năm/loại/từ khóa. */
   getAllDecisions = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as GetAllDecisionsQuery;
     const { page, limit } = parsePagination(query);
     const { nam, loai_khen_thuong, search } = query;
 
-    // Chỉ thêm filter khi tham số thực sự có giá trị, tránh lọc rỗng.
     const filters: Record<string, unknown> = {};
     if (nam) filters.nam = nam;
     if (loai_khen_thuong) filters.loai_khen_thuong = loai_khen_thuong;
@@ -78,7 +71,6 @@ class DecisionController {
     });
   });
 
-  /** Gợi ý nhanh số quyết định theo tiền tố (q) để FE autocomplete. */
   autocomplete = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as AutocompleteQuery;
     const { q, limit = 10, loai_khen_thuong } = query;
@@ -91,7 +83,6 @@ class DecisionController {
     });
   });
 
-  /** Lấy chi tiết một quyết định theo id. */
   getDecisionById = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const id = normalizeParam(params.id);
@@ -104,7 +95,6 @@ class DecisionController {
     });
   });
 
-  /** Tra cứu quyết định theo số quyết định (so_quyet_dinh). */
   getDecisionBySoQuyetDinh = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as SoQuyetDinhParams;
     const soQuyetDinh = normalizeParam(params.soQuyetDinh);
@@ -119,7 +109,6 @@ class DecisionController {
     });
   });
 
-  /** Tạo quyết định mới, kèm upload file PDF (nếu có) lên disk. */
   createDecision = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as CreateDecisionBody;
     const file = req.file;
@@ -132,22 +121,24 @@ class DecisionController {
     }
 
     const ngayKyDate = typeof ngay_ky === 'string' ? new Date(ngay_ky) : ngay_ky;
-    // decisionUpload (diskStorage) đã ghi file xuống disk; chỉ lưu lại đường
-    // dẫn tương đối để dựng signed URL khi xem, không lưu binary vào DB.
-    const file_path = file ? `uploads/decisions/${file.filename}` : null;
-    const decision = await decisionService.createDecision({
-      so_quyet_dinh,
-      nam,
-      ngay_ky: ngayKyDate,
-      nguoi_ky,
-      file_path,
-      loai_khen_thuong,
-      ghi_chu,
-    });
-    return ResponseHelper.created(res, { data: decision, message: 'Tạo quyết định thành công' });
+    const file_path = file?.buffer ? await persistDecisionFile(file) : null;
+    try {
+      const decision = await decisionService.createDecision({
+        so_quyet_dinh,
+        nam,
+        ngay_ky: ngayKyDate,
+        nguoi_ky,
+        file_path,
+        loai_khen_thuong,
+        ghi_chu,
+      });
+      return ResponseHelper.created(res, { data: decision, message: 'Tạo quyết định thành công' });
+    } catch (e) {
+      if (file_path) await deleteStoredFile(file_path);
+      throw e;
+    }
   });
 
-  /** Cập nhật quyết định; nếu upload PDF mới thì thay file_path. */
   updateDecision = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const body = req.body as UpdateDecisionBody;
@@ -156,11 +147,13 @@ class DecisionController {
     if (!id) return ResponseHelper.badRequest(res, 'Thiếu id');
 
     const { so_quyet_dinh, nam, ngay_ky, nguoi_ky, loai_khen_thuong, ghi_chu } = body;
-    // File PDF mới (nếu có) ghi đè file_path do client gửi lên.
     let file_path = body.file_path;
-    if (file) file_path = `uploads/decisions/${file.filename}`;
+    let newlyPersisted: string | null = null;
+    if (file?.buffer) {
+      newlyPersisted = await persistDecisionFile(file);
+      file_path = newlyPersisted;
+    }
 
-    // Chặn update rỗng: phải có ít nhất một field cần thay đổi.
     if (
       !so_quyet_dinh &&
       !nam &&
@@ -173,22 +166,26 @@ class DecisionController {
       return ResponseHelper.badRequest(res, 'Vui lòng cung cấp thông tin cần cập nhật');
     }
 
-    const decision = await decisionService.updateDecision(id, {
-      so_quyet_dinh,
-      nam,
-      ngay_ky: ngay_ky ? new Date(ngay_ky) : undefined,
-      nguoi_ky,
-      file_path,
-      loai_khen_thuong,
-      ghi_chu,
-    });
-    return ResponseHelper.success(res, {
-      data: decision,
-      message: 'Cập nhật quyết định thành công',
-    });
+    try {
+      const decision = await decisionService.updateDecision(id, {
+        so_quyet_dinh,
+        nam,
+        ngay_ky: ngay_ky ? new Date(ngay_ky) : undefined,
+        nguoi_ky,
+        file_path,
+        loai_khen_thuong,
+        ghi_chu,
+      });
+      return ResponseHelper.success(res, {
+        data: decision,
+        message: 'Cập nhật quyết định thành công',
+      });
+    } catch (e) {
+      if (newlyPersisted) await deleteStoredFile(newlyPersisted);
+      throw e;
+    }
   });
 
-  /** Xóa quyết định; service tự chặn khi quyết định còn bản ghi tham chiếu. */
   deleteDecision = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as IdParams;
     const id = normalizeParam(params.id);
@@ -198,13 +195,11 @@ class DecisionController {
     return ResponseHelper.success(res, { message: result.message, data: result.decision });
   });
 
-  /** Lấy danh sách các năm đang có quyết định (để FE dựng bộ lọc năm). */
   getAvailableYears = catchAsync(async (req: Request, res: Response) => {
     const years = await decisionService.getAvailableYears();
     return ResponseHelper.success(res, { data: years, message: 'Lấy danh sách năm thành công' });
   });
 
-  /** Lấy danh sách loại khen thưởng đang có quyết định (để FE dựng bộ lọc). */
   getAwardTypes = catchAsync(async (req: Request, res: Response) => {
     const types = await decisionService.getAwardTypes();
     return ResponseHelper.success(res, {
@@ -213,25 +208,17 @@ class DecisionController {
     });
   });
 
-  /** Lấy đường dẫn file PDF của 1 quyết định và trả kèm signed view_url. */
   getFilePath = catchAsync(async (req: Request, res: Response) => {
     const params = req.params as SoQuyetDinhParams;
-    // normalizeParam gom kiểu param Express (string | string[]) về 1 chuỗi.
     const raw = normalizeParam(params.soQuyetDinh);
     if (!raw) return ResponseHelper.badRequest(res, 'Thiếu soQuyetDinh');
 
-    // Số QĐ chứa "/" (vd "123/QĐ-BQP") → URL-encode thành "%2F"; decode để khớp
-    // key trong DB. KHÔNG cần guard "/" như getPdfFile vì raw chỉ dùng làm tham
-    // số truy vấn Prisma (DB key), không ghép vào đường dẫn file → không có
-    // path traversal.
     const result = await decisionService.getFilePathBySoQuyetDinh(decodeURIComponent(raw));
     if (!result.success) {
       return res
         .status(result.decision ? 200 : 404)
         .json({ success: false, message: result.error, data: result.decision });
     }
-    // Trả signed view_url (hạn 5 phút) thay vì để FE tự ghép link tới file —
-    // FE không bao giờ chạm đường dẫn thật, link lộ ra cũng tự hết hạn.
     return ResponseHelper.success(res, {
       data: {
         file_path: result.file_path,
@@ -242,11 +229,9 @@ class DecisionController {
     });
   });
 
-  /** Lấy file path cho nhiều số quyết định cùng lúc (batch, tránh N+1 call). */
   getFilePaths = catchAsync(async (req: Request, res: Response) => {
     const body = req.body as GetFilePathsBody;
     const { soQuyetDinhs } = body;
-    // Yêu cầu mảng đầu vào để service truy vấn theo lô một lần.
     if (!Array.isArray(soQuyetDinhs)) {
       return ResponseHelper.badRequest(res, 'soQuyetDinhs phải là một mảng');
     }

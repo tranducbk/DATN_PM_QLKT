@@ -4,6 +4,7 @@ import { AppError, NotFoundError, ValidationError } from '../middlewares/errorHa
 import type { FileQuyetDinh, Prisma } from '../generated/prisma';
 import { cascadeRenameSoQuyetDinh, type CascadeRenameSummary } from './decision/cascadeRename';
 import { findDecisionUsages, formatUsageError } from './decision/findUsages';
+import { deleteStoredFile } from '../helpers/file/fileStorage';
 
 export type UpdateDecisionResult = FileQuyetDinh & {
   cascade: CascadeRenameSummary | null;
@@ -354,7 +355,7 @@ class DecisionService {
     if (nam !== undefined) updateData.nam = parseInt(String(nam));
     if (ngay_ky !== undefined) updateData.ngay_ky = new Date(ngay_ky);
     if (nguoi_ky !== undefined) updateData.nguoi_ky = nguoi_ky.trim();
-    if (file_path !== undefined) updateData.file_path = file_path;
+    if (file_path !== undefined) updateData.file_path = file_path || null;
     if (loai_khen_thuong !== undefined) updateData.loai_khen_thuong = loai_khen_thuong;
     if (ghi_chu !== undefined) updateData.ghi_chu = ghi_chu;
 
@@ -365,6 +366,14 @@ class DecisionService {
         : null;
       return { decision: updated, cascade: cascadeSummary };
     });
+
+    if (
+      file_path !== undefined &&
+      existingDecision.file_path &&
+      existingDecision.file_path !== file_path
+    ) {
+      await deleteStoredFile(existingDecision.file_path);
+    }
 
     return { ...decision, cascade };
   }
@@ -384,6 +393,7 @@ class DecisionService {
     }
 
     await decisionFileRepository.delete(id);
+    await deleteStoredFile(existingDecision.file_path);
 
     return { message: 'Xóa quyết định thành công', decision: existingDecision };
   }

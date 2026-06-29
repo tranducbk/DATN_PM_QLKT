@@ -10,6 +10,7 @@ import { commemorativeMedalRepository } from '../../repositories/commemorativeMe
 import { contributionMedalRepository } from '../../repositories/contributionMedal.repository';
 import { accountRepository } from '../../repositories/account.repository';
 import { proposalRepository } from '../../repositories/proposal.repository';
+import { deleteStoredFiles, attachmentRelativePath } from '../../helpers/file/fileStorage';
 import type { Prisma } from '../../generated/prisma';
 import { ROLES } from '../../constants/roles.constants';
 import {
@@ -100,40 +101,13 @@ async function getUserWithUnit(userId: string) {
   });
 }
 
-/*
- * ════════════════════════════════════════════════════════════════════════════
- *  GET PROPOSALS — list đề xuất với role-based filter (truy vấn nghiệp vụ)
- * ════════════════════════════════════════════════════════════════════════════
- *
- *  ROLE VISIBILITY:
- *  - ADMIN / SUPER_ADMIN: thấy TẤT CẢ đề xuất (where={}).
- *  - MANAGER: chỉ thấy đề xuất từ đơn vị mình:
- *      WHERE (co_quan_don_vi_id = X OR don_vi_truc_thuoc_id = X)
- *    Trong đó X = đơn vị manager đang quản lý.
- *
- *  WHY KHÔNG check MANAGER xem được đề xuất do MÌNH submit thôi:
- *  - Manager là chỉ huy đơn vị → thấy đề xuất của TẤT CẢ trợ lý cùng
- *    đơn vị mình submit (vai trò giám sát).
- *  - Filter theo unit chứ không phải theo nguoi_de_xuat_id.
- *
- *  PERFORMANCE:
- *  - Promise.all gộp findManyRaw + count → 2 query parallel thay vì
- *    sequential. Pagination cần TOTAL count để FE tính totalPages.
- *  - Index trên (status, loai_de_xuat) cho list filtered.
- *  - JOIN CoQuanDonVi + DonViTrucThuoc + NguoiDeXuat + NguoiDuyet trong
- *    `include` → 1 query với JOIN thay vì N+1.
- *
- *  POST-PROCESS shape:
- *  Map raw Prisma result thành lighter response (chỉ field cần dùng):
- *      { id, loai_de_xuat, nam, don_vi, nguoi_de_xuat, status, counters }
- *  → tiết kiệm bandwidth + FE không phải null-check sâu.
- *
- *  COUNTER fields (so_danh_hieu, so_thanh_tich, ...):
- *  Đếm length của JSON array tại app layer:
- *      so_danh_hieu = Array.isArray(data_danh_hieu) ? data_danh_hieu.length : 0
- *  → Tránh JSON aggregate query phức tạp ở DB. Trade-off: load full JSON
- *  vào RAM rồi mới đếm — chấp nhận vì JSON nhỏ (vài trăm bytes).
- * ════════════════════════════════════════════════════════════════════════════
+/**
+ * Returns paginated proposals filtered by role — ADMIN sees all, MANAGER sees own unit only.
+ * @param userId - Caller's account ID
+ * @param userRole - Caller's role (ADMIN or MANAGER)
+ * @param page - Page number (1-based)
+ * @param limit - Records per page
+ * @returns Paginated proposal list with total count
  */
 async function getProposals(
   userId: string,
@@ -622,6 +596,10 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
  * @param userRole - Caller's role
  * @returns Deleted proposal record
  */
+function asAttachmentList(value: unknown): Array<{ path?: string; filename?: string }> {
+  return Array.isArray(value) ? (value as Array<{ path?: string; filename?: string }>) : [];
+}
+
 async function deleteProposal(proposalId: string, userId: string, userRole: string) {
   const proposal = await proposalRepository.findUniqueRaw({
     where: { id: proposalId },
@@ -653,22 +631,7 @@ async function deleteProposal(proposalId: string, userId: string, userRole: stri
     }
   }
 
-  // PDFs are in files_attached — no separate deletion needed
-
-  // ─── RACE-AWARE: optimistic locking khi DELETE ──────────────────
-  // Manager bấm "Xoá đề xuất" CHỈ được khi status còn PENDING (chưa
-  // duyệt). Race condition:
-  //   T1 (Manager): SELECT thấy status=PENDING → tính sẽ xoá.
-  //   T2 (Admin):   APPROVE → status=APPROVED → DB đã đổi.
-  //   T1 → DELETE → nếu dùng deleteOne({id}) sẽ xoá luôn record đã
-  //                  approve → MẤT data + corrupt audit trail.
-  //
-  // Dùng deleteMany với compound where (id + status=PENDING):
-  //   - Nếu status đã đổi → count=0 → throw "đã bị thay đổi".
-  //   - User refresh page → thấy proposal đã APPROVED → không cho xoá.
-  //
-  // Đây là CAS (Compare-And-Swap) operation — pattern phổ biến chống
-  // lost update giữa read + delete.
+  // Atomic delete guarded by status=PENDING to prevent race condition
   const deleteResult = await proposalRepository.deleteMany({
     id: proposalId,
     status: PROPOSAL_STATUS.PENDING,
@@ -679,6 +642,13 @@ async function deleteProposal(proposalId: string, userId: string, userRole: stri
       'Đề xuất đã bị thay đổi bởi người khác (có thể đã được phê duyệt hoặc từ chối). Vui lòng tải lại trang.'
     );
   }
+
+  await deleteStoredFiles(
+    [
+      ...asAttachmentList(proposal.files_attached),
+      ...asAttachmentList(proposal.files_attached_admin),
+    ].map(attachmentRelativePath)
+  );
 
   return {
     message: 'Đã xóa đề xuất thành công',

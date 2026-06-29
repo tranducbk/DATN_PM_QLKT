@@ -549,6 +549,41 @@ export default function ProposalDetailPage() {
     }
   };
 
+  const handleClearDecision = (index: number) => {
+    const loaiDeXuat = proposal?.loai_de_xuat;
+    const clearRow = (item: DanhHieuItem, i: number): DanhHieuItem =>
+      i === index
+        ? {
+            ...item,
+            so_quyet_dinh: null,
+            so_quyet_dinh_bkbqp: null,
+            so_quyet_dinh_cstdtq: null,
+            so_quyet_dinh_bkttcp: null,
+            nam_quyet_dinh: undefined,
+          }
+        : item;
+
+    if (
+      loaiDeXuat === PROPOSAL_TYPES.NIEN_HAN ||
+      loaiDeXuat === PROPOSAL_TYPES.HC_QKQT ||
+      loaiDeXuat === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN
+    ) {
+      setEditedNienHan(prev => prev.map(clearRow));
+    } else if (loaiDeXuat === PROPOSAL_TYPES.CONG_HIEN) {
+      setEditedCongHien(prev => prev.map(clearRow));
+    } else {
+      setEditedDanhHieu(prev => prev.map(clearRow));
+    }
+  };
+
+  const handleClearThanhTichDecision = (index: number) => {
+    setEditedThanhTich(prev =>
+      prev.map((item, i) =>
+        i === index ? { ...item, so_quyet_dinh: undefined, file_quyet_dinh: null } : item
+      )
+    );
+  };
+
   const updateDanhHieu = (index: number, field: keyof DanhHieuItem, value: unknown) => {
     const nextDanhHieuItems = [...editedDanhHieu];
     nextDanhHieuItems[index] = { ...nextDanhHieuItems[index], [field]: value };
@@ -653,6 +688,7 @@ export default function ProposalDetailPage() {
     totalTimeByGroup,
     updateNienHan,
     handleOpenDecisionFile,
+    handleClearDecision,
     handleViewPersonnelHistory,
   });
 
@@ -725,12 +761,15 @@ export default function ProposalDetailPage() {
     proposalStatus: proposal.status,
     updateDanhHieu,
     handleOpenDecisionFile,
+    handleClearDecision,
     handleViewUnitHistory,
   });
 
   const thanhTichColumns = buildThanhTichColumns({
+    proposalStatus: proposal.status,
     updateThanhTich,
     handleOpenDecisionFile,
+    handleClearThanhTichDecision,
   });
 
   const rowSelection = {

@@ -30,7 +30,7 @@ import {
 } from '@ant-design/icons';
 import type { UploadFile, UploadProps } from 'antd';
 import { apiClient } from '@/lib/http/apiClient';
-import { formatDate, capitalizeWords, formatFileSize } from '@/lib/utils';
+import { formatDate, formatFileSize } from '@/lib/utils';
 import { MODAL_TABLE_PAGINATION } from '@/constants/pagination.constants';
 import { PROPOSAL_TYPES } from '@/constants/proposal.constants';
 import type {
@@ -826,7 +826,7 @@ export function CreateAdhocAwardModal({
               <Input
                 value={createFormData.signer}
                 onChange={e =>
-                  setCreateFormData({ ...createFormData, signer: capitalizeWords(e.target.value) })
+                  setCreateFormData({ ...createFormData, signer: e.target.value })
                 }
                 placeholder="VD: Trung tướng Nguyễn Văn A - Chính ủy"
                 size="large"

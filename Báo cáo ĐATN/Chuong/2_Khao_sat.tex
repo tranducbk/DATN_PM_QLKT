@@ -17,17 +17,16 @@ Cấp xét duyệt là Phòng Chính trị Học viện, kiểm tra điều ki�
 Cấp ký quyết định tùy theo thẩm quyền của từng danh hiệu: Giám đốc Học viện ký các danh hiệu trong thẩm quyền, còn những danh hiệu vượt thẩm quyền do cấp cao hơn ký, như Tổng cục, Bộ Quốc phòng, Thủ tướng Chính phủ hay Chủ tịch nước.
 Quân nhân nhận thông tin khen thưởng chủ yếu theo một chiều qua văn bản hoặc bảng tin đơn vị, chưa có kênh tra cứu chủ động.
 
-Mỗi quân nhân thường có nhiều quyết định khen thưởng từ các loại danh hiệu khác nhau: chuỗi danh hiệu hằng năm tích luỹ toàn thời gian phục vụ, Huy chương Chiến sĩ vẻ vang (HCCSVV) ở các mốc 10, 15, 20 năm, Huân chương Bảo vệ Tổ quốc (HCBVTQ), Kỷ niệm chương, Huy chương Quân kỳ quyết thắng và khen thưởng đột xuất.
-Cán bộ phục vụ trên 25 năm có thể tích luỹ nhiều quyết định khen thưởng.
-Ở quy mô vài nghìn cán bộ, học viên và sĩ quan, mỗi người lại tích lũy nhiều bản ghi khen thưởng qua các năm, nên tổng dữ liệu lịch sử là một khối lượng lớn.
+Mỗi quân nhân thường có nhiều quyết định khen thưởng từ các loại danh hiệu khác nhau: chuỗi danh hiệu hằng năm tích luỹ toàn thời gian phục vụ, Huy chương Chiến sĩ vẻ vang (HCCSVV), Huân chương Bảo vệ Tổ quốc (HCBVTQ), Kỷ niệm chương, Huy chương Quân kỳ quyết thắng và khen thưởng đột xuất.
+Ở quy mô vài nghìn cán bộ, học viên và sĩ quan, mỗi người tích luỹ nhiều bản ghi khen thưởng qua các năm, nên tổng dữ liệu lịch sử là một khối lượng lớn.
 
 Từ kết quả khảo sát, rút ra bốn nhóm vấn đề chính:
 
 \begin{enumerate}
     \item Việc tra cứu lịch sử khen thưởng cá nhân còn mất nhiều thời gian do cán bộ phải mở và đối chiếu nhiều tài liệu và các tệp khác nhau.
-    \item Đối chiếu chuỗi danh hiệu hằng năm dễ sai sót vì mỗi danh hiệu chỉ được xét trên một khoảng thời gian gần nhất chứ không phải toàn bộ quá trình. Khoảng xét lại lùi dần theo năm, có danh hiệu nhận lặp lại sau mỗi chu kỳ còn BKTTCP cá nhân chỉ nhận một lần, nên khi tính tay rất dễ nhầm.
+    \item Đối chiếu chuỗi danh hiệu hằng năm dễ sai sót vì mỗi danh hiệu chỉ được xét trên một khoảng thời gian gần nhất chứ không phải toàn bộ quá trình. Khoảng xét lại lùi dần theo năm, có danh hiệu nhận lặp lại sau mỗi chu kỳ còn BKTTCP cá nhân chỉ nhận một lần, nên khi tính thủ công rất dễ nhầm lẫn.
     \item Chưa có cơ chế phát hiện trùng lặp khi nhiều cán bộ cùng đề nghị một quân nhân, hoặc khi đề nghị một danh hiệu mà quân nhân đã được nhận.
-    \item Quy trình thủ công chưa có cơ chế lưu vết chỉnh sửa, gây khó truy vết khi phát hiện sai sót.
+    \item Quy trình thủ công chưa có cơ chế ghi lại lịch sử chỉnh sửa, gây khó truy vết khi phát hiện sai sót.
 \end{enumerate}
 
 Các đặc thù nghiệp vụ trên đòi hỏi một hệ thống có thể lưu trữ tập trung và liên kết các loại bản ghi, tự động kiểm tra điều kiện theo bộ quy tắc định sẵn, phân quyền theo cơ cấu tổ chức, và ghi nhật ký cho mọi thao tác làm thay đổi dữ liệu nghiệp vụ.
@@ -106,11 +105,11 @@ Các use case của nhóm chức năng quản lý đơn vị và chức vụ đ�
 Hệ thống hỗ trợ bảy loại đề xuất riêng biệt, mỗi loại có dữ liệu đầu vào và quy tắc xét điều kiện khác nhau:
 
 \begin{enumerate}
-    \item \textbf{Cá nhân hằng năm}: danh hiệu thi đua hằng năm của cá nhân và các mức khen thưởng cao hơn xét theo chuỗi nhiều năm.
-    \item \textbf{Đơn vị hằng năm}: danh hiệu thi đua hằng năm của đơn vị và các mức khen thưởng cao hơn xét theo chuỗi nhiều năm.
+    \item \textbf{Cá nhân hằng năm}: gồm hai danh hiệu thi đua cấp cơ sở là Chiến sĩ tiên tiến (CSTT) và Chiến sĩ thi đua cơ sở (CSTĐCS), cùng ba mức cao hơn xét theo chuỗi nhiều năm là BKBQP, CSTĐTQ và BKTTCP.
+    \item \textbf{Đơn vị hằng năm}: gồm hai danh hiệu thi đua cấp cơ sở là Đơn vị tiên tiến và Đơn vị quyết thắng (ĐVQT), cùng hai mức cao hơn xét theo chuỗi nhiều năm là BKBQP và BKTTCP.
     \item \textbf{HCCSVV}: Huy chương Chiến sĩ vẻ vang xét theo niên hạn phục vụ tích luỹ tới năm xét, chia ba hạng tăng dần là hạng Ba, hạng Nhì và hạng Nhất ứng với 10, 15 và 20 năm. Các hạng xét tuần tự, phải có hạng dưới trước khi đề nghị hạng trên.
-    \item \textbf{HCBVTQ}: Huân chương Bảo vệ Tổ quốc xét theo thời gian giữ chức vụ thuộc các nhóm hệ số, cũng chia ba hạng tăng dần. Hạng Ba ứng với nhóm hệ số 0{,}7, hạng Nhì với 0{,}8 và hạng Nhất với 0{,}9 đến 1{,}0. Thời gian giữ chức tối thiểu là 10 năm với nam, nữ được giảm một phần ba, và các hạng cũng xét tuần tự từ thấp lên cao.
-    \item \textbf{Kỷ niệm chương}: hiện có Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN, trao một lần theo giới tính (nam 25 năm phục vụ, nữ 20 năm).
+    \item \textbf{HCBVTQ}: Huân chương Bảo vệ Tổ quốc xét theo thời gian giữ chức vụ thuộc các nhóm hệ số, cũng chia ba hạng tăng dần. Hạng Ba cộng thời gian giữ chức ở nhóm hệ số từ 0{,}7 trở lên, hạng Nhì từ 0{,}8 trở lên và hạng Nhất chỉ tính nhóm 0{,}9 đến 1{,}0. Thời gian giữ chức tối thiểu là 10 năm với nam, nữ được giảm một phần ba, và các hạng cũng xét tuần tự từ thấp lên cao.
+    \item \textbf{Kỷ niệm chương}: hiện có Kỷ niệm chương vì sự nghiệp xây dựng QĐNDVN, mỗi quân nhân chỉ được trao một lần khi đủ số năm phục vụ; ngưỡng yêu cầu là 25 năm với nam và 20 năm với nữ.
     \item \textbf{Quân kỳ quyết thắng}: Huy chương Quân kỳ quyết thắng cho cán bộ phục vụ đủ 25 năm.
     \item \textbf{Thành tích khoa học}: Khen thưởng đề tài khoa học hoặc sáng kiến khoa học.
 \end{enumerate}
@@ -132,12 +131,12 @@ Toàn bộ use case của nhóm chức năng quản lý khen thưởng được 
 \label{subsection:2.2.5}
 
 Đây là nhóm chức năng có nhiều quy tắc xét điều kiện đan xen.
-Quy tắc danh hiệu hằng năm đi kèm điều kiện tính theo khoảng năm gần nhất tính lùi, lại có một danh hiệu chỉ được nhận đúng một lần trong toàn bộ thời gian phục vụ.
-Danh hiệu hằng năm cá nhân gồm ba cấp BKBQP, CSTĐTQ và BKTTCP với các điều kiện sau:
+Quy tắc danh hiệu hằng năm xét điều kiện theo khoảng năm gần nhất lùi dần, và có một danh hiệu chỉ được nhận một lần trong toàn bộ thời gian phục vụ.
+Các danh hiệu cao hơn của cá nhân xét trên chuỗi CSTĐCS liên tục gồm ba cấp BKBQP, CSTĐTQ và BKTTCP với các điều kiện sau:
 
 \begin{itemize}
     \item \textbf{BKBQP}: chu kỳ 2 năm, yêu cầu 2 năm CSTĐCS liên tục và NCKH mỗi năm; không có danh hiệu tiền điều kiện; có thể nhận lặp lại sau mỗi chu kỳ.
-    \item \textbf{CSTĐTQ}: chu kỳ 3 năm, yêu cầu có ít nhất một BKBQP trong ba năm gần nhất tính từ năm liền trước năm xét, kèm NCKH mỗi năm, và có thể nhận lặp lại sau mỗi chu kỳ. Vì khoảng thời gian này dịch dần theo năm xét, BKBQP của chu kỳ trước không còn nằm trong khoảng đang xét, nên người được xét phải có một BKBQP mới thuộc khoảng đó.
+    \item \textbf{CSTĐTQ}: chu kỳ 3 năm, yêu cầu 3 năm CSTĐCS liên tục, có ít nhất một BKBQP trong ba năm gần nhất tính từ năm liền trước năm xét, kèm NCKH mỗi năm, và có thể nhận lặp lại sau mỗi chu kỳ. Vì khoảng thời gian này dịch dần theo năm xét, BKBQP của chu kỳ trước không còn nằm trong khoảng đang xét, nên người được xét phải có một BKBQP mới thuộc khoảng đó.
     \item \textbf{BKTTCP}: chu kỳ 7 năm, yêu cầu 7 năm CSTĐCS liên tục với độ dài chuỗi là bội số của 7, đúng 3 BKBQP và đúng 2 CSTĐTQ nằm trong khoảng bảy năm gần nhất, kèm NCKH mỗi năm. Với cá nhân, danh hiệu này chỉ được xét cấp một lần, không lặp lại theo chu kỳ.
 \end{itemize}
 
@@ -145,7 +144,7 @@ Use case chính của nhóm chức năng này là \textbf{Xem gợi ý khen thư
 Hệ thống tính từ dữ liệu lịch sử rồi sinh ra hai loại thông tin cho mỗi quân nhân.
 Thứ nhất là danh sách danh hiệu đủ điều kiện đề nghị trong năm hiện tại kèm lý do.
 Thứ hai là các chỉ số theo khoảng thời gian xét, gồm số BKBQP trong khoảng 3 năm hoặc 7 năm gần nhất, số CSTĐTQ trong khoảng 7 năm gần nhất và độ dài chuỗi CSTĐCS liên tục đang đếm.
-Cán bộ Phòng Chính trị tham chiếu các gợi ý này để chốt danh sách đề xuất.
+Cán bộ Phòng Chính trị tham chiếu các gợi ý này để xác định danh sách đề xuất.
 
 Đi kèm chức năng này là cơ chế tính lại điều kiện tự động: mỗi khi một bản ghi danh hiệu hằng năm thay đổi, hệ thống tính lại điều kiện cho riêng quân nhân bị ảnh hưởng; việc tính lại cho toàn bộ quân nhân được chạy tự động theo lịch định kỳ, và Cán bộ Phòng Chính trị cũng có thể kích hoạt thủ công khi cần. Cơ chế này giữ cho hồ sơ điều kiện hằng năm luôn nhất quán với dữ liệu danh hiệu đã ghi nhận.
 
@@ -153,11 +152,11 @@ Cán bộ Phòng Chính trị tham chiếu các gợi ý này để chốt danh 
 \label{subsection:2.2.6}
 
 Danh hiệu hằng năm đơn vị có cấu trúc đơn giản hơn cá nhân do không có cấp CSTĐTQ và không yêu cầu thành tích NCKH.
-Danh hiệu hằng năm đơn vị chỉ gồm hai cấp:
+Các danh hiệu cao hơn của đơn vị xét trên chuỗi ĐVQT liên tục chỉ gồm hai cấp:
 
 \begin{itemize}
     \item \textbf{BKBQP đơn vị} chu kỳ 2 năm, yêu cầu 2 năm ĐVQT liên tục, không có danh hiệu tiền điều kiện, có thể nhận lặp lại sau mỗi chu kỳ.
-    \item \textbf{BKTTCP đơn vị} chu kỳ 7 năm, yêu cầu ít nhất 3 BKBQP đơn vị trong 7 năm gần nhất, có thể nhận lặp lại sau mỗi chu kỳ.
+    \item \textbf{BKTTCP đơn vị} chu kỳ 7 năm, yêu cầu 7 năm ĐVQT liên tục và ít nhất 3 BKBQP đơn vị trong 7 năm gần nhất, có thể nhận lặp lại sau mỗi chu kỳ.
 \end{itemize}
 
 Điểm khác với cá nhân là đơn vị có thể được xét lại BKTTCP sau mỗi chu kỳ, nên yêu cầu về các danh hiệu tiền điều kiện cũng ít chặt chẽ hơn so với cá nhân.
@@ -170,7 +169,7 @@ Chức năng nhập Excel hàng loạt cung cấp tệp mẫu chuẩn để cán
 Quy trình gồm bốn use case con, thể hiện ở Hình~\ref{fig:uc-excel}:
 
 \begin{itemize}
-    \item \textbf{Tải tệp mẫu}: hệ thống sinh tệp Excel có cấu trúc cột chuẩn theo từng loại khen thưởng (danh hiệu hằng năm, khen thưởng đơn vị hằng năm, HCCSVV, HCBVTQ, ...) cùng các ràng buộc kiểm tra dữ liệu cho phép chọn từ danh sách thả xuống ngay trong tệp.
+    \item \textbf{Tải tệp mẫu}: hệ thống sinh tệp Excel có cấu trúc cột chuẩn theo từng loại khen thưởng (danh hiệu hằng năm, khen thưởng đơn vị hằng năm, HCCSVV, HCBVTQ, ...) cùng ràng buộc dữ liệu cho phép chọn giá trị từ danh sách có sẵn ngay trong tệp.
     \item \textbf{Xem trước}: sau khi cán bộ điền dữ liệu và tải tệp lên, hệ thống đọc nội dung từng dòng, đối chiếu với quy tắc kiểm tra dữ liệu và các quy tắc nghiệp vụ, sau đó hiển thị kết quả gồm các dòng hợp lệ và các dòng có lỗi kèm chỉ số dòng và mô tả lỗi. Bước này không ghi vào cơ sở dữ liệu.
     \item \textbf{Xác nhận}: cán bộ kiểm tra danh sách hợp lệ rồi xác nhận. Hệ thống ghi tuần tự từng dòng; nếu xảy ra lỗi tại bất kỳ dòng nào, toàn bộ thao tác được hủy bỏ và cơ sở dữ liệu giữ nguyên trạng thái trước khi nhập.
     \item \textbf{Xuất danh sách}: cho phép xuất kết quả khen thưởng theo nhiều tiêu chí (theo năm, theo đơn vị, theo loại danh hiệu) ra tệp Excel.
@@ -339,7 +338,7 @@ Sau khi cán bộ xác nhận, hệ thống kiểm tra dữ liệu đầu vào, 
  & 2a. & Chỉ huy đơn vị & Nhập giai đoạn trùng thời gian với giai đoạn hiện tại: hệ thống báo lỗi; giai đoạn hiện tại không đặt được ngày kết thúc (chỉ Phòng Chính trị đổi chức vụ hiện tại) \\ \cline{2-4}
  & 4a. & Hệ thống & Ngày kết thúc trước ngày bắt đầu hoặc thiếu trường bắt buộc: báo lỗi và yêu cầu nhập lại \\ \cline{2-4}
  & 5a. & Hệ thống & Giai đoạn nhập vào trùng thời gian với một giai đoạn chức vụ đã có: hệ thống chặn và yêu cầu nhập lại \\ \hline
-\textbf{Hậu điều kiện} & \multicolumn{3}{m{10.4cm}|}{Bảng lịch sử chức vụ được cập nhật; mỗi giai đoạn lưu hệ số và số tháng đảm nhiệm — đầu vào để xét HCBVTQ.} \\ \hline
+\textbf{Hậu điều kiện} & \multicolumn{3}{m{10.4cm}|}{Bảng lịch sử chức vụ được cập nhật; mỗi giai đoạn lưu hệ số và số tháng đảm nhiệm là điều kiện để xét HCBVTQ.} \\ \hline
 \end{tabular}
 \caption{Đặc tả use case quản lý lịch sử chức vụ quân nhân}
 \label{tab:uc02}
@@ -432,7 +431,7 @@ Sau khi cán bộ xác nhận, hệ thống kiểm tra dữ liệu đầu vào, 
  & 3a. & Cán bộ Phòng Chính trị & Phát hiện danh hiệu đề xuất chưa phù hợp, chuyển sang luồng từ chối kèm lý do (5a); Chỉ huy đơn vị điều chỉnh và đề xuất lại \\ \cline{2-4}
  & 4a. & Hệ thống & Thiếu số quyết định, hệ thống chặn và yêu cầu nhập đủ \\ \cline{2-4}
  & 5a. & Cán bộ Phòng Chính trị & Từ chối thay vì phê duyệt: trạng thái chuyển ``Từ chối'' kèm lý do \\ \cline{2-4}
- & 5b. & Hệ thống & Gặp lỗi hệ thống khi ghi: huỷ toàn bộ giao dịch, giữ nguyên dữ liệu \\ \hline
+ & 5b. & Hệ thống & Gặp lỗi hệ thống khi ghi: huỷ toàn bộ transaction, giữ nguyên dữ liệu \\ \hline
 \textbf{Hậu điều kiện} & \multicolumn{3}{m{10.4cm}|}{Trạng thái đề xuất là ``Đã duyệt'' hoặc ``Từ chối''; nếu được duyệt, các bản ghi khen thưởng đã có trong cơ sở dữ liệu, hồ sơ điều kiện được tính lại, thông báo đã gửi, nhật ký đầy đủ.} \\ \hline
 \end{tabular}
 \caption{Đặc tả use case phê duyệt đề xuất}
@@ -635,7 +634,7 @@ Sau khi cán bộ xác nhận, hệ thống kiểm tra dữ liệu đầu vào, 
  & 6. & Người dùng & Đọc mô tả chi tiết của từng bản ghi hiển thị trực tiếp trong bảng \\ \hline
 \multirow{3}{*}{\parbox{3cm}{\centering\textbf{Luồng sự kiện}\\\textbf{thay thế}}}
  & \textbf{STT} & \textbf{Thực hiện bởi} & \multicolumn{1}{c|}{\textbf{Hành động}} \\ \cline{2-4}
- & 4a. & Hệ thống & Cán bộ Phòng Chính trị hoặc Chỉ huy đơn vị cố xem nhật ký sao lưu, hệ thống tự lọc bỏ \\ \cline{2-4}
+ & 4a. & Hệ thống & Cán bộ Phòng Chính trị hoặc Chỉ huy đơn vị truy cập nhật ký sao lưu, hệ thống tự lọc bỏ \\ \cline{2-4}
  & 4b. & Hệ thống & Chỉ huy đơn vị chỉ thấy nhật ký do tài khoản trong phạm vi đơn vị họ thực hiện \\ \hline
 \textbf{Hậu điều kiện} & \multicolumn{3}{m{10.4cm}|}{Người dùng nắm được lịch sử hành động trong hệ thống, phục vụ kiểm tra và truy vết.} \\ \hline
 \end{tabular}

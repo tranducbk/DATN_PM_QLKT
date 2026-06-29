@@ -1,5 +1,36 @@
 /* Dev Zone — professional dark control panel */
 .dz-page {
+  /* Light theme (default) */
+  --dz-bg: #f1f5f9;
+  --dz-surface: #ffffff;
+  --dz-surface-2: #f8fafc;
+  --dz-border: #e2e8f0;
+  --dz-border-hover: #cbd5e1;
+  --dz-text: #0f172a;
+  --dz-text-2: #334155;
+  --dz-text-3: #64748b;
+  --dz-accent: #2563eb;
+  --dz-accent-hover: #1d4ed8;
+  --dz-accent-soft: rgba(37, 99, 235, 0.12);
+  --dz-amber: #f59e0b;
+  --dz-amber-hover: #d97706;
+  --dz-danger: #dc2626;
+  --dz-shadow-card: 0 1px 2px rgba(15, 23, 42, 0.08);
+  --dz-shadow-auth: 0 24px 60px -24px rgba(15, 23, 42, 0.25);
+  --dz-glow: #dbe7ff;
+  --dz-glow-fade: rgba(241, 245, 249, 0);
+
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  color: var(--dz-text);
+  background:
+    radial-gradient(1100px 520px at 50% -10%, var(--dz-glow) 0%, var(--dz-glow-fade) 60%),
+    var(--dz-bg);
+}
+
+.dark .dz-page {
+  /* Dark theme */
   --dz-bg: #0a1120;
   --dz-surface: #131d33;
   --dz-surface-2: #1a2540;
@@ -14,14 +45,10 @@
   --dz-amber: #f59e0b;
   --dz-amber-hover: #fbbf24;
   --dz-danger: #f87171;
-
-  min-height: 100vh;
-  position: relative;
-  overflow-x: hidden;
-  color: var(--dz-text);
-  background:
-    radial-gradient(1100px 520px at 50% -10%, #15223e 0%, rgba(10, 17, 32, 0) 60%),
-    var(--dz-bg);
+  --dz-shadow-card: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --dz-shadow-auth: 0 24px 60px -24px rgba(0, 0, 0, 0.7);
+  --dz-glow: #15223e;
+  --dz-glow-fade: rgba(10, 17, 32, 0);
 }
 
 /* Auth */
@@ -42,7 +69,7 @@
   border: 1px solid var(--dz-border);
   border-radius: 16px;
   padding: 2.5rem 2rem;
-  box-shadow: 0 24px 60px -24px rgba(0, 0, 0, 0.7);
+  box-shadow: var(--dz-shadow-auth);
   text-align: center;
   animation: dz-appear 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -164,7 +191,7 @@
   border-radius: 14px;
   padding: 1.25rem 1.5rem;
   margin-bottom: 1rem;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25);
+  box-shadow: var(--dz-shadow-card);
 }
 
 .dz-card-title {
@@ -359,6 +386,14 @@
   color: var(--dz-danger) !important;
   border-color: rgba(248, 113, 113, 0.4) !important;
   background: rgba(248, 113, 113, 0.1) !important;
+}
+
+/* Theme toggle (top-right corner) */
+.dz-theme-toggle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 20;
 }
 
 /* Refresh button */

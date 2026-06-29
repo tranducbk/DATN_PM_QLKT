@@ -1,4 +1,3 @@
-import path from 'path';
 import { parseCCCD as parseCCCDHelper } from '../../helpers/cccdHelper';
 import { ValidationError } from '../../middlewares/errorHandler';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
@@ -48,35 +47,7 @@ export interface ParsedThanhTich {
   status: string;
 }
 
-/**
- * Strips path/hostile characters from an upload name while keeping the extension.
- * @param filename - Client-provided filename
- * @returns Filesystem-safe basename + extension (falls back to file)
- */
-export function sanitizeFilename(filename: string): string {
-  if (!filename || typeof filename !== 'string') {
-    return 'file';
-  }
-
-  const ext = path.extname(filename);
-  const baseName = path.basename(filename, ext);
-
-  let sanitized = baseName
-    .replace(/[/\\:*?"<>|]/g, '_')
-    .replace(/\s+/g, '_')
-    .replace(/_{2,}/g, '_')
-    .replace(/^_+|_+$/g, '');
-
-  if (!sanitized || sanitized.length === 0) {
-    sanitized = 'file';
-  }
-
-  if (sanitized.length > 200) {
-    sanitized = sanitized.substring(0, 200);
-  }
-
-  return sanitized + ext;
-}
+export { sanitizeFilename } from '../../helpers/file/fileNaming';
 
 /**
  * Delegates to cccdHelper after stringifying the Excel cell payload.
