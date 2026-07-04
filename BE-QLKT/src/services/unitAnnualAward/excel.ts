@@ -176,11 +176,18 @@ export async function exportToExcel(
   userRole: string,
   userQuanNhanId: string
 ) {
-  const { nam, danh_hieu } = filters;
+  const { nam, danh_hieu, unit_ids } = filters;
 
   const where: Record<string, any> = {};
   if (nam) where.nam = nam;
   if (danh_hieu) where.danh_hieu = danh_hieu;
+
+  if (unit_ids && unit_ids.length > 0) {
+    where.OR = [
+      { co_quan_don_vi_id: { in: unit_ids } },
+      { don_vi_truc_thuoc_id: { in: unit_ids } },
+    ];
+  }
 
   if (userRole === ROLES.MANAGER && userQuanNhanId) {
     const user = await quanNhanRepository.findUnitScope(userQuanNhanId);

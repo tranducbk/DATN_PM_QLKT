@@ -566,7 +566,7 @@ export default function AdminAwardsPage() {
               dataSource={filteredAwards}
               rowKey="id"
               loading={loading}
-              scroll={{ x: 'max-content' }}
+              scroll={{ x: 1150 }}
               pagination={{
                 ...DEFAULT_ANTD_TABLE_PAGINATION,
                 showTotal: (total, range) => `${range[0]}-${range[1]} của ${total} bản ghi`,

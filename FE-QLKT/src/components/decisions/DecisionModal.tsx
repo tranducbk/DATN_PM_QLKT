@@ -455,7 +455,7 @@ export function DecisionModal({
             popupMatchSelectWidth={false}
             styles={{ popup: { root: { minWidth: 'max-content' } } }}
             size="large"
-            disabled={!!selectedDecision}
+            disabled={!!selectedDecision || !!loaiKhenThuong}
           />
         </Form.Item>
 

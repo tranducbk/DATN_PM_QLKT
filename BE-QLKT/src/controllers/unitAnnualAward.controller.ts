@@ -87,6 +87,7 @@ interface GetTemplateQuery {
 interface ExportToExcelQuery {
   nam?: number;
   danh_hieu?: string;
+  unit_ids?: string;
 }
 
 interface GetStatisticsQuery {
@@ -273,11 +274,14 @@ class UnitAnnualAwardController {
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as ExportToExcelQuery;
     const user = req.user;
-    const { nam, danh_hieu } = query;
+    const { nam, danh_hieu, unit_ids } = query;
     const filters: Record<string, unknown> = {
       nam,
       danh_hieu,
     };
+    if (unit_ids) {
+      filters.unit_ids = unit_ids.split(',').map(id => id.trim()).filter(id => id.length > 0);
+    }
     const workbook = await service.exportToExcel(filters, user?.role, user?.quan_nhan_id);
     res.setHeader(
       'Content-Type',

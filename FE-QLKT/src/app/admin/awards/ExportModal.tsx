@@ -1,19 +1,16 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { Modal, Select, InputNumber, Space, Typography, Table, message } from 'antd';
+import { useState, useEffect, useMemo } from 'react';
+import { Modal, Select, InputNumber, Space, Typography, Table, message, Input, Tag } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import { DownloadOutlined } from '@ant-design/icons';
 import { apiClient } from '@/lib/http/apiClient';
 import { getApiErrorMessage } from '@/lib/http/apiError';
-import { DANH_HIEU_MAP } from '@/lib/award/awardsHelper';
 import {
   AWARD_TAB_LABELS,
-  AWARD_TAB_DANH_HIEU,
   AWARD_TAB_FILENAME,
   AWARD_TAB_META,
   INDIVIDUAL_AWARD_TABS,
-  THANH_TICH_KHOA_HOC_OPTIONS,
   type AwardType,
 } from '@/constants/danhHieu.constants';
 import { MODAL_TABLE_PREVIEW_PAGE_SIZE, FETCH_ALL_LIMIT } from '@/constants/pagination.constants';
@@ -56,6 +53,25 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
   const [selectedUnitIds, setSelectedUnitIds] = useState<string[]>([]);
   const [loadingPersonnel, setLoadingPersonnel] = useState(false);
 
+  const [searchPersonnelText, setSearchPersonnelText] = useState('');
+  const [searchUnitText, setSearchUnitText] = useState('');
+
+  const filteredPersonnelList = useMemo(() => {
+    if (!searchPersonnelText) return personnelList;
+    const lower = searchPersonnelText.toLowerCase().trim();
+    return personnelList.filter(p => p.ho_ten?.toLowerCase().includes(lower));
+  }, [personnelList, searchPersonnelText]);
+
+  const filteredUnitsList = useMemo(() => {
+    if (!searchUnitText) return units;
+    const lower = searchUnitText.toLowerCase().trim();
+    return units.filter(
+      u =>
+        u.ten_don_vi?.toLowerCase().includes(lower) ||
+        u.ma_don_vi?.toLowerCase().includes(lower)
+    );
+  }, [units, searchUnitText]);
+
   useEffect(() => {
     if (open) {
       setTuNam(null);
@@ -65,6 +81,8 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
       setPersonnelList([]);
       setSelectedPersonnelIds([]);
       setSelectedUnitIds([]);
+      setSearchPersonnelText('');
+      setSearchUnitText('');
     }
   }, [open, activeTab]);
 
@@ -88,18 +106,16 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
       setPersonnelList([]);
       return;
     }
-    if (!donViId) {
-      setPersonnelList([]);
-      setSelectedPersonnelIds([]);
-      return;
-    }
     const fetchPersonnel = async () => {
       try {
         setLoadingPersonnel(true);
-        const personnelResponse = await apiClient.getPersonnel({
-          unit_id: donViId,
+        const params: Record<string, unknown> = {
           limit: FETCH_ALL_LIMIT,
-        });
+        };
+        if (donViId) {
+          params.unit_id = donViId;
+        }
+        const personnelResponse = await apiClient.getPersonnel(params);
         if (personnelResponse.success) {
           const personnelRows = personnelResponse.data?.rows ?? personnelResponse.data ?? [];
           setPersonnelList(
@@ -115,10 +131,8 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
       }
     };
     fetchPersonnel();
-    setSelectedPersonnelIds([]);
   }, [donViId, open, activeTab]);
 
-  const hasDanhHieuFilter = AWARD_TAB_META[activeTab].hasDanhHieuFilter;
   const hasUnitFilter = activeTab !== 'DVHN'; // DVHN tab exports all units — no unit filter needed
   const isIndividualTab = INDIVIDUAL_AWARD_TABS.includes(activeTab);
   const isUnitTab = activeTab === 'DVHN';
@@ -199,7 +213,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
     }
   };
 
-  const danhHieuList = AWARD_TAB_DANH_HIEU[activeTab] ?? [];
+
 
   // Personnel table columns
   const personnelColumns: ColumnsType<ExportPersonnelPreviewRow> = [
@@ -319,16 +333,26 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
         )}
 
         {/* Personnel selection (individual tab) */}
-        {isIndividualTab && donViId && (
+        {isIndividualTab && (
           <div>
-            <Text strong style={{ display: 'block', marginBottom: 8 }}>
-              Chọn quân nhân (bỏ trống để xuất tất cả)
-            </Text>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <Text strong>Chọn quân nhân (bỏ trống để xuất tất cả)</Text>
+              {selectedPersonnelIds.length > 0 && (
+                <Tag color="blue">Đã chọn: {selectedPersonnelIds.length}</Tag>
+              )}
+            </div>
+            <Input
+              placeholder="Tìm kiếm quân nhân theo họ tên..."
+              value={searchPersonnelText}
+              onChange={e => setSearchPersonnelText(e.target.value)}
+              style={{ marginBottom: 8 }}
+              allowClear
+            />
             <Table
               size="small"
               rowKey="id"
               columns={personnelColumns}
-              dataSource={personnelList}
+              dataSource={filteredPersonnelList}
               loading={loadingPersonnel}
               pagination={{
                 pageSize: MODAL_TABLE_PREVIEW_PAGE_SIZE,
@@ -338,6 +362,7 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
               rowSelection={{
                 selectedRowKeys: selectedPersonnelIds,
                 onChange: keys => setSelectedPersonnelIds(keys as string[]),
+                preserveSelectedRowKeys: true,
               }}
               scroll={{ y: 200 }}
             />
@@ -347,14 +372,24 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
         {/* Unit selection (unit tab) */}
         {isUnitTab && units.length > 0 && (
           <div>
-            <Text strong style={{ display: 'block', marginBottom: 8 }}>
-              Chọn đơn vị (bỏ trống để xuất tất cả)
-            </Text>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
+              <Text strong>Chọn đơn vị (bỏ trống để xuất tất cả)</Text>
+              {selectedUnitIds.length > 0 && (
+                <Tag color="blue">Đã chọn: {selectedUnitIds.length}</Tag>
+              )}
+            </div>
+            <Input
+              placeholder="Tìm kiếm đơn vị theo tên hoặc mã..."
+              value={searchUnitText}
+              onChange={e => setSearchUnitText(e.target.value)}
+              style={{ marginBottom: 8 }}
+              allowClear
+            />
             <Table
               size="small"
               rowKey="id"
               columns={unitColumns}
-              dataSource={units}
+              dataSource={filteredUnitsList}
               pagination={{
                 pageSize: MODAL_TABLE_PREVIEW_PAGE_SIZE,
                 size: 'small',
@@ -363,48 +398,14 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
               rowSelection={{
                 selectedRowKeys: selectedUnitIds,
                 onChange: keys => setSelectedUnitIds(keys as string[]),
+                preserveSelectedRowKeys: true,
               }}
               scroll={{ y: 200 }}
             />
           </div>
         )}
 
-        {/* Award title */}
-        {hasDanhHieuFilter && (
-          <div>
-            <Text strong style={{ display: 'block', marginBottom: 8 }}>
-              Danh hiệu
-            </Text>
-            <Select
-              placeholder="Tất cả danh hiệu"
-              allowClear
-              value={danhHieu}
-              onChange={v => setDanhHieu(v)}
-              style={{ width: '100%' }}
-              options={danhHieuList.map(v => ({
-                value: v,
-                label: DANH_HIEU_MAP[v] ?? v,
-              }))}
-            />
-          </div>
-        )}
-
-        {/* Scientific achievement type */}
-        {activeTab === 'NCKH' && (
-          <div>
-            <Text strong style={{ display: 'block', marginBottom: 8 }}>
-              Loại thành tích
-            </Text>
-            <Select
-              placeholder="Tất cả loại"
-              allowClear
-              value={danhHieu}
-              onChange={v => setDanhHieu(v)}
-              style={{ width: '100%' }}
-              options={THANH_TICH_KHOA_HOC_OPTIONS}
-            />
-          </div>
-        )}
+        {/* Fields 'Danh hiệu' and 'Loại thành tích' have been removed to default to exporting all titles */}
       </Space>
     </Modal>
   );

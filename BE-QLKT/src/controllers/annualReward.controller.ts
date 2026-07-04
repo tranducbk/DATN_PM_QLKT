@@ -111,6 +111,8 @@ interface GetTemplateQuery {
 
 interface ExportToExcelQuery {
   nam?: number;
+  tu_nam?: number;
+  den_nam?: number;
   danh_hieu?: string;
   don_vi_id?: string;
   personnel_ids?: string;
@@ -398,12 +400,14 @@ class AnnualRewardController {
     const rawQuery = req.query;
     const query = rawQuery as ExportToExcelQuery;
     const user = req.user;
-    const { nam, danh_hieu, don_vi_id } = query;
+    const { nam, tu_nam, den_nam, danh_hieu, don_vi_id } = query;
     const role = user?.role;
     const userUnitId = user?.co_quan_don_vi_id ?? user?.don_vi_truc_thuoc_id;
 
     const filters: Record<string, unknown> = {
       nam,
+      tu_nam,
+      den_nam,
       danh_hieu,
       don_vi_id,
     };

@@ -106,6 +106,8 @@ export interface BulkCreateData {
 
 export interface ExportFilters {
   nam?: number;
+  tu_nam?: number;
+  den_nam?: number;
   danh_hieu?: string;
   don_vi_id?: string;
   personnel_ids?: string[];

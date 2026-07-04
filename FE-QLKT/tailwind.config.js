@@ -5,7 +5,7 @@ module.exports = {
     './src/components/**/*.{js,ts,jsx,tsx,mdx}',
     './src/app/**/*.{js,ts,jsx,tsx,mdx}',
   ],
-  darkMode: ['class', 'class'],
+  darkMode: ['class'],
   theme: {
     extend: {
       fontFamily: {
@@ -99,5 +99,8 @@ module.exports = {
       '6xl': '3.75rem',
     },
   },
-  plugins: [require('@tailwindcss/forms')({ strategy: 'class' }), require('tailwindcss-animate')],
+  plugins: [
+    require('@tailwindcss/forms')({ strategy: 'class' }),
+    require('tailwindcss-animate'),
+  ],
 };

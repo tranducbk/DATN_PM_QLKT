@@ -1364,8 +1364,8 @@ select:-webkit-autofill:focus {
   }
 
   /* Fix for all table rows - prevent white background on hover in dark mode */
-  .dark table tbody tr:hover td,
-  .dark table tbody tr:hover th {
+  .dark table tbody tr:hover td:not(.ant-table-cell-fix-left):not(.ant-table-cell-fix-right),
+  .dark table tbody tr:hover th:not(.ant-table-cell-fix-left):not(.ant-table-cell-fix-right) {
     background-color: transparent !important;
   }
 

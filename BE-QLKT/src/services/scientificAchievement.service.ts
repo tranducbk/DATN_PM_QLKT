@@ -36,8 +36,11 @@ interface CreateAchievementData {
 
 interface ExportFilters {
   nam?: number;
+  tu_nam?: number;
+  den_nam?: number;
   loai?: string;
   don_vi_id?: string;
+  personnel_ids?: string[];
 }
 
 import type { ConfirmImportItem } from './scientificAchievement/types';
@@ -164,11 +167,21 @@ class ScientificAchievementService {
   }
 
   async exportToExcel(filters: ExportFilters = {}) {
-    const { nam, loai, don_vi_id } = filters;
+    const { nam, tu_nam, den_nam, loai, don_vi_id, personnel_ids } = filters;
 
     const where: Record<string, unknown> = {};
-    if (nam) where.nam = nam;
+    if (nam) {
+      where.nam = parseInt(String(nam));
+    } else if (tu_nam || den_nam) {
+      const rangeFilter: any = {};
+      if (tu_nam) rangeFilter.gte = parseInt(String(tu_nam));
+      if (den_nam) rangeFilter.lte = parseInt(String(den_nam));
+      where.nam = rangeFilter;
+    }
     if (loai) where.loai = loai;
+    if (personnel_ids && personnel_ids.length > 0) {
+      where.quan_nhan_id = { in: personnel_ids };
+    }
     if (don_vi_id) {
       where.QuanNhan = {
         OR: [{ co_quan_don_vi_id: don_vi_id }, { don_vi_truc_thuoc_id: don_vi_id }],

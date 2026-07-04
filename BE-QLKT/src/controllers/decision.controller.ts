@@ -5,6 +5,7 @@ import ResponseHelper from '../helpers/responseHelper';
 import catchAsync from '../helpers/catchAsync';
 import { buildSignedFileUrl } from '../helpers/file/signedFileUrl';
 import { persistDecisionFile, deleteStoredFile } from '../helpers/file/fileStorage';
+import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 
 interface GetAllDecisionsQuery {
   nam?: number;
@@ -120,6 +121,10 @@ class DecisionController {
       );
     }
 
+    if (loai_khen_thuong && !Object.values(PROPOSAL_TYPES).includes(loai_khen_thuong as any)) {
+      return ResponseHelper.badRequest(res, 'Loại khen thưởng không hợp lệ');
+    }
+
     const ngayKyDate = typeof ngay_ky === 'string' ? new Date(ngay_ky) : ngay_ky;
     const file_path = file?.buffer ? await persistDecisionFile(file) : null;
     try {
@@ -147,6 +152,10 @@ class DecisionController {
     if (!id) return ResponseHelper.badRequest(res, 'Thiếu id');
 
     const { so_quyet_dinh, nam, ngay_ky, nguoi_ky, loai_khen_thuong, ghi_chu } = body;
+    if (loai_khen_thuong && !Object.values(PROPOSAL_TYPES).includes(loai_khen_thuong as any)) {
+      return ResponseHelper.badRequest(res, 'Loại khen thưởng không hợp lệ');
+    }
+
     let file_path = body.file_path;
     let newlyPersisted: string | null = null;
     if (file?.buffer) {

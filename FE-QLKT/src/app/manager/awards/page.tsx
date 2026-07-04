@@ -534,7 +534,7 @@ export default function ManagerAwardsPage() {
                 showTotal: total => `Tổng ${total} bản ghi`,
               }}
               bordered
-              scroll={{ x: 'max-content' }}
+              scroll={{ x: 1150 }}
             />
           )}
         </Card>

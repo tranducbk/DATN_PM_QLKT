@@ -37,7 +37,10 @@ interface IdParams {
 
 interface ExportToExcelQuery {
   nam?: number;
+  tu_nam?: number;
+  den_nam?: number;
   loai?: string;
+  personnel_ids?: string;
 }
 
 interface GetTemplateQuery {
@@ -101,15 +104,22 @@ class ScientificAchievementController {
   });
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
-    const query = req.query as ExportToExcelQuery;
+    const rawQuery = req.query;
+    const query = rawQuery as ExportToExcelQuery;
     const user = req.user;
-    const { nam, loai } = query;
+    const { nam, tu_nam, den_nam, loai } = query;
     const role = user?.role;
     const userUnitId = user?.co_quan_don_vi_id ?? user?.don_vi_truc_thuoc_id;
     const filters: Record<string, unknown> = {
       nam,
+      tu_nam,
+      den_nam,
       loai,
     };
+    const parsedPersonnelIds = parsePersonnelIdsFromQuery(rawQuery);
+    if (parsedPersonnelIds.length > 0) {
+      filters.personnel_ids = parsedPersonnelIds;
+    }
     if (role === ROLES.MANAGER && userUnitId) filters.don_vi_id = userUnitId;
     const workbook = await scientificAchievementService.exportToExcel(filters);
     res.setHeader(

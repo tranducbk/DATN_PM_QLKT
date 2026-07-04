@@ -43,10 +43,17 @@ export async function exportTemplate(
 }
 
 export async function exportToExcel(filters: ExportFilters = {}): Promise<ExcelJS.Workbook> {
-  const { nam, danh_hieu, don_vi_id, personnel_ids } = filters;
+  const { nam, tu_nam, den_nam, danh_hieu, don_vi_id, personnel_ids } = filters;
 
   const where: Prisma.DanhHieuHangNamWhereInput = {};
-  if (nam) where.nam = nam;
+  if (nam) {
+    where.nam = parseInt(String(nam));
+  } else if (tu_nam || den_nam) {
+    const rangeFilter: Prisma.IntFilter = {};
+    if (tu_nam) rangeFilter.gte = parseInt(String(tu_nam));
+    if (den_nam) rangeFilter.lte = parseInt(String(den_nam));
+    where.nam = rangeFilter;
+  }
   if (danh_hieu) where.danh_hieu = danh_hieu;
   if (personnel_ids && personnel_ids.length > 0) {
     where.quan_nhan_id = { in: personnel_ids };

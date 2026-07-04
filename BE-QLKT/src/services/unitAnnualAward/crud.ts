@@ -327,15 +327,16 @@ export async function remove(
 
     if (isEmpty) {
       await danhHieuDonViHangNamRepository.delete(String(id));
+      await deps.recalculateAnnualUnit(donViId, danhHieu.nam);
+      return danhHieu;
     } else {
-      await danhHieuDonViHangNamRepository.updateRaw({
+      const updated = await danhHieuDonViHangNamRepository.updateRaw({
         where: { id: String(id) },
         data: updateData,
       });
+      await deps.recalculateAnnualUnit(donViId, danhHieu.nam);
+      return updated;
     }
-
-    await deps.recalculateAnnualUnit(donViId, danhHieu.nam);
-    return danhHieu;
   }
 
   await danhHieuDonViHangNamRepository.delete(String(id));

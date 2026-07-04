@@ -87,5 +87,9 @@ export async function buildMedalListWhere(
     where.danh_hieu = filters.danh_hieu;
   }
 
+  if (filters.personnel_ids && Array.isArray(filters.personnel_ids) && filters.personnel_ids.length > 0) {
+    where.quan_nhan_id = { in: filters.personnel_ids };
+  }
+
   return where;
 }

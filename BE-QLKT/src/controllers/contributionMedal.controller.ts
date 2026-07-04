@@ -51,10 +51,12 @@ interface GetAllQuery {
 }
 
 interface ExportToExcelQuery {
-  don_vi_id?: string;
   nam?: number;
+  tu_nam?: number;
+  den_nam?: number;
   danh_hieu?: string;
-  [key: string]: unknown;
+  don_vi_id?: string;
+  personnel_ids?: string;
 }
 
 interface IdParams {
@@ -159,13 +161,20 @@ class ContributionMedalController {
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
     const user = req.user!;
-    const query = req.query as ExportToExcelQuery;
-    const { don_vi_id, nam, danh_hieu } = query;
+    const rawQuery = req.query;
+    const query = rawQuery as ExportToExcelQuery;
+    const { don_vi_id, nam, tu_nam, den_nam, danh_hieu } = query;
 
     const filters: Record<string, unknown> = {};
     if (don_vi_id) filters.don_vi_id = don_vi_id;
     if (nam) filters.nam = nam;
+    if (tu_nam) filters.tu_nam = tu_nam;
+    if (den_nam) filters.den_nam = den_nam;
     if (danh_hieu) filters.danh_hieu = danh_hieu;
+    const parsedPersonnelIds = parsePersonnelIdsFromQuery(rawQuery);
+    if (parsedPersonnelIds.length > 0) {
+      filters.personnel_ids = parsedPersonnelIds;
+    }
 
     const managerUnit = await getManagerUnitFilter(req);
     if (managerUnit === null && user.role === ROLES.MANAGER) {

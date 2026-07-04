@@ -352,17 +352,18 @@ export async function deleteAnnualReward(
       awardType === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP ? false : reward.nhan_bkttcp;
     const isEmpty = !remainingDanhHieu && !remainingBkbqp && !remainingCstdtq && !remainingBkttcp;
 
+    let finalReward: typeof reward = reward;
     if (isEmpty) {
       await danhHieuHangNamRepository.delete(id);
     } else {
-      await danhHieuHangNamRepository.updateRaw({ where: { id }, data: updateData });
+      finalReward = (await danhHieuHangNamRepository.updateRaw({ where: { id }, data: updateData })) as typeof reward;
     }
 
     await safeRecalculateAnnualProfile(personnelId);
 
     try {
       await notificationHelper.notifyOnAwardDeleted(
-        reward,
+        finalReward,
         personnel,
         PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
         adminUsername
@@ -378,7 +379,7 @@ export async function deleteAnnualReward(
     return {
       message: `Đã xóa ${getDanhHieuName(awardType)}.`,
       personnelId,
-      reward,
+      reward: finalReward,
     };
   }
 
