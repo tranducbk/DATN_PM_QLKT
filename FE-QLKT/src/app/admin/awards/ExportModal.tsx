@@ -138,7 +138,14 @@ export function ExportModal({ open, onCancel, activeTab }: ExportModalProps) {
   const isUnitTab = activeTab === 'DVHN';
 
   const handleExport = async () => {
-    if (tuNam && denNam && tuNam > denNam) {
+    const isTuNamSet = tuNam !== null && tuNam !== undefined && String(tuNam).trim() !== '';
+    const isDenNamSet = denNam !== null && denNam !== undefined && String(denNam).trim() !== '';
+
+    if ((isTuNamSet && !isDenNamSet) || (!isTuNamSet && isDenNamSet)) {
+      message.error('Vui lòng nhập đầy đủ cả Từ năm và Đến năm');
+      return;
+    }
+    if (isTuNamSet && isDenNamSet && Number(tuNam) > Number(denNam)) {
       message.error('Năm bắt đầu phải nhỏ hơn hoặc bằng năm kết thúc');
       return;
     }

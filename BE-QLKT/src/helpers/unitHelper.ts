@@ -81,6 +81,11 @@ export async function buildMedalListWhere(
 
   if (filters.nam) {
     where.nam = parseInt(String(filters.nam), 10);
+  } else if (filters.tu_nam || filters.den_nam) {
+    const rangeFilter: any = {};
+    if (filters.tu_nam) rangeFilter.gte = parseInt(String(filters.tu_nam), 10);
+    if (filters.den_nam) rangeFilter.lte = parseInt(String(filters.den_nam), 10);
+    where.nam = rangeFilter;
   }
 
   if (filters.danh_hieu) {
@@ -90,6 +95,8 @@ export async function buildMedalListWhere(
   if (filters.personnel_ids && Array.isArray(filters.personnel_ids) && filters.personnel_ids.length > 0) {
     where.quan_nhan_id = { in: filters.personnel_ids };
   }
+
+  console.log("EXCEL EXPORT WHERE CLAUSE (MEDALS):", JSON.stringify(where, null, 2));
 
   return where;
 }

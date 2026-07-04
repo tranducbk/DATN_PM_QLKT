@@ -64,6 +64,8 @@ export async function exportToExcel(filters: ExportFilters = {}): Promise<ExcelJ
     };
   }
 
+  console.log("EXCEL EXPORT WHERE CLAUSE:", JSON.stringify(where, null, 2));
+
   const filteredAwards = (await danhHieuHangNamRepository.findMany({
     where,
     include: {

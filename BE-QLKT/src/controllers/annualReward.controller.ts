@@ -399,6 +399,7 @@ class AnnualRewardController {
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
     const rawQuery = req.query;
     const query = rawQuery as ExportToExcelQuery;
+    console.log("EXPORT QUERY RECEIVED:", query);
     const user = req.user;
     const { nam, tu_nam, den_nam, danh_hieu, don_vi_id } = query;
     const role = user?.role;

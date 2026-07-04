@@ -176,10 +176,17 @@ export async function exportToExcel(
   userRole: string,
   userQuanNhanId: string
 ) {
-  const { nam, danh_hieu, unit_ids } = filters;
+  const { nam, tu_nam, den_nam, danh_hieu, unit_ids } = filters;
 
   const where: Record<string, any> = {};
-  if (nam) where.nam = nam;
+  if (nam) {
+    where.nam = parseInt(String(nam));
+  } else if (tu_nam || den_nam) {
+    const rangeFilter: any = {};
+    if (tu_nam) rangeFilter.gte = parseInt(String(tu_nam));
+    if (den_nam) rangeFilter.lte = parseInt(String(den_nam));
+    where.nam = rangeFilter;
+  }
   if (danh_hieu) where.danh_hieu = danh_hieu;
 
   if (unit_ids && unit_ids.length > 0) {
@@ -198,6 +205,8 @@ export async function exportToExcel(
       where.don_vi_truc_thuoc_id = user.don_vi_truc_thuoc_id;
     }
   }
+
+  console.log("EXCEL EXPORT WHERE CLAUSE (DVHN):", JSON.stringify(where, null, 2));
 
   const awards = (await danhHieuDonViHangNamRepository.findMany({
     where,

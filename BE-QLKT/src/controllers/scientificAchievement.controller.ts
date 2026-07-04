@@ -106,6 +106,7 @@ class ScientificAchievementController {
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
     const rawQuery = req.query;
     const query = rawQuery as ExportToExcelQuery;
+    console.log("EXPORT QUERY RECEIVED (NCKH):", query);
     const user = req.user;
     const { nam, tu_nam, den_nam, loai } = query;
     const role = user?.role;

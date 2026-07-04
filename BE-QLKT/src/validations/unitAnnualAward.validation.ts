@@ -12,7 +12,10 @@ export const listUnitAnnualAwardsQuery = z.object({
 
 export const exportUnitAnnualAwardsQuery = z.object({
   nam: z.coerce.number().int().min(YEAR_MIN).max(YEAR_MAX).optional(),
+  tu_nam: z.coerce.number().int().min(YEAR_MIN).max(YEAR_MAX).optional(),
+  den_nam: z.coerce.number().int().min(YEAR_MIN).max(YEAR_MAX).optional(),
   danh_hieu: z.string().trim().optional(),
+  unit_ids: z.string().trim().optional(),
 });
 
 export const getUnitAnnualAwardsStatisticsQuery = z.object({

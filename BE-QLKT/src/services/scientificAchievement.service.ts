@@ -188,6 +188,8 @@ class ScientificAchievementService {
       };
     }
 
+    console.log("EXCEL EXPORT WHERE CLAUSE (NCKH):", JSON.stringify(where, null, 2));
+
     const achievements = await scientificAchievementRepository.findManyRaw({
       where,
       include: {

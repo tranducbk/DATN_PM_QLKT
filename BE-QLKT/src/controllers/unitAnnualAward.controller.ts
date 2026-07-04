@@ -86,6 +86,8 @@ interface GetTemplateQuery {
 
 interface ExportToExcelQuery {
   nam?: number;
+  tu_nam?: number;
+  den_nam?: number;
   danh_hieu?: string;
   unit_ids?: string;
 }
@@ -273,10 +275,13 @@ class UnitAnnualAwardController {
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as ExportToExcelQuery;
+    console.log("EXPORT QUERY RECEIVED (DVHN):", query);
     const user = req.user;
-    const { nam, danh_hieu, unit_ids } = query;
+    const { nam, tu_nam, den_nam, danh_hieu, unit_ids } = query;
     const filters: Record<string, unknown> = {
       nam,
+      tu_nam,
+      den_nam,
       danh_hieu,
     };
     if (unit_ids) {

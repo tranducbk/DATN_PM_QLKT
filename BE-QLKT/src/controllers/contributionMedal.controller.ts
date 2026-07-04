@@ -163,6 +163,7 @@ class ContributionMedalController {
     const user = req.user!;
     const rawQuery = req.query;
     const query = rawQuery as ExportToExcelQuery;
+    console.log("EXPORT QUERY RECEIVED (HCBVTQ):", query);
     const { don_vi_id, nam, tu_nam, den_nam, danh_hieu } = query;
 
     const filters: Record<string, unknown> = {};
