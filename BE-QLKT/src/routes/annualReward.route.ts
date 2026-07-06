@@ -3,10 +3,7 @@ import annualRewardController from '../controllers/annualReward.controller';
 import { verifyToken, requireAdminOrManager, requireAdminOnly } from '../middlewares/auth';
 import { auditLog, getResourceId } from '../middlewares/auditLog';
 import { getLogDescription } from '../helpers/auditLog';
-import {
-  excelUpload as upload,
-  pdfDecisionUpload as pdfUpload,
-} from '../configs/multer';
+import { excelUpload as upload } from '../configs/multer';
 import { validate } from '../middlewares/validate';
 import { excelImportValidation } from '../validations';
 import { annualRewardValidation } from '../validations';
@@ -82,39 +79,6 @@ router.delete(
     getResourceId: getResourceId.fromParams('id'),
   }),
   annualRewardController.deleteAnnualReward
-);
-
-/**
- * @route   POST /api/annual-rewards/check
- * @desc    Validate annual rewards before bulk operations
- * @access  Private - ADMIN only
- */
-router.post(
-  '/check',
-  verifyToken,
-  requireAdminOnly,
-  validate(annualRewardValidation.checkAnnualRewards),
-  annualRewardController.checkAnnualRewards
-);
-
-/**
- * @route   POST /api/annual-rewards/bulk
- * @desc    Bulk create annual reward titles
- * @access  Private - ADMIN only
- */
-router.post(
-  '/bulk',
-  verifyToken,
-  requireAdminOnly,
-  pdfUpload.single('file_dinh_kem'),
-  validate(annualRewardValidation.bulkCreate),
-  auditLog({
-    action: AUDIT_ACTIONS.BULK,
-    resource: AWARD_SLUGS.ANNUAL_REWARDS,
-    getDescription: getLogDescription(AWARD_SLUGS.ANNUAL_REWARDS, 'BULK'),
-    getResourceId: () => null,
-  }),
-  annualRewardController.bulkCreateAnnualRewards
 );
 
 /**

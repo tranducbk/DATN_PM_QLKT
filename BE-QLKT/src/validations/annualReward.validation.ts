@@ -42,59 +42,6 @@ export const updateAnnualReward = z
   })
   .superRefine(refineAnnualChainSqd);
 
-const personnelIdsSchema = z.union([
-  z.array(z.string().trim()).min(1),
-  z.string().transform((value, ctx) => {
-    try {
-      const parsed = JSON.parse(value);
-      if (!Array.isArray(parsed) || !parsed.every((x: unknown) => typeof x === 'string')) {
-        ctx.addIssue({ code: 'custom', message: 'personnel_ids không hợp lệ' });
-        return z.NEVER;
-      }
-      return parsed as string[];
-    } catch (error) {
-      console.error('Failed to parse annualReward selected_personnel JSON:', error);
-      ctx.addIssue({ code: 'custom', message: 'personnel_ids không hợp lệ' });
-      return z.NEVER;
-    }
-  }),
-]);
-
-const personnelRewardsDataSchema = z.union([
-  z.array(z.record(z.string(), z.unknown())),
-  z.string().transform((value, ctx) => {
-    try {
-      const parsed = JSON.parse(value);
-      if (!Array.isArray(parsed)) {
-        ctx.addIssue({ code: 'custom', message: 'personnel_rewards_data không hợp lệ' });
-        return z.NEVER;
-      }
-      return parsed as unknown[];
-    } catch (error) {
-      console.error('Failed to parse annualReward title_data JSON:', error);
-      ctx.addIssue({ code: 'custom', message: 'personnel_rewards_data không hợp lệ' });
-      return z.NEVER;
-    }
-  }),
-]);
-
-export const bulkCreate = z.object({
-  personnel_ids: personnelIdsSchema,
-  personnel_rewards_data: personnelRewardsDataSchema.optional(),
-  nam: z.number().int().min(YEAR_MIN).max(YEAR_MAX),
-  danh_hieu: z.string().trim().min(1),
-  ghi_chu: z.string().trim().nullable().optional(),
-  so_quyet_dinh: z.string().trim().nullable().optional(),
-  cap_bac: z.string().trim().nullable().optional(),
-  chuc_vu: z.string().trim().nullable().optional(),
-});
-
-export const checkAnnualRewards = z.object({
-  personnel_ids: z.array(z.string().trim()).min(1),
-  nam: z.number().int().min(YEAR_MIN).max(YEAR_MAX),
-  danh_hieu: z.string().trim().min(1),
-});
-
 export const getAnnualRewardsQuery = z.object({
   personnel_id: z.string().trim().optional(),
   page: z.coerce.number().int().min(1).optional(),

@@ -40,6 +40,12 @@ export function createApp() {
   // X-Forwarded-For (which a direct client could spoof). Set to the number of
   // proxy hops (e.g. 1) only when a reverse proxy / load balancer is added.
   app.set('trust proxy', false);
+  
+  // Helmet: Configure secure HTTP response headers to protect the application:
+  // - Prevent Clickjacking (X-Frame-Options: SAMEORIGIN)
+  // - Prevent platform information leakage (Hide X-Powered-By: Express)
+  // - Prevent MIME sniffing / malicious file execution (X-Content-Type-Options: nosniff)
+  // - Force secure HTTPS connections (Strict-Transport-Security HSTS)
   app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
   app.use(express.json({ limit: '10mb' }));
   app.use(cookieParser());

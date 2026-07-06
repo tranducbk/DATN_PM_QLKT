@@ -30,16 +30,7 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
     errors: { personnelId: string; error: string }[];
   };
 }> {
-  const {
-    personnel_ids,
-    personnel_rewards_data,
-    nam,
-    danh_hieu,
-    ghi_chu,
-    so_quyet_dinh,
-    cap_bac,
-    chuc_vu,
-  } = data;
+  const { personnel_ids, personnel_rewards_data, nam, danh_hieu, ghi_chu } = data;
 
   const allowedDanhHieu = Object.values(DANH_HIEU_CA_NHAN_HANG_NAM) as string[];
   if (!allowedDanhHieu.includes(danh_hieu)) {
@@ -52,7 +43,7 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
 
   const personnelDataMap: Record<
     string,
-    { so_quyet_dinh?: string; cap_bac?: string; chuc_vu?: string }
+    { danh_hieu?: string; so_quyet_dinh?: string; cap_bac?: string; chuc_vu?: string }
   > = {};
   if (personnel_rewards_data && Array.isArray(personnel_rewards_data)) {
     personnel_rewards_data.forEach(item => {
@@ -81,28 +72,21 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
 
   const personnelMap = new Map(allPersonnel.map(p => [p.id, p] as const));
   const existingRewardMap = new Map(existingRewards.map(r => [r.quan_nhan_id, r] as const));
-  const existingAwardSet = new Set(
-    existingRewards
-      .filter(r => {
-        if (r.danh_hieu === danh_hieu) return true;
-        if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && r.nhan_bkbqp) return true;
-        if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ && r.nhan_cstdtq) return true;
-        if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && r.nhan_bkttcp) return true;
-        return false;
-      })
-      .map(r => r.quan_nhan_id)
-  );
-  const pendingProposalPersonnelSet = collectPendingProposalPersonnelIdsForAward(
-    pendingProposals as Array<{ data_danh_hieu: unknown }>,
-    danh_hieu
-  );
 
   const eligibilityMap = new Map<string, { eligible: boolean; reason: string }>();
-  if (isPersonalChainAward(danh_hieu)) {
+  const personnelTitles = personnelIds.map(personnelId => {
+    const personnelData = personnelDataMap[personnelId] || {};
+    const individualDanhHieu = personnelData.danh_hieu || danh_hieu;
+    return { personnelId, individualDanhHieu };
+  });
+
+  const chainAwardChecks = personnelTitles.filter(item => isPersonalChainAward(item.individualDanhHieu));
+
+  if (chainAwardChecks.length > 0) {
     const eligibilityResults = await Promise.all(
-      personnelIds.map(async personnelId => ({
+      chainAwardChecks.map(async ({ personnelId, individualDanhHieu }) => ({
         personnelId,
-        result: await profileService.checkAwardEligibility(personnelId, namInt, danh_hieu),
+        result: await profileService.checkAwardEligibility(personnelId, namInt, individualDanhHieu),
       }))
     );
     for (const { personnelId, result } of eligibilityResults) {
@@ -115,9 +99,10 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
 
     for (const personnelId of personnelIds) {
       const personnelData = personnelDataMap[personnelId] || {};
-      const individualSoQuyetDinh = personnelData.so_quyet_dinh || so_quyet_dinh;
-      const individualCapBac = personnelData.cap_bac || cap_bac;
-      const individualChucVu = personnelData.chuc_vu || chuc_vu;
+      const individualDanhHieu = personnelData.danh_hieu || danh_hieu;
+      const individualSoQuyetDinh = personnelData.so_quyet_dinh;
+      const individualCapBac = personnelData.cap_bac;
+      const individualChucVu = personnelData.chuc_vu;
 
       const personnel = personnelMap.get(personnelId);
 
@@ -126,22 +111,45 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
         continue;
       }
 
-      if (existingAwardSet.has(personnelId)) {
+      if (!allowedDanhHieu.includes(individualDanhHieu)) {
         errors.push({
           personnelId,
-          error: `Quân nhân đã có danh hiệu ${getDanhHieuName(danh_hieu)} năm ${namInt} trên hệ thống`,
-        });
-        continue;
-      }
-      if (pendingProposalPersonnelSet.has(personnelId)) {
-        errors.push({
-          personnelId,
-          error: `Quân nhân đã có đề xuất danh hiệu ${getDanhHieuName(danh_hieu)} cho năm ${namInt}`,
+          error: `Danh hiệu "${individualDanhHieu}" không hợp lệ. Chỉ được chọn: ${formatDanhHieuList(allowedDanhHieu)}.`,
         });
         continue;
       }
 
-      if (isPersonalChainAward(danh_hieu)) {
+      const hasExistingAward = existingRewards.some(r => {
+        if (r.quan_nhan_id !== personnelId) return false;
+        if (r.danh_hieu === individualDanhHieu) return true;
+        if (individualDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP && r.nhan_bkbqp) return true;
+        if (individualDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ && r.nhan_cstdtq) return true;
+        if (individualDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP && r.nhan_bkttcp) return true;
+        return false;
+      });
+
+      if (hasExistingAward) {
+        errors.push({
+          personnelId,
+          error: `Quân nhân đã có danh hiệu ${getDanhHieuName(individualDanhHieu)} năm ${namInt} trên hệ thống`,
+        });
+        continue;
+      }
+
+      const isPendingConflict = collectPendingProposalPersonnelIdsForAward(
+        pendingProposals as Array<{ data_danh_hieu: unknown }>,
+        individualDanhHieu
+      ).has(personnelId);
+
+      if (isPendingConflict) {
+        errors.push({
+          personnelId,
+          error: `Quân nhân đã có đề xuất danh hiệu ${getDanhHieuName(individualDanhHieu)} cho năm ${namInt}`,
+        });
+        continue;
+      }
+
+      if (isPersonalChainAward(individualDanhHieu)) {
         const eligibility = eligibilityMap.get(personnelId) || {
           eligible: false,
           reason: 'Không xác định được điều kiện khen thưởng',
@@ -155,13 +163,13 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
         }
       }
 
-      const isCoBanRow = DANH_HIEU_CA_NHAN_CO_BAN.has(danh_hieu);
-      const isBkbqpRow = danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP;
-      const isCstdtqRow = danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ;
-      const isBkttcpRow = danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP;
+      const isCoBanRow = DANH_HIEU_CA_NHAN_CO_BAN.has(individualDanhHieu);
+      const isBkbqpRow = individualDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP;
+      const isCstdtqRow = individualDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ;
+      const isBkttcpRow = individualDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP;
       const decisionErrors = validateDecisionNumbers(
         {
-          danh_hieu: isCoBanRow ? danh_hieu : null,
+          danh_hieu: isCoBanRow ? individualDanhHieu : null,
           so_quyet_dinh: isCoBanRow ? individualSoQuyetDinh : null,
           nhan_bkbqp: isBkbqpRow,
           so_quyet_dinh_bkbqp: isBkbqpRow ? individualSoQuyetDinh : null,
@@ -184,42 +192,42 @@ export async function bulkCreateAnnualRewards(data: BulkCreateData): Promise<{
       let nhanCSTDTQ = false;
       let nhanBKTTCP = false;
 
-      if (DANH_HIEU_CA_NHAN_CO_BAN.has(danh_hieu)) {
-        finalDanhHieu = danh_hieu;
-      } else if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
+      if (DANH_HIEU_CA_NHAN_CO_BAN.has(individualDanhHieu)) {
+        finalDanhHieu = individualDanhHieu;
+      } else if (individualDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
         nhanBKBQP = true;
-      } else if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ) {
+      } else if (individualDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ) {
         nhanCSTDTQ = true;
-      } else if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
+      } else if (individualDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
         nhanBKTTCP = true;
       }
 
       let rewardRecord: DanhHieuHangNam;
 
       if (existingReward) {
-        const isBangKhen = DANH_HIEU_CA_NHAN_BANG_KHEN.has(danh_hieu);
-        const isCoBan = DANH_HIEU_CA_NHAN_CO_BAN.has(danh_hieu);
+        const isBangKhen = DANH_HIEU_CA_NHAN_BANG_KHEN.has(individualDanhHieu);
+        const isCoBan = DANH_HIEU_CA_NHAN_CO_BAN.has(individualDanhHieu);
         const canUpdate = isBangKhen || (isCoBan && !existingReward.danh_hieu);
 
         if (!canUpdate) {
-          errors.push({ personnelId, error: `Đã có danh hiệu ${getDanhHieuName(existingReward.danh_hieu || danh_hieu)} cho năm ${nam}` });
+          errors.push({ personnelId, error: `Đã có danh hiệu ${getDanhHieuName(existingReward.danh_hieu || individualDanhHieu)} cho năm ${nam}` });
           continue;
         }
 
         const updateData: Prisma.DanhHieuHangNamUncheckedUpdateInput = {};
         if (isBangKhen) {
-          if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
+          if (individualDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKBQP) {
             updateData.nhan_bkbqp = true;
             if (individualSoQuyetDinh) updateData.so_quyet_dinh_bkbqp = individualSoQuyetDinh;
-          } else if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ) {
+          } else if (individualDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.CSTDTQ) {
             updateData.nhan_cstdtq = true;
             if (individualSoQuyetDinh) updateData.so_quyet_dinh_cstdtq = individualSoQuyetDinh;
-          } else if (danh_hieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
+          } else if (individualDanhHieu === DANH_HIEU_CA_NHAN_HANG_NAM.BKTTCP) {
             updateData.nhan_bkttcp = true;
             if (individualSoQuyetDinh) updateData.so_quyet_dinh_bkttcp = individualSoQuyetDinh;
           }
         } else {
-          updateData.danh_hieu = danh_hieu;
+          updateData.danh_hieu = individualDanhHieu;
           if (individualSoQuyetDinh) updateData.so_quyet_dinh = individualSoQuyetDinh;
         }
 

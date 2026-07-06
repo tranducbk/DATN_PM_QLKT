@@ -5,7 +5,6 @@ import {
   createAnnualReward,
   updateAnnualReward,
   deleteAnnualReward,
-  checkAnnualRewards,
   bulkCreateAnnualRewards,
   getStatistics,
   getAnnualRewardsList,
@@ -22,7 +21,6 @@ import type {
   ImportResult,
   PreviewResult,
   ConfirmImportItem,
-  CheckResult,
   BulkCreateData,
   ExportFilters,
   StatisticsFilters,
@@ -63,14 +61,6 @@ class AnnualRewardService {
 
   async confirmImport(validItems: ConfirmImportItem[]): Promise<{ imported: number }> {
     return confirmImport(validItems);
-  }
-
-  async checkAnnualRewards(
-    personnelIds: string[],
-    nam: number,
-    danhHieu: string
-  ): Promise<{ results: CheckResult[]; summary: Record<string, number> }> {
-    return checkAnnualRewards(personnelIds, nam, danhHieu);
   }
 
   async bulkCreateAnnualRewards(data: BulkCreateData): Promise<{

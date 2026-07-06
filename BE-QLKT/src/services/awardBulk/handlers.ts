@@ -121,6 +121,7 @@ async function handleCaNhanHangNam(ctx: BulkCreateContext): Promise<void> {
   const { titleData, selectedPersonnel, nam, ghiChu } = ctx;
   const personnelRewardsData = titleData.map(item => ({
     personnel_id: item.personnel_id,
+    danh_hieu: item.danh_hieu,
     so_quyet_dinh: item.so_quyet_dinh || null,
     cap_bac: item.cap_bac || null,
     chuc_vu: item.chuc_vu || null,

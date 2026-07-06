@@ -63,6 +63,7 @@ class AuthController {
     }
 
     const result = await authService.changePassword(userId, oldPassword, newPassword);
+    res.clearCookie(REFRESH_COOKIE_NAME, getRefreshClearOptions());
     return ResponseHelper.success(res, { message: result.message });
   });
 }

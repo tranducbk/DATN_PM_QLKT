@@ -137,7 +137,6 @@ class TenureMedalController {
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
     const rawQuery = req.query;
     const query = rawQuery as ExportToExcelQuery;
-    console.log("EXPORT QUERY RECEIVED (HCCSVV):", query);
     const user = req.user!;
     const { don_vi_id, nam, tu_nam, den_nam, danh_hieu } = query;
     const filters: Record<string, unknown> = {};

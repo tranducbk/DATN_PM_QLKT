@@ -1,6 +1,5 @@
 import { danhHieuHangNamRepository } from '../../repositories/danhHieu.repository';
 import { quanNhanRepository } from '../../repositories/quanNhan.repository';
-import { proposalRepository } from '../../repositories/proposal.repository';
 import * as notificationHelper from '../../helpers/notification';
 import { safeRecalculateAnnualProfile } from '../profile/annual';
 import {
@@ -11,7 +10,6 @@ import {
   DANH_HIEU_CA_NHAN_HANG_NAM,
 } from '../../constants/danhHieu.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
-import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { AWARD_SLUGS } from '../../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../../constants/awardLabels.constants';
 import { NotFoundError, ValidationError } from '../../middlewares/errorHandler';
@@ -29,7 +27,6 @@ import type { DanhHieuHangNam, Prisma } from '../../generated/prisma';
 import type {
   CreateAnnualRewardData,
   UpdateAnnualRewardData,
-  CheckResult,
   StatisticsFilters,
 } from './types';
 
@@ -406,102 +403,6 @@ export async function deleteAnnualReward(
     message: `Đã xóa ${AWARD_LABEL}.`,
     personnelId,
     reward,
-  };
-}
-
-export async function checkAnnualRewards(
-  personnelIds: string[],
-  nam: number,
-  danhHieu: string
-): Promise<{ results: CheckResult[]; summary: Record<string, number> }> {
-  const [existingRewards, proposals] = await Promise.all([
-    danhHieuHangNamRepository.findMany({ where: { quan_nhan_id: { in: personnelIds }, nam } }),
-    proposalRepository.findManyRaw({
-      where: {
-        loai_de_xuat: PROPOSAL_TYPES.CA_NHAN_HANG_NAM,
-        nam,
-        status: { in: [PROPOSAL_STATUS.PENDING, PROPOSAL_STATUS.APPROVED] },
-      },
-      select: { id: true, nam: true, status: true, data_danh_hieu: true },
-    }),
-  ]);
-  const rewardByPersonnel = new Map(existingRewards.map(r => [r.quan_nhan_id, r] as const));
-  const proposalsByPersonnel = new Map<string, typeof proposals>();
-  for (const p of proposals) {
-    const data = (p.data_danh_hieu as Array<Record<string, unknown>>) ?? [];
-    for (const item of data) {
-      const pid = item.personnel_id as string;
-      if (!pid) continue;
-      const list = proposalsByPersonnel.get(pid) ?? [];
-      list.push(p);
-      proposalsByPersonnel.set(pid, list);
-    }
-  }
-
-  const results: CheckResult[] = [];
-
-  for (const personnelId of personnelIds) {
-    if (!personnelId) continue;
-
-    const result: CheckResult = {
-      personnel_id: personnelId,
-      has_reward: false,
-      has_proposal: false,
-      reward: null,
-      proposal: null,
-    };
-
-    const existingReward = rewardByPersonnel.get(personnelId) ?? null;
-    if (existingReward) {
-      result.has_reward = true;
-      result.reward = {
-        id: existingReward.id,
-        nam: existingReward.nam,
-        danh_hieu: existingReward.danh_hieu,
-        nhan_bkbqp: existingReward.nhan_bkbqp,
-        nhan_cstdtq: existingReward.nhan_cstdtq,
-        nhan_bkttcp: existingReward.nhan_bkttcp,
-      };
-    }
-
-    const personnelProposals = proposalsByPersonnel.get(personnelId) ?? [];
-    for (const proposal of personnelProposals) {
-      if (proposal.data_danh_hieu) {
-        const dataList = Array.isArray(proposal.data_danh_hieu)
-          ? (proposal.data_danh_hieu as Record<string, unknown>[])
-          : [];
-
-        const found = dataList.some(
-          item => String(item.personnel_id) === personnelId && item.danh_hieu === danhHieu
-        );
-
-        if (found) {
-          // APPROVED proposal: only block if award actually exists in DB
-          if (proposal.status === PROPOSAL_STATUS.APPROVED && !result.has_reward) {
-            continue;
-          }
-          result.has_proposal = true;
-          result.proposal = {
-            id: proposal.id,
-            nam: proposal.nam,
-            status: proposal.status,
-          };
-          break;
-        }
-      }
-    }
-
-    results.push(result);
-  }
-
-  return {
-    results,
-    summary: {
-      total: personnelIds.length,
-      has_reward: results.filter(r => r.has_reward).length,
-      has_proposal: results.filter(r => r.has_proposal).length,
-      can_add: results.filter(r => !r.has_reward && !r.has_proposal).length,
-    },
   };
 }
 

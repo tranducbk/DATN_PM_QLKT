@@ -235,7 +235,6 @@ export async function previewImport(buffer: Buffer) {
       const allRecords = achievementsByPersonnel.get(personnel.id) || [];
       const history = [...allRecords]
         .sort((a, b) => b.nam - a.nam)
-        .slice(0, 5)
         .map(r => ({
           nam: r.nam,
           loai: r.loai,

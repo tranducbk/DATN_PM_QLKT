@@ -288,7 +288,6 @@ export async function previewImport(buffer: Buffer) {
 
     const history = [...unitAwards]
       .sort((a, b) => b.nam - a.nam)
-      .slice(0, 5)
       .map(r => ({
         nam: r.nam,
         danh_hieu: r.danh_hieu,

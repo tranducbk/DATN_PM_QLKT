@@ -155,7 +155,6 @@ class CommemorativeMedalController {
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
     const rawQuery = req.query;
     const query = rawQuery as ExportToExcelQuery;
-    console.log("EXPORT QUERY RECEIVED (KNC):", query);
     const user = req.user!;
     const { don_vi_id, nam, tu_nam, den_nam } = query;
 

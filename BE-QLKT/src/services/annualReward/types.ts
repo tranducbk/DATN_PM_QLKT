@@ -80,18 +80,11 @@ export interface ConfirmImportItem {
   ghi_chu?: string | null;
 }
 
-export interface CheckResult {
-  personnel_id: string;
-  has_reward: boolean;
-  has_proposal: boolean;
-  reward: Record<string, unknown> | null;
-  proposal: Record<string, unknown> | null;
-}
-
 export interface BulkCreateData {
   personnel_ids: string[];
   personnel_rewards_data?: {
     personnel_id: string;
+    danh_hieu?: string;
     so_quyet_dinh?: string;
     cap_bac?: string;
     chuc_vu?: string;
@@ -99,9 +92,6 @@ export interface BulkCreateData {
   nam: number;
   danh_hieu: string;
   ghi_chu?: string;
-  so_quyet_dinh?: string;
-  cap_bac?: string;
-  chuc_vu?: string;
 }
 
 export interface ExportFilters {

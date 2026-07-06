@@ -275,7 +275,6 @@ class UnitAnnualAwardController {
 
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
     const query = req.query as ExportToExcelQuery;
-    console.log("EXPORT QUERY RECEIVED (DVHN):", query);
     const user = req.user;
     const { nam, tu_nam, den_nam, danh_hieu, unit_ids } = query;
     const filters: Record<string, unknown> = {

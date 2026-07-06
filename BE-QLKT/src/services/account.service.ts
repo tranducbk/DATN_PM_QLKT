@@ -551,6 +551,12 @@ class AccountService {
               array_contains: personnelId,
             },
           },
+          {
+            data_cong_hien: {
+              path: ['$[*].personnel_id'],
+              array_contains: personnelId,
+            },
+          },
         ],
       },
     });
@@ -588,14 +594,26 @@ class AccountService {
           }
         }
 
+        if (proposal.data_cong_hien && Array.isArray(proposal.data_cong_hien)) {
+          const filtered = (proposal.data_cong_hien as Record<string, unknown>[]).filter(
+            item => item.personnel_id !== personnelId
+          );
+          if (filtered.length !== (proposal.data_cong_hien as unknown[]).length) {
+            (proposal as Record<string, unknown>).data_cong_hien = filtered;
+            updated = true;
+          }
+        }
+
         if (updated) {
           const dataDanhHieu = proposal.data_danh_hieu as unknown[] | null;
           const dataNienHan = proposal.data_nien_han as unknown[] | null;
+          const dataCongHien = proposal.data_cong_hien as unknown[] | null;
           const dataThanhTich = proposal.data_thanh_tich as unknown[] | null;
 
           const isEmpty =
             (!dataDanhHieu || dataDanhHieu.length === 0) &&
             (!dataNienHan || dataNienHan.length === 0) &&
+            (!dataCongHien || dataCongHien.length === 0) &&
             (!dataThanhTich || dataThanhTich.length === 0);
 
           if (isEmpty) {
@@ -607,6 +625,7 @@ class AccountService {
               {
                 data_danh_hieu: (dataDanhHieu as Prisma.InputJsonValue) || [],
                 data_nien_han: (dataNienHan as Prisma.InputJsonValue) || [],
+                data_cong_hien: (dataCongHien as Prisma.InputJsonValue) || [],
               },
               prismaTx
             );

@@ -67,28 +67,6 @@ interface IdParams {
   id?: string;
 }
 
-interface CheckAnnualRewardsBody {
-  personnel_ids?: string[];
-  nam?: number;
-  danh_hieu?: string;
-}
-
-interface BulkCreateAnnualRewardsBody {
-  personnel_ids?: string[];
-  personnel_rewards_data?: Array<{
-    personnel_id: string;
-    so_quyet_dinh?: string;
-    cap_bac?: string;
-    chuc_vu?: string;
-  }>;
-  nam?: number;
-  danh_hieu?: string;
-  ghi_chu?: string;
-  so_quyet_dinh?: string;
-  cap_bac?: string;
-  chuc_vu?: string;
-}
-
 interface ConfirmImportItem {
   personnel_id: string;
   ho_ten: string;
@@ -280,46 +258,6 @@ class AnnualRewardController {
     return ResponseHelper.success(res, { message: result.message, data: result.reward });
   });
 
-  checkAnnualRewards = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as CheckAnnualRewardsBody;
-    const { personnel_ids, nam, danh_hieu } = body;
-    const result = await annualRewardService.checkAnnualRewards(personnel_ids, nam, danh_hieu);
-    return ResponseHelper.success(res, {
-      data: result,
-      message: 'Kiểm tra khen thưởng hằng năm thành công',
-    });
-  });
-
-  bulkCreateAnnualRewards = catchAsync(async (req: Request, res: Response) => {
-    const body = req.body as BulkCreateAnnualRewardsBody;
-    const {
-      personnel_ids,
-      personnel_rewards_data,
-      nam,
-      danh_hieu,
-      ghi_chu,
-      so_quyet_dinh,
-      cap_bac,
-      chuc_vu,
-    } = body;
-
-    const result = await annualRewardService.bulkCreateAnnualRewards({
-      personnel_ids,
-      personnel_rewards_data,
-      nam,
-      danh_hieu,
-      ghi_chu,
-      so_quyet_dinh,
-      cap_bac,
-      chuc_vu,
-    });
-
-    return ResponseHelper.created(res, {
-      data: result,
-      message: `Thêm danh hiệu thành công cho ${result.success} quân nhân`,
-    });
-  });
-
   previewImport = catchAsync(async (req: Request, res: Response) => {
     const file = req.file;
     if (!file) return ResponseHelper.badRequest(res, 'Vui lòng upload file Excel');
@@ -399,7 +337,6 @@ class AnnualRewardController {
   exportToExcel = catchAsync(async (req: Request, res: Response) => {
     const rawQuery = req.query;
     const query = rawQuery as ExportToExcelQuery;
-    console.log("EXPORT QUERY RECEIVED:", query);
     const user = req.user;
     const { nam, tu_nam, den_nam, danh_hieu, don_vi_id } = query;
     const role = user?.role;
