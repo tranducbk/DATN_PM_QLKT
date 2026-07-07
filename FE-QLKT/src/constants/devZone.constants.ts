@@ -52,21 +52,21 @@ export const SYSTEM_FEATURE_OPTIONS = [
     label: 'Xoá nhật ký hệ thống',
     description: 'Cho phép ADMIN, SUPER_ADMIN xoá nhật ký hệ thống',
   },
-  {
-    key: 'view_errors_super_admin',
-    label: 'Xem lỗi hệ thống — Super Admin',
-    description: 'Cho phép SUPER_ADMIN xem log lỗi trong nhật ký hệ thống',
-  },
-  {
-    key: 'view_errors_admin',
-    label: 'Xem lỗi hệ thống — Admin',
-    description: 'Cho phép ADMIN xem log lỗi trong nhật ký hệ thống',
-  },
-  {
-    key: 'view_errors_manager',
-    label: 'Xem lỗi hệ thống — Manager',
-    description: 'Cho phép MANAGER xem log lỗi trong nhật ký hệ thống',
-  },
+  // {
+  //   key: 'view_errors_super_admin',
+  //   label: 'Xem lỗi hệ thống — Super Admin',
+  //   description: 'Cho phép SUPER_ADMIN xem log lỗi trong nhật ký hệ thống',
+  // },
+  // {
+  //   key: 'view_errors_admin',
+  //   label: 'Xem lỗi hệ thống — Admin',
+  //   description: 'Cho phép ADMIN xem log lỗi trong nhật ký hệ thống',
+  // },
+  // {
+  //   key: 'view_errors_manager',
+  //   label: 'Xem lỗi hệ thống — Manager',
+  //   description: 'Cho phép MANAGER xem log lỗi trong nhật ký hệ thống',
+  // },
 ] as const;
 
 /** Automatic-backup schedule presets. */
