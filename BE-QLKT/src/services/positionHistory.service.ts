@@ -45,6 +45,8 @@ class PositionHistoryService {
     const mEnd2 = end2 ? moment(end2) : null;
 
     if (!mEnd1 && !mEnd2) {
+      // Both periods are open-ended [start1, ∞) vs [start2, ∞): always overlap eventually
+      // Example: [01/01/2025, ∞) vs [01/06/2025, ∞) -> overlaps from 01/06/2025 onwards
       return true;
     }
 
@@ -53,13 +55,18 @@ class PositionHistoryService {
         return true;
       }
       // [start1, ∞) vs [start2, end2]: overlap when end2 >= start1
+      // Example: [01/06/2025, ∞) vs [01/01/2025, 15/06/2025] -> overlaps from 01/06/2025 to 15/06/2025
       return mEnd2.isSameOrAfter(mStart1);
     }
 
     if (!mEnd2) {
+      // [start1, end1] vs [start2, ∞): overlap when start2 <= end1
+      // Example: [01/01/2025, 01/06/2025] vs [01/05/2025, ∞) -> overlaps from 01/05/2025 to 01/06/2025
       return mStart2.isSameOrBefore(mEnd1);
     }
 
+    // Both periods are finite [start1, end1] vs [start2, end2]: overlap when start1 < end2 AND start2 < end1
+    // Example: [01/01/2025, 01/06/2025] vs [01/05/2025, 31/12/2025] -> overlaps from 01/05/2025 to 01/06/2025
     return mStart1.isBefore(mEnd2) && mStart2.isBefore(mEnd1);
   }
 
