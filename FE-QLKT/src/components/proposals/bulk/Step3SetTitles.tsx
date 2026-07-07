@@ -28,6 +28,7 @@ interface Step3SetTitlesProps {
   onUnitChange?: (ids: string[]) => void;
   nam: number;
   thang: number;
+  isManager?: boolean;
 }
 
 export function Step3SetTitles({
@@ -40,6 +41,7 @@ export function Step3SetTitles({
   onUnitChange = () => {},
   nam,
   thang,
+  isManager = false,
 }: Step3SetTitlesProps) {
   // Dispatch to the appropriate Step3 sub-component based on proposal type
   switch (proposalType) {
@@ -83,6 +85,7 @@ export function Step3SetTitles({
           titleData={titleData}
           onTitleDataChange={onTitleDataChange}
           nam={nam}
+          isManager={isManager}
         />
       );
     case PROPOSAL_TYPES.NIEN_HAN:

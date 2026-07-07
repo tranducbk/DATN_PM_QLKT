@@ -4,6 +4,7 @@ import '@/lib/chartConfig';
 import { Line } from 'react-chartjs-2';
 import { Card } from 'antd';
 import { useChartTheme, chartTitlePlugin } from './useChartTheme';
+import { ChartEmptyState } from './ChartEmptyState';
 
 interface ActivityLineChartProps {
   data: Array<{ date: string; count: number }>;
@@ -35,12 +36,20 @@ export function ActivityLineChart({
 }: ActivityLineChartProps) {
   const { textColor, gridColor } = useChartTheme();
 
+  if (data.length === 0) {
+    return (
+      <Card className="h-full">
+        <ChartEmptyState title={title} height={height} textColor={textColor} />
+      </Card>
+    );
+  }
+
   const chartData = {
-    labels: data.length > 0 ? data.map(item => formatChartLabel(item.date)) : ['Chưa có dữ liệu'],
+    labels: data.map(item => formatChartLabel(item.date)),
     datasets: [
       {
         label: label,
-        data: data.length > 0 ? data.map(item => item.count) : [0],
+        data: data.map(item => item.count),
         borderColor: color,
         backgroundColor: color.replace('1)', '0.1)'),
         fill: true,

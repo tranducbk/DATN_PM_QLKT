@@ -8,6 +8,7 @@ import { NotFoundError } from '../middlewares/errorHandler';
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
+import { getDanhHieuName } from '../constants/danhHieu.constants';
 import {
   AWARD_EXCEL_SHEETS,
   HCCSVV_EXPORT_COLUMNS,
@@ -118,7 +119,7 @@ class TenureMedalService {
         chuc_vu: item.chuc_vu ?? '',
         nam: item.nam,
         thang: item.thang,
-        danh_hieu: item.danh_hieu,
+        danh_hieu: getDanhHieuName(item.danh_hieu),
         so_quyet_dinh: item.so_quyet_dinh ?? '',
         ghi_chu: item.ghi_chu ?? '',
       })

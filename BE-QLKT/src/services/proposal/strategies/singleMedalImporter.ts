@@ -1,4 +1,8 @@
-import { calculateServiceMonths, formatServiceDuration } from '../../../helpers/serviceYearsHelper';
+import {
+  calculateServiceMonths,
+  formatServiceDuration,
+  resolveServiceEndDate,
+} from '../../../helpers/serviceYearsHelper';
 import type { ProposalNienHanItem } from '../../../types/proposal';
 import type { ProposalApproveContext, ImportAccumulator, PrismaTx } from './proposalStrategy';
 import { formatPersonnelLabel } from './personnelLabel';
@@ -96,9 +100,10 @@ export async function importSingleMedal(
 
       let thoiGian: Record<string, unknown> | null = null;
       if (personnel.ngay_nhap_ngu) {
-        const ngayKetThuc = personnel.ngay_xuat_ngu
-          ? new Date(personnel.ngay_xuat_ngu)
-          : new Date(namNhan, thangNhan, 0);
+        const ngayKetThuc = resolveServiceEndDate(
+          personnel.ngay_xuat_ngu,
+          new Date(namNhan, thangNhan, 0)
+        );
         const months = calculateServiceMonths(new Date(personnel.ngay_nhap_ngu), ngayKetThuc);
         thoiGian = {
           total_months: months,

@@ -4,6 +4,7 @@ import {
   batchEvaluateServiceYears,
   buildServiceYearsErrorMessage,
 } from '../../eligibility/serviceYearsEligibility';
+import { buildCutoffDate } from '../../../helpers/serviceYearsHelper';
 import { importSingleMedal } from './singleMedalImporter';
 import { commemorativeMedalRepository } from '../../../repositories/commemorativeMedal.repository';
 import type { Prisma } from '../../../generated/prisma';
@@ -60,7 +61,7 @@ class KncStrategy implements ProposalStrategy {
       const results = await batchEvaluateServiceYears(
         evalIds,
         PROPOSAL_TYPES.KNC_VSNXD_QDNDVN,
-        new Date()
+        buildCutoffDate(ctx.nam, ctx.thang)
       );
       const lines = results
         .map(r => buildServiceYearsErrorMessage(r, PROPOSAL_TYPES.KNC_VSNXD_QDNDVN))

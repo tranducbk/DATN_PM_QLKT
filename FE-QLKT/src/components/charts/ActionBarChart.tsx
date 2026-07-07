@@ -6,6 +6,7 @@ import type { ChartOptions, TooltipItem } from 'chart.js';
 import { Card } from 'antd';
 import { useChartTheme, chartTitlePlugin } from './useChartTheme';
 import { getHorizontalBarHeight } from './barChartHeight';
+import { ChartEmptyState } from './ChartEmptyState';
 
 interface ActionBarChartProps {
   data: Array<{ action: string; count: number }>;
@@ -31,12 +32,17 @@ export function ActionBarChart({
 
   const filteredData = data.filter(item => item.action && item.action !== 'Chưa xác định');
 
+  if (filteredData.length === 0) {
+    return (
+      <Card className="h-full">
+        <ChartEmptyState title={title} height={height} textColor={textColor} />
+      </Card>
+    );
+  }
+
   // Full labels for the tooltip. The horizontal layout shows them in full (left axis has
   // room); the vertical layout truncates so rotated labels still fit under the bars.
-  const fullLabels =
-    filteredData.length > 0
-      ? filteredData.map(item => (labelMapper ? labelMapper(item.action) : item.action))
-      : ['Chưa có dữ liệu'];
+  const fullLabels = filteredData.map(item => (labelMapper ? labelMapper(item.action) : item.action));
 
   const chartData = {
     labels: horizontal
@@ -47,7 +53,7 @@ export function ActionBarChart({
     datasets: [
       {
         label: 'Số lượng',
-        data: filteredData.length > 0 ? filteredData.map(item => item.count) : [0],
+        data: filteredData.map(item => item.count),
         backgroundColor: color.replace('1)', '0.8)'),
         borderColor: color,
         borderWidth: 2,

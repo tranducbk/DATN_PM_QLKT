@@ -9,7 +9,6 @@ import { getApiErrorMessage } from '@/lib/http/apiError';
 import {
   AWARD_TAB_LABELS,
   AWARD_TAB_FILENAME,
-  AWARD_TAB_META,
   INDIVIDUAL_AWARD_TABS,
   type AwardType,
 } from '@/constants/danhHieu.constants';

@@ -14,6 +14,7 @@ import { DANH_HIEU_DAC_BIET, AWARD_TAB_LABELS } from '@/constants/danhHieu.const
 import { GENDER } from '@/constants/gender.constants';
 import { StepGuide } from './StepGuide';
 import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
+import { calculateTotalMonths } from './serviceDuration';
 
 const { Text } = Typography;
 
@@ -116,38 +117,6 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
     }
   }, [selectedPersonnelIds, fetchPersonnelDetails, onTitleDataChange]);
 
-  const calculateTotalMonths = (
-    ngayNhapNgu: DateInput,
-    ngayXuatNgu: DateInput
-  ) => {
-    if (!ngayNhapNgu) return null;
-
-    try {
-      const startDate = typeof ngayNhapNgu === 'string' ? new Date(ngayNhapNgu) : ngayNhapNgu;
-      const refDate = new Date(nam, thang, 0);
-      const endDate = ngayXuatNgu
-        ? typeof ngayXuatNgu === 'string'
-          ? new Date(ngayXuatNgu)
-          : ngayXuatNgu
-        : refDate;
-
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        return null;
-      }
-
-      const totalMonths = Math.max(0, (endDate.getFullYear() - startDate.getFullYear()) * 12 + endDate.getMonth() - startDate.getMonth());
-      const totalYears = Math.floor(totalMonths / 12);
-      const remainingMonths = totalMonths % 12;
-
-      return {
-        years: totalYears,
-        months: remainingMonths,
-        totalMonths: totalMonths,
-      };
-    } catch {
-      return null;
-    }
-  };
 
   const getTitleData = (id: string) => {
     return titleData.find(d => d.personnel_id === id) || { personnel_id: id };
@@ -255,7 +224,11 @@ export function Step3SetTitlesKNCVSNXDQDNDVN({
       width: 150,
       align: 'center',
       render: (_: unknown, record: Personnel) => {
-        const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu);
+        const result = calculateTotalMonths(
+          record.ngay_nhap_ngu,
+          record.ngay_xuat_ngu,
+          new Date(nam, thang, 0)
+        );
         if (!result) return <Text type="secondary">-</Text>;
 
         if (result.years > 0 && result.months > 0) {

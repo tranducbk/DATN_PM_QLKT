@@ -2,6 +2,7 @@ import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
 import {
   calculateServiceMonths,
   formatServiceDuration,
+  resolveServiceEndDate,
 } from '../../../helpers/serviceYearsHelper';
 
 export interface NienHanInputItem {
@@ -82,9 +83,7 @@ export function buildNienHanPayloadItem(
   } | null = null;
   if (personnel?.ngay_nhap_ngu) {
     const ngayNhapNgu = new Date(personnel.ngay_nhap_ngu);
-    const ngayKetThuc = personnel.ngay_xuat_ngu
-      ? new Date(personnel.ngay_xuat_ngu)
-      : new Date(nam, thang ?? 0, 0);
+    const ngayKetThuc = resolveServiceEndDate(personnel.ngay_xuat_ngu, new Date(nam, thang ?? 0, 0));
     const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
     thoiGian = {
       total_months: months,

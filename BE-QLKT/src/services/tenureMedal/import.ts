@@ -27,7 +27,12 @@ import { AWARD_EXCEL_SHEETS } from '../../constants/awardExcel.constants';
 import { IMPORT_TRANSACTION_TIMEOUT } from '../../constants/excel.constants';
 import { ValidationError } from '../../middlewares/errorHandler';
 import { validateHCCSVVRankOrder } from '../../helpers/awardValidation/tenureMedalRankOrder';
-import { calculateServiceMonths, formatServiceDuration } from '../../helpers/serviceYearsHelper';
+import {
+  buildCutoffDate,
+  calculateServiceMonths,
+  formatServiceDuration,
+  resolveServiceEndDate,
+} from '../../helpers/serviceYearsHelper';
 import type { HccsvvValidItem } from './types';
 
 /**
@@ -370,11 +375,11 @@ export async function previewImport(buffer: Buffer) {
     }
 
     // Eligibility: check service time meets the required years for this rank
-    const refDate = new Date(nam, thang, 0);
+    const refDate = buildCutoffDate(nam, thang);
     const serviceTotalMonths = personnel.ngay_nhap_ngu
       ? calculateServiceMonths(
           personnel.ngay_nhap_ngu as Date,
-          (personnel.ngay_xuat_ngu as Date | null) ?? refDate
+          resolveServiceEndDate(personnel.ngay_xuat_ngu as Date | null, refDate)
         )
       : null;
 

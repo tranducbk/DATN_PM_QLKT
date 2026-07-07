@@ -1,4 +1,5 @@
 import { scientificAchievementRepository } from '../../../repositories/scientificAchievement.repository';
+import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
 import { buildCutoffDate, formatServiceDuration } from '../../../helpers/serviceYearsHelper';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
 import {
@@ -8,6 +9,7 @@ import {
   DANH_HIEU_CA_NHAN_BANG_KHEN,
   DANH_HIEU_DON_VI_HANG_NAM,
   DANH_HIEU_DON_VI_BANG_KHEN,
+  getDanhHieuName,
   getLoaiDeXuatName,
 } from '../../../constants/danhHieu.constants';
 import { ValidationError } from '../../../middlewares/errorHandler';
@@ -38,6 +40,10 @@ import {
   batchEvaluateServiceYears,
   buildServiceYearsErrorMessage,
 } from '../../eligibility/serviceYearsEligibility';
+import {
+  evaluateHCCSVVEligibility,
+  HCCSVV_YEARS_REQUIRED,
+} from '../../eligibility/hccsvvEligibility';
 import { PROPOSAL_STATUS } from '../../../constants/proposalStatus.constants';
 import { GENDER } from '../../../constants/gender.constants';
 import type {
@@ -285,6 +291,51 @@ async function collectKNCEligibilityErrors(
     .filter((m): m is string => m !== null);
 }
 
+/** Collects HCCSVV eligibility errors (required years of service per rank). */
+async function collectHCCSVVEligibilityErrors(
+  ctx: ProposalContext,
+  nienHanData: ProposalNienHanItem[]
+): Promise<string[]> {
+  const validItems = nienHanData.filter(
+    (item): item is ProposalNienHanItem & { personnel_id: string; danh_hieu: string } =>
+      Boolean(item.personnel_id && item.danh_hieu)
+  );
+  if (validItems.length === 0) return [];
+
+  const personnelIds = [...new Set(validItems.map(item => item.personnel_id))];
+  const personnelList = await quanNhanRepository.findManyRaw({
+    where: { id: { in: personnelIds } },
+    select: { id: true, ho_ten: true, ngay_nhap_ngu: true, ngay_xuat_ngu: true },
+  });
+  const personnelMap = new Map(personnelList.map(p => [p.id, p]));
+
+  const errors: string[] = [];
+  for (const item of validItems) {
+    if (!HCCSVV_YEARS_REQUIRED[item.danh_hieu]) continue;
+
+    const personnel = personnelMap.get(item.personnel_id);
+    const hoTen = personnel?.ho_ten || ctx.personnelHoTenMap.get(item.personnel_id) || 'một quân nhân';
+    if (!personnel?.ngay_nhap_ngu) {
+      errors.push(`${hoTen}: Chưa có thông tin ngày nhập ngũ`);
+      continue;
+    }
+
+    const result = evaluateHCCSVVEligibility(
+      item.danh_hieu,
+      personnel.ngay_nhap_ngu,
+      personnel.ngay_xuat_ngu,
+      ctx.refDate
+    );
+    if (!result.eligible) {
+      errors.push(
+        `${hoTen}: Chưa đủ ${result.requiredYears} năm phục vụ cho ${getDanhHieuName(item.danh_hieu)} ` +
+          `(hiện tại: ${formatServiceDuration(result.totalMonths ?? 0)})`
+      );
+    }
+  }
+  return errors;
+}
+
 /** Collects HC BVTQ contribution eligibility errors (rank vs accumulated months). */
 async function collectCongHienEligibilityErrors(
   ctx: ProposalContext,
@@ -404,6 +455,9 @@ export async function runEligibilityChecks(
   }
   if (proposalType === PROPOSAL_TYPES.KNC_VSNXD_QDNDVN && nienHanData && nienHanData.length > 0) {
     errors.push(...(await collectKNCEligibilityErrors(ctx, nienHanData)));
+  }
+  if (proposalType === PROPOSAL_TYPES.NIEN_HAN && nienHanData && nienHanData.length > 0) {
+    errors.push(...(await collectHCCSVVEligibilityErrors(ctx, nienHanData)));
   }
   if (proposalType === PROPOSAL_TYPES.CONG_HIEN && congHienData && congHienData.length > 0) {
     errors.push(...(await collectCongHienEligibilityErrors(ctx, congHienData)));

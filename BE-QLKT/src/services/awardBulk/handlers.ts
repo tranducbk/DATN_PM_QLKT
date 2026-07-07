@@ -7,6 +7,7 @@ import {
   calculateServiceMonths,
   formatServiceDuration,
   buildCutoffDate,
+  resolveServiceEndDate,
 } from '../../helpers/serviceYearsHelper';
 import annualRewardService from '../annualReward.service';
 import unitAnnualAwardService from '../unitAnnualAward.service';
@@ -43,8 +44,7 @@ export function calculateThoiGian(
   if (!quanNhan.ngay_nhap_ngu) return null;
 
   const ngayNhapNgu = new Date(quanNhan.ngay_nhap_ngu);
-  const rawEnd = quanNhan.ngay_xuat_ngu ? new Date(quanNhan.ngay_xuat_ngu) : cutoffDate;
-  const ngayKetThuc = rawEnd > cutoffDate ? cutoffDate : rawEnd;
+  const ngayKetThuc = resolveServiceEndDate(quanNhan.ngay_xuat_ngu, cutoffDate);
 
   const months = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
 

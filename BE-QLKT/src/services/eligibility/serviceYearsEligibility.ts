@@ -6,7 +6,11 @@ import {
 } from '../../constants/danhHieu.constants';
 import { GENDER } from '../../constants/gender.constants';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
-import { calculateServiceMonths, formatServiceDuration } from '../../helpers/serviceYearsHelper';
+import {
+  calculateServiceMonths,
+  formatServiceDuration,
+  resolveServiceEndDate,
+} from '../../helpers/serviceYearsHelper';
 
 type ServiceYearsProposalType = 'HC_QKQT' | 'KNC_VSNXD_QDNDVN';
 
@@ -108,7 +112,7 @@ export function evaluateServiceYears(
   }
 
   const ngayNhapNgu = new Date(personnel.ngay_nhap_ngu);
-  const ngayKetThuc = personnel.ngay_xuat_ngu ? new Date(personnel.ngay_xuat_ngu) : refDate;
+  const ngayKetThuc = resolveServiceEndDate(personnel.ngay_xuat_ngu, refDate);
   const totalMonths = calculateServiceMonths(ngayNhapNgu, ngayKetThuc);
   const requiredYears = requiredServiceYears(proposalType, personnel.gioi_tinh);
 

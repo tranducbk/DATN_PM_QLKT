@@ -199,7 +199,6 @@ for (const map of [DANH_HIEU_MAP, DANH_HIEU_SHORT_MAP]) {
  */
 export function resolveDanhHieuCode(input: string): string {
   const val = normalizeDanhHieuInput(input);
-  if (DANH_HIEU_MAP[val] || DANH_HIEU_SHORT_MAP[val]) return val;
   const upper = val.toUpperCase();
   if (DANH_HIEU_MAP[upper] || DANH_HIEU_SHORT_MAP[upper]) return upper;
   return LABEL_TO_CODE[val.toLowerCase()] ?? val;

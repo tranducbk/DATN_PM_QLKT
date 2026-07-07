@@ -21,6 +21,7 @@ import {
   DeleteOutlined,
   LockOutlined,
   SearchOutlined,
+  EditOutlined,
 } from '@ant-design/icons';
 import Link from 'next/link';
 import { PageBreadcrumb } from '@/components/shared/PageBreadcrumb';
@@ -230,6 +231,17 @@ export default function AdminAccountsPage() {
 
         return (
           <Space>
+            {canModify ? (
+              <Link href={`/admin/accounts/${record.id}/edit`}>
+                <Button type="link" size="small" icon={<EditOutlined />}>
+                  Sửa
+                </Button>
+              </Link>
+            ) : (
+              <Button type="link" size="small" icon={<EditOutlined />} disabled>
+                Sửa
+              </Button>
+            )}
             <Button
               type="link"
               size="small"

@@ -30,9 +30,11 @@ function calcServiceTime(
   if (!ngayNhapNgu) return null;
   try {
     const startDate = typeof ngayNhapNgu === 'string' ? new Date(ngayNhapNgu) : ngayNhapNgu;
-    const endDate = ngayXuatNgu
+    const refDate = new Date(refNam, refThang, 0);
+    const rawEnd = ngayXuatNgu
       ? typeof ngayXuatNgu === 'string' ? new Date(ngayXuatNgu) : ngayXuatNgu
-      : new Date(refNam, refThang, 0);
+      : refDate;
+    const endDate = rawEnd > refDate ? refDate : rawEnd;
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) return null;
     const total = Math.max(0, (endDate.getFullYear() - startDate.getFullYear()) * 12 + endDate.getMonth() - startDate.getMonth());
     return { years: Math.floor(total / 12), months: total % 12, totalMonths: total };

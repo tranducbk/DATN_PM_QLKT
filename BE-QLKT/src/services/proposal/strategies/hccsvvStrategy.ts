@@ -2,11 +2,21 @@ import { tenureMedalRepository } from '../../../repositories/tenureMedal.reposit
 import { quanNhanRepository } from '../../../repositories/quanNhan.repository';
 import { tenureProfileRepository } from '../../../repositories/tenureProfile.repository';
 import { PROPOSAL_TYPES } from '../../../constants/proposalTypes.constants';
-import { DANH_HIEU_HCCSVV, getLoaiDeXuatName } from '../../../constants/danhHieu.constants';
+import {
+  DANH_HIEU_HCCSVV,
+  getDanhHieuName,
+  getLoaiDeXuatName,
+} from '../../../constants/danhHieu.constants';
 import { ELIGIBILITY_STATUS } from '../../../constants/eligibilityStatus.constants';
 import { validateHCCSVVRankOrder } from '../../../helpers/awardValidation/tenureMedalRankOrder';
 import { formatPersonnelLabel } from './personnelLabel';
-import { calculateServiceMonths, formatServiceDuration } from '../../../helpers/serviceYearsHelper';
+import {
+  buildCutoffDate,
+  calculateServiceMonths,
+  formatServiceDuration,
+  resolveServiceEndDate,
+} from '../../../helpers/serviceYearsHelper';
+import { evaluateHCCSVVEligibility } from '../../eligibility/hccsvvEligibility';
 import type { EditedProposalData, ProposalNienHanItem } from '../../../types/proposal';
 import type {
   ProposalStrategy,
@@ -85,6 +95,31 @@ class HccsvvStrategy implements ProposalStrategy {
         if (rankOrderErrors.length > 0) {
           errors.push(
             `Một số quân nhân chưa đủ điều kiện theo thứ tự hạng HCCSVV:\n${rankOrderErrors.join('\n')}`
+          );
+        }
+
+        const refDate = buildCutoffDate(ctx.nam, ctx.thang);
+        const yearsErrors: string[] = [];
+        for (const item of dataNienHan) {
+          if (!item.personnel_id || !item.danh_hieu) continue;
+          const personnel = personnelMap.get(item.personnel_id);
+          const hoTen = personnel?.ho_ten || 'một quân nhân';
+          const result = evaluateHCCSVVEligibility(
+            item.danh_hieu,
+            personnel?.ngay_nhap_ngu,
+            personnel?.ngay_xuat_ngu,
+            refDate
+          );
+          if (!result.eligible) {
+            yearsErrors.push(
+              `${hoTen}: Chưa đủ ${result.requiredYears} năm phục vụ cho ${getDanhHieuName(item.danh_hieu)} ` +
+                `(hiện tại: ${formatServiceDuration(result.totalMonths ?? 0)})`
+            );
+          }
+        }
+        if (yearsErrors.length > 0) {
+          errors.push(
+            `Một số quân nhân chưa đủ điều kiện về thời gian phục vụ:\n${yearsErrors.join('\n')}`
           );
         }
       }
@@ -188,9 +223,10 @@ class HccsvvStrategy implements ProposalStrategy {
           display: string;
         } | null = null;
         if (personnel.ngay_nhap_ngu) {
-          const ngayKetThuc = personnel.ngay_xuat_ngu
-            ? new Date(personnel.ngay_xuat_ngu)
-            : new Date(namNhan, thangNhan, 0);
+          const ngayKetThuc = resolveServiceEndDate(
+            personnel.ngay_xuat_ngu,
+            new Date(namNhan, thangNhan, 0)
+          );
           const months = calculateServiceMonths(new Date(personnel.ngay_nhap_ngu), ngayKetThuc);
           thoiGian = {
             total_months: months,

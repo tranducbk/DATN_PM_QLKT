@@ -590,7 +590,8 @@ async function getProposalById(proposalId: string, userId: string, userRole: str
 }
 
 /**
- * Deletes a proposal — only the owning MANAGER can delete, and only when status is PENDING.
+ * Deletes a proposal. MANAGER may only delete their own PENDING proposals; ADMIN may delete
+ * any proposal regardless of status.
  * @param proposalId - Proposal ID
  * @param userId - Caller's account ID
  * @param userRole - Caller's role
@@ -631,15 +632,19 @@ async function deleteProposal(proposalId: string, userId: string, userRole: stri
     }
   }
 
-  // Atomic delete guarded by status=PENDING to prevent race condition
-  const deleteResult = await proposalRepository.deleteMany({
-    id: proposalId,
-    status: PROPOSAL_STATUS.PENDING,
-  });
+  // MANAGER's own-pending-only rule above is re-asserted atomically here to close the race
+  // window between the check and the delete. ADMIN has no status restriction, so it deletes by id alone.
+  const deleteWhere =
+    userRole === ROLES.MANAGER
+      ? { id: proposalId, status: PROPOSAL_STATUS.PENDING }
+      : { id: proposalId };
+  const deleteResult = await proposalRepository.deleteMany(deleteWhere);
 
   if (deleteResult.count === 0) {
     throw new ValidationError(
-      'Đề xuất đã bị thay đổi bởi người khác (có thể đã được phê duyệt hoặc từ chối). Vui lòng tải lại trang.'
+      userRole === ROLES.MANAGER
+        ? 'Đề xuất đã bị thay đổi bởi người khác (có thể đã được phê duyệt hoặc từ chối). Vui lòng tải lại trang.'
+        : 'Đề xuất không còn tồn tại, có thể đã bị xóa bởi người khác. Vui lòng tải lại trang.'
     );
   }
 

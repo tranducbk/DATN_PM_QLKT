@@ -84,6 +84,24 @@ export function buildCutoffDate(nam: number | string, thang: number | null): Dat
 }
 
 /**
+ * Resolves the service end date for duration calculations, capped at the cutoff.
+ * Without the cap, a discharge date that falls after the cutoff (e.g. someone discharged
+ * in 2026 while re-evaluating a 2022 proposal) would incorrectly count service time that,
+ * as of the cutoff, hadn't happened yet.
+ * @param ngayXuatNgu - Discharge date, or null/undefined if still serving
+ * @param cutoff - Reference date the duration is measured as of
+ * @returns ngayXuatNgu if it falls on/before cutoff, otherwise cutoff itself
+ */
+export function resolveServiceEndDate(
+  ngayXuatNgu: Date | string | null | undefined,
+  cutoff: Date
+): Date {
+  if (!ngayXuatNgu) return cutoff;
+  const end = new Date(ngayXuatNgu);
+  return end > cutoff ? cutoff : end;
+}
+
+/**
  * Formats total months as "X years Y months".
  * @param totalMonths - Number of months
  * @returns Human-readable Vietnamese duration string

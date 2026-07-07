@@ -6,6 +6,7 @@ import { Pie } from 'react-chartjs-2';
 import type { ChartOptions, Chart as ChartJS } from 'chart.js';
 import { Card } from 'antd';
 import { useChartTheme, chartTitlePlugin } from './useChartTheme';
+import { ChartEmptyState } from './ChartEmptyState';
 
 interface PieChartProps {
   data: Array<{ label: string; value: number }>;
@@ -34,11 +35,17 @@ export function PieChart({
   const filteredData = data.filter(item => item.value > 0);
   const hasData = filteredData.length > 0;
 
+  if (!hasData) {
+    return (
+      <Card className="h-full">
+        <ChartEmptyState title={title} height={height} textColor={textColor} />
+      </Card>
+    );
+  }
+
   // Cycle colors so >colors.length categories still get a slice color, and keep the
   // HTML legend below in sync with the pie slices.
-  const sliceColors = (hasData ? filteredData : [{ label: '', value: 0 }]).map(
-    (_, i) => colors[i % colors.length]
-  );
+  const sliceColors = filteredData.map((_, i) => colors[i % colors.length]);
 
   // Toggle a slice's visibility (restores the click-to-hide behaviour of the native
   // Chart.js legend, which we replaced with an HTML legend to avoid clipping).
@@ -51,11 +58,11 @@ export function PieChart({
   };
 
   const chartData = {
-    labels: hasData ? filteredData.map(item => item.label) : ['Chưa có dữ liệu'],
+    labels: filteredData.map(item => item.label),
     datasets: [
       {
         label: 'Số lượng',
-        data: hasData ? filteredData.map(item => item.value) : [0],
+        data: filteredData.map(item => item.value),
         backgroundColor: sliceColors,
         borderColor: sliceColors.map(c => c.replace('0.8', '1')),
         borderWidth: 2,

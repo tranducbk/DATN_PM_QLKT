@@ -22,11 +22,12 @@ export function calculateTotalMonths(
 
   try {
     const startDate = typeof ngayNhapNgu === 'string' ? new Date(ngayNhapNgu) : ngayNhapNgu;
-    const endDate = ngayXuatNgu
+    const rawEnd = ngayXuatNgu
       ? typeof ngayXuatNgu === 'string'
         ? new Date(ngayXuatNgu)
         : ngayXuatNgu
       : (referenceDate ?? new Date());
+    const endDate = referenceDate && rawEnd > referenceDate ? referenceDate : rawEnd;
 
     if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
       return null;

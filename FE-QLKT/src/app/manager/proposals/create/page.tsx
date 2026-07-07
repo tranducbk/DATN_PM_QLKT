@@ -636,6 +636,7 @@ export default function CreateProposalPage() {
             onUnitChange={setSelectedUnitIds}
             nam={nam}
             thang={thang}
+            isManager
           />
         );
 

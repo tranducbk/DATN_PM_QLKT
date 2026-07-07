@@ -21,6 +21,7 @@ import { DEFAULT_ANTD_TABLE_PAGINATION } from '@/constants/pagination.constants'
 import { formatDate } from '@/lib/utils';
 import { StepGuide } from './StepGuide';
 import { GUIDE_LINES, stepGuideTitle } from '@/constants/proposalStepGuides.constants';
+import { calculateTotalMonths } from './serviceDuration';
 import type { DateInput } from '@/lib/types/common';
 import type { ServiceProfile } from '@/lib/types/personnelList';
 
@@ -151,52 +152,18 @@ export function Step3SetTitlesNienHan({
     }
   }, [selectedPersonnelIds, fetchPersonnelDetails, onTitleDataChange]);
 
-  const calculateTotalMonths = (
-    ngayNhapNgu: DateInput,
-    ngayXuatNgu: DateInput
-  ) => {
-    if (!ngayNhapNgu) return null;
-
-    try {
-      const startDate = typeof ngayNhapNgu === 'string' ? new Date(ngayNhapNgu) : ngayNhapNgu;
-      const refDate = new Date(nam, thang, 0);
-      const endDate = ngayXuatNgu
-        ? typeof ngayXuatNgu === 'string'
-          ? new Date(ngayXuatNgu)
-          : ngayXuatNgu
-        : refDate;
-
-      if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
-        return null;
-      }
-
-      const totalMonths = Math.max(0, (endDate.getFullYear() - startDate.getFullYear()) * 12 + endDate.getMonth() - startDate.getMonth());
-      const totalYears = Math.floor(totalMonths / 12);
-      const remainingMonths = totalMonths % 12;
-
-      return {
-        years: totalYears,
-        months: remainingMonths,
-        totalMonths: totalMonths,
-      };
-    } catch {
-      return null;
-    }
-  };
-
   /** Checks whether service time meets HCCSVV eligibility thresholds. */
   const checkHCCSVVEligibilityForPersonnel = (record: Personnel) => {
     if (!record.ngay_nhap_ngu) return null;
 
-    const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu);
+    const refDate = new Date(nam, thang, 0);
+    const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu, refDate);
     if (!result) return null;
 
     const startDate =
       typeof record.ngay_nhap_ngu === 'string'
         ? new Date(record.ngay_nhap_ngu)
         : record.ngay_nhap_ngu;
-
-    const refDate = new Date(nam, thang, 0);
 
     const eligibilityDateBa = new Date(startDate);
     eligibilityDateBa.setFullYear(eligibilityDateBa.getFullYear() + HCCSVV_YEARS_HANG_BA);
@@ -356,7 +323,11 @@ export function Step3SetTitlesNienHan({
       width: 150,
       align: 'center',
       render: (_: unknown, record: Personnel) => {
-        const result = calculateTotalMonths(record.ngay_nhap_ngu, record.ngay_xuat_ngu);
+        const result = calculateTotalMonths(
+          record.ngay_nhap_ngu,
+          record.ngay_xuat_ngu,
+          new Date(nam, thang, 0)
+        );
         if (!result) return <Text type="secondary">-</Text>;
 
         if (result.years > 0 && result.months > 0) {

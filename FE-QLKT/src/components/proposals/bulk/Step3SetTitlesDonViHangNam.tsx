@@ -95,6 +95,7 @@ interface Step3SetTitlesDonViHangNamProps {
   titleData: TitleData[];
   onTitleDataChange: (data: TitleData[]) => void;
   nam: number;
+  isManager?: boolean;
 }
 
 export function Step3SetTitlesDonViHangNam({
@@ -103,6 +104,7 @@ export function Step3SetTitlesDonViHangNam({
   titleData,
   onTitleDataChange,
   nam,
+  isManager = false,
 }: Step3SetTitlesDonViHangNamProps) {
   const [loading, setLoading] = useState(false);
   const [units, setUnits] = useState<Unit[]>([]);
@@ -116,8 +118,8 @@ export function Step3SetTitlesDonViHangNam({
   const fetchUnitDetails = useCallback(async () => {
     try {
       setLoading(true);
-      // Admin must fetch all units, not just their own
-      const unitsRes = await apiClient.getUnits();
+      // Manager only sees their own unit + sub-units; Admin fetches all units in the system.
+      const unitsRes = isManager ? await apiClient.getMyUnits() : await apiClient.getUnits();
 
       if (unitsRes.success) {
         const unitsData = unitsRes.data || [];

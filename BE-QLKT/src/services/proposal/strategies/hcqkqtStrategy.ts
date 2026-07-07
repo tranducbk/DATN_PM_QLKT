@@ -8,6 +8,7 @@ import {
   batchEvaluateServiceYears,
   buildServiceYearsErrorMessage,
 } from '../../eligibility/serviceYearsEligibility';
+import { buildCutoffDate } from '../../../helpers/serviceYearsHelper';
 import type { Prisma } from '../../../generated/prisma';
 import type { EditedProposalData, ProposalNienHanItem } from '../../../types/proposal';
 import type {
@@ -59,7 +60,11 @@ class HcqkqtStrategy implements ProposalStrategy {
 
     const evalIds = dataNienHan.map(i => i.personnel_id).filter((id): id is string => Boolean(id));
     if (evalIds.length > 0) {
-      const results = await batchEvaluateServiceYears(evalIds, PROPOSAL_TYPES.HC_QKQT, new Date());
+      const results = await batchEvaluateServiceYears(
+        evalIds,
+        PROPOSAL_TYPES.HC_QKQT,
+        buildCutoffDate(ctx.nam, ctx.thang)
+      );
       const lines = results
         .map(r => buildServiceYearsErrorMessage(r, PROPOSAL_TYPES.HC_QKQT))
         .filter((m): m is string => m !== null);
