@@ -17,10 +17,8 @@ import {
   formatDanhHieuList,
   resolveDanhHieuCode,
   DANH_HIEU_HCCSVV,
-  HCCSVV_YEARS_HANG_BA,
-  HCCSVV_YEARS_HANG_NHI,
-  HCCSVV_YEARS_HANG_NHAT,
 } from '../../constants/danhHieu.constants';
+import { HCCSVV_YEARS_REQUIRED } from '../eligibility/hccsvvEligibility';
 import { PROPOSAL_TYPES } from '../../constants/proposalTypes.constants';
 import { PROPOSAL_STATUS } from '../../constants/proposalStatus.constants';
 import { AWARD_EXCEL_SHEETS } from '../../constants/awardExcel.constants';
@@ -384,12 +382,7 @@ export async function previewImport(buffer: Buffer) {
       : null;
 
     if (serviceTotalMonths !== null) {
-      const yearsRequired: Record<string, number> = {
-        [DANH_HIEU_HCCSVV.HANG_BA]: HCCSVV_YEARS_HANG_BA,
-        [DANH_HIEU_HCCSVV.HANG_NHI]: HCCSVV_YEARS_HANG_NHI,
-        [DANH_HIEU_HCCSVV.HANG_NHAT]: HCCSVV_YEARS_HANG_NHAT,
-      };
-      const required = yearsRequired[danh_hieu];
+      const required = HCCSVV_YEARS_REQUIRED[danh_hieu];
       if (required && serviceTotalMonths < required * 12) {
         const diff = required * 12 - serviceTotalMonths;
         errors.push({

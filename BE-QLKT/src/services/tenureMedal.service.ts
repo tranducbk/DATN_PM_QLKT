@@ -130,10 +130,11 @@ class TenureMedalService {
    * Get HCCSVV statistics
    */
   async getStatistics() {
-    const byRank = await tenureMedalRepository.groupByDanhHieu();
-    const byYear = await tenureMedalRepository.groupByYear();
-
-    const total = await tenureMedalRepository.count({});
+    const [byRank, byYear, total] = await Promise.all([
+      tenureMedalRepository.groupByDanhHieu(),
+      tenureMedalRepository.groupByYear(),
+      tenureMedalRepository.count({}),
+    ]);
 
     return {
       total,

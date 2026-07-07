@@ -24,7 +24,9 @@ export interface HCCSVVEligibilityResult {
  * @param ngayNhapNgu - Enlistment date
  * @param ngayXuatNgu - Discharge date, or null if still serving
  * @param refDate - Reference date the duration is measured as of
- * @returns Eligibility result; requiredYears/totalMonths are null when danhHieu or ngayNhapNgu is missing
+ * @returns Eligibility result. Fails closed (eligible: false) when danhHieu is not a
+ * recognized HCCSVV rank or when ngayNhapNgu is missing; requiredYears is null only
+ * for the unrecognized-rank case, totalMonths is null in both cases.
  */
 export function evaluateHCCSVVEligibility(
   danhHieu: string,
@@ -33,8 +35,11 @@ export function evaluateHCCSVVEligibility(
   refDate: Date
 ): HCCSVVEligibilityResult {
   const requiredYears = HCCSVV_YEARS_REQUIRED[danhHieu] ?? null;
-  if (!requiredYears || !ngayNhapNgu) {
-    return { eligible: !requiredYears, requiredYears, totalMonths: null };
+  if (!requiredYears) {
+    return { eligible: false, requiredYears: null, totalMonths: null };
+  }
+  if (!ngayNhapNgu) {
+    return { eligible: false, requiredYears, totalMonths: null };
   }
   const totalMonths = calculateServiceMonths(ngayNhapNgu, resolveServiceEndDate(ngayXuatNgu, refDate));
   return { eligible: totalMonths >= requiredYears * 12, requiredYears, totalMonths };

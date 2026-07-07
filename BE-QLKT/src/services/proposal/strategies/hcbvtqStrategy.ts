@@ -228,7 +228,7 @@ class HcbvtqStrategy implements ProposalStrategy {
       const downgradeError = validateHCBVTQHighestRank(item.danh_hieu, months, requiredMonths);
       if (downgradeError) {
         errors.push(`Quân nhân "${hoTen}": ${downgradeError}`);
-        return { errors, payload: { data_cong_hien: dataCongHien } };
+        continue;
       }
 
       const result = evaluateHCBVTQRank(item.danh_hieu, months, gioiTinh);
@@ -242,7 +242,7 @@ class HcbvtqStrategy implements ProposalStrategy {
             `Yêu cầu: ít nhất ${requiredYearsText}${genderText}. Hiện tại: ${totalYearsText}. ` +
             `Vui lòng kiểm tra lại lịch sử chức vụ của quân nhân này.`
         );
-        return { errors, payload: { data_cong_hien: dataCongHien } };
+        continue;
       }
     }
 
