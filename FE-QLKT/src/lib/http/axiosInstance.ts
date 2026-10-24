@@ -9,10 +9,9 @@ const axiosInstance = axios.create({
   timeout: 30000,
 });
 
-// Attach token from localStorage if no cookie is present
 axiosInstance.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    if (!document.cookie.includes('accessToken') && localStorage.getItem('accessToken')) {
+    if (localStorage.getItem('accessToken')) {
       config.headers.Authorization = `Bearer ${localStorage.getItem('accessToken')}`;
     }
     return config;
@@ -105,7 +104,7 @@ axiosInstance.interceptors.response.use(
           failedQueue.push({ resolve, reject });
         })
           .then(token => {
-            if (token && !document.cookie.includes('accessToken')) {
+            if (token) {
               originalRequest.headers = {
                 ...originalRequest.headers,
                 Authorization: `Bearer ${token}`,
@@ -136,7 +135,7 @@ axiosInstance.interceptors.response.use(
         processQueue(null, newAccessToken);
         isRefreshing = false;
 
-        if (newAccessToken && !document.cookie.includes('accessToken')) {
+        if (newAccessToken) {
           originalRequest.headers = {
             ...originalRequest.headers,
             Authorization: `Bearer ${newAccessToken}`,
