@@ -6,7 +6,7 @@
  */
 
 import 'dotenv/config';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { ROLES } from '../constants/roles.constants';
 import { accountRepository } from '../repositories/account.repository';
 import { prisma } from '../models';

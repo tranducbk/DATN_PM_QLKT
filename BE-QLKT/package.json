@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc && rm -rf dist/generated && cp -r src/generated dist/generated",
+    "build": "tsc && node src/scripts/copyGenerated.js",
     "typecheck": "tsc --noEmit",
     "start": "node dist/index.js",
     "serve": "npm run build && pm2 start ecosystem.config.js",
@@ -18,7 +18,7 @@
   "license": "ISC",
   "dependencies": {
     "@prisma/client": "^6.17.1",
-    "bcrypt": "^5.1.1",
+    "bcryptjs": "^2.4.3",
     "body-parser": "^1.20.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
@@ -44,7 +44,7 @@
   },
   "devDependencies": {
     "@mermaid-js/mermaid-cli": "^11.12.0",
-    "@types/bcrypt": "^6.0.0",
+    "@types/bcryptjs": "^2.4.6",
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",

@@ -19,7 +19,7 @@ import { coQuanDonViRepository, donViTrucThuocRepository } from '../repositories
 import { PROPOSAL_TYPES } from '../constants/proposalTypes.constants';
 import { AWARD_SLUGS } from '../constants/awardSlugs.constants';
 import { AWARD_LABELS } from '../constants/awardLabels.constants';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import { parseCCCD } from '../helpers/cccdHelper';
 import { notifyOnPersonnelDeleted, notifyOnSelfProfileUpdate } from '../helpers/notification';
 import { writeSystemLog } from '../helpers/systemLogHelper';
